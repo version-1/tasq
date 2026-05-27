@@ -44,19 +44,19 @@ Open this repository in a Dev Container to get Go, Node.js, npm, and GitHub CLI 
 You can manage the container from the host with `make`:
 
 ```sh
-make devcontainer-up
-make devcontainer-shell
-make devcontainer-test
+make dev-up
+make dev-shell
+make dev-test
 ```
 
 After the container is created, run the services in separate terminals:
 
 ```sh
-make devcontainer-orchestrator
+make dev-orchestrator
 ```
 
 ```sh
-make devcontainer-gui
+make dev-gui
 ```
 
 The container forwards `8080` for the orchestrator API and `3000` for the Next.js GUI.
