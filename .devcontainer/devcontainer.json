@@ -1,0 +1,37 @@
+{
+  "name": "tasq",
+  "image": "mcr.microsoft.com/devcontainers/go:1-1.22-bookworm",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "22"
+    },
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "forwardPorts": [8080, 3000],
+  "portsAttributes": {
+    "8080": {
+      "label": "Tasq orchestrator",
+      "onAutoForward": "notify"
+    },
+    "3000": {
+      "label": "Tasq GUI",
+      "onAutoForward": "openBrowser"
+    }
+  },
+  "postCreateCommand": "go mod download && cd web && npm install",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "golang.go",
+        "ms-vscode.vscode-typescript-next"
+      ],
+      "settings": {
+        "go.toolsManagement.autoUpdate": true,
+        "typescript.tsdk": "web/node_modules/typescript/lib"
+      }
+    }
+  },
+  "remoteEnv": {
+    "NEXT_PUBLIC_ORCHESTRATOR_URL": "http://localhost:8080"
+  }
+}
