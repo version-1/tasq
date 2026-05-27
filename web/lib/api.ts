@@ -1,7 +1,7 @@
 import type { Settings, Summary, Task, TaskStatus } from "@/lib/types";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_ORCHESTRATOR_URL ?? "http://localhost:8080";
+  process.env.NEXT_PUBLIC_ORCHESTRATOR_URL ?? "";
 
 async function request<T>(
   path: string,

@@ -22,21 +22,22 @@ make dev-up
 
 If this is the first run, or if the Dev Container image changed, the command can take a while because it downloads the base image, installs features, and runs dependency setup.
 
-Run the services in separate terminals:
-
-```sh
-make dev-orchestrator
-```
+Start the web UI with the orchestrator. Both processes run in the Dev Container background:
 
 ```sh
 make web-up
 ```
 
+Or start the TUI with the orchestrator. The orchestrator runs in the Dev Container background, and the TUI runs in the foreground:
+
 ```sh
 make tui-up
 ```
 
-Open `http://localhost:3000` for the web UI. The orchestrator API runs on `http://localhost:8080`.
+The Dev Container publishes host ports automatically so multiple worktrees can run in parallel.
+Run `make dev-status` and open the host port mapped to container port `3000`.
+The web UI proxies `/api/v1/...` to the orchestrator inside the same Dev Container.
+If the published ports do not appear after changing `.devcontainer/devcontainer.json`, run `make dev-rebuild` so Docker recreates the container.
 
 Check the Dev Container status:
 
@@ -54,16 +55,17 @@ Run `make help` to list available commands.
 | `make dev-check` | Check that Docker CLI and Dev Container CLI are installed. |
 | `make dev-build` | Build the Dev Container image. |
 | `make dev-up` | Create or start the Dev Container. |
-| `make dev-rebuild` | Recreate the Dev Container from scratch. |
+| `make dev-rebuild` | Recreate the Dev Container from scratch and apply port publishing changes. |
 | `make dev-status` | Show the Dev Container Docker status and print tool versions when it is running. |
 | `make dev-shell` | Open a shell inside the running Dev Container. |
 | `make dev-exec CMD="go test ./..."` | Run an arbitrary command inside the Dev Container. |
 | `make dev-test` | Run Go tests and web UI typecheck inside the Dev Container. |
 | `make dev-build-app` | Run Go tests and the web UI production build inside the Dev Container. |
-| `make dev-orchestrator` | Run the orchestrator API inside the Dev Container. |
-| `make web-up` | Run the Next.js web UI inside the Dev Container. |
-| `make tui-up` | Run the TUI inside the Dev Container. |
-| `make dev-gui` | Alias-style command for running the Next.js GUI inside the Dev Container. Prefer `make web-up`. |
+| `make orchestrator-up` | Start the orchestrator API in the Dev Container background. |
+| `make dev-orchestrator` | Run the orchestrator API in the Dev Container foreground. |
+| `make web-up` | Start the orchestrator and Next.js web UI in the Dev Container background. |
+| `make tui-up` | Start the orchestrator in the background and run the TUI in the foreground. |
+| `make dev-gui` | Alias-style command for `make web-up`. Prefer `make web-up`. |
 
 ## If `make dev-up` Fails
 
@@ -82,7 +84,7 @@ Check these in order:
    make dev-build
    ```
 
-4. If an old container is stuck or was created from an older config, recreate it:
+4. If host ports are not listed in `make dev-status`, or if an old container was created from an older config, recreate it:
 
    ```sh
    make dev-rebuild
@@ -131,7 +133,7 @@ Run the TUI:
 go run ./cmd/tasq-tui -api http://localhost:8080 -watch
 ```
 
-Set `NEXT_PUBLIC_ORCHESTRATOR_URL` when the API is not available at `http://localhost:8080`.
+Set `NEXT_PUBLIC_ORCHESTRATOR_URL` only when the web UI should call an API outside the local Dev Container.
 
 ## Create a Task
 

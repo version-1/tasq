@@ -7,6 +7,12 @@
     },
     "ghcr.io/devcontainers/features/github-cli:1": {}
   },
+  "runArgs": [
+    "--publish",
+    "127.0.0.1::8080",
+    "--publish",
+    "127.0.0.1::3000"
+  ],
   "forwardPorts": [8080, 3000],
   "portsAttributes": {
     "8080": {
@@ -30,8 +36,5 @@
         "typescript.tsdk": "web/node_modules/typescript/lib"
       }
     }
-  },
-  "remoteEnv": {
-    "NEXT_PUBLIC_ORCHESTRATOR_URL": "http://localhost:8080"
   }
 }
