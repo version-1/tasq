@@ -41,15 +41,22 @@ Open `http://localhost:3000`. Set `NEXT_PUBLIC_ORCHESTRATOR_URL` when the API is
 
 Open this repository in a Dev Container to get Go, Node.js, npm, and GitHub CLI installed with the project dependencies.
 
+You can manage the container from the host with `make`:
+
+```sh
+make devcontainer-up
+make devcontainer-shell
+make devcontainer-test
+```
+
 After the container is created, run the services in separate terminals:
 
 ```sh
-go run ./cmd/orchestrator -addr :8080 -db tasq.sqlite
+make devcontainer-orchestrator
 ```
 
 ```sh
-cd web
-npm run dev
+make devcontainer-gui
 ```
 
 The container forwards `8080` for the orchestrator API and `3000` for the Next.js GUI.
