@@ -56,7 +56,11 @@ make dev-orchestrator
 ```
 
 ```sh
-make dev-gui
+make web-up
+```
+
+```sh
+make tui-up
 ```
 
 The container forwards `8080` for the orchestrator API and `3000` for the Next.js GUI.

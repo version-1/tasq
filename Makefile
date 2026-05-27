@@ -49,6 +49,14 @@ dev-build-app: dev-check ## Run production build checks inside the Dev Container
 dev-orchestrator: dev-check ## Run the orchestrator inside the Dev Container.
 	$(DEVCONTAINER_EXEC) /bin/bash -lc 'go run ./cmd/orchestrator -addr :8080 -db tasq.sqlite'
 
+.PHONY: web-up
+web-up: dev-check ## Run the Next.js web UI inside the Dev Container.
+	$(DEVCONTAINER_EXEC) /bin/bash -lc 'cd web && npm run dev'
+
+.PHONY: tui-up
+tui-up: dev-check ## Run the TUI inside the Dev Container.
+	$(DEVCONTAINER_EXEC) /bin/bash -lc 'go run ./cmd/tasq-tui -api http://localhost:8080 -watch'
+
 .PHONY: dev-gui
 dev-gui: dev-check ## Run the Next.js GUI inside the Dev Container.
 	$(DEVCONTAINER_EXEC) /bin/bash -lc 'cd web && npm run dev'
