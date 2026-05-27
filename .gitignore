@@ -143,3 +143,6 @@ vite.config.ts.timestamp-*
 .vite/
 
 .worktrees
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
