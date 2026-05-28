@@ -8,7 +8,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/version-1/tasq/internal/issue"
+	issue "github.com/version-1/tasq/internal/issue/domain/entity"
+	orchestratorentity "github.com/version-1/tasq/internal/orchestrator/domain/entity"
 )
 
 type IssueTrackerClient struct {
@@ -35,7 +36,7 @@ func (c *IssueTrackerClient) ClaimWorkItem(ctx context.Context, orchestratorID s
 	return output.WorkItem, nil
 }
 
-func (c *IssueTrackerClient) SendRunEvent(ctx context.Context, event OutboxEvent) error {
+func (c *IssueTrackerClient) SendRunEvent(ctx context.Context, event orchestratorentity.OutboxEvent) error {
 	return c.request(ctx, http.MethodPost, "/api/v1/orchestrator-events", issue.RunEventInput{
 		EventID:        event.EventID,
 		WorkItemID:     event.WorkItemID,

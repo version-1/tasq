@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/version-1/tasq/internal/issue/api"
-	"github.com/version-1/tasq/internal/issue/store"
+	"github.com/version-1/tasq/internal/issue/infra/store"
 )
 
 func main() {

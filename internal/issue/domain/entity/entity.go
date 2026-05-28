@@ -1,4 +1,4 @@
-package issue
+package entity
 
 import (
 	"errors"
@@ -58,6 +58,17 @@ type Issue struct {
 	UpdatedAt   time.Time `json:"updatedAt"`
 }
 
+type IssueEntity struct {
+	ID          int64  `db:"id"`
+	Title       string `db:"title"`
+	Description string `db:"description"`
+	Status      string `db:"status"`
+	Priority    string `db:"priority"`
+	Assignee    string `db:"assignee"`
+	CreatedAt   string `db:"created_at"`
+	UpdatedAt   string `db:"updated_at"`
+}
+
 type CreateIssueInput struct {
 	Title       string   `json:"title"`
 	Description string   `json:"description"`
@@ -87,6 +98,18 @@ type WorkItem struct {
 	Issue      Issue          `json:"issue"`
 }
 
+type WorkItemEntity struct {
+	ID         int64  `db:"id"`
+	IssueID    int64  `db:"issue_id"`
+	Status     string `db:"status"`
+	ClaimedBy  string `db:"claimed_by"`
+	ClaimToken string `db:"claim_token"`
+	LeaseUntil string `db:"lease_until"`
+	Attempt    int    `db:"attempt"`
+	CreatedAt  string `db:"created_at"`
+	UpdatedAt  string `db:"updated_at"`
+}
+
 type ClaimWorkItemInput struct {
 	OrchestratorID string `json:"orchestratorId"`
 	LeaseSeconds   int    `json:"leaseSeconds"`
@@ -110,6 +133,21 @@ type RunEventInput struct {
 	OrchestratorID string    `json:"orchestratorId"`
 }
 
+type OrchestratorEventEntity struct {
+	EventID        string `db:"event_id"`
+	WorkItemID     int64  `db:"work_item_id"`
+	IssueID        int64  `db:"issue_id"`
+	RunID          string `db:"run_id"`
+	ClaimToken     string `db:"claim_token"`
+	Status         string `db:"status"`
+	Workspace      string `db:"workspace"`
+	Attempt        int    `db:"attempt"`
+	Error          string `db:"error"`
+	OccurredAt     string `db:"occurred_at"`
+	OrchestratorID string `db:"orchestrator_id"`
+	ReceivedAt     string `db:"received_at"`
+}
+
 type RunSnapshot struct {
 	IssueID        int64     `json:"issueId"`
 	WorkItemID     int64     `json:"workItemId"`
@@ -120,6 +158,18 @@ type RunSnapshot struct {
 	Error          string    `json:"error"`
 	OrchestratorID string    `json:"orchestratorId"`
 	UpdatedAt      time.Time `json:"updatedAt"`
+}
+
+type RunSnapshotEntity struct {
+	IssueID        int64  `db:"issue_id"`
+	WorkItemID     int64  `db:"work_item_id"`
+	RunID          string `db:"run_id"`
+	Status         string `db:"status"`
+	Workspace      string `db:"workspace"`
+	Attempt        int    `db:"attempt"`
+	Error          string `db:"error"`
+	OrchestratorID string `db:"orchestrator_id"`
+	UpdatedAt      string `db:"updated_at"`
 }
 
 type IssueSummary struct {

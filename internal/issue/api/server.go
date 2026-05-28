@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/version-1/tasq/internal/issue"
-	"github.com/version-1/tasq/internal/issue/store"
+	issue "github.com/version-1/tasq/internal/issue/domain/entity"
+	"github.com/version-1/tasq/internal/issue/infra/store"
 )
 
 type Server struct {

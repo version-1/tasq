@@ -1,20 +1,24 @@
-package orchestrator
+package usecase
 
 import (
 	"context"
 	"log"
 	"time"
+
+	"github.com/version-1/tasq/internal/orchestrator"
+	"github.com/version-1/tasq/internal/orchestrator/domain/entity"
+	"github.com/version-1/tasq/internal/orchestrator/infra/store"
 )
 
 type Worker struct {
-	store          *Store
-	client         *IssueTrackerClient
+	store          *store.Store
+	client         *orchestrator.IssueTrackerClient
 	orchestratorID string
 	pollInterval   time.Duration
 	leaseSeconds   int
 }
 
-func NewWorker(store *Store, client *IssueTrackerClient, orchestratorID string, pollInterval time.Duration, leaseSeconds int) *Worker {
+func NewWorker(store *store.Store, client *orchestrator.IssueTrackerClient, orchestratorID string, pollInterval time.Duration, leaseSeconds int) *Worker {
 	if pollInterval <= 0 {
 		pollInterval = 3 * time.Second
 	}
@@ -58,7 +62,7 @@ func (w *Worker) tick(ctx context.Context) {
 		return
 	}
 	workspace := ".workspaces/issue-" + formatInt(item.IssueID)
-	run, err := w.store.CreateRun(ctx, CreateRunInput{
+	run, err := w.store.CreateRun(ctx, store.CreateRunInput{
 		IssueID:        item.IssueID,
 		WorkItemID:     item.ID,
 		ClaimToken:     item.ClaimToken,
@@ -73,14 +77,14 @@ func (w *Worker) tick(ctx context.Context) {
 	if err := w.flushOutbox(ctx); err != nil {
 		log.Printf("flush outbox: %v", err)
 	}
-	if _, err := w.store.UpdateRunStatus(ctx, run.RunID, RunRunning, ""); err != nil {
+	if _, err := w.store.UpdateRunStatus(ctx, run.RunID, entity.RunRunning, ""); err != nil {
 		log.Printf("mark run running: %v", err)
 		return
 	}
 	if err := w.flushOutbox(ctx); err != nil {
 		log.Printf("flush outbox: %v", err)
 	}
-	if _, err := w.store.UpdateRunStatus(ctx, run.RunID, RunSucceeded, ""); err != nil {
+	if _, err := w.store.UpdateRunStatus(ctx, run.RunID, entity.RunSucceeded, ""); err != nil {
 		log.Printf("mark run succeeded: %v", err)
 		return
 	}

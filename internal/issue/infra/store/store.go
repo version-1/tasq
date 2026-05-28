@@ -12,7 +12,7 @@ import (
 	_ "modernc.org/sqlite"
 
 	"github.com/version-1/tasq/db/schema"
-	"github.com/version-1/tasq/internal/issue"
+	issue "github.com/version-1/tasq/internal/issue/domain/entity"
 )
 
 type Store struct {
