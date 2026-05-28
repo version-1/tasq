@@ -1,0 +1,60 @@
+.panelGrid {
+  display: grid;
+  gap: 18px;
+}
+
+.widePanel {
+  background: var(--white);
+  border: 1px solid var(--light-gray);
+  border-radius: 8px;
+  padding: 24px;
+}
+
+.widePanel h2 {
+  color: var(--primary-black);
+  font-size: 20px;
+  margin: 0 0 20px;
+}
+
+.metricGrid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(4, minmax(120px, 1fr));
+  margin: 0;
+}
+
+.metricGrid div {
+  background: var(--extra-light-gray);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.metricGrid dt {
+  color: var(--medium-gray);
+  font-size: 13px;
+}
+
+.metricGrid dd {
+  color: var(--primary-black);
+  font-size: 28px;
+  font-weight: 700;
+  margin: 8px 0 0;
+}
+
+.generatedAt {
+  color: var(--medium-gray);
+  font-size: 13px;
+  margin: 20px 0 0;
+}
+
+@media (max-width: 900px) {
+  .metricGrid {
+    grid-template-columns: repeat(2, minmax(120px, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .metricGrid {
+    grid-template-columns: 1fr;
+  }
+}
