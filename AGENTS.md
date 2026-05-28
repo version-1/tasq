@@ -1,19 +1,26 @@
-特に指示がない限りは、日本語での受け答えをお願いします。
+Respond in Japanese unless instructed otherwise.
 
-# 開発スタイル
+# Development Style
 
-KPI やカバレッジ目標が与えられたら、達成するまで試行する。
-不明瞭な指示は質問して明確にする。
+When KPI or coverage goals are provided, keep iterating until they are met.
+Ask questions to clarify ambiguous instructions.
 
-# コード設計
+# Documentation
 
-- 関心の分離を保つ
-- 状態とロジックを分離する
-- 可読性と保守性を重視する
-- 条件分岐を、クラス構造やインターフェースに置き換えて、責務ごとに振る舞いを分離する
-- 関数を小さく保ち、テスト可能な範囲に分割する。
-- コントラクト層（API/型）を厳密に定義し、実装層は再生成可能に保つ
+- Write documentation in English.
+- All documents linked from AGENTS.md must also be written in English.
+- When a Japanese version of the same content is needed, create it as `*.ja.md` in the same location as the English version.
+- Keep the English and Japanese versions synchronized.
 
-# ツール
+# Code Design
+
+- Maintain separation of concerns.
+- Separate state from logic.
+- Prioritize readability and maintainability.
+- Replace conditional branching with class structures or interfaces when it separates behavior by responsibility.
+- Keep functions small and split them into testable units.
+- Define contract layers (APIs and types) strictly, and keep implementation layers regenerable.
+
+# Tools
 
 - gh: GitHub CLI
