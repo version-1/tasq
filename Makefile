@@ -1,7 +1,7 @@
 COMPOSE ?= docker compose
-ISSUE_TRACKER_PORT ?= 8080
-WEB_PORT ?= 3000
-ISSUE_TRACKER_URL ?= http://localhost:$(ISSUE_TRACKER_PORT)
+ISSUE_TRACKER_PORT ?=
+WEB_PORT ?=
+ISSUE_TRACKER_URL ?=
 
 .PHONY: help
 help: ## Show available targets.
@@ -25,6 +25,7 @@ dev-up: dev-check ## Start issue-tracker, orchestrator, and web UI with Docker C
 .PHONY: dev-up-d
 dev-up-d: dev-check ## Start all Compose services in the background.
 	ISSUE_TRACKER_PORT=$(ISSUE_TRACKER_PORT) WEB_PORT=$(WEB_PORT) $(COMPOSE) up --build -d issue-tracker orchestrator web
+	$(MAKE) dev-ports
 
 .PHONY: dev-down
 dev-down: dev-check ## Stop Compose services.
@@ -33,6 +34,21 @@ dev-down: dev-check ## Stop Compose services.
 .PHONY: dev-status
 dev-status: dev-check ## Show Compose service status.
 	$(COMPOSE) ps
+
+.PHONY: dev-ports
+dev-ports: dev-check ## Show assigned host ports for Compose services.
+	@issue_port="$$($(COMPOSE) port issue-tracker 8080 2>/dev/null | sed 's/.*://')"; \
+	if [ -n "$$issue_port" ]; then \
+		printf "issue-tracker: http://localhost:%s\n" "$$issue_port"; \
+	else \
+		printf "issue-tracker: not running\n"; \
+	fi
+	@web_port="$$($(COMPOSE) port web 3000 2>/dev/null | sed 's/.*://')"; \
+	if [ -n "$$web_port" ]; then \
+		printf "web:           http://localhost:%s\n" "$$web_port"; \
+	else \
+		printf "web:           not running\n"; \
+	fi
 
 .PHONY: dev-logs
 dev-logs: dev-check ## Follow Compose service logs.
@@ -73,7 +89,11 @@ web-up: dev-up-d ## Start issue-tracker, orchestrator, and Next.js web UI in the
 
 .PHONY: tui-up
 tui-up: orchestrator-up ## Run the TUI on the host against the Compose issue-tracker API.
-	go run ./cmd/tasq-tui -api $(ISSUE_TRACKER_URL) -watch
+	@api="$(ISSUE_TRACKER_URL)"; \
+	if [ -z "$$api" ]; then \
+		api="http://localhost:$$($(COMPOSE) port issue-tracker 8080 | sed 's/.*://')"; \
+	fi; \
+	go run ./cmd/tasq-tui -api "$$api" -watch
 
 .PHONY: dev-gui
 dev-gui: web-up ## Alias-style command for web-up.
