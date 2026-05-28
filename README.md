@@ -41,7 +41,7 @@ The web UI proxies `/api/v1/...` to `issue-tracker` inside the Compose network.
 To run the services in the foreground:
 
 ```sh
-make dev-up
+make dev-up-forward
 ```
 
 To stop the environment:
@@ -64,8 +64,8 @@ Run `make help` to list available commands.
 | --- | --- |
 | `make help` | Show available targets. |
 | `make dev-check` | Check that Docker CLI and Docker Compose are installed. |
-| `make dev-up` | Start issue-tracker, orchestrator, and web UI in the foreground. |
-| `make dev-up-d` | Start issue-tracker, orchestrator, and web UI in the background. |
+| `make dev-up-forward` | Start issue-tracker, orchestrator, and web UI in the foreground. |
+| `make dev-up` | Start issue-tracker, orchestrator, and web UI in the background. |
 | `make dev-down` | Stop Compose services. |
 | `make dev-status` | Show Compose service status. |
 | `make dev-ports` | Show assigned host ports for Compose services. |

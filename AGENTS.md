@@ -8,6 +8,8 @@ Ask questions to clarify ambiguous instructions.
 # Documentation
 
 - Write documentation in English.
+- See [docs/design.md](docs/design.md) for system architecture.
+- See [web/docs/design.md](web/docs/design.md) for Web UI structure and styling conventions.
 - All documents linked from AGENTS.md must also be written in English.
 - When a Japanese version of the same content is needed, create it as `*.ja.md` in the same location as the English version.
 - Keep the English and Japanese versions synchronized.

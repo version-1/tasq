@@ -1,0 +1,48 @@
+.panelGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+
+.widePanel {
+  max-width: 960px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.empty {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.agentList {
+  display: grid;
+  gap: 10px;
+}
+
+.agentRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.agentRow div {
+  display: grid;
+  gap: 4px;
+}
+
+.agentRow span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.agentState {
+  color: var(--accent-strong);
+  font-weight: 700;
+}

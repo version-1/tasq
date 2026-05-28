@@ -34,6 +34,8 @@ Responsibilities:
 - Move issues between issue statuses by calling the issue-tracker.
 - Avoid direct calls to the orchestrator.
 
+For Web UI structure and styling conventions, see [../web/docs/design.md](../web/docs/design.md).
+
 ### tui
 
 The TUI is a Go terminal client for the same issue-tracker API.
@@ -223,6 +225,8 @@ Recommended commands:
 
 - `make issue-tracker-up`
 - `make orchestrator-up`
+- `make dev-up`
+- `make dev-up-forward`
 - `make web-up`
 - `make tui-up`
 - `make dev-status`
