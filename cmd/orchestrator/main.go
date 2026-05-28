@@ -4,52 +4,37 @@ import (
 	"context"
 	"flag"
 	"log"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
-	"github.com/version-1/tasq/internal/httpapi"
-	"github.com/version-1/tasq/internal/store"
+	"github.com/version-1/tasq/internal/orchestrator"
 )
 
 func main() {
-	addr := flag.String("addr", ":8080", "HTTP listen address")
-	dbPath := flag.String("db", "tasq.sqlite", "SQLite database path")
+	dbPath := flag.String("db", "tasq-orchestrator.sqlite", "SQLite database path")
+	issueTrackerURL := flag.String("issue-tracker", "http://localhost:8080", "issue-tracker API base URL")
+	orchestratorID := flag.String("id", "local-orchestrator", "orchestrator instance id")
+	pollInterval := flag.Duration("poll-interval", 3*time.Second, "work item polling interval")
+	leaseSeconds := flag.Int("lease-seconds", 30, "work item claim lease duration")
 	flag.Parse()
 
-	ctx := context.Background()
-	taskStore, err := store.Open(ctx, *dbPath)
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	store, err := orchestrator.Open(ctx, *dbPath)
 	if err != nil {
-		log.Fatalf("open store: %v", err)
+		log.Fatalf("open orchestrator store: %v", err)
 	}
 	defer func() {
-		if err := taskStore.Close(); err != nil {
-			log.Printf("close store: %v", err)
+		if err := store.Close(); err != nil {
+			log.Printf("close orchestrator store: %v", err)
 		}
 	}()
 
-	server := &http.Server{
-		Addr:              *addr,
-		Handler:           httpapi.NewServer(taskStore).Handler(),
-		ReadHeaderTimeout: 5 * time.Second,
-	}
-
-	go func() {
-		log.Printf("orchestrator listening on %s", *addr)
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("listen: %v", err)
-		}
-	}()
-
-	shutdown := make(chan os.Signal, 1)
-	signal.Notify(shutdown, os.Interrupt, syscall.SIGTERM)
-	<-shutdown
-
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	if err := server.Shutdown(shutdownCtx); err != nil {
-		log.Fatalf("shutdown server: %v", err)
-	}
+	client := orchestrator.NewIssueTrackerClient(*issueTrackerURL)
+	worker := orchestrator.NewWorker(store, client, *orchestratorID, *pollInterval, *leaseSeconds)
+	log.Printf("orchestrator %s polling %s every %s", *orchestratorID, *issueTrackerURL, pollInterval.String())
+	worker.Run(ctx)
 }

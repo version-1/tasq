@@ -1,22 +1,22 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { fetchSummary, updateSettings, updateTaskStatus } from "@/lib/api";
-import type { Settings, Summary, Task, TaskStatus } from "@/lib/types";
-import { taskStatuses } from "@/lib/types";
+import { fetchSummary, updateIssueStatus } from "@/lib/api";
+import type { IssueStatus, IssueSummary, RunSnapshot, Summary } from "@/lib/types";
+import { issueStatuses } from "@/lib/types";
 
 type LoadState =
   | { kind: "loading" }
   | { kind: "ready"; summary: Summary }
   | { kind: "error"; message: string };
 
-const tabs = ["kanban", "agents", "detail", "settings"] as const;
+const tabs = ["issues", "runs", "detail"] as const;
 type Tab = (typeof tabs)[number];
 
-const statusLabels: Record<TaskStatus, string> = {
+const statusLabels: Record<IssueStatus, string> = {
   backlog: "Backlog",
   ready: "Ready",
-  running: "Running",
+  in_progress: "In Progress",
   review: "Review",
   blocked: "Blocked",
   failed: "Failed",
@@ -25,15 +25,15 @@ const statusLabels: Record<TaskStatus, string> = {
 
 export default function Home() {
   const [loadState, setLoadState] = useState<LoadState>({ kind: "loading" });
-  const [activeTab, setActiveTab] = useState<Tab>("kanban");
-  const [selectedTaskID, setSelectedTaskID] = useState<number | null>(null);
+  const [activeTab, setActiveTab] = useState<Tab>("issues");
+  const [selectedIssueID, setSelectedIssueID] = useState<number | null>(null);
   const [notice, setNotice] = useState("");
 
   const load = useCallback(async () => {
     try {
       const summary = await fetchSummary();
       setLoadState({ kind: "ready", summary });
-      setSelectedTaskID((current) => current ?? firstTaskID(summary));
+      setSelectedIssueID((current) => current ?? firstIssueID(summary));
     } catch (error) {
       setLoadState({
         kind: "error",
@@ -51,31 +51,20 @@ export default function Home() {
   }, [load]);
 
   const summary = loadState.kind === "ready" ? loadState.summary : null;
-  const tasks = useMemo(() => {
+  const issues = useMemo(() => {
     if (!summary) return [];
-    return summary.columns.flatMap((column) => column.tasks);
+    return summary.columns.flatMap((column) => column.issues);
   }, [summary]);
-  const selectedTask =
-    tasks.find((task) => task.id === selectedTaskID) ?? tasks[0] ?? null;
+  const selectedIssue =
+    issues.find((issue) => issue.id === selectedIssueID) ?? issues[0] ?? null;
 
-  async function handleStatusChange(id: number, status: TaskStatus) {
+  async function handleStatusChange(id: number, status: IssueStatus) {
     setNotice("");
     try {
-      await updateTaskStatus(id, status);
+      await updateIssueStatus(id, status);
       await load();
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "failed to update task");
-    }
-  }
-
-  async function handleSettingsSubmit(settings: Settings) {
-    setNotice("");
-    try {
-      await updateSettings(settings);
-      await load();
-      setNotice("Settings saved");
-    } catch (error) {
-      setNotice(error instanceof Error ? error.message : "failed to save settings");
+      setNotice(error instanceof Error ? error.message : "failed to update issue");
     }
   }
 
@@ -83,12 +72,12 @@ export default function Home() {
     <main className="shell">
       <header className="topbar">
         <div>
-          <p className="eyebrow">Tasq Orchestrator</p>
-          <h1>Task Operations</h1>
+          <p className="eyebrow">Tasq Issue Tracker</p>
+          <h1>Issue Operations</h1>
         </div>
         <div className="status-strip">
-          <span>{summary ? `${tasks.length} tasks` : "loading"}</span>
-          <span>{summary ? `${summary.agents.length} active agents` : "..."}</span>
+          <span>{summary ? `${issues.length} issues` : "loading"}</span>
+          <span>{summary ? `${summary.runs.length} tracked runs` : "..."}</span>
           <button className="icon-button" type="button" onClick={() => void load()} aria-label="Refresh">
             Refresh
           </button>
@@ -118,13 +107,12 @@ export default function Home() {
         <DashboardView
           activeTab={activeTab}
           summary={summary}
-          selectedTask={selectedTask}
-          onSelectTask={(task) => {
-            setSelectedTaskID(task.id);
+          selectedIssue={selectedIssue}
+          onSelectIssue={(issue) => {
+            setSelectedIssueID(issue.id);
             setActiveTab("detail");
           }}
           onStatusChange={handleStatusChange}
-          onSettingsSubmit={handleSettingsSubmit}
         />
       ) : null}
     </main>
@@ -134,71 +122,61 @@ export default function Home() {
 function DashboardView({
   activeTab,
   summary,
-  selectedTask,
-  onSelectTask,
+  selectedIssue,
+  onSelectIssue,
   onStatusChange,
-  onSettingsSubmit,
 }: {
   activeTab: Tab;
   summary: Summary;
-  selectedTask: Task | null;
-  onSelectTask: (task: Task) => void;
-  onStatusChange: (id: number, status: TaskStatus) => Promise<void>;
-  onSettingsSubmit: (settings: Settings) => Promise<void>;
+  selectedIssue: IssueSummary | null;
+  onSelectIssue: (issue: IssueSummary) => void;
+  onStatusChange: (id: number, status: IssueStatus) => Promise<void>;
 }) {
-  if (activeTab === "agents") {
-    return <AgentStatusPanel agents={summary.agents} />;
+  if (activeTab === "runs") {
+    return <RunStatusPanel runs={summary.runs} />;
   }
   if (activeTab === "detail") {
-    return selectedTask ? (
-      <TaskDetail task={selectedTask} onStatusChange={onStatusChange} />
+    return selectedIssue ? (
+      <IssueDetail issue={selectedIssue} onStatusChange={onStatusChange} />
     ) : (
-      <PanelMessage title="No task selected" />
-    );
-  }
-  if (activeTab === "settings") {
-    return (
-      <SettingsPanel
-        settings={summary.settings}
-        onSubmit={onSettingsSubmit}
-      />
+      <PanelMessage title="No issue selected" />
     );
   }
   return (
-    <KanbanBoard
+    <IssueBoard
       summary={summary}
-      onSelectTask={onSelectTask}
+      onSelectIssue={onSelectIssue}
       onStatusChange={onStatusChange}
     />
   );
 }
 
-function KanbanBoard({
+function IssueBoard({
   summary,
-  onSelectTask,
+  onSelectIssue,
   onStatusChange,
 }: {
   summary: Summary;
-  onSelectTask: (task: Task) => void;
-  onStatusChange: (id: number, status: TaskStatus) => Promise<void>;
+  onSelectIssue: (issue: IssueSummary) => void;
+  onStatusChange: (id: number, status: IssueStatus) => Promise<void>;
 }) {
   return (
-    <section className="board" aria-label="Kanban board">
+    <section className="board" aria-label="Issue board">
       {summary.columns.map((column) => (
         <div className="column" key={column.status}>
           <div className="column-header">
             <h2>{column.title}</h2>
-            <span>{column.tasks.length}</span>
+            <span>{column.issues.length}</span>
           </div>
           <div className="task-list">
-            {column.tasks.length === 0 ? (
-              <p className="empty">No tasks</p>
+            {column.issues.length === 0 ? (
+              <p className="empty">No issues</p>
             ) : (
-              column.tasks.map((task) => (
-                <TaskCard
-                  key={task.id}
-                  task={task}
-                  onSelect={() => onSelectTask(task)}
+              column.issues.map((issue) => (
+                <IssueCard
+                  key={issue.id}
+                  issue={issue}
+                  onSelect={() => onSelectIssue(issue)}
                   onStatusChange={onStatusChange}
                 />
               ))
@@ -210,33 +188,33 @@ function KanbanBoard({
   );
 }
 
-function TaskCard({
-  task,
+function IssueCard({
+  issue,
   onSelect,
   onStatusChange,
 }: {
-  task: Task;
+  issue: IssueSummary;
   onSelect: () => void;
-  onStatusChange: (id: number, status: TaskStatus) => Promise<void>;
+  onStatusChange: (id: number, status: IssueStatus) => Promise<void>;
 }) {
   return (
     <article className="task-card">
       <button type="button" className="task-title" onClick={onSelect}>
-        #{task.id} {task.title}
+        #{issue.id} {issue.title}
       </button>
-      <p>{task.description || "No description"}</p>
+      <p>{issue.description || "No description"}</p>
       <div className="meta-row">
-        <span className={`priority ${task.priority}`}>{task.priority}</span>
-        <span>{task.agentStatus}</span>
+        <span className={`priority ${issue.priority}`}>{issue.priority}</span>
+        <span>{issue.run?.status ?? "no run"}</span>
       </div>
       <select
-        aria-label={`Move ${task.title}`}
-        value={task.status}
+        aria-label={`Move ${issue.title}`}
+        value={issue.status}
         onChange={(event) =>
-          void onStatusChange(task.id, event.target.value as TaskStatus)
+          void onStatusChange(issue.id, event.target.value as IssueStatus)
         }
       >
-        {taskStatuses.map((status) => (
+        {issueStatuses.map((status) => (
           <option key={status} value={status}>
             {statusLabels[status]}
           </option>
@@ -246,22 +224,22 @@ function TaskCard({
   );
 }
 
-function AgentStatusPanel({ agents }: { agents: Task[] }) {
+function RunStatusPanel({ runs }: { runs: RunSnapshot[] }) {
   return (
     <section className="panel-grid">
       <div className="wide-panel">
-        <h2>Agent Realtime Status</h2>
-        {agents.length === 0 ? (
-          <p className="empty">No queued or running agents</p>
+        <h2>Run Status</h2>
+        {runs.length === 0 ? (
+          <p className="empty">No orchestrator runs yet</p>
         ) : (
           <div className="agent-list">
-            {agents.map((agent) => (
-              <article className="agent-row" key={agent.id}>
+            {runs.map((run) => (
+              <article className="agent-row" key={`${run.workItemId}-${run.runId}`}>
                 <div>
-                  <strong>#{agent.id} {agent.title}</strong>
-                  <span>{agent.workspace || "workspace pending"}</span>
+                  <strong>Issue #{run.issueId}</strong>
+                  <span>{run.workspace || "workspace pending"}</span>
                 </div>
-                <span className="agent-state">{agent.agentStatus}</span>
+                <span className="agent-state">{run.status}</span>
               </article>
             ))}
           </div>
@@ -271,119 +249,40 @@ function AgentStatusPanel({ agents }: { agents: Task[] }) {
   );
 }
 
-function TaskDetail({
-  task,
+function IssueDetail({
+  issue,
   onStatusChange,
 }: {
-  task: Task;
-  onStatusChange: (id: number, status: TaskStatus) => Promise<void>;
+  issue: IssueSummary;
+  onStatusChange: (id: number, status: IssueStatus) => Promise<void>;
 }) {
   return (
     <section className="detail-layout">
       <article className="wide-panel">
-        <h2>#{task.id} {task.title}</h2>
-        <p className="description">{task.description || "No description"}</p>
+        <h2>#{issue.id} {issue.title}</h2>
+        <p className="description">{issue.description || "No description"}</p>
         <dl className="detail-list">
-          <div><dt>Status</dt><dd>{statusLabels[task.status]}</dd></div>
-          <div><dt>Priority</dt><dd>{task.priority}</dd></div>
-          <div><dt>Agent</dt><dd>{task.agentStatus}</dd></div>
-          <div><dt>Assignee</dt><dd>{task.assignee || "unassigned"}</dd></div>
-          <div><dt>Source</dt><dd>{task.source || "manual"} {task.sourceId}</dd></div>
-          <div><dt>Workspace</dt><dd>{task.workspace || "pending"}</dd></div>
-          <div><dt>Attempts</dt><dd>{task.attempts}</dd></div>
+          <div><dt>Issue Status</dt><dd>{statusLabels[issue.status]}</dd></div>
+          <div><dt>Priority</dt><dd>{issue.priority}</dd></div>
+          <div><dt>Assignee</dt><dd>{issue.assignee || "unassigned"}</dd></div>
+          <div><dt>Run Status</dt><dd>{issue.run?.status ?? "no run"}</dd></div>
+          <div><dt>Workspace</dt><dd>{issue.run?.workspace || "pending"}</dd></div>
+          <div><dt>Attempt</dt><dd>{issue.run?.attempt ?? 0}</dd></div>
         </dl>
-        {task.lastError ? <p className="error-text">{task.lastError}</p> : null}
+        {issue.run?.error ? <p className="error-text">{issue.run.error}</p> : null}
         <div className="actions">
-          {taskStatuses.map((status) => (
+          {issueStatuses.map((status) => (
             <button
               key={status}
               type="button"
-              onClick={() => void onStatusChange(task.id, status)}
-              disabled={task.status === status}
+              onClick={() => void onStatusChange(issue.id, status)}
+              disabled={issue.status === status}
             >
               {statusLabels[status]}
             </button>
           ))}
         </div>
       </article>
-    </section>
-  );
-}
-
-function SettingsPanel({
-  settings,
-  onSubmit,
-}: {
-  settings: Settings;
-  onSubmit: (settings: Settings) => Promise<void>;
-}) {
-  const [draft, setDraft] = useState(settings);
-
-  useEffect(() => {
-    setDraft(settings);
-  }, [settings]);
-
-  return (
-    <section className="detail-layout">
-      <form
-        className="wide-panel settings-form"
-        onSubmit={(event) => {
-          event.preventDefault();
-          void onSubmit(draft);
-        }}
-      >
-        <h2>Global Settings</h2>
-        <label>
-          Poll interval seconds
-          <input
-            type="number"
-            min="1"
-            value={draft.pollIntervalSeconds}
-            onChange={(event) =>
-              setDraft({ ...draft, pollIntervalSeconds: Number(event.target.value) })
-            }
-          />
-        </label>
-        <label>
-          Max concurrent runs
-          <input
-            type="number"
-            min="1"
-            value={draft.maxConcurrentRuns}
-            onChange={(event) =>
-              setDraft({ ...draft, maxConcurrentRuns: Number(event.target.value) })
-            }
-          />
-        </label>
-        <label>
-          Workspace root
-          <input
-            value={draft.workspaceRoot}
-            onChange={(event) =>
-              setDraft({ ...draft, workspaceRoot: event.target.value })
-            }
-          />
-        </label>
-        <label>
-          Tracker provider
-          <input
-            value={draft.trackerProvider}
-            onChange={(event) =>
-              setDraft({ ...draft, trackerProvider: event.target.value })
-            }
-          />
-        </label>
-        <label>
-          Agent command
-          <input
-            value={draft.agentCommand}
-            onChange={(event) =>
-              setDraft({ ...draft, agentCommand: event.target.value })
-            }
-          />
-        </label>
-        <button type="submit">Save Settings</button>
-      </form>
     </section>
   );
 }
@@ -397,19 +296,17 @@ function PanelMessage({ title, detail }: { title: string; detail?: string }) {
   );
 }
 
-function firstTaskID(summary: Summary): number | null {
-  return summary.columns.flatMap((column) => column.tasks)[0]?.id ?? null;
+function firstIssueID(summary: Summary): number | null {
+  return summary.columns.flatMap((column) => column.issues)[0]?.id ?? null;
 }
 
 function tabTitle(tab: Tab): string {
   switch (tab) {
-    case "kanban":
-      return "Kanban";
-    case "agents":
-      return "Agents";
+    case "issues":
+      return "Issues";
+    case "runs":
+      return "Runs";
     case "detail":
       return "Detail";
-    case "settings":
-      return "Settings";
   }
 }

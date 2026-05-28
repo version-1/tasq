@@ -1,7 +1,10 @@
 DEVCONTAINER ?= devcontainer
 DEVCONTAINER_WORKSPACE ?= $(CURDIR)
 DEVCONTAINER_EXEC = $(DEVCONTAINER) exec --workspace-folder "$(DEVCONTAINER_WORKSPACE)"
-ORCHESTRATOR_CMD = go run ./cmd/orchestrator -addr :8080 -db tasq.sqlite
+ISSUE_TRACKER_CMD = go run ./cmd/issue-tracker -addr :8080 -db tasq-issues.sqlite
+ISSUE_TRACKER_LOG ?= /tmp/tasq-issue-tracker.log
+ISSUE_TRACKER_PID ?= /tmp/tasq-issue-tracker.pid
+ORCHESTRATOR_CMD = go run ./cmd/orchestrator -db tasq-orchestrator.sqlite -issue-tracker http://localhost:8080
 ORCHESTRATOR_LOG ?= /tmp/tasq-orchestrator.log
 ORCHESTRATOR_PID ?= /tmp/tasq-orchestrator.pid
 WEB_CMD = cd web && ./node_modules/.bin/next dev --hostname 0.0.0.0
@@ -52,7 +55,7 @@ dev-status: dev-check ## Show Dev Container status and tool versions.
 		printf "  %-12s %s\n" "Node:" "$$(node --version)"; \
 		printf "  %-12s %s\n" "npm:" "$$(npm --version)"; \
 		printf "\nProcesses\n"; \
-		ps -eo pid,stat,command | grep -E "go run ./cmd/orchestrator|next dev|cmd/tasq-tui" | grep -v grep || true; \
+		ps -eo pid,stat,command | grep -E "go run ./cmd/issue-tracker|go run ./cmd/orchestrator|next dev|cmd/tasq-tui" | grep -v grep || true; \
 	' 2>/dev/null; then \
 		:; \
 	else \
@@ -81,8 +84,21 @@ dev-test: dev-check ## Run Go tests and web UI typecheck inside the Dev Containe
 dev-build-app: dev-check ## Run production build checks inside the Dev Container.
 	$(DEVCONTAINER_EXEC) /bin/bash -lc 'go test ./... && cd web && npm run build'
 
+.PHONY: issue-tracker-up
+issue-tracker-up: dev-up ## Start the issue-tracker in the Dev Container background.
+	$(DEVCONTAINER_EXEC) /bin/bash -lc ' \
+		if [ -s "$(ISSUE_TRACKER_PID)" ] && kill -0 "$$(cat "$(ISSUE_TRACKER_PID)")" 2>/dev/null; then \
+			echo "issue-tracker already running"; \
+		else \
+			nohup $(ISSUE_TRACKER_CMD) > "$(ISSUE_TRACKER_LOG)" 2>&1 & echo $$! > "$(ISSUE_TRACKER_PID)"; \
+			echo "issue-tracker started"; \
+			echo "pid: $$(cat "$(ISSUE_TRACKER_PID)")"; \
+			echo "log: $(ISSUE_TRACKER_LOG)"; \
+		fi \
+	'
+
 .PHONY: orchestrator-up
-orchestrator-up: dev-up ## Start the orchestrator in the Dev Container background.
+orchestrator-up: issue-tracker-up ## Start the orchestrator in the Dev Container background.
 	$(DEVCONTAINER_EXEC) /bin/bash -lc ' \
 		if [ -s "$(ORCHESTRATOR_PID)" ] && kill -0 "$$(cat "$(ORCHESTRATOR_PID)")" 2>/dev/null; then \
 			echo "orchestrator already running"; \
@@ -95,7 +111,7 @@ orchestrator-up: dev-up ## Start the orchestrator in the Dev Container backgroun
 	'
 
 .PHONY: dev-orchestrator
-dev-orchestrator: dev-check ## Run the orchestrator in the Dev Container foreground.
+dev-orchestrator: issue-tracker-up ## Run the orchestrator in the Dev Container foreground.
 	$(DEVCONTAINER_EXEC) /bin/bash -lc '$(ORCHESTRATOR_CMD)'
 
 .PHONY: web-up
@@ -117,7 +133,7 @@ web-up: orchestrator-up ## Start orchestrator and the Next.js web UI in the Dev 
 	'
 
 .PHONY: tui-up
-tui-up: orchestrator-up ## Run orchestrator in the background and the TUI in the foreground.
+tui-up: orchestrator-up ## Run issue-tracker and orchestrator in the background, then the TUI in the foreground.
 	$(DEVCONTAINER_EXEC) /bin/bash -lc 'go run ./cmd/tasq-tui -api http://localhost:8080 -watch'
 
 .PHONY: dev-gui

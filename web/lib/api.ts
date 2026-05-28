@@ -1,7 +1,7 @@
-import type { Settings, Summary, Task, TaskStatus } from "@/lib/types";
+import type { Issue, IssueStatus, Summary } from "@/lib/types";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_ORCHESTRATOR_URL ?? "";
+  process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? "";
 
 async function request<T>(
   path: string,
@@ -30,16 +30,9 @@ export function fetchSummary(): Promise<Summary> {
   return request<Summary>("/api/v1/summary");
 }
 
-export function updateTaskStatus(id: number, status: TaskStatus): Promise<Task> {
-  return request<Task>(`/api/v1/tasks/${id}`, {
+export function updateIssueStatus(id: number, status: IssueStatus): Promise<Issue> {
+  return request<Issue>(`/api/v1/issues/${id}`, {
     method: "PATCH",
     body: JSON.stringify({ status }),
-  });
-}
-
-export function updateSettings(settings: Settings): Promise<Settings> {
-  return request<Settings>("/api/v1/settings", {
-    method: "PUT",
-    body: JSON.stringify(settings),
   });
 }

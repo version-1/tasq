@@ -1,64 +1,66 @@
-export const taskStatuses = [
+export const issueStatuses = [
   "backlog",
   "ready",
-  "running",
+  "in_progress",
   "review",
   "blocked",
   "failed",
   "done",
 ] as const;
 
-export type TaskStatus = (typeof taskStatuses)[number];
+export type IssueStatus = (typeof issueStatuses)[number];
 
 export const priorities = ["low", "normal", "high", "urgent"] as const;
 
 export type Priority = (typeof priorities)[number];
 
-export const agentStatuses = [
-  "idle",
+export const runStatuses = [
   "queued",
+  "starting",
   "running",
   "waiting_for_input",
   "succeeded",
   "failed",
+  "cancelled",
 ] as const;
 
-export type AgentStatus = (typeof agentStatuses)[number];
+export type RunStatus = (typeof runStatuses)[number];
 
-export type Task = {
+export type Issue = {
   id: number;
   title: string;
   description: string;
-  status: TaskStatus;
+  status: IssueStatus;
   priority: Priority;
-  agentStatus: AgentStatus;
   assignee: string;
-  source: string;
-  sourceId: string;
-  workspace: string;
-  attempts: number;
-  lastError: string;
   createdAt: string;
   updatedAt: string;
 };
 
-export type Column = {
-  status: TaskStatus;
-  title: string;
-  tasks: Task[];
+export type RunSnapshot = {
+  issueId: number;
+  workItemId: number;
+  runId: string;
+  status: RunStatus;
+  workspace: string;
+  attempt: number;
+  error: string;
+  orchestratorId: string;
+  updatedAt: string;
 };
 
-export type Settings = {
-  pollIntervalSeconds: number;
-  maxConcurrentRuns: number;
-  workspaceRoot: string;
-  trackerProvider: string;
-  agentCommand: string;
+export type IssueSummary = Issue & {
+  run?: RunSnapshot;
+};
+
+export type Column = {
+  status: IssueStatus;
+  title: string;
+  issues: IssueSummary[];
 };
 
 export type Summary = {
   columns: Column[];
-  agents: Task[];
-  settings: Settings;
+  runs: RunSnapshot[];
   generatedAt: string;
 };

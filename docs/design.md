@@ -1,325 +1,233 @@
 # Tasq Design
 
-Tasq is a Symphony-compatible task queue orchestrator for running coding agents against tracker tasks.
+Tasq is a local-first task execution system for managing issues, assigning executable work to coding agents, and observing agent run state from both a web UI and a TUI.
 
-The initial implementation focuses on the orchestration control plane: task state is stored in SQLite, exposed through a REST API, and consumed by both GUI and TUI clients. Agent execution and external tracker synchronization are intentionally left as later implementation slices.
+The current architecture separates issue management from orchestration. The issue-tracker owns issue state and the user-facing API. The orchestrator owns agent run state and work assignment state. UI clients talk to the issue-tracker only.
 
 ## Goals
 
-- Manage tasks and agent run state from one authoritative orchestrator.
-- Provide both GUI and TUI clients over the same REST API.
-- Keep the orchestrator independent from UI-specific state.
-- Preserve a path toward Symphony compatibility for workflow-driven agent execution.
-- Make implementation-defined policy explicit before it becomes hidden behavior.
+- Keep issue state and run state as separate concepts with separate owners.
+- Let web-ui and tui use one user-facing API surface.
+- Make work assignment safe for parallel orchestrator instances.
+- Preserve run state changes when the issue-tracker is temporarily unavailable.
+- Keep the first implementation slice small enough to verify before adding a real Codex app-server runner.
 
 ## Non-goals
 
-- A hosted multi-tenant service.
-- A rich dashboard beyond the task operations UI.
-- Direct built-in business rules for closing tracker tickets or linking pull requests.
-- A complete Codex app-server runner implementation in the initial slice.
-- A complete Linear synchronization implementation in the initial slice.
+- Hosted multi-tenant operation.
+- Production authentication and authorization.
+- A complete Codex app-server runner in the first slice.
+- Full workspace lifecycle management in the first slice.
+- External tracker integrations such as Linear in the first slice.
+- A distributed queue beyond the SQLite-backed issue-tracker work item queue.
 
-## Source Specification
+## Components
 
-Tasq is based on the Symphony `SPEC.md` contract.
+### web-ui
 
-Symphony defines the broad service shape: workflow loading, tracker polling, workspace management, agent running, retry/reconciliation behavior, structured logging, and optional status surfaces.
+The web-ui is a Next.js client for issue operations.
 
-Symphony intentionally leaves several policies implementation-defined. Tasq must document these policies as they are added, especially for sandboxing, approvals, workspace synchronization, retry limits, observability exposure, and restart recovery.
+Responsibilities:
 
-## System Architecture
+- Request issue summaries from the issue-tracker.
+- Display issue status, priority, assignee, and latest run state.
+- Move issues between issue statuses by calling the issue-tracker.
+- Avoid direct calls to the orchestrator.
 
-Tasq has three user-facing layers:
+### tui
 
-- GUI: React, TypeScript, and Next.js.
-- TUI: Go terminal client.
-- Orchestrator: Go service backed by SQLite.
+The TUI is a Go terminal client for the same issue-tracker API.
 
-The orchestrator is the only component that owns persistent system state. Both UIs communicate with the orchestrator through REST and do not read SQLite directly.
+Responsibilities:
+
+- Fetch issue summaries from the issue-tracker.
+- Render issue columns and latest run state.
+- Support one-shot and watch-mode rendering.
+- Avoid direct calls to the orchestrator.
+
+### issue-tracker
+
+The issue-tracker owns issue management and display aggregation.
+
+Responsibilities:
+
+- Store issues in SQLite.
+- Create, edit, and list issues.
+- Decide when an issue becomes executable.
+- Create work items when an issue is ready to run.
+- Expose a lease-backed work item claim API for orchestrators.
+- Receive orchestrator run events idempotently.
+- Apply issue status transitions based on run facts.
+- Serve the UI/TUI summary API.
+
+The issue-tracker is the source of truth for issue status, priority, title, description, assignee, work item claim state, and received orchestrator event ids.
+
+### orchestrator
+
+The orchestrator owns agent assignment and run state.
+
+Responsibilities:
+
+- Poll the issue-tracker work item queue.
+- Claim executable work items with a lease.
+- Create run records in its own SQLite database.
+- Emit run state changes through a durable outbox.
+- Retry outbox delivery to the issue-tracker until accepted.
+- In the MVP, simulate the run lifecycle enough to verify the boundary.
+
+The orchestrator is the source of truth for run records, run attempts, claim tokens attached to runs, and outbox delivery state.
+
+### agent
+
+The future agent is a Codex app-server process controlled by the orchestrator.
+
+Responsibilities:
+
+- Receive tasks from the orchestrator.
+- Execute the task inside a workspace.
+- Report execution progress to the orchestrator over JSON-RPC.
+
+The MVP does not start a real agent process. It records a minimal run lifecycle so the issue-tracker/orchestrator contract can be verified first.
+
+### workspace
+
+The future workspace manager provides isolated execution environments for agents.
+
+Responsibilities:
+
+- Create and manage git workspaces.
+- Support parallel execution and verification in devcontainers.
+- Retain enough metadata for debugging and recovery.
+
+The MVP stores workspace identifiers on run state but does not create or clean real workspaces.
+
+## Dependency Direction
+
+User-facing clients depend on the issue-tracker API only.
+
+The orchestrator depends on the issue-tracker work queue and event receiver APIs. The issue-tracker does not poll the orchestrator. Instead, it stores the latest run snapshots from orchestrator push events.
 
 ```text
-GUI (Next.js)  ─┐
-                ├─ REST API ─ Orchestrator (Go) ─ SQLite
-TUI (Go)      ─┘
+web-ui ─┐
+        ├─ issue-tracker ── SQLite: issues, work_items, received_events, run_snapshots
+tui ────┘       ▲
+                │ claim work item / push run event
+                │
+        orchestrator ───── SQLite: runs, outbox_events
+                │
+                ├─ future: agent-runner ── Codex app-server over JSON-RPC
+                └─ future: workspace manager ── git workspace / devcontainer
 ```
 
-## Responsibility Boundaries
+## State Ownership
 
-### Orchestrator
+Issue status and run status are separate.
 
-The orchestrator owns durable task state, global settings, API validation, and the canonical task summary.
-
-Current responsibilities:
-
-- Store task content and operational state.
-- Store global settings.
-- Serve task, summary, health, and settings endpoints.
-- Normalize task board columns.
-- Expose active agent status from task state.
-
-Planned responsibilities:
-
-- Load `WORKFLOW.md` definitions.
-- Poll external trackers such as Linear.
-- Create and manage workspaces.
-- Dispatch agent runs.
-- Record attempts, retries, terminal outcomes, and run errors.
-- Reconcile state after restart.
-
-### GUI
-
-The GUI is the browser-based operational interface.
-
-Current responsibilities:
-
-- Show a Kanban board.
-- Show active agent status.
-- Show task details.
-- Show and update global settings.
-- Move tasks between statuses through the REST API.
-
-The GUI must treat the REST API as the contract. It should not infer hidden orchestrator state.
-
-### TUI
-
-The TUI is the terminal-based operational interface.
-
-Current responsibilities:
-
-- Fetch the orchestrator summary endpoint.
-- Render active agent state.
-- Render tasks grouped as Kanban columns.
-- Support one-shot rendering and watch mode.
-
-Future TUI actions should use the same REST endpoints as the GUI.
-
-## Persistent State
-
-SQLite is the system-of-record for the orchestrator.
-
-Current tables:
-
-- `tasks`
-- `settings`
-
-The database is local to the orchestrator process. UIs must not connect to it.
-
-Runtime SQLite files are ignored by Git:
-
-- `*.sqlite`
-- `*.sqlite-shm`
-- `*.sqlite-wal`
-
-## Task Model
-
-A task represents a unit of work that can eventually be sourced from a tracker issue or created manually.
-
-Current fields:
-
-- `id`: internal numeric identifier.
-- `title`: required human-readable task name.
-- `description`: task body or context.
-- `status`: Kanban/workflow state.
-- `priority`: scheduling hint.
-- `agentStatus`: current agent execution state.
-- `assignee`: human or agent owner label.
-- `source`: origin system, such as `linear` or `manual`.
-- `sourceId`: tracker issue identifier when available.
-- `workspace`: workspace path or identifier.
-- `attempts`: number of run attempts.
-- `lastError`: latest execution or orchestration error.
-- `createdAt`: creation timestamp.
-- `updatedAt`: last update timestamp.
-
-## Status Model
-
-Task statuses:
+Issue status belongs to the issue-tracker:
 
 - `backlog`
 - `ready`
-- `running`
+- `in_progress`
 - `review`
 - `done`
 - `blocked`
 - `failed`
 
-Agent statuses:
+Run status belongs to the orchestrator:
 
-- `idle`
 - `queued`
+- `starting`
 - `running`
 - `waiting_for_input`
 - `succeeded`
 - `failed`
+- `cancelled`
 
-Priority values:
+The orchestrator never directly changes issue status. It emits run facts. The issue-tracker receives those facts and applies issue status rules.
 
-- `low`
-- `normal`
-- `high`
-- `urgent`
+## Work Item Queue
 
-## Kanban Semantics
+An issue becomes executable when its issue status is changed to `ready`.
 
-The Kanban board is a projection of task state.
+When an issue becomes `ready`, the issue-tracker creates a pending work item. The orchestrator does not scan all issues and does not decide whether an issue is executable. It polls the work item queue only.
 
-The orchestrator returns all board columns in a stable order, even when a column has no tasks. Empty task lists must be encoded as empty arrays, not `null`, so both GUI and TUI can use the same contract without special cases.
+Re-running the same issue creates a new work item. This keeps claim tokens, run attempts, and results tied to a single execution request.
 
-The current column order is:
+## Claim And Lease
 
-1. Backlog
-2. Ready
-3. Running
-4. Review
-5. Blocked
-6. Failed
-7. Done
+Work item claim is lease-backed.
 
-## REST API
+When an orchestrator claims a work item, the issue-tracker records:
 
-The REST API is the public contract between orchestrator and UIs.
+- `claimed_by`
+- `claim_token`
+- `lease_until`
+- incremented attempt count
 
-Current endpoints:
+If the orchestrator dies or stops renewing in a later implementation, the work item becomes claimable again after `lease_until`.
+
+The claim token is the generation marker for one work item claim. Orchestrator run events are applied only when their claim token matches the current claim token for the work item. Late events from expired claims are recorded for idempotency but are not allowed to update issue state.
+
+## Run Events And Outbox
+
+The orchestrator writes run events to its SQLite outbox before sending them to the issue-tracker.
+
+The issue-tracker accepts run events idempotently:
+
+- Each event has a unique `eventId`.
+- Processed event ids are stored in SQLite.
+- Duplicate event ids are treated as already accepted.
+
+This allows the orchestrator to retry delivery without double-applying state transitions.
+
+## Current MVP Behavior
+
+The current implementation slice includes:
+
+- `cmd/issue-tracker`
+- `cmd/orchestrator`
+- issue-tracker SQLite tables for issues, work items, received orchestrator events, and run snapshots.
+- orchestrator SQLite tables for runs and outbox events.
+- issue-tracker summary API consumed by web-ui and tui.
+- lease-backed work item claim API.
+- idempotent run event receiver.
+- orchestrator polling, claim, run creation, and outbox delivery.
+- a minimal simulated run lifecycle: `queued -> running -> succeeded`.
+
+The simulated lifecycle is intentionally temporary. Its purpose is to prove the service boundary before adding the Codex app-server runner and real workspace manager.
+
+## API Surface
+
+The issue-tracker is the user-facing API.
+
+Current issue-tracker endpoints:
 
 - `GET /api/v1/health`
 - `GET /api/v1/summary`
-- `GET /api/v1/tasks`
-- `POST /api/v1/tasks`
-- `GET /api/v1/tasks/{id}`
-- `PATCH /api/v1/tasks/{id}`
-- `GET /api/v1/settings`
-- `PUT /api/v1/settings`
-
-### Error Shape
+- `GET /api/v1/issues`
+- `POST /api/v1/issues`
+- `GET /api/v1/issues/{id}`
+- `PATCH /api/v1/issues/{id}`
+- `POST /api/v1/work-items/claim`
+- `POST /api/v1/orchestrator-events`
 
 Errors are returned as JSON objects with an `error` field.
 
-The API should keep this shape stable unless a versioned API is introduced.
-
-### CORS
-
-The orchestrator currently allows local browser origins that start with:
-
-- `http://localhost:`
-- `http://127.0.0.1:`
-
-This is a development-oriented policy. Production exposure requires a separate decision for authentication, allowed origins, and network binding.
-
-## Settings
-
-Current global settings:
-
-- `pollIntervalSeconds`
-- `maxConcurrentRuns`
-- `workspaceRoot`
-- `trackerProvider`
-- `agentCommand`
-
-Settings are stored in SQLite and exposed through REST.
-
-At this stage, settings are operational metadata. Not every setting is fully enforced by a running scheduler yet.
-
-## Workspace Policy
-
-Current implementation stores a workspace string on each task but does not create, sync, clean, or delete workspaces.
-
-Future workspace management must define:
-
-- How a workspace is populated.
-- Whether workspaces are Git worktrees, clones, or plain directories.
-- How existing workspace paths are handled.
-- What happens when a path exists but is not usable.
-- When terminal task workspaces are cleaned up.
-- What artifacts are retained for debugging.
-
-## Agent Runner Policy
-
-The initial implementation models agent status but does not run agents.
-
-Future agent execution must define:
-
-- Which Codex app-server protocol version is supported.
-- What command starts an agent session.
-- How approvals are surfaced.
-- What sandbox policy is used.
-- How user input requests are represented.
-- How rate-limit and usage signals affect scheduling.
-- Which terminal states update task status.
-
-## Tracker Policy
-
-The initial implementation does not poll Linear or any other tracker.
-
-Future tracker integration must define:
-
-- Which tracker fields map to Tasq task fields.
-- How tracker labels or states determine eligibility.
-- How duplicate tracker issues are reconciled.
-- Whether Tasq writes comments or state transitions back to the tracker.
-- Whether tracker updates are agent-owned, orchestrator-owned, or workflow-owned.
-
-By default, Symphony expects ticket business logic to live in workflow prompts and agent tooling rather than in the orchestrator.
-
-## Retry And Recovery Policy
-
-The initial implementation stores `attempts` and `lastError` but does not schedule retries.
-
-Future retry behavior must define:
-
-- Maximum retry count.
-- Backoff cap.
-- Which errors are retryable.
-- When a task becomes `failed` or `blocked`.
-- Whether operator intervention is required after repeated failures.
-
-Restart recovery must define what is reconstructed from SQLite, filesystem workspaces, and tracker state. Symphony does not require restoring in-memory retry timers or live worker sessions after process restart.
-
-## Observability
-
-Current observability:
-
-- HTTP request logging through the standard logger.
-- `GET /api/v1/health`.
-- `GET /api/v1/summary`.
-
-Future observability must define:
-
-- Structured log fields.
-- Log sink and retention.
-- Redaction rules.
-- Snapshot API stability.
-- Metrics and alerting scope.
-
-## Security And Trust
-
-Current trust posture is development-only.
-
-The REST API has no authentication. Local CORS is allowed. Agent execution is not yet implemented.
-
-Before running untrusted tasks or exposing the service beyond localhost, Tasq must define:
-
-- Authentication and authorization.
-- Allowed API origins.
-- Network bind policy.
-- Agent sandbox policy.
-- Approval policy.
-- Secret handling and redaction.
-- Workspace filesystem boundaries.
+The orchestrator currently has no user-facing HTTP API. Its external dependency is the issue-tracker API.
 
 ## Development Environment
 
-The repository provides a Dev Container with:
+The Dev Container runs the issue-tracker on container port `8080`, the web-ui on container port `3000`, and the orchestrator as a background worker.
 
-- Go 1.22.
-- Node.js 22.
-- GitHub CLI.
-- Forwarded ports `8080` and `3000`.
+Recommended commands:
 
-After container creation, dependencies are installed with:
+- `make issue-tracker-up`
+- `make orchestrator-up`
+- `make web-up`
+- `make tui-up`
+- `make dev-status`
 
-- `go mod download`
-- `npm install` in `web`
+`make web-up` starts the issue-tracker, orchestrator, and web-ui. The web UI proxies `/api/v1/...` to the issue-tracker inside the Dev Container.
 
 ## Verification
 
@@ -333,20 +241,23 @@ go test ./...
 cd web
 npm run typecheck
 npm run build
-npm audit --audit-level=moderate
 ```
+
+Manual MVP verification:
+
+1. Start issue-tracker and orchestrator.
+2. Create an issue with status `ready`.
+3. Confirm the issue-tracker creates a work item.
+4. Confirm the orchestrator claims it and emits run events.
+5. Confirm the issue-tracker summary shows the issue in `review` with latest run status `succeeded`.
 
 ## Open Decisions
 
-The following decisions are intentionally not final yet:
-
-- Exact Symphony compliance level for the first release.
-- Workflow file schema coverage and validation strictness.
-- Linear integration ownership and write-back policy.
-- Workspace implementation strategy.
-- Agent runner protocol version and sandbox defaults.
+- Exact Codex app-server JSON-RPC contract.
+- Agent runner process lifecycle and cancellation behavior.
+- Lease renewal cadence for long-running real agents.
+- Workspace implementation strategy and cleanup policy.
 - Retry limits and manual intervention thresholds.
-- API authentication and production exposure model.
-- Whether the GUI should remain a single tabbed page or split into routed pages.
-
-These should be resolved before implementing the corresponding subsystem.
+- Whether external tracker sync belongs inside issue-tracker or behind a provider interface.
+- Production authentication, authorization, and network exposure.
+- Whether run logs are stored directly in SQLite or referenced as filesystem artifacts.

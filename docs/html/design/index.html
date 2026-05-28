@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Tasq Architecture</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f6f7f9;
+        --panel: #ffffff;
+        --ink: #17202a;
+        --muted: #5f6b7a;
+        --line: #d8dee8;
+        --issue: #226f54;
+        --orch: #3658a8;
+        --ui: #9a5b13;
+        --future: #6c5a86;
+        --danger: #a43d3d;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        line-height: 1.5;
+      }
+
+      main {
+        width: min(1180px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 32px 0 48px;
+      }
+
+      header {
+        display: flex;
+        justify-content: space-between;
+        gap: 24px;
+        align-items: end;
+        margin-bottom: 24px;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        font-size: clamp(2rem, 5vw, 4rem);
+        line-height: 1;
+        letter-spacing: 0;
+      }
+
+      h2 {
+        font-size: 1.05rem;
+        margin-bottom: 12px;
+      }
+
+      .subtitle {
+        color: var(--muted);
+        max-width: 560px;
+        margin-top: 12px;
+      }
+
+      .badge {
+        border: 1px solid var(--line);
+        background: var(--panel);
+        border-radius: 6px;
+        padding: 8px 10px;
+        color: var(--muted);
+        white-space: nowrap;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: 1.2fr 0.8fr;
+        gap: 16px;
+      }
+
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 18px;
+      }
+
+      .architecture {
+        display: grid;
+        grid-template-columns: 1fr 1.35fr 1fr;
+        gap: 14px;
+        align-items: stretch;
+      }
+
+      .stack {
+        display: grid;
+        gap: 12px;
+      }
+
+      .service {
+        border: 1px solid var(--line);
+        border-left: 5px solid var(--line);
+        border-radius: 8px;
+        background: #fbfcfe;
+        padding: 14px;
+        min-height: 126px;
+      }
+
+      .service h3 {
+        font-size: 1rem;
+        margin-bottom: 8px;
+      }
+
+      .service p,
+      .service li {
+        color: var(--muted);
+        font-size: 0.92rem;
+      }
+
+      .service ul {
+        margin: 8px 0 0;
+        padding-left: 18px;
+      }
+
+      .ui {
+        border-left-color: var(--ui);
+      }
+
+      .issue {
+        border-left-color: var(--issue);
+      }
+
+      .orch {
+        border-left-color: var(--orch);
+      }
+
+      .future {
+        border-left-color: var(--future);
+      }
+
+      .flow {
+        display: grid;
+        gap: 10px;
+      }
+
+      .arrow {
+        border: 1px dashed var(--line);
+        border-radius: 8px;
+        padding: 10px;
+        background: #ffffff;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      .arrow strong {
+        display: block;
+        color: var(--ink);
+        font-size: 0.94rem;
+      }
+
+      .matrix {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.92rem;
+      }
+
+      .matrix th,
+      .matrix td {
+        border-bottom: 1px solid var(--line);
+        padding: 10px 8px;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      .matrix th {
+        color: var(--muted);
+        font-weight: 600;
+      }
+
+      .pill {
+        display: inline-block;
+        border-radius: 999px;
+        padding: 2px 8px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: #fff;
+      }
+
+      .pill.issue {
+        background: var(--issue);
+        border: 0;
+      }
+
+      .pill.orch {
+        background: var(--orch);
+        border: 0;
+      }
+
+      .pill.ui {
+        background: var(--ui);
+        border: 0;
+      }
+
+      .sequence {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .step {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fbfcfe;
+        padding: 12px;
+        min-height: 140px;
+      }
+
+      .step b {
+        display: block;
+        margin-bottom: 6px;
+      }
+
+      .step span {
+        color: var(--muted);
+        font-size: 0.88rem;
+      }
+
+      .note {
+        margin-top: 16px;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      @media (max-width: 920px) {
+        header,
+        .grid,
+        .architecture,
+        .sequence {
+          grid-template-columns: 1fr;
+        }
+
+        header {
+          align-items: start;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div>
+          <h1>Tasq Architecture</h1>
+          <p class="subtitle">Issue management and agent orchestration are separated into two SQLite-backed services. UI clients use the issue-tracker as the only user-facing API.</p>
+        </div>
+        <div class="badge">MVP slice: issue-tracker + orchestrator boundary</div>
+      </header>
+
+      <section class="grid">
+        <div class="panel">
+          <h2>Service Dependency Map</h2>
+          <div class="architecture" aria-label="Architecture dependency map">
+            <div class="stack">
+              <article class="service ui">
+                <h3>web-ui</h3>
+                <p>Next.js operational UI.</p>
+                <ul>
+                  <li>Calls issue-tracker only</li>
+                  <li>Shows issues and latest runs</li>
+                </ul>
+              </article>
+              <article class="service ui">
+                <h3>tui</h3>
+                <p>Go terminal UI.</p>
+                <ul>
+                  <li>Calls issue-tracker only</li>
+                  <li>Supports watch mode</li>
+                </ul>
+              </article>
+            </div>
+
+            <div class="stack">
+              <article class="service issue">
+                <h3>issue-tracker</h3>
+                <p>Source of truth for issue state and display aggregation.</p>
+                <ul>
+                  <li>SQLite: issues, work items, received events, run snapshots</li>
+                  <li>Creates work items when issues become ready</li>
+                  <li>Accepts idempotent orchestrator events</li>
+                </ul>
+              </article>
+              <div class="flow">
+                <div class="arrow"><strong>UI/TUI -> issue-tracker</strong>summary, issue CRUD, status updates</div>
+                <div class="arrow"><strong>orchestrator -> issue-tracker</strong>claim work item, push run event</div>
+              </div>
+            </div>
+
+            <div class="stack">
+              <article class="service orch">
+                <h3>orchestrator</h3>
+                <p>Source of truth for run state and outbox delivery.</p>
+                <ul>
+                  <li>SQLite: runs, outbox events</li>
+                  <li>Polls and claims work items</li>
+                  <li>Pushes run events with retry</li>
+                </ul>
+              </article>
+              <article class="service future">
+                <h3>future agent/workspace</h3>
+                <p>Codex app-server and git/devcontainer workspaces.</p>
+                <ul>
+                  <li>JSON-RPC agent protocol</li>
+                  <li>Parallel workspace execution</li>
+                </ul>
+              </article>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>State Ownership</h2>
+          <table class="matrix">
+            <thead>
+              <tr>
+                <th>State</th>
+                <th>Owner</th>
+                <th>Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Issue title, body, priority, status</td>
+                <td><span class="pill issue">issue-tracker</span></td>
+                <td>User-facing source of truth.</td>
+              </tr>
+              <tr>
+                <td>Work item claim and lease</td>
+                <td><span class="pill issue">issue-tracker</span></td>
+                <td>Prevents duplicate execution across orchestrators.</td>
+              </tr>
+              <tr>
+                <td>Run records and attempts</td>
+                <td><span class="pill orch">orchestrator</span></td>
+                <td>Created after successful claim.</td>
+              </tr>
+              <tr>
+                <td>Outbox delivery</td>
+                <td><span class="pill orch">orchestrator</span></td>
+                <td>Run events are retried until accepted.</td>
+              </tr>
+              <tr>
+                <td>Displayed run snapshot</td>
+                <td><span class="pill issue">issue-tracker</span></td>
+                <td>Derived from accepted orchestrator events.</td>
+              </tr>
+              <tr>
+                <td>Rendered dashboard</td>
+                <td><span class="pill ui">web-ui/tui</span></td>
+                <td>No direct orchestrator calls.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel" style="margin-top: 16px;">
+        <h2>Execution Sequence</h2>
+        <div class="sequence">
+          <article class="step">
+            <b>1. Ready issue</b>
+            <span>User moves an issue to ready. The issue-tracker creates a pending work item.</span>
+          </article>
+          <article class="step">
+            <b>2. Claim lease</b>
+            <span>Orchestrator polls the queue and claims one work item with claimed_by, claim_token, and lease_until.</span>
+          </article>
+          <article class="step">
+            <b>3. Run record</b>
+            <span>Orchestrator stores a run in its SQLite database and writes run events to the outbox.</span>
+          </article>
+          <article class="step">
+            <b>4. Event push</b>
+            <span>Outbox events are pushed to the issue-tracker. Duplicate event ids are accepted without double applying.</span>
+          </article>
+          <article class="step">
+            <b>5. Summary</b>
+            <span>Issue-tracker applies valid claim-token events, updates issue status, and serves summary to web-ui and tui.</span>
+          </article>
+        </div>
+        <p class="note">Late events from expired claim tokens are recorded as received events but do not update issue state.</p>
+      </section>
+    </main>
+  </body>
+</html>

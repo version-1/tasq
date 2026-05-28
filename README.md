@@ -1,14 +1,15 @@
 # tasq
 
-Symphony-compatible task queue orchestrator.
+Local-first issue tracker and task orchestrator.
 
-tasq provides a Go REST API backed by SQLite, a Next.js web UI, and a Go TUI that reads the same API.
+tasq provides a Go issue-tracker API backed by SQLite, a Go orchestrator backed by SQLite, a Next.js web UI, and a Go TUI.
 
 ## Components
 
-- Orchestrator: Go REST API backed by SQLite.
-- Web UI: React, TypeScript, and Next.js.
-- TUI: Go terminal client for the orchestrator API.
+- Issue Tracker: Go REST API backed by SQLite. It owns issues, work items, and UI summaries.
+- Orchestrator: Go worker backed by SQLite. It claims work items and records run state.
+- Web UI: React, TypeScript, and Next.js client for the issue-tracker API.
+- TUI: Go terminal client for the issue-tracker API.
 
 ## Recommended Development Flow
 
@@ -22,13 +23,13 @@ make dev-up
 
 If this is the first run, or if the Dev Container image changed, the command can take a while because it downloads the base image, installs features, and runs dependency setup.
 
-Start the web UI with the orchestrator. Both processes run in the Dev Container background:
+Start the web UI with the issue-tracker and orchestrator. All processes run in the Dev Container background:
 
 ```sh
 make web-up
 ```
 
-Or start the TUI with the orchestrator. The orchestrator runs in the Dev Container background, and the TUI runs in the foreground:
+Or start the TUI with the issue-tracker and orchestrator. Services run in the Dev Container background, and the TUI runs in the foreground:
 
 ```sh
 make tui-up
@@ -36,7 +37,7 @@ make tui-up
 
 The Dev Container publishes host ports automatically so multiple worktrees can run in parallel.
 Run `make dev-status` and open the host port mapped to container port `3000`.
-The web UI proxies `/api/v1/...` to the orchestrator inside the same Dev Container.
+The web UI proxies `/api/v1/...` to the issue-tracker inside the same Dev Container.
 If the published ports do not appear after changing `.devcontainer/devcontainer.json`, run `make dev-rebuild` so Docker recreates the container.
 
 Check the Dev Container status:
@@ -61,10 +62,11 @@ Run `make help` to list available commands.
 | `make dev-exec CMD="go test ./..."` | Run an arbitrary command inside the Dev Container. |
 | `make dev-test` | Run Go tests and web UI typecheck inside the Dev Container. |
 | `make dev-build-app` | Run Go tests and the web UI production build inside the Dev Container. |
-| `make orchestrator-up` | Start the orchestrator API in the Dev Container background. |
-| `make dev-orchestrator` | Run the orchestrator API in the Dev Container foreground. |
-| `make web-up` | Start the orchestrator and Next.js web UI in the Dev Container background. |
-| `make tui-up` | Start the orchestrator in the background and run the TUI in the foreground. |
+| `make issue-tracker-up` | Start the issue-tracker API in the Dev Container background. |
+| `make orchestrator-up` | Start the issue-tracker and orchestrator worker in the Dev Container background. |
+| `make dev-orchestrator` | Run the orchestrator worker in the Dev Container foreground. |
+| `make web-up` | Start the issue-tracker, orchestrator, and Next.js web UI in the Dev Container background. |
+| `make tui-up` | Start the issue-tracker and orchestrator in the background, then run the TUI in the foreground. |
 | `make dev-gui` | Alias-style command for `make web-up`. Prefer `make web-up`. |
 
 ## If `make dev-up` Fails
@@ -107,16 +109,22 @@ Check these in order:
    npm install
    ```
 
-The Dev Container forwards `8080` for the orchestrator API and `3000` for the Next.js web UI.
+The Dev Container forwards `8080` for the issue-tracker API and `3000` for the Next.js web UI.
 
 ## Host-Only Development
 
 You can also run the project directly on the host if Go, Node.js, and npm are installed.
 
+Run the issue-tracker:
+
+```sh
+go run ./cmd/issue-tracker -addr :8080 -db tasq-issues.sqlite
+```
+
 Run the orchestrator:
 
 ```sh
-go run ./cmd/orchestrator -addr :8080 -db tasq.sqlite
+go run ./cmd/orchestrator -db tasq-orchestrator.sqlite -issue-tracker http://localhost:8080
 ```
 
 Run the web UI:
@@ -133,23 +141,23 @@ Run the TUI:
 go run ./cmd/tasq-tui -api http://localhost:8080 -watch
 ```
 
-Set `NEXT_PUBLIC_ORCHESTRATOR_URL` only when the web UI should call an API outside the local Dev Container.
+Set `NEXT_PUBLIC_ISSUE_TRACKER_URL` only when the web UI should call an issue-tracker API outside the local Dev Container.
 
-## Create a Task
+## Create an Issue
 
 ```sh
-curl -X POST http://localhost:8080/api/v1/tasks \
+curl -X POST http://localhost:8080/api/v1/issues \
   -H 'Content-Type: application/json' \
-  -d '{"title":"Wire Symphony workflow","description":"Define the first workflow contract","status":"backlog","priority":"high"}'
+  -d '{"title":"Wire Symphony workflow","description":"Define the first workflow contract","status":"ready","priority":"high"}'
 ```
 
 ## REST API
 
 - `GET /api/v1/health`
 - `GET /api/v1/summary`
-- `GET /api/v1/tasks`
-- `POST /api/v1/tasks`
-- `GET /api/v1/tasks/{id}`
-- `PATCH /api/v1/tasks/{id}`
-- `GET /api/v1/settings`
-- `PUT /api/v1/settings`
+- `GET /api/v1/issues`
+- `POST /api/v1/issues`
+- `GET /api/v1/issues/{id}`
+- `PATCH /api/v1/issues/{id}`
+- `POST /api/v1/work-items/claim`
+- `POST /api/v1/orchestrator-events`
