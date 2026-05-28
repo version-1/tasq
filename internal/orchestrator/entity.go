@@ -26,6 +26,21 @@ type Run struct {
 	UpdatedAt      time.Time `json:"updatedAt"`
 }
 
+type RunEntity struct {
+	ID             int64  `db:"id"`
+	RunID          string `db:"run_id"`
+	IssueID        int64  `db:"issue_id"`
+	WorkItemID     int64  `db:"work_item_id"`
+	ClaimToken     string `db:"claim_token"`
+	Status         string `db:"status"`
+	Workspace      string `db:"workspace"`
+	Attempt        int    `db:"attempt"`
+	Error          string `db:"error"`
+	OrchestratorID string `db:"orchestrator_id"`
+	CreatedAt      string `db:"created_at"`
+	UpdatedAt      string `db:"updated_at"`
+}
+
 type OutboxEvent struct {
 	ID             int64      `json:"id"`
 	EventID        string     `json:"eventId"`
@@ -40,4 +55,20 @@ type OutboxEvent struct {
 	OrchestratorID string     `json:"orchestratorId"`
 	OccurredAt     time.Time  `json:"occurredAt"`
 	SentAt         *time.Time `json:"sentAt,omitempty"`
+}
+
+type OutboxEventEntity struct {
+	ID             int64  `db:"id"`
+	EventID        string `db:"event_id"`
+	RunID          string `db:"run_id"`
+	IssueID        int64  `db:"issue_id"`
+	WorkItemID     int64  `db:"work_item_id"`
+	ClaimToken     string `db:"claim_token"`
+	Status         string `db:"status"`
+	Workspace      string `db:"workspace"`
+	Attempt        int    `db:"attempt"`
+	Error          string `db:"error"`
+	OrchestratorID string `db:"orchestrator_id"`
+	OccurredAt     string `db:"occurred_at"`
+	SentAt         string `db:"sent_at"`
 }
