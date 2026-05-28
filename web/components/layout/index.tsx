@@ -1,13 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { AgentsView } from "@/app/agents/_components/agents-view";
-import { IssuesView } from "@/app/issues/_components/issues-view";
-import { SettingsView } from "@/app/settings/_components/settings-view";
+import { usePathname } from "next/navigation";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import { fetchSummary, updateIssueStatus } from "@/lib/api";
 import type { IssueStatus, IssueSummary, Summary } from "@/lib/types";
-import styles from "./tasq-shell.module.css";
+import styles from "./index.module.css";
 
 export type TasqPage = "issues" | "agents" | "settings";
 
@@ -15,6 +21,18 @@ type LoadState =
   | { kind: "loading" }
   | { kind: "ready"; summary: Summary }
   | { kind: "error"; message: string };
+
+type LayoutData = {
+  summary: Summary;
+  issues: IssueSummary[];
+  selectedIssue: IssueSummary | null;
+  refreshIntervalMs: number;
+  onRefreshIntervalChange: (intervalMs: number) => void;
+  onSelectIssue: (issueID: number) => void;
+  onStatusChange: (id: number, status: IssueStatus) => Promise<void>;
+};
+
+const layoutDataContext = createContext<LayoutData | null>(null);
 
 const pages = [
   { key: "issues", href: "/issues", title: "Issues" },
@@ -24,7 +42,9 @@ const pages = [
 
 const defaultRefreshIntervalMs = 3000;
 
-export function TasqShell({ activePage }: { activePage: TasqPage }) {
+export function Layout({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
+  const activePage = activePageFromPathname(pathname);
   const [loadState, setLoadState] = useState<LoadState>({ kind: "loading" });
   const [selectedIssueID, setSelectedIssueID] = useState<number | null>(null);
   const [notice, setNotice] = useState("");
@@ -82,6 +102,18 @@ export function TasqShell({ activePage }: { activePage: TasqPage }) {
     window.localStorage.setItem("tasq.refreshIntervalMs", String(nextIntervalMs));
   }
 
+  const layoutData = summary
+    ? {
+        summary,
+        issues,
+        selectedIssue,
+        refreshIntervalMs,
+        onRefreshIntervalChange: handleRefreshIntervalChange,
+        onSelectIssue: setSelectedIssueID,
+        onStatusChange: handleStatusChange,
+      }
+    : null;
+
   return (
     <main className={styles.shell}>
       <header className={styles.topbar}>
@@ -116,59 +148,21 @@ export function TasqShell({ activePage }: { activePage: TasqPage }) {
       {loadState.kind === "error" ? (
         <PanelMessage title="API unavailable" detail={loadState.message} />
       ) : null}
-      {summary ? (
-        <PageView
-          activePage={activePage}
-          summary={summary}
-          selectedIssue={selectedIssue}
-          refreshIntervalMs={refreshIntervalMs}
-          onRefreshIntervalChange={handleRefreshIntervalChange}
-          onSelectIssue={(issueID) => setSelectedIssueID(issueID)}
-          onStatusChange={handleStatusChange}
-        />
+      {layoutData ? (
+        <layoutDataContext.Provider value={layoutData}>
+          {children}
+        </layoutDataContext.Provider>
       ) : null}
     </main>
   );
 }
 
-function PageView({
-  activePage,
-  summary,
-  selectedIssue,
-  refreshIntervalMs,
-  onRefreshIntervalChange,
-  onSelectIssue,
-  onStatusChange,
-}: {
-  activePage: TasqPage;
-  summary: Summary;
-  selectedIssue: IssueSummary | null;
-  refreshIntervalMs: number;
-  onRefreshIntervalChange: (intervalMs: number) => void;
-  onSelectIssue: (issueID: number) => void;
-  onStatusChange: (id: number, status: IssueStatus) => Promise<void>;
-}) {
-  switch (activePage) {
-    case "agents":
-      return <AgentsView runs={summary.runs} />;
-    case "settings":
-      return (
-        <SettingsView
-          refreshIntervalMs={refreshIntervalMs}
-          generatedAt={summary.generatedAt}
-          onRefreshIntervalChange={onRefreshIntervalChange}
-        />
-      );
-    case "issues":
-      return (
-        <IssuesView
-          summary={summary}
-          selectedIssue={selectedIssue}
-          onSelectIssue={onSelectIssue}
-          onStatusChange={onStatusChange}
-        />
-      );
+export function useLayoutData(): LayoutData {
+  const layoutData = useContext(layoutDataContext);
+  if (!layoutData) {
+    throw new Error("useLayoutData must be used inside Layout");
   }
+  return layoutData;
 }
 
 function PanelMessage({ title, detail }: { title: string; detail?: string }) {
@@ -182,6 +176,14 @@ function PanelMessage({ title, detail }: { title: string; detail?: string }) {
 
 function firstIssueID(summary: Summary): number | null {
   return summary.columns.flatMap((column) => column.issues)[0]?.id ?? null;
+}
+
+function activePageFromPathname(pathname: string): TasqPage {
+  const segment = pathname.split("/").filter(Boolean)[0];
+  if (segment === "agents" || segment === "settings") {
+    return segment;
+  }
+  return "issues";
 }
 
 function pageHeading(page: TasqPage): string {

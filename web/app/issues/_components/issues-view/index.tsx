@@ -2,7 +2,7 @@
 
 import type { IssueStatus, IssueSummary, Summary } from "@/lib/types";
 import { issueStatuses } from "@/lib/types";
-import styles from "./issues-view.module.css";
+import styles from "./index.module.css";
 
 type StatusChangeHandler = (id: number, status: IssueStatus) => Promise<void>;
 

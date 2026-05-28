@@ -1,4 +1,4 @@
-import styles from "./settings-view.module.css";
+import styles from "./index.module.css";
 
 export function SettingsView({
   refreshIntervalMs,

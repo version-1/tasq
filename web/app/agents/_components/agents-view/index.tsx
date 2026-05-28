@@ -1,5 +1,5 @@
 import type { RunSnapshot } from "@/lib/types";
-import styles from "./agents-view.module.css";
+import styles from "./index.module.css";
 
 export function AgentsView({ runs }: { runs: RunSnapshot[] }) {
   return (

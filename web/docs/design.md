@@ -16,6 +16,8 @@ The root `/` route redirects to `/issues`.
 
 Shared shell concerns, such as navigation, summary loading, refresh handling, and page selection, live outside route-specific component directories.
 
+Common components that are intentionally shared by multiple routes belong under `web/components`.
+
 Page-specific components live under the owning route's `_components` directory:
 
 - Issue page components belong in `web/app/issues/_components`.
@@ -24,7 +26,7 @@ Page-specific components live under the owning route's `_components` directory:
 
 Keep components close to the route that owns their behavior. Move code to `web/components` only when it is genuinely shared across routes.
 
-Each component must use a directory named after the component. Put the implementation, CSS Module, and component tests in that directory:
+Each component, whether shared or route-specific, must use a directory named after the component. Put the implementation, CSS Module, and component tests in that directory:
 
 ```text
 <component-name>/
@@ -41,8 +43,8 @@ Keep `web/app/globals.css` limited to global tokens and base element resets. Fea
 
 Examples:
 
-- `web/components/tasq-shell.module.css`
-- `web/app/issues/_components/issues-view.module.css`
-- `web/app/agents/_components/agents-view.module.css`
+- `web/components/layout/index.module.css`
+- `web/app/issues/_components/issues-view/index.module.css`
+- `web/app/agents/_components/agents-view/index.module.css`
 
 Do not add feature-specific class selectors to `web/app/globals.css`.
