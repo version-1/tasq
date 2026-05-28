@@ -6,10 +6,19 @@
   --text: #17202a;
   --muted: #667085;
   --accent: #1769aa;
+  --accent-color: #7C3AED;
+  --glow-color: #A78BFA;
   --accent-strong: #0f4c81;
   --danger: #b42318;
   --warning: #a15c07;
   --ok: #087443;
+  --primary-black: #0A0A0A;
+  --dark-gray: #1A1A1A;
+  --medium-gray: #666666;
+  --light-gray: #E5E5E5;
+  --extra-light-gray: #F5F5F5;
+  --white: #FFFFFF;
+  accent-color: var(--accent-color);
 }
 
 * {
