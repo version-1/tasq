@@ -25,6 +25,16 @@ func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/v1/health", s.health)
 	mux.HandleFunc("GET /api/v1/summary", s.summary)
+	mux.HandleFunc("GET /api/v1/projects", s.projects)
+	mux.HandleFunc("POST /api/v1/projects", s.createProject)
+	mux.HandleFunc("GET /api/v1/projects/{id}", s.project)
+	mux.HandleFunc("PATCH /api/v1/projects/{id}", s.updateProject)
+	mux.HandleFunc("DELETE /api/v1/projects/{id}", s.deleteProject)
+	mux.HandleFunc("GET /api/v1/workspaces", s.workspaces)
+	mux.HandleFunc("POST /api/v1/workspaces", s.createWorkspace)
+	mux.HandleFunc("GET /api/v1/workspaces/{id}", s.workspace)
+	mux.HandleFunc("PATCH /api/v1/workspaces/{id}", s.updateWorkspace)
+	mux.HandleFunc("DELETE /api/v1/workspaces/{id}", s.deleteWorkspace)
 	mux.HandleFunc("GET /api/v1/issues", s.issues)
 	mux.HandleFunc("POST /api/v1/issues", s.createIssue)
 	mux.HandleFunc("GET /api/v1/issues/{id}", s.issue)
@@ -45,6 +55,138 @@ func (s *Server) summary(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, summary)
+}
+
+func (s *Server) projects(w http.ResponseWriter, r *http.Request) {
+	items, err := s.store.Projects(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, items)
+}
+
+func (s *Server) createProject(w http.ResponseWriter, r *http.Request) {
+	var input issue.CreateProjectInput
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	created, err := s.store.CreateProject(r.Context(), input)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	writeJSON(w, http.StatusCreated, created)
+}
+
+func (s *Server) project(w http.ResponseWriter, r *http.Request) {
+	id, ok := pathID(w, r, "project")
+	if !ok {
+		return
+	}
+	item, err := s.store.Project(r.Context(), id)
+	if err != nil {
+		writeStoreError(w, err, "project")
+		return
+	}
+	writeJSON(w, http.StatusOK, item)
+}
+
+func (s *Server) updateProject(w http.ResponseWriter, r *http.Request) {
+	id, ok := pathID(w, r, "project")
+	if !ok {
+		return
+	}
+	var input issue.UpdateProjectInput
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	updated, err := s.store.UpdateProject(r.Context(), id, input)
+	if err != nil {
+		writeStoreError(w, err, "project")
+		return
+	}
+	writeJSON(w, http.StatusOK, updated)
+}
+
+func (s *Server) deleteProject(w http.ResponseWriter, r *http.Request) {
+	id, ok := pathID(w, r, "project")
+	if !ok {
+		return
+	}
+	if err := s.store.DeleteProject(r.Context(), id); err != nil {
+		writeStoreError(w, err, "project")
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *Server) workspaces(w http.ResponseWriter, r *http.Request) {
+	items, err := s.store.Workspaces(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, items)
+}
+
+func (s *Server) createWorkspace(w http.ResponseWriter, r *http.Request) {
+	var input issue.CreateWorkspaceInput
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	created, err := s.store.CreateWorkspace(r.Context(), input)
+	if err != nil {
+		writeStoreError(w, err, "workspace")
+		return
+	}
+	writeJSON(w, http.StatusCreated, created)
+}
+
+func (s *Server) workspace(w http.ResponseWriter, r *http.Request) {
+	id, ok := pathID(w, r, "workspace")
+	if !ok {
+		return
+	}
+	item, err := s.store.Workspace(r.Context(), id)
+	if err != nil {
+		writeStoreError(w, err, "workspace")
+		return
+	}
+	writeJSON(w, http.StatusOK, item)
+}
+
+func (s *Server) updateWorkspace(w http.ResponseWriter, r *http.Request) {
+	id, ok := pathID(w, r, "workspace")
+	if !ok {
+		return
+	}
+	var input issue.UpdateWorkspaceInput
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	updated, err := s.store.UpdateWorkspace(r.Context(), id, input)
+	if err != nil {
+		writeStoreError(w, err, "workspace")
+		return
+	}
+	writeJSON(w, http.StatusOK, updated)
+}
+
+func (s *Server) deleteWorkspace(w http.ResponseWriter, r *http.Request) {
+	id, ok := pathID(w, r, "workspace")
+	if !ok {
+		return
+	}
+	if err := s.store.DeleteWorkspace(r.Context(), id); err != nil {
+		writeStoreError(w, err, "workspace")
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (s *Server) issues(w http.ResponseWriter, r *http.Request) {
@@ -77,7 +219,7 @@ func (s *Server) issue(w http.ResponseWriter, r *http.Request) {
 	}
 	item, err := s.store.Issue(r.Context(), id)
 	if err != nil {
-		writeStoreError(w, err)
+		writeStoreError(w, err, "issue")
 		return
 	}
 	writeJSON(w, http.StatusOK, item)
@@ -95,7 +237,7 @@ func (s *Server) updateIssue(w http.ResponseWriter, r *http.Request) {
 	}
 	updated, err := s.store.UpdateIssue(r.Context(), id, input)
 	if err != nil {
-		writeStoreError(w, err)
+		writeStoreError(w, err, "issue")
 		return
 	}
 	writeJSON(w, http.StatusOK, updated)
@@ -129,17 +271,21 @@ func (s *Server) receiveRunEvent(w http.ResponseWriter, r *http.Request) {
 }
 
 func issueID(w http.ResponseWriter, r *http.Request) (int64, bool) {
+	return pathID(w, r, "issue")
+}
+
+func pathID(w http.ResponseWriter, r *http.Request, resource string) (int64, bool) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil || id <= 0 {
-		writeError(w, http.StatusBadRequest, errors.New("issue id is invalid"))
+		writeError(w, http.StatusBadRequest, errors.New(resource+" id is invalid"))
 		return 0, false
 	}
 	return id, true
 }
 
-func writeStoreError(w http.ResponseWriter, err error) {
+func writeStoreError(w http.ResponseWriter, err error, resource string) {
 	if errors.Is(err, sql.ErrNoRows) {
-		writeError(w, http.StatusNotFound, errors.New("issue not found"))
+		writeError(w, http.StatusNotFound, errors.New(resource+" not found"))
 		return
 	}
 	writeError(w, http.StatusBadRequest, err)
@@ -171,7 +317,7 @@ func withCORS(next http.Handler) http.Handler {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 			w.Header().Set("Vary", "Origin")
 			w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, PUT, OPTIONS")
 		}
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusNoContent)

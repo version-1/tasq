@@ -26,6 +26,29 @@ export const runStatuses = [
 
 export type RunStatus = (typeof runStatuses)[number];
 
+export const workspaceStatuses = ["active", "inactive", "archived"] as const;
+
+export type WorkspaceStatus = (typeof workspaceStatuses)[number];
+
+export type Project = {
+  id: number;
+  key: string;
+  name: string;
+  description: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type Workspace = {
+  id: number;
+  projectId: number;
+  name: string;
+  path: string;
+  status: WorkspaceStatus;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type Issue = {
   id: number;
   title: string;

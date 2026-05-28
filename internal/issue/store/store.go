@@ -44,6 +44,255 @@ func (s *Store) migrate(ctx context.Context) error {
 	return nil
 }
 
+func (s *Store) CreateProject(ctx context.Context, input issue.CreateProjectInput) (issue.Project, error) {
+	normalized, err := issue.NormalizeCreateProject(input)
+	if err != nil {
+		return issue.Project{}, err
+	}
+	now := nowString()
+	result, err := s.db.ExecContext(ctx, `INSERT INTO projects (
+		key, name, description, created_at, updated_at
+	) VALUES (?, ?, ?, ?, ?)`,
+		normalized.Key,
+		normalized.Name,
+		normalized.Description,
+		now,
+		now,
+	)
+	if err != nil {
+		return issue.Project{}, fmt.Errorf("create project: %w", err)
+	}
+	id, err := result.LastInsertId()
+	if err != nil {
+		return issue.Project{}, fmt.Errorf("read created project id: %w", err)
+	}
+	return s.Project(ctx, id)
+}
+
+func (s *Store) Projects(ctx context.Context) ([]issue.Project, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT `+projectColumns()+` FROM projects ORDER BY updated_at DESC, id DESC`)
+	if err != nil {
+		return nil, fmt.Errorf("list projects: %w", err)
+	}
+	defer rows.Close()
+
+	var projects []issue.Project
+	for rows.Next() {
+		item, err := scanProject(rows)
+		if err != nil {
+			return nil, err
+		}
+		projects = append(projects, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate projects: %w", err)
+	}
+	return projects, nil
+}
+
+func (s *Store) Project(ctx context.Context, id int64) (issue.Project, error) {
+	row := s.db.QueryRowContext(ctx, `SELECT `+projectColumns()+` FROM projects WHERE id = ?`, id)
+	item, err := scanProject(row)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return issue.Project{}, sql.ErrNoRows
+		}
+		return issue.Project{}, fmt.Errorf("read project: %w", err)
+	}
+	return item, nil
+}
+
+func (s *Store) UpdateProject(ctx context.Context, id int64, input issue.UpdateProjectInput) (issue.Project, error) {
+	current, err := s.Project(ctx, id)
+	if err != nil {
+		return issue.Project{}, err
+	}
+	if input.Key != nil {
+		if *input.Key == "" {
+			return issue.Project{}, errors.New("key is required")
+		}
+		current.Key = *input.Key
+	}
+	if input.Name != nil {
+		if *input.Name == "" {
+			return issue.Project{}, errors.New("name is required")
+		}
+		current.Name = *input.Name
+	}
+	if input.Description != nil {
+		current.Description = *input.Description
+	}
+	_, err = s.db.ExecContext(ctx, `UPDATE projects SET
+		key = ?, name = ?, description = ?, updated_at = ?
+		WHERE id = ?`,
+		current.Key,
+		current.Name,
+		current.Description,
+		nowString(),
+		id,
+	)
+	if err != nil {
+		return issue.Project{}, fmt.Errorf("update project: %w", err)
+	}
+	return s.Project(ctx, id)
+}
+
+func (s *Store) DeleteProject(ctx context.Context, id int64) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if tx != nil {
+			_ = tx.Rollback()
+		}
+	}()
+	if _, err := tx.ExecContext(ctx, `DELETE FROM workspaces WHERE project_id = ?`, id); err != nil {
+		return fmt.Errorf("delete project workspaces: %w", err)
+	}
+	result, err := tx.ExecContext(ctx, `DELETE FROM projects WHERE id = ?`, id)
+	if err != nil {
+		return fmt.Errorf("delete project: %w", err)
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected == 0 {
+		return sql.ErrNoRows
+	}
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	tx = nil
+	return nil
+}
+
+func (s *Store) CreateWorkspace(ctx context.Context, input issue.CreateWorkspaceInput) (issue.Workspace, error) {
+	normalized, err := issue.NormalizeCreateWorkspace(input)
+	if err != nil {
+		return issue.Workspace{}, err
+	}
+	if _, err := s.Project(ctx, normalized.ProjectID); err != nil {
+		return issue.Workspace{}, err
+	}
+	now := nowString()
+	result, err := s.db.ExecContext(ctx, `INSERT INTO workspaces (
+		project_id, name, path, status, created_at, updated_at
+	) VALUES (?, ?, ?, ?, ?, ?)`,
+		normalized.ProjectID,
+		normalized.Name,
+		normalized.Path,
+		normalized.Status,
+		now,
+		now,
+	)
+	if err != nil {
+		return issue.Workspace{}, fmt.Errorf("create workspace: %w", err)
+	}
+	id, err := result.LastInsertId()
+	if err != nil {
+		return issue.Workspace{}, fmt.Errorf("read created workspace id: %w", err)
+	}
+	return s.Workspace(ctx, id)
+}
+
+func (s *Store) Workspaces(ctx context.Context) ([]issue.Workspace, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT `+workspaceColumns()+` FROM workspaces ORDER BY updated_at DESC, id DESC`)
+	if err != nil {
+		return nil, fmt.Errorf("list workspaces: %w", err)
+	}
+	defer rows.Close()
+
+	var workspaces []issue.Workspace
+	for rows.Next() {
+		item, err := scanWorkspace(rows)
+		if err != nil {
+			return nil, err
+		}
+		workspaces = append(workspaces, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate workspaces: %w", err)
+	}
+	return workspaces, nil
+}
+
+func (s *Store) Workspace(ctx context.Context, id int64) (issue.Workspace, error) {
+	row := s.db.QueryRowContext(ctx, `SELECT `+workspaceColumns()+` FROM workspaces WHERE id = ?`, id)
+	item, err := scanWorkspace(row)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return issue.Workspace{}, sql.ErrNoRows
+		}
+		return issue.Workspace{}, fmt.Errorf("read workspace: %w", err)
+	}
+	return item, nil
+}
+
+func (s *Store) UpdateWorkspace(ctx context.Context, id int64, input issue.UpdateWorkspaceInput) (issue.Workspace, error) {
+	current, err := s.Workspace(ctx, id)
+	if err != nil {
+		return issue.Workspace{}, err
+	}
+	if input.ProjectID != nil {
+		if *input.ProjectID <= 0 {
+			return issue.Workspace{}, errors.New("projectId is required")
+		}
+		if _, err := s.Project(ctx, *input.ProjectID); err != nil {
+			return issue.Workspace{}, err
+		}
+		current.ProjectID = *input.ProjectID
+	}
+	if input.Name != nil {
+		if *input.Name == "" {
+			return issue.Workspace{}, errors.New("name is required")
+		}
+		current.Name = *input.Name
+	}
+	if input.Path != nil {
+		if *input.Path == "" {
+			return issue.Workspace{}, errors.New("path is required")
+		}
+		current.Path = *input.Path
+	}
+	if input.Status != nil {
+		if !issue.IsValidWorkspaceStatus(*input.Status) {
+			return issue.Workspace{}, errors.New("status is invalid")
+		}
+		current.Status = *input.Status
+	}
+	_, err = s.db.ExecContext(ctx, `UPDATE workspaces SET
+		project_id = ?, name = ?, path = ?, status = ?, updated_at = ?
+		WHERE id = ?`,
+		current.ProjectID,
+		current.Name,
+		current.Path,
+		current.Status,
+		nowString(),
+		id,
+	)
+	if err != nil {
+		return issue.Workspace{}, fmt.Errorf("update workspace: %w", err)
+	}
+	return s.Workspace(ctx, id)
+}
+
+func (s *Store) DeleteWorkspace(ctx context.Context, id int64) error {
+	result, err := s.db.ExecContext(ctx, `DELETE FROM workspaces WHERE id = ?`, id)
+	if err != nil {
+		return fmt.Errorf("delete workspace: %w", err)
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
+}
+
 func (s *Store) CreateIssue(ctx context.Context, input issue.CreateIssueInput) (issue.Issue, error) {
 	normalized, err := issue.NormalizeCreate(input)
 	if err != nil {
@@ -420,6 +669,14 @@ func issueColumns() string {
 	return `id, title, description, status, priority, assignee, created_at, updated_at`
 }
 
+func projectColumns() string {
+	return `id, key, name, description, created_at, updated_at`
+}
+
+func workspaceColumns() string {
+	return `id, project_id, name, path, status, created_at, updated_at`
+}
+
 type rowScanner interface {
 	Scan(dest ...any) error
 }
@@ -439,6 +696,48 @@ func scanIssue(row rowScanner) (issue.Issue, error) {
 	parsedUpdatedAt, err := parseTime(updatedAt)
 	if err != nil {
 		return issue.Issue{}, err
+	}
+	item.CreatedAt = parsedCreatedAt
+	item.UpdatedAt = parsedUpdatedAt
+	return item, nil
+}
+
+func scanProject(row rowScanner) (issue.Project, error) {
+	var item issue.Project
+	var createdAt string
+	var updatedAt string
+	err := row.Scan(&item.ID, &item.Key, &item.Name, &item.Description, &createdAt, &updatedAt)
+	if err != nil {
+		return issue.Project{}, err
+	}
+	parsedCreatedAt, err := parseTime(createdAt)
+	if err != nil {
+		return issue.Project{}, err
+	}
+	parsedUpdatedAt, err := parseTime(updatedAt)
+	if err != nil {
+		return issue.Project{}, err
+	}
+	item.CreatedAt = parsedCreatedAt
+	item.UpdatedAt = parsedUpdatedAt
+	return item, nil
+}
+
+func scanWorkspace(row rowScanner) (issue.Workspace, error) {
+	var item issue.Workspace
+	var createdAt string
+	var updatedAt string
+	err := row.Scan(&item.ID, &item.ProjectID, &item.Name, &item.Path, &item.Status, &createdAt, &updatedAt)
+	if err != nil {
+		return issue.Workspace{}, err
+	}
+	parsedCreatedAt, err := parseTime(createdAt)
+	if err != nil {
+		return issue.Workspace{}, err
+	}
+	parsedUpdatedAt, err := parseTime(updatedAt)
+	if err != nil {
+		return issue.Workspace{}, err
 	}
 	item.CreatedAt = parsedCreatedAt
 	item.UpdatedAt = parsedUpdatedAt
