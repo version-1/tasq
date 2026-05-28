@@ -18,14 +18,17 @@ dev-check: ## Check that Docker CLI and Compose are installed.
 		exit 1; \
 	}
 
-.PHONY: dev-up
-dev-up: dev-check ## Start issue-tracker, orchestrator, and web UI with Docker Compose.
+.PHONY: dev-up-forward
+dev-up-forward: dev-check ## Start issue-tracker, orchestrator, and web UI in the foreground.
 	ISSUE_TRACKER_PORT=$(ISSUE_TRACKER_PORT) WEB_PORT=$(WEB_PORT) $(COMPOSE) up --build issue-tracker orchestrator web
 
-.PHONY: dev-up-d
-dev-up-d: dev-check ## Start all Compose services in the background.
+.PHONY: dev-up
+dev-up: dev-check ## Start issue-tracker, orchestrator, and web UI in the background.
 	ISSUE_TRACKER_PORT=$(ISSUE_TRACKER_PORT) WEB_PORT=$(WEB_PORT) $(COMPOSE) up --build -d issue-tracker orchestrator web
 	$(MAKE) dev-ports
+
+.PHONY: dev-up-d
+dev-up-d: dev-up
 
 .PHONY: dev-down
 dev-down: dev-check ## Stop Compose services.
@@ -85,7 +88,7 @@ orchestrator-up: dev-check ## Start the issue-tracker and orchestrator with Dock
 	ISSUE_TRACKER_PORT=$(ISSUE_TRACKER_PORT) $(COMPOSE) up --build -d issue-tracker orchestrator
 
 .PHONY: web-up
-web-up: dev-up-d ## Start issue-tracker, orchestrator, and Next.js web UI in the background.
+web-up: dev-up ## Start issue-tracker, orchestrator, and Next.js web UI in the background.
 
 .PHONY: tui-up
 tui-up: orchestrator-up ## Run the TUI on the host against the Compose issue-tracker API.

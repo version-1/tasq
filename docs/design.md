@@ -225,6 +225,8 @@ Recommended commands:
 
 - `make issue-tracker-up`
 - `make orchestrator-up`
+- `make dev-up`
+- `make dev-up-forward`
 - `make web-up`
 - `make tui-up`
 - `make dev-status`
