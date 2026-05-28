@@ -34,6 +34,14 @@ Responsibilities:
 - Move issues between issue statuses by calling the issue-tracker.
 - Avoid direct calls to the orchestrator.
 
+Structure:
+
+- User-facing views are split by App Router pages: `/issues`, `/agents`, and `/settings`.
+- Shared shell concerns, such as navigation and summary loading, live outside route-specific component directories.
+- Page-specific components live under the owning route's `_components` directory. For example, issue page components belong in `web/app/issues/_components`, and agent page components belong in `web/app/agents/_components`.
+- The Next.js app uses CSS Modules for component and page styling. Keep `web/app/globals.css` limited to global tokens and base element resets.
+- Keep feature-specific CSS Modules next to the component that owns the markup, such as `web/app/issues/_components/issues-view.module.css`.
+
 ### tui
 
 The TUI is a Go terminal client for the same issue-tracker API.
