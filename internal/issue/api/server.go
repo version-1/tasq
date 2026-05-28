@@ -1,4 +1,4 @@
-package issueapi
+package api
 
 import (
 	"database/sql"
@@ -10,14 +10,14 @@ import (
 	"strings"
 
 	"github.com/version-1/tasq/internal/issue"
-	"github.com/version-1/tasq/internal/issuestore"
+	"github.com/version-1/tasq/internal/issue/store"
 )
 
 type Server struct {
-	store *issuestore.Store
+	store *store.Store
 }
 
-func NewServer(store *issuestore.Store) *Server {
+func NewServer(store *store.Store) *Server {
 	return &Server{store: store}
 }
 
