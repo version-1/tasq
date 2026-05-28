@@ -96,7 +96,7 @@ The future workspace manager provides isolated execution environments for agents
 Responsibilities:
 
 - Create and manage git workspaces.
-- Support parallel execution and verification in devcontainers.
+- Support parallel execution and verification in isolated workspaces.
 - Retain enough metadata for debugging and recovery.
 
 The MVP stores workspace identifiers on run state but does not create or clean real workspaces.
@@ -116,7 +116,7 @@ tui ────┘       ▲
         orchestrator ───── SQLite: runs, outbox_events
                 │
                 ├─ future: agent-runner ── Codex app-server over JSON-RPC
-                └─ future: workspace manager ── git workspace / devcontainer
+                └─ future: workspace manager ── git workspace / isolated runtime
 ```
 
 ## State Ownership
@@ -217,7 +217,7 @@ The orchestrator currently has no user-facing HTTP API. Its external dependency 
 
 ## Development Environment
 
-The Dev Container runs the issue-tracker on container port `8080`, the web-ui on container port `3000`, and the orchestrator as a background worker.
+Docker Compose runs the issue-tracker on container port `8080`, the web-ui on container port `3000`, and the orchestrator as a background worker.
 
 Recommended commands:
 
@@ -227,7 +227,7 @@ Recommended commands:
 - `make tui-up`
 - `make dev-status`
 
-`make web-up` starts the issue-tracker, orchestrator, and web-ui. The web UI proxies `/api/v1/...` to the issue-tracker inside the Dev Container.
+`make web-up` starts the issue-tracker, orchestrator, and web-ui. The web UI proxies `/api/v1/...` to the issue-tracker inside the Compose network.
 
 ## Verification
 
