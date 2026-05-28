@@ -1,83 +1,23 @@
+.appFrame {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  min-height: 100vh;
+}
+
 .shell {
   min-height: 100vh;
   padding: 24px;
+  min-width: 0;
 }
 
-.topbar {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 16px;
-}
-
-.eyebrow {
-  color: var(--accent);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0;
-  margin: 0 0 6px;
-  text-transform: uppercase;
-}
-
-.shell h1,
 .shell h2,
 .shell p {
   margin-top: 0;
 }
 
-.shell h1 {
-  font-size: 32px;
-  line-height: 1.1;
-  margin-bottom: 0;
-}
-
 .shell h2 {
   font-size: 16px;
   line-height: 1.2;
-}
-
-.statusStrip,
-.tabs,
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-}
-
-.statusStrip span {
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--surface);
-  padding: 7px 10px;
-  color: var(--muted);
-  font-size: 13px;
-}
-
-.iconButton {
-  background: var(--surface-strong);
-  border-color: var(--surface-strong);
-  color: #fff;
-}
-
-.tabs {
-  margin-bottom: 18px;
-}
-
-.tab {
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--text);
-  border-radius: 6px;
-  padding: 8px 10px;
-  text-decoration: none;
-}
-
-.tab.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
 }
 
 .notice {
@@ -100,13 +40,12 @@
 }
 
 @media (max-width: 900px) {
-  .shell {
-    padding: 16px;
+  .appFrame {
+    grid-template-columns: 1fr;
   }
 
-  .topbar {
-    align-items: stretch;
-    flex-direction: column;
+  .shell {
+    padding: 16px;
   }
 
 }

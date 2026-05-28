@@ -35,6 +35,17 @@ Each component, whether shared or route-specific, must use a directory named aft
 └── index.test.css
 ```
 
+## Internationalization
+
+The Web UI uses `react-i18next` for display strings.
+
+Supported languages:
+
+- Japanese (`ja`)
+- English (`en`)
+
+Keep user-facing UI text in `web/lib/i18n.ts`. Components should render translated text with `useTranslation()` instead of hard-coded display strings. User-provided issue content, API identifiers, and route path segments can remain untranslated.
+
 ## Styling
 
 The Next.js app uses CSS Modules for component and page styling.
