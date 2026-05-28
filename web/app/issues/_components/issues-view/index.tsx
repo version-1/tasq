@@ -6,6 +6,20 @@ import { issueStatuses } from "@/lib/types";
 import styles from "./index.module.css";
 
 type StatusChangeHandler = (id: number, status: IssueStatus) => Promise<void>;
+type BoardColumnKey = "draft" | "todo" | "inProgress" | "inReview";
+
+type BoardColumn = {
+  key: BoardColumnKey;
+  titleKey: string;
+  statuses: IssueStatus[];
+};
+
+const boardColumns: BoardColumn[] = [
+  { key: "draft", titleKey: "issues.board.draft", statuses: ["backlog", "blocked", "failed"] },
+  { key: "todo", titleKey: "issues.board.todo", statuses: ["ready"] },
+  { key: "inProgress", titleKey: "issues.board.inProgress", statuses: ["in_progress"] },
+  { key: "inReview", titleKey: "issues.board.inReview", statuses: ["review", "done"] },
+];
 
 export function IssuesView({
   summary,
@@ -46,31 +60,47 @@ function IssueBoard({
   onStatusChange: StatusChangeHandler;
 }) {
   const { t } = useTranslation();
+  const issues = summary.columns.flatMap((column) => column.issues);
 
   return (
     <section className={styles.board} aria-label={t("header.board")}>
-      {summary.columns.map((column) => (
-        <div className={styles.column} key={column.status}>
-          <div className={styles.columnHeader}>
-            <h2>{t(`statuses.${column.status}`)}</h2>
-            <span>{column.issues.length}</span>
+      {boardColumns.map((column) => {
+        const columnIssues = issues.filter((issue) => column.statuses.includes(issue.status));
+
+        return (
+          <div className={styles.column} key={column.key}>
+            <div className={styles.columnHeader}>
+              <div className={styles.columnTitle}>
+                {column.key === "inReview" ? <span className={styles.reviewIcon} aria-hidden="true">○</span> : null}
+                <h2>{t(column.titleKey)}</h2>
+                <span>{columnIssues.length}</span>
+              </div>
+              <div className={styles.columnActions}>
+                <button type="button" aria-label={t("issues.board.addTask")}>＋</button>
+                <button type="button" aria-label={t("issues.board.columnActions")}>···</button>
+              </div>
+            </div>
+            <div className={styles.taskList}>
+              {columnIssues.length === 0 ? (
+                <p className={styles.empty}>{t("issues.noIssues")}</p>
+              ) : (
+                columnIssues.map((issue) => (
+                  <IssueCard
+                    key={issue.id}
+                    issue={issue}
+                    onSelect={() => onSelectIssue(issue.id)}
+                    onStatusChange={onStatusChange}
+                  />
+                ))
+              )}
+            </div>
+            <button className={styles.addTaskButton} type="button">
+              <span aria-hidden="true">＋</span>
+              {t("issues.board.addTask")}
+            </button>
           </div>
-          <div className={styles.taskList}>
-            {column.issues.length === 0 ? (
-              <p className={styles.empty}>{t("issues.noIssues")}</p>
-            ) : (
-              column.issues.map((issue) => (
-                <IssueCard
-                  key={issue.id}
-                  issue={issue}
-                  onSelect={() => onSelectIssue(issue.id)}
-                  onStatusChange={onStatusChange}
-                />
-              ))
-            )}
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </section>
   );
 }

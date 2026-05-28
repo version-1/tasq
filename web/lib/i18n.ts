@@ -46,6 +46,14 @@ const resources = {
       issues: {
         assignee: "担当者",
         attempt: "試行回数",
+        board: {
+          addTask: "タスクを追加",
+          columnActions: "カラム操作",
+          draft: "Draft",
+          inProgress: "In Progress",
+          inReview: "In Review",
+          todo: "To Do",
+        },
         detail: {
           issueStatus: "Issue ステータス",
           priority: "優先度",
@@ -165,6 +173,14 @@ const resources = {
       issues: {
         assignee: "Assignee",
         attempt: "Attempt",
+        board: {
+          addTask: "Add task",
+          columnActions: "Column actions",
+          draft: "Draft",
+          inProgress: "In Progress",
+          inReview: "In Review",
+          todo: "To Do",
+        },
         detail: {
           issueStatus: "Issue Status",
           priority: "Priority",
