@@ -27,8 +27,15 @@ Start the full local environment in the background:
 make web-up
 ```
 
-Open the web UI at <http://localhost:3000>.
-The issue-tracker API is available at <http://localhost:8080>.
+Docker Compose assigns available host ports automatically.
+After startup, `make web-up` prints the assigned web UI and issue-tracker API URLs.
+
+You can show the assigned ports again at any time:
+
+```sh
+make dev-ports
+```
+
 The web UI proxies `/api/v1/...` to `issue-tracker` inside the Compose network.
 
 To run the services in the foreground:
@@ -43,7 +50,7 @@ To stop the environment:
 make dev-down
 ```
 
-If another worktree or local process already uses the default ports, override them:
+If you need fixed host ports, override them:
 
 ```sh
 make web-up ISSUE_TRACKER_PORT=18080 WEB_PORT=13000
@@ -61,6 +68,7 @@ Run `make help` to list available commands.
 | `make dev-up-d` | Start issue-tracker, orchestrator, and web UI in the background. |
 | `make dev-down` | Stop Compose services. |
 | `make dev-status` | Show Compose service status. |
+| `make dev-ports` | Show assigned host ports for Compose services. |
 | `make dev-logs` | Follow Compose service logs. |
 | `make dev-shell` | Open a shell in a Go tool container. |
 | `make dev-exec CMD="go test ./..."` | Run an arbitrary command in a Go tool container. |
@@ -97,7 +105,7 @@ Check these in order:
 
 5. If the error mentions downloading images or dependencies, check network access to Docker Hub, the Go module proxy, and the npm registry.
 
-6. If host ports are already in use, run with alternate host ports:
+6. If you need predictable host ports, run with explicit host ports:
 
    ```sh
    make web-up ISSUE_TRACKER_PORT=18080 WEB_PORT=13000
