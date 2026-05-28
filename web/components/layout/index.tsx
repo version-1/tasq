@@ -19,7 +19,7 @@ import { Header } from "./header";
 import { Sidebar } from "./sidebar";
 import styles from "./index.module.css";
 
-export type TasqPage = "issues" | "agents" | "settings";
+export type TasqPage = "issues" | "agents" | "workspace" | "settings";
 
 type LoadState =
   | { kind: "loading" }
@@ -131,7 +131,7 @@ export function Layout({ children }: { children: ReactNode }) {
 
   return (
     <div className={styles.appFrame}>
-      <Sidebar activePage={activePage} />
+      <Sidebar />
       <main className={styles.shell}>
         <Header
           activePage={activePage}
@@ -179,7 +179,7 @@ function firstIssueID(summary: Summary): number | null {
 
 function activePageFromPathname(pathname: string): TasqPage {
   const segment = pathname.split("/").filter(Boolean)[0];
-  if (segment === "agents" || segment === "settings") {
+  if (segment === "agents" || segment === "workspace" || segment === "settings") {
     return segment;
   }
   return "issues";

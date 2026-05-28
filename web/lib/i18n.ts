@@ -36,6 +36,7 @@ const resources = {
         projectName: "Product Website",
         searchPlaceholder: "検索...",
         settings: "設定",
+        workspace: "ワークスペース",
         sort: "↕ ソート",
         taskOptions: "タスクオプション",
         trackedRunCount: "{{count}} tracked runs",
@@ -93,6 +94,14 @@ const resources = {
         refreshFiveSeconds: "5 seconds",
         title: "Web UI Settings",
       },
+      workspace: {
+        activeIssues: "アクティブ Issue",
+        activeRuns: "実行中の Run",
+        generatedAt: "最終同期",
+        title: "ワークスペース",
+        totalIssues: "Issue 合計",
+        totalRuns: "Run 合計",
+      },
       sidebar: {
         accountMenu: "アカウントメニュー",
         addProject: "プロジェクトを追加",
@@ -114,6 +123,7 @@ const resources = {
         userEmail: "yuki@tasq.app",
         userName: "Yuki K.",
         workflow: "ワークフロー",
+        workspace: "ワークスペース",
       },
       runStatuses: {
         cancelled: "キャンセル",
@@ -163,6 +173,7 @@ const resources = {
         projectName: "Product Website",
         searchPlaceholder: "Search...",
         settings: "Settings",
+        workspace: "Workspace",
         sort: "↕ Sort",
         taskOptions: "Task options",
         trackedRunCount: "{{count}} tracked runs",
@@ -220,6 +231,14 @@ const resources = {
         refreshFiveSeconds: "5 seconds",
         title: "Web UI Settings",
       },
+      workspace: {
+        activeIssues: "Active issues",
+        activeRuns: "Active runs",
+        generatedAt: "Last synced",
+        title: "Workspace",
+        totalIssues: "Total issues",
+        totalRuns: "Total runs",
+      },
       sidebar: {
         accountMenu: "Account menu",
         addProject: "Add project",
@@ -241,6 +260,7 @@ const resources = {
         userEmail: "yuki@tasq.app",
         userName: "Yuki K.",
         workflow: "Workflow",
+        workspace: "Workspace",
       },
       runStatuses: {
         cancelled: "cancelled",

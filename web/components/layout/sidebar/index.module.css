@@ -13,18 +13,16 @@
   font-size: 34px;
   font-weight: 800;
   line-height: 1;
-  margin: 0 14px 20px;
+  margin: 0 14px;
   text-decoration: none;
 }
 
-.primaryNav,
 .projectList {
   display: grid;
   gap: 4px;
 }
 
-.navItem,
-.archive,
+.settingsLink,
 .projectItem {
   align-items: center;
   border-radius: 6px;
@@ -36,24 +34,13 @@
   text-decoration: none;
 }
 
-.navItem.active,
 .projectItem.active {
   background: #f0f0f0;
 }
 
-.navIcon {
-  color: var(--dark-gray);
-  display: inline-grid;
-  font-size: 15px;
-  place-items: center;
-  width: 22px;
-}
-
 .projects {
-  border-top: 1px solid var(--light-gray);
   display: grid;
   gap: 16px;
-  padding-top: 28px;
 }
 
 .sectionHeader {
@@ -110,7 +97,7 @@
   margin-left: auto;
 }
 
-.archive {
+.settingsLink {
   border-top: 1px solid var(--light-gray);
   margin-top: auto;
   padding-top: 28px;
@@ -160,14 +147,5 @@
     border-bottom: 1px solid var(--light-gray);
     border-right: 0;
     min-height: auto;
-  }
-
-  .primaryNav {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .archive,
-  .account {
-    display: none;
   }
 }

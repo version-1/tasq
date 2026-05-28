@@ -8,6 +8,7 @@ User-facing views are split by App Router pages:
 
 - `/issues`
 - `/agents`
+- `/workspace`
 - `/settings`
 
 The root `/` route redirects to `/issues`.
@@ -22,6 +23,7 @@ Page-specific components live under the owning route's `_components` directory:
 
 - Issue page components belong in `web/app/issues/_components`.
 - Agent page components belong in `web/app/agents/_components`.
+- Workspace page components belong in `web/app/workspace/_components`.
 - Settings page components belong in `web/app/settings/_components`.
 
 Keep components close to the route that owns their behavior. Move code to `web/components` only when it is genuinely shared across routes.

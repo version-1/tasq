@@ -2,7 +2,7 @@ import Link from "next/link";
 import { useTranslation } from "react-i18next";
 import styles from "./index.module.css";
 
-type HeaderPage = "issues" | "agents" | "settings";
+type HeaderPage = "issues" | "agents" | "workspace" | "settings";
 
 type HeaderProps = {
   activePage: HeaderPage;
@@ -14,6 +14,7 @@ type HeaderProps = {
 const pages = [
   { key: "issues", href: "/issues", titleKey: "header.board" },
   { key: "agents", href: "/agents", titleKey: "header.agents" },
+  { key: "workspace", href: "/workspace", titleKey: "header.workspace" },
   { key: "settings", href: "/settings", titleKey: "header.settings" },
 ] as const;
 
@@ -99,6 +100,8 @@ function pageHeadingKey(page: HeaderPage): string {
       return "header.productWebsite";
     case "agents":
       return "header.agentRuns";
+    case "workspace":
+      return "header.workspace";
     case "settings":
       return "header.settings";
   }
