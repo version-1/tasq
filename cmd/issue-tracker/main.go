@@ -10,8 +10,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/version-1/tasq/internal/issueapi"
-	"github.com/version-1/tasq/internal/issuestore"
+	"github.com/version-1/tasq/internal/issue/api"
+	"github.com/version-1/tasq/internal/issue/store"
 )
 
 func main() {
@@ -20,19 +20,19 @@ func main() {
 	flag.Parse()
 
 	ctx := context.Background()
-	store, err := issuestore.Open(ctx, *dbPath)
+	issueStore, err := store.Open(ctx, *dbPath)
 	if err != nil {
 		log.Fatalf("open issue store: %v", err)
 	}
 	defer func() {
-		if err := store.Close(); err != nil {
+		if err := issueStore.Close(); err != nil {
 			log.Printf("close issue store: %v", err)
 		}
 	}()
 
 	server := &http.Server{
 		Addr:              *addr,
-		Handler:           issueapi.NewServer(store).Handler(),
+		Handler:           api.NewServer(issueStore).Handler(),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
