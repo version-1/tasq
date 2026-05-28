@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/version-1/tasq/internal/issue"
+	"github.com/version-1/tasq/internal/issue/domain/entity"
 )
 
 func main() {
@@ -86,24 +86,24 @@ func render(ctx context.Context, apiURL string) error {
 	return nil
 }
 
-func fetchSummary(ctx context.Context, apiURL string) (issue.Summary, error) {
+func fetchSummary(ctx context.Context, apiURL string) (entity.Summary, error) {
 	endpoint := strings.TrimRight(apiURL, "/") + "/api/v1/summary"
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
 	if err != nil {
-		return issue.Summary{}, err
+		return entity.Summary{}, err
 	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return issue.Summary{}, err
+		return entity.Summary{}, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return issue.Summary{}, fmt.Errorf("GET %s returned %s", endpoint, resp.Status)
+		return entity.Summary{}, fmt.Errorf("GET %s returned %s", endpoint, resp.Status)
 	}
-	var summary issue.Summary
+	var summary entity.Summary
 	if err := json.NewDecoder(resp.Body).Decode(&summary); err != nil {
-		return issue.Summary{}, err
+		return entity.Summary{}, err
 	}
 	return summary, nil
 }

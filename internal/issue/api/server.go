@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/version-1/tasq/internal/issue"
+	"github.com/version-1/tasq/internal/issue/domain/entity"
 	"github.com/version-1/tasq/internal/issue/store"
 )
 
@@ -67,7 +67,7 @@ func (s *Server) projects(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) createProject(w http.ResponseWriter, r *http.Request) {
-	var input issue.CreateProjectInput
+	var input entity.CreateProjectInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		writeError(w, http.StatusBadRequest, err)
 		return
@@ -98,7 +98,7 @@ func (s *Server) updateProject(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	var input issue.UpdateProjectInput
+	var input entity.UpdateProjectInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		writeError(w, http.StatusBadRequest, err)
 		return
@@ -133,7 +133,7 @@ func (s *Server) workspaces(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) createWorkspace(w http.ResponseWriter, r *http.Request) {
-	var input issue.CreateWorkspaceInput
+	var input entity.CreateWorkspaceInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		writeError(w, http.StatusBadRequest, err)
 		return
@@ -164,7 +164,7 @@ func (s *Server) updateWorkspace(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	var input issue.UpdateWorkspaceInput
+	var input entity.UpdateWorkspaceInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		writeError(w, http.StatusBadRequest, err)
 		return
@@ -199,7 +199,7 @@ func (s *Server) issues(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) createIssue(w http.ResponseWriter, r *http.Request) {
-	var input issue.CreateIssueInput
+	var input entity.CreateIssueInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		writeError(w, http.StatusBadRequest, err)
 		return
@@ -230,7 +230,7 @@ func (s *Server) updateIssue(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	var input issue.UpdateIssueInput
+	var input entity.UpdateIssueInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		writeError(w, http.StatusBadRequest, err)
 		return
@@ -244,7 +244,7 @@ func (s *Server) updateIssue(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) claimWorkItem(w http.ResponseWriter, r *http.Request) {
-	var input issue.ClaimWorkItemInput
+	var input entity.ClaimWorkItemInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		writeError(w, http.StatusBadRequest, err)
 		return
@@ -254,11 +254,11 @@ func (s *Server) claimWorkItem(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, issue.ClaimWorkItemOutput{WorkItem: item})
+	writeJSON(w, http.StatusOK, entity.ClaimWorkItemOutput{WorkItem: item})
 }
 
 func (s *Server) receiveRunEvent(w http.ResponseWriter, r *http.Request) {
-	var input issue.RunEventInput
+	var input entity.RunEventInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		writeError(w, http.StatusBadRequest, err)
 		return

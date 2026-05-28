@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/version-1/tasq/internal/issue"
+	"github.com/version-1/tasq/internal/issue/domain/entity"
 )
 
 func TestOpenAppliesIssueTrackerSchema(t *testing.T) {
@@ -46,7 +46,7 @@ func TestProjectCRUD(t *testing.T) {
 	}
 	defer store.Close()
 
-	created, err := store.CreateProject(ctx, issue.CreateProjectInput{
+	created, err := store.CreateProject(ctx, entity.CreateProjectInput{
 		Key:         "product",
 		Name:        "Product Website",
 		Description: "Public marketing and product site",
@@ -62,7 +62,7 @@ func TestProjectCRUD(t *testing.T) {
 	}
 
 	renamed := "Product Experience"
-	updated, err := store.UpdateProject(ctx, created.ID, issue.UpdateProjectInput{Name: &renamed})
+	updated, err := store.UpdateProject(ctx, created.ID, entity.UpdateProjectInput{Name: &renamed})
 	if err != nil {
 		t.Fatalf("update project: %v", err)
 	}
@@ -100,11 +100,11 @@ func TestWorkspaceCRUD(t *testing.T) {
 	}
 	defer store.Close()
 
-	project, err := store.CreateProject(ctx, issue.CreateProjectInput{Key: "api", Name: "API Backend"})
+	project, err := store.CreateProject(ctx, entity.CreateProjectInput{Key: "api", Name: "API Backend"})
 	if err != nil {
 		t.Fatalf("create project: %v", err)
 	}
-	created, err := store.CreateWorkspace(ctx, issue.CreateWorkspaceInput{
+	created, err := store.CreateWorkspace(ctx, entity.CreateWorkspaceInput{
 		ProjectID: project.ID,
 		Name:      "API Main",
 		Path:      ".workspaces/api-main",
@@ -112,16 +112,16 @@ func TestWorkspaceCRUD(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create workspace: %v", err)
 	}
-	if created.Status != issue.WorkspaceActive {
+	if created.Status != entity.WorkspaceActive {
 		t.Fatalf("created workspace status = %q", created.Status)
 	}
 
-	status := issue.WorkspaceInactive
-	updated, err := store.UpdateWorkspace(ctx, created.ID, issue.UpdateWorkspaceInput{Status: &status})
+	status := entity.WorkspaceInactive
+	updated, err := store.UpdateWorkspace(ctx, created.ID, entity.UpdateWorkspaceInput{Status: &status})
 	if err != nil {
 		t.Fatalf("update workspace: %v", err)
 	}
-	if updated.Status != issue.WorkspaceInactive {
+	if updated.Status != entity.WorkspaceInactive {
 		t.Fatalf("updated workspace status = %q", updated.Status)
 	}
 
