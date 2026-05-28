@@ -1,4 +1,4 @@
-package issue
+package entity
 
 import (
 	"errors"

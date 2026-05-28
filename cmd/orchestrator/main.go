@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/version-1/tasq/internal/orchestrator"
+	orchestratorstore "github.com/version-1/tasq/internal/orchestrator/infra/store"
+	"github.com/version-1/tasq/internal/orchestrator/usecase"
 )
 
 func main() {
@@ -23,7 +25,7 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	store, err := orchestrator.Open(ctx, *dbPath)
+	store, err := orchestratorstore.Open(ctx, *dbPath)
 	if err != nil {
 		log.Fatalf("open orchestrator store: %v", err)
 	}
@@ -34,7 +36,7 @@ func main() {
 	}()
 
 	client := orchestrator.NewIssueTrackerClient(*issueTrackerURL)
-	worker := orchestrator.NewWorker(store, client, *orchestratorID, *pollInterval, *leaseSeconds)
+	worker := usecase.NewWorker(store, client, *orchestratorID, *pollInterval, *leaseSeconds)
 	log.Printf("orchestrator %s polling %s every %s", *orchestratorID, *issueTrackerURL, pollInterval.String())
 	worker.Run(ctx)
 }

@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/version-1/tasq/internal/issue"
+	issue "github.com/version-1/tasq/internal/issue/domain/entity"
 )
 
 func main() {

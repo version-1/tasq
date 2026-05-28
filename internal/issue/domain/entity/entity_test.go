@@ -1,4 +1,4 @@
-package orchestrator
+package entity
 
 import (
 	"reflect"
@@ -9,7 +9,7 @@ import (
 	"github.com/version-1/tasq/db/schema"
 )
 
-func TestEntitiesMatchOrchestratorSchemaColumns(t *testing.T) {
+func TestEntitiesMatchIssueTrackerSchemaColumns(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -17,15 +17,17 @@ func TestEntitiesMatchOrchestratorSchemaColumns(t *testing.T) {
 		tableName  string
 		entityType any
 	}{
-		{name: "run", tableName: "runs", entityType: RunEntity{}},
-		{name: "outbox event", tableName: "outbox_events", entityType: OutboxEventEntity{}},
+		{name: "issue", tableName: "issues", entityType: IssueEntity{}},
+		{name: "work item", tableName: "work_items", entityType: WorkItemEntity{}},
+		{name: "orchestrator event", tableName: "orchestrator_events", entityType: OrchestratorEventEntity{}},
+		{name: "run snapshot", tableName: "run_snapshots", entityType: RunSnapshotEntity{}},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			want := tableColumns(t, schema.Orchestrator, tt.tableName)
+			want := tableColumns(t, schema.IssueTracker, tt.tableName)
 			got := entityColumns(t, tt.entityType)
 			if !reflect.DeepEqual(got, want) {
 				t.Fatalf("columns mismatch\n got: %v\nwant: %v", got, want)
