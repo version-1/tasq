@@ -1,5 +1,6 @@
 COMPOSE ?= docker compose
 ISSUE_TRACKER_PORT ?=
+OPENAPI_PORT ?=
 WEB_PORT ?=
 ISSUE_TRACKER_URL ?=
 
@@ -19,12 +20,12 @@ dev-check: ## Check that Docker CLI and Compose are installed.
 	}
 
 .PHONY: dev-up-forward
-dev-up-forward: dev-check ## Start issue-tracker, orchestrator, and web UI in the foreground.
-	ISSUE_TRACKER_PORT=$(ISSUE_TRACKER_PORT) WEB_PORT=$(WEB_PORT) $(COMPOSE) up --build issue-tracker orchestrator web
+dev-up-forward: dev-check ## Start issue-tracker, orchestrator, OpenAPI UI, and web UI in the foreground.
+	ISSUE_TRACKER_PORT=$(ISSUE_TRACKER_PORT) OPENAPI_PORT=$(OPENAPI_PORT) WEB_PORT=$(WEB_PORT) $(COMPOSE) up --build issue-tracker orchestrator openapi web
 
 .PHONY: dev-up
-dev-up: dev-check ## Start issue-tracker, orchestrator, and web UI in the background.
-	ISSUE_TRACKER_PORT=$(ISSUE_TRACKER_PORT) WEB_PORT=$(WEB_PORT) $(COMPOSE) up --build -d issue-tracker orchestrator web
+dev-up: dev-check ## Start issue-tracker, orchestrator, OpenAPI UI, and web UI in the background.
+	ISSUE_TRACKER_PORT=$(ISSUE_TRACKER_PORT) OPENAPI_PORT=$(OPENAPI_PORT) WEB_PORT=$(WEB_PORT) $(COMPOSE) up --build -d issue-tracker orchestrator openapi web
 	$(MAKE) dev-ports
 
 .PHONY: dev-up-d
@@ -34,8 +35,8 @@ dev-up-d: dev-up
 dev-down: dev-check ## Stop Compose services.
 	$(COMPOSE) down
 
-.PHONY: dev-status
-dev-status: dev-check ## Show Compose service status.
+.PHONY: dev-ps
+dev-ps: dev-check ## Show Compose service status.
 	$(COMPOSE) ps
 
 .PHONY: dev-ports
@@ -46,6 +47,12 @@ dev-ports: dev-check ## Show assigned host ports for Compose services.
 	else \
 		printf "issue-tracker: not running\n"; \
 	fi
+	@openapi_port="$$($(COMPOSE) port openapi 8080 2>/dev/null | sed 's/.*://')"; \
+	if [ -n "$$openapi_port" ]; then \
+		printf "openapi:       http://localhost:%s\n" "$$openapi_port"; \
+	else \
+		printf "openapi:       not running\n"; \
+	fi
 	@web_port="$$($(COMPOSE) port web 3000 2>/dev/null | sed 's/.*://')"; \
 	if [ -n "$$web_port" ]; then \
 		printf "web:           http://localhost:%s\n" "$$web_port"; \
@@ -55,7 +62,7 @@ dev-ports: dev-check ## Show assigned host ports for Compose services.
 
 .PHONY: dev-logs
 dev-logs: dev-check ## Follow Compose service logs.
-	$(COMPOSE) logs -f issue-tracker orchestrator web
+	$(COMPOSE) logs -f issue-tracker orchestrator openapi web
 
 .PHONY: dev-shell
 dev-shell: dev-check ## Open a shell in a Compose Go tool container.
@@ -87,8 +94,13 @@ issue-tracker-up: dev-check ## Start the issue-tracker API with Docker Compose i
 orchestrator-up: dev-check ## Start the issue-tracker and orchestrator with Docker Compose in the background.
 	ISSUE_TRACKER_PORT=$(ISSUE_TRACKER_PORT) $(COMPOSE) up --build -d issue-tracker orchestrator
 
+.PHONY: openapi-up
+openapi-up: dev-check ## Start the OpenAPI UI with Docker Compose in the background.
+	OPENAPI_PORT=$(OPENAPI_PORT) $(COMPOSE) up -d openapi
+	$(MAKE) dev-ports
+
 .PHONY: web-up
-web-up: dev-up ## Start issue-tracker, orchestrator, and Next.js web UI in the background.
+web-up: dev-up ## Start issue-tracker, orchestrator, OpenAPI UI, and Next.js web UI in the background.
 
 .PHONY: tui-up
 tui-up: orchestrator-up ## Run the TUI on the host against the Compose issue-tracker API.

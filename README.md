@@ -15,10 +15,11 @@ tasq provides a Go issue-tracker API backed by SQLite, a Go orchestrator backed 
 
 Use Docker Compose through `make` when developing this repository.
 
-The Compose environment runs three services:
+The Compose environment runs four services:
 
 - `issue-tracker`: Go API on container port `8080`.
 - `orchestrator`: Go worker connected to `http://issue-tracker:8080`.
+- `openapi`: Swagger UI for the issue-tracker OpenAPI document on container port `8080`.
 - `web`: Next.js dev server on container port `3000`.
 
 Start the full local environment in the background:
@@ -28,7 +29,7 @@ make web-up
 ```
 
 Docker Compose assigns available host ports automatically.
-After startup, `make web-up` prints the assigned web UI and issue-tracker API URLs.
+After startup, `make web-up` prints the assigned web UI, issue-tracker API, and OpenAPI UI URLs.
 
 You can show the assigned ports again at any time:
 
@@ -53,7 +54,7 @@ make dev-down
 If you need fixed host ports, override them:
 
 ```sh
-make web-up ISSUE_TRACKER_PORT=18080 WEB_PORT=13000
+make web-up ISSUE_TRACKER_PORT=18080 OPENAPI_PORT=18081 WEB_PORT=13000
 ```
 
 ## Make Commands
@@ -64,10 +65,10 @@ Run `make help` to list available commands.
 | --- | --- |
 | `make help` | Show available targets. |
 | `make dev-check` | Check that Docker CLI and Docker Compose are installed. |
-| `make dev-up-forward` | Start issue-tracker, orchestrator, and web UI in the foreground. |
-| `make dev-up` | Start issue-tracker, orchestrator, and web UI in the background. |
+| `make dev-up-forward` | Start issue-tracker, orchestrator, OpenAPI UI, and web UI in the foreground. |
+| `make dev-up` | Start issue-tracker, orchestrator, OpenAPI UI, and web UI in the background. |
 | `make dev-down` | Stop Compose services. |
-| `make dev-status` | Show Compose service status. |
+| `make dev-ps` | Show Compose service status. |
 | `make dev-ports` | Show assigned host ports for Compose services. |
 | `make dev-logs` | Follow Compose service logs. |
 | `make dev-shell` | Open a shell in a Go tool container. |
@@ -76,7 +77,8 @@ Run `make help` to list available commands.
 | `make dev-build-app` | Run Go tests and the web UI production build in Compose containers. |
 | `make issue-tracker-up` | Start the issue-tracker API in the background. |
 | `make orchestrator-up` | Start issue-tracker and orchestrator in the background. |
-| `make web-up` | Start issue-tracker, orchestrator, and Next.js web UI in the background. |
+| `make openapi-up` | Start the OpenAPI UI in the background. |
+| `make web-up` | Start issue-tracker, orchestrator, OpenAPI UI, and Next.js web UI in the background. |
 | `make tui-up` | Start issue-tracker and orchestrator in Compose, then run the TUI on the host. |
 | `make dev-gui` | Alias-style command for `make web-up`. |
 
@@ -94,7 +96,7 @@ Check these in order:
 3. Check the service status:
 
    ```sh
-   make dev-status
+   make dev-ps
    ```
 
 4. Check the service logs:
@@ -108,7 +110,7 @@ Check these in order:
 6. If you need predictable host ports, run with explicit host ports:
 
    ```sh
-   make web-up ISSUE_TRACKER_PORT=18080 WEB_PORT=13000
+   make web-up ISSUE_TRACKER_PORT=18080 OPENAPI_PORT=18081 WEB_PORT=13000
    ```
 
 Compose stores Go module/build caches and `web/node_modules` in named Docker volumes.

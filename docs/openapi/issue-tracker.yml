@@ -1,0 +1,463 @@
+openapi: 3.1.0
+info:
+  title: Tasq Issue Tracker API
+  version: 0.1.0
+  description: Local issue tracking API used by the web UI, TUI, and orchestrator.
+servers:
+  - url: http://localhost:8080
+    description: Local issue-tracker API
+tags:
+  - name: Health
+  - name: Issues
+  - name: Summary
+  - name: Work Items
+  - name: Orchestrator Events
+paths:
+  /api/v1/health:
+    get:
+      tags:
+        - Health
+      summary: Check API health.
+      responses:
+        "200":
+          description: The API is healthy.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+  /api/v1/summary:
+    get:
+      tags:
+        - Summary
+      summary: Get the issue board summary.
+      responses:
+        "200":
+          description: Issue board summary.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Summary"
+        "500":
+          $ref: "#/components/responses/Error"
+  /api/v1/issues:
+    get:
+      tags:
+        - Issues
+      summary: List issues.
+      responses:
+        "200":
+          description: Issue list.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Issue"
+        "500":
+          $ref: "#/components/responses/Error"
+    post:
+      tags:
+        - Issues
+      summary: Create an issue.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateIssueInput"
+      responses:
+        "201":
+          description: Created issue.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Issue"
+        "400":
+          $ref: "#/components/responses/Error"
+  /api/v1/issues/{id}:
+    parameters:
+      - $ref: "#/components/parameters/IssueID"
+    get:
+      tags:
+        - Issues
+      summary: Get an issue.
+      responses:
+        "200":
+          description: Issue.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Issue"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+    patch:
+      tags:
+        - Issues
+      summary: Update an issue.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateIssueInput"
+      responses:
+        "200":
+          description: Updated issue.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Issue"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+  /api/v1/work-items/claim:
+    post:
+      tags:
+        - Work Items
+      summary: Claim the next pending work item.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClaimWorkItemInput"
+      responses:
+        "200":
+          description: Claimed work item. The work item is null when no item is available.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClaimWorkItemOutput"
+        "400":
+          $ref: "#/components/responses/Error"
+  /api/v1/orchestrator-events:
+    post:
+      tags:
+        - Orchestrator Events
+      summary: Receive an orchestrator run event.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RunEventInput"
+      responses:
+        "202":
+          description: Event accepted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AcceptedResponse"
+        "400":
+          $ref: "#/components/responses/Error"
+components:
+  parameters:
+    IssueID:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+  responses:
+    Error:
+      description: Error response.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+  schemas:
+    HealthResponse:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          example: ok
+    AcceptedResponse:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          example: accepted
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+    IssueStatus:
+      type: string
+      enum:
+        - backlog
+        - ready
+        - in_progress
+        - review
+        - done
+        - blocked
+        - failed
+    Priority:
+      type: string
+      enum:
+        - low
+        - normal
+        - high
+        - urgent
+    WorkItemStatus:
+      type: string
+      enum:
+        - pending
+        - claimed
+        - done
+        - failed
+    RunStatus:
+      type: string
+      enum:
+        - queued
+        - starting
+        - running
+        - waiting_for_input
+        - succeeded
+        - failed
+        - cancelled
+    Issue:
+      type: object
+      required:
+        - id
+        - title
+        - description
+        - status
+        - priority
+        - assignee
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: integer
+          format: int64
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          $ref: "#/components/schemas/IssueStatus"
+        priority:
+          $ref: "#/components/schemas/Priority"
+        assignee:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    CreateIssueInput:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+          default: ""
+        status:
+          $ref: "#/components/schemas/IssueStatus"
+        priority:
+          $ref: "#/components/schemas/Priority"
+        assignee:
+          type: string
+          default: ""
+    UpdateIssueInput:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          $ref: "#/components/schemas/IssueStatus"
+        priority:
+          $ref: "#/components/schemas/Priority"
+        assignee:
+          type: string
+    WorkItem:
+      type: object
+      required:
+        - id
+        - issueId
+        - status
+        - claimedBy
+        - claimToken
+        - attempt
+        - createdAt
+        - updatedAt
+        - issue
+      properties:
+        id:
+          type: integer
+          format: int64
+        issueId:
+          type: integer
+          format: int64
+        status:
+          $ref: "#/components/schemas/WorkItemStatus"
+        claimedBy:
+          type: string
+        claimToken:
+          type: string
+        leaseUntil:
+          type: string
+          format: date-time
+        attempt:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        issue:
+          $ref: "#/components/schemas/Issue"
+    ClaimWorkItemInput:
+      type: object
+      required:
+        - orchestratorId
+        - leaseSeconds
+      properties:
+        orchestratorId:
+          type: string
+        leaseSeconds:
+          type: integer
+          minimum: 1
+    ClaimWorkItemOutput:
+      type: object
+      required:
+        - workItem
+      properties:
+        workItem:
+          oneOf:
+            - $ref: "#/components/schemas/WorkItem"
+            - type: "null"
+    RunEventInput:
+      type: object
+      required:
+        - eventId
+        - workItemId
+        - issueId
+        - runId
+        - claimToken
+        - status
+        - workspace
+        - attempt
+        - error
+        - occurredAt
+        - orchestratorId
+      properties:
+        eventId:
+          type: string
+        workItemId:
+          type: integer
+          format: int64
+        issueId:
+          type: integer
+          format: int64
+        runId:
+          type: string
+        claimToken:
+          type: string
+        status:
+          $ref: "#/components/schemas/RunStatus"
+        workspace:
+          type: string
+        attempt:
+          type: integer
+        error:
+          type: string
+        occurredAt:
+          type: string
+          format: date-time
+        orchestratorId:
+          type: string
+    RunSnapshot:
+      type: object
+      required:
+        - issueId
+        - workItemId
+        - runId
+        - status
+        - workspace
+        - attempt
+        - error
+        - orchestratorId
+        - updatedAt
+      properties:
+        issueId:
+          type: integer
+          format: int64
+        workItemId:
+          type: integer
+          format: int64
+        runId:
+          type: string
+        status:
+          $ref: "#/components/schemas/RunStatus"
+        workspace:
+          type: string
+        attempt:
+          type: integer
+        error:
+          type: string
+        orchestratorId:
+          type: string
+        updatedAt:
+          type: string
+          format: date-time
+    IssueSummary:
+      allOf:
+        - $ref: "#/components/schemas/Issue"
+        - type: object
+          properties:
+            run:
+              $ref: "#/components/schemas/RunSnapshot"
+    Column:
+      type: object
+      required:
+        - status
+        - title
+        - issues
+      properties:
+        status:
+          $ref: "#/components/schemas/IssueStatus"
+        title:
+          type: string
+        issues:
+          type: array
+          items:
+            $ref: "#/components/schemas/IssueSummary"
+    Summary:
+      type: object
+      required:
+        - columns
+        - runs
+        - generatedAt
+      properties:
+        columns:
+          type: array
+          items:
+            $ref: "#/components/schemas/Column"
+        runs:
+          type: array
+          items:
+            $ref: "#/components/schemas/RunSnapshot"
+        generatedAt:
+          type: string
+          format: date-time
