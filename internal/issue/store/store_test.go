@@ -1,4 +1,4 @@
-package issuestore
+package store
 
 import (
 	"context"
