@@ -13,37 +13,40 @@ tasq provides a Go issue-tracker API backed by SQLite, a Go orchestrator backed 
 
 ## Recommended Development Flow
 
-Use the Dev Container through `make` when developing this repository.
+Use Docker Compose through `make` when developing this repository.
 
-The Dev Container provides Go, Node.js, npm, and GitHub CLI. It also installs Go modules and web dependencies with the `postCreateCommand` in `.devcontainer/devcontainer.json`.
+The Compose environment runs three services:
 
-```sh
-make dev-up
-```
+- `issue-tracker`: Go API on container port `8080`.
+- `orchestrator`: Go worker connected to `http://issue-tracker:8080`.
+- `web`: Next.js dev server on container port `3000`.
 
-If this is the first run, or if the Dev Container image changed, the command can take a while because it downloads the base image, installs features, and runs dependency setup.
-
-Start the web UI with the issue-tracker and orchestrator. All processes run in the Dev Container background:
+Start the full local environment in the background:
 
 ```sh
 make web-up
 ```
 
-Or start the TUI with the issue-tracker and orchestrator. Services run in the Dev Container background, and the TUI runs in the foreground:
+Open the web UI at <http://localhost:3000>.
+The issue-tracker API is available at <http://localhost:8080>.
+The web UI proxies `/api/v1/...` to `issue-tracker` inside the Compose network.
+
+To run the services in the foreground:
 
 ```sh
-make tui-up
+make dev-up
 ```
 
-The Dev Container publishes host ports automatically so multiple worktrees can run in parallel.
-Run `make dev-status` and open the host port mapped to container port `3000`.
-The web UI proxies `/api/v1/...` to the issue-tracker inside the same Dev Container.
-If the published ports do not appear after changing `.devcontainer/devcontainer.json`, run `make dev-rebuild` so Docker recreates the container.
-
-Check the Dev Container status:
+To stop the environment:
 
 ```sh
-make dev-status
+make dev-down
+```
+
+If another worktree or local process already uses the default ports, override them:
+
+```sh
+make web-up ISSUE_TRACKER_PORT=18080 WEB_PORT=13000
 ```
 
 ## Make Commands
@@ -53,63 +56,55 @@ Run `make help` to list available commands.
 | Command | Purpose |
 | --- | --- |
 | `make help` | Show available targets. |
-| `make dev-check` | Check that Docker CLI and Dev Container CLI are installed. |
-| `make dev-build` | Build the Dev Container image. |
-| `make dev-up` | Create or start the Dev Container. |
-| `make dev-rebuild` | Recreate the Dev Container from scratch and apply port publishing changes. |
-| `make dev-status` | Show the Dev Container Docker status and print tool versions when it is running. |
-| `make dev-shell` | Open a shell inside the running Dev Container. |
-| `make dev-exec CMD="go test ./..."` | Run an arbitrary command inside the Dev Container. |
-| `make dev-test` | Run Go tests and web UI typecheck inside the Dev Container. |
-| `make dev-build-app` | Run Go tests and the web UI production build inside the Dev Container. |
-| `make issue-tracker-up` | Start the issue-tracker API in the Dev Container background. |
-| `make orchestrator-up` | Start the issue-tracker and orchestrator worker in the Dev Container background. |
-| `make dev-orchestrator` | Run the orchestrator worker in the Dev Container foreground. |
-| `make web-up` | Start the issue-tracker, orchestrator, and Next.js web UI in the Dev Container background. |
-| `make tui-up` | Start the issue-tracker and orchestrator in the background, then run the TUI in the foreground. |
-| `make dev-gui` | Alias-style command for `make web-up`. Prefer `make web-up`. |
+| `make dev-check` | Check that Docker CLI and Docker Compose are installed. |
+| `make dev-up` | Start issue-tracker, orchestrator, and web UI in the foreground. |
+| `make dev-up-d` | Start issue-tracker, orchestrator, and web UI in the background. |
+| `make dev-down` | Stop Compose services. |
+| `make dev-status` | Show Compose service status. |
+| `make dev-logs` | Follow Compose service logs. |
+| `make dev-shell` | Open a shell in a Go tool container. |
+| `make dev-exec CMD="go test ./..."` | Run an arbitrary command in a Go tool container. |
+| `make dev-test` | Run Go tests and web UI typecheck in Compose containers. |
+| `make dev-build-app` | Run Go tests and the web UI production build in Compose containers. |
+| `make issue-tracker-up` | Start the issue-tracker API in the background. |
+| `make orchestrator-up` | Start issue-tracker and orchestrator in the background. |
+| `make web-up` | Start issue-tracker, orchestrator, and Next.js web UI in the background. |
+| `make tui-up` | Start issue-tracker and orchestrator in Compose, then run the TUI on the host. |
+| `make dev-gui` | Alias-style command for `make web-up`. |
 
-## If `make dev-up` Fails
+## If `make web-up` Fails
 
 Check these in order:
 
 1. Make sure Docker Desktop is running.
-2. Make sure Docker CLI and Dev Container CLI are installed:
+2. Make sure Docker CLI and Docker Compose are installed:
 
    ```sh
    make dev-check
    ```
 
-3. Build the image explicitly:
-
-   ```sh
-   make dev-build
-   ```
-
-4. If host ports are not listed in `make dev-status`, or if an old container was created from an older config, recreate it:
-
-   ```sh
-   make dev-rebuild
-   ```
-
-5. Check whether the container is running:
+3. Check the service status:
 
    ```sh
    make dev-status
    ```
 
-6. If the error mentions downloading images or features, check network access to `mcr.microsoft.com` and `ghcr.io`.
-
-7. If the error happens during dependency setup, open a shell and rerun the setup commands:
+4. Check the service logs:
 
    ```sh
-   make dev-shell
-   go mod download
-   cd web
-   npm install
+   make dev-logs
    ```
 
-The Dev Container forwards `8080` for the issue-tracker API and `3000` for the Next.js web UI.
+5. If the error mentions downloading images or dependencies, check network access to Docker Hub, the Go module proxy, and the npm registry.
+
+6. If host ports are already in use, run with alternate host ports:
+
+   ```sh
+   make web-up ISSUE_TRACKER_PORT=18080 WEB_PORT=13000
+   ```
+
+Compose stores Go module/build caches and `web/node_modules` in named Docker volumes.
+SQLite files are created under `.data/` in the repository and are ignored by git.
 
 ## Host-Only Development
 
@@ -141,7 +136,8 @@ Run the TUI:
 go run ./cmd/tasq-tui -api http://localhost:8080 -watch
 ```
 
-Set `NEXT_PUBLIC_ISSUE_TRACKER_URL` only when the web UI should call an issue-tracker API outside the local Dev Container.
+Set `NEXT_PUBLIC_ISSUE_TRACKER_URL` only when the browser should call an issue-tracker API outside the local web origin.
+Set `ISSUE_TRACKER_INTERNAL_URL` only when the Next.js rewrite should proxy to an issue-tracker API other than `http://localhost:8080`.
 
 ## Create an Issue
 
