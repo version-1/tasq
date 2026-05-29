@@ -1,0 +1,21 @@
+root = "."
+tmp_dir = ".tmp/air-issue-tracker"
+
+[build]
+cmd = "go build -o ./.tmp/air-issue-tracker/issue-tracker ./cmd/issue-tracker"
+bin = ".tmp/air-issue-tracker/issue-tracker"
+full_bin = ".tmp/air-issue-tracker/issue-tracker -addr :8080 -db /workspace/.data/tasq-issues.sqlite"
+include_dir = ["cmd", "db", "internal"]
+include_ext = ["go", "mod", "sql", "sum"]
+exclude_dir = [".data", ".git", ".tmp", ".worktrees", "web"]
+exclude_regex = ["_test\\.go"]
+delay = 1000
+stop_on_error = true
+send_interrupt = true
+kill_delay = 500
+
+[log]
+time = true
+
+[misc]
+clean_on_exit = true
