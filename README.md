@@ -30,6 +30,7 @@ make web-up
 
 Docker Compose assigns available host ports automatically.
 After startup, `make web-up` prints the assigned web UI, issue-tracker API, and OpenAPI UI URLs.
+`make web-up` starts the issue-tracker first, reads its assigned host port, and passes that URL to the web UI as `NEXT_PUBLIC_ISSUE_TRACKER_URL`.
 
 You can show the assigned ports again at any time:
 
@@ -37,7 +38,7 @@ You can show the assigned ports again at any time:
 make dev-ports
 ```
 
-The web UI proxies `/api/v1/...` to `issue-tracker` inside the Compose network.
+The web UI calls the issue-tracker through the host URL assigned by Compose, for example `http://localhost:<assigned-port>`.
 
 To run the services in the foreground:
 
@@ -146,8 +147,7 @@ Run the TUI:
 go run ./cmd/tasq-tui -api http://localhost:8080 -watch
 ```
 
-Set `NEXT_PUBLIC_ISSUE_TRACKER_URL` only when the browser should call an issue-tracker API outside the local web origin.
-Set `ISSUE_TRACKER_INTERNAL_URL` only when the Next.js rewrite should proxy to an issue-tracker API other than `http://localhost:8080`.
+Set `NEXT_PUBLIC_ISSUE_TRACKER_URL` when the browser should call a specific issue-tracker API origin.
 
 ## Create an Issue
 

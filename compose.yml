@@ -50,7 +50,7 @@ services:
       sh -c "npm install &&
       npm run dev -- --hostname 0.0.0.0 --port 3000"
     environment:
-      ISSUE_TRACKER_INTERNAL_URL: http://issue-tracker:8080
+      NEXT_PUBLIC_ISSUE_TRACKER_URL: ${NEXT_PUBLIC_ISSUE_TRACKER_URL:-}
     ports:
       - "127.0.0.1:${WEB_PORT:-}:3000"
     depends_on:

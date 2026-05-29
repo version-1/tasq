@@ -25,7 +25,15 @@ dev-up-forward: dev-check ## Start issue-tracker, orchestrator, OpenAPI UI, and 
 
 .PHONY: dev-up
 dev-up: dev-check ## Start issue-tracker, orchestrator, OpenAPI UI, and web UI in the background.
-	ISSUE_TRACKER_PORT=$(ISSUE_TRACKER_PORT) OPENAPI_PORT=$(OPENAPI_PORT) WEB_PORT=$(WEB_PORT) $(COMPOSE) up --build -d issue-tracker orchestrator openapi web
+	ISSUE_TRACKER_PORT=$(ISSUE_TRACKER_PORT) OPENAPI_PORT=$(OPENAPI_PORT) WEB_PORT=$(WEB_PORT) $(COMPOSE) up --build -d issue-tracker orchestrator openapi
+	@issue_port="$$($(COMPOSE) port issue-tracker 8080 2>/dev/null | sed 's/.*://')"; \
+	if [ -z "$$issue_port" ]; then \
+		echo "issue-tracker port is not assigned"; \
+		exit 1; \
+	fi; \
+	issue_url="http://localhost:$$issue_port"; \
+	printf "web NEXT_PUBLIC_ISSUE_TRACKER_URL=%s\n" "$$issue_url"; \
+	NEXT_PUBLIC_ISSUE_TRACKER_URL="$$issue_url" ISSUE_TRACKER_PORT=$(ISSUE_TRACKER_PORT) OPENAPI_PORT=$(OPENAPI_PORT) WEB_PORT=$(WEB_PORT) $(COMPOSE) up --build -d web
 	$(MAKE) dev-ports
 
 .PHONY: dev-up-d
