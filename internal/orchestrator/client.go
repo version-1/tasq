@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/version-1/tasq/internal/issue"
+	"github.com/version-1/tasq/internal/issue/domain/entity"
 )
 
 type IssueTrackerClient struct {
@@ -23,9 +23,9 @@ func NewIssueTrackerClient(baseURL string) *IssueTrackerClient {
 	}
 }
 
-func (c *IssueTrackerClient) ClaimWorkItem(ctx context.Context, orchestratorID string, leaseSeconds int) (*issue.WorkItem, error) {
-	var output issue.ClaimWorkItemOutput
-	err := c.request(ctx, http.MethodPost, "/api/v1/work-items/claim", issue.ClaimWorkItemInput{
+func (c *IssueTrackerClient) ClaimWorkItem(ctx context.Context, orchestratorID string, leaseSeconds int) (*entity.WorkItem, error) {
+	var output entity.ClaimWorkItemOutput
+	err := c.request(ctx, http.MethodPost, "/api/v1/work-items/claim", entity.ClaimWorkItemInput{
 		OrchestratorID: orchestratorID,
 		LeaseSeconds:   leaseSeconds,
 	}, &output)
@@ -36,13 +36,13 @@ func (c *IssueTrackerClient) ClaimWorkItem(ctx context.Context, orchestratorID s
 }
 
 func (c *IssueTrackerClient) SendRunEvent(ctx context.Context, event OutboxEvent) error {
-	return c.request(ctx, http.MethodPost, "/api/v1/orchestrator-events", issue.RunEventInput{
+	return c.request(ctx, http.MethodPost, "/api/v1/orchestrator-events", entity.RunEventInput{
 		EventID:        event.EventID,
 		WorkItemID:     event.WorkItemID,
 		IssueID:        event.IssueID,
 		RunID:          event.RunID,
 		ClaimToken:     event.ClaimToken,
-		Status:         issue.RunStatus(event.Status),
+		Status:         entity.RunStatus(event.Status),
 		Workspace:      event.Workspace,
 		Attempt:        event.Attempt,
 		Error:          event.Error,

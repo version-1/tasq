@@ -67,6 +67,63 @@ export const RunStatus = {
   cancelled: 'cancelled',
 } as const;
 
+export type WorkspaceStatus = typeof WorkspaceStatus[keyof typeof WorkspaceStatus];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const WorkspaceStatus = {
+  active: 'active',
+  inactive: 'inactive',
+  archived: 'archived',
+} as const;
+
+export interface Project {
+  id: number;
+  key: string;
+  name: string;
+  description: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateProjectInput {
+  key: string;
+  name: string;
+  description?: string;
+}
+
+export interface UpdateProjectInput {
+  key?: string;
+  name?: string;
+  description?: string;
+}
+
+export interface Workspace {
+  id: number;
+  projectId: number;
+  name: string;
+  path: string;
+  status: WorkspaceStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateWorkspaceInput {
+  /** @minimum 1 */
+  projectId: number;
+  name: string;
+  path: string;
+  status?: WorkspaceStatus;
+}
+
+export interface UpdateWorkspaceInput {
+  /** @minimum 1 */
+  projectId?: number;
+  name?: string;
+  path?: string;
+  status?: WorkspaceStatus;
+}
+
 export interface Issue {
   id: number;
   title: string;
@@ -250,6 +307,537 @@ export const getApiV1Summary = async ( options?: RequestInit): Promise<getApiV1S
   
   const data: getApiV1SummaryResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as getApiV1SummaryResponse
+}
+
+
+
+/**
+ * @summary List projects.
+ */
+export type getApiV1ProjectsResponse200 = {
+  data: Project[]
+  status: 200
+}
+
+export type getApiV1ProjectsResponse500 = {
+  data: ErrorResponse
+  status: 500
+}
+    
+export type getApiV1ProjectsResponseSuccess = (getApiV1ProjectsResponse200) & {
+  headers: Headers;
+};
+export type getApiV1ProjectsResponseError = (getApiV1ProjectsResponse500) & {
+  headers: Headers;
+};
+
+export type getApiV1ProjectsResponse = (getApiV1ProjectsResponseSuccess | getApiV1ProjectsResponseError)
+
+export const getGetApiV1ProjectsUrl = () => {
+
+
+  
+
+  return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/projects`
+}
+
+export const getApiV1Projects = async ( options?: RequestInit): Promise<getApiV1ProjectsResponse> => {
+  
+  const res = await fetch(getGetApiV1ProjectsUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: getApiV1ProjectsResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getApiV1ProjectsResponse
+}
+
+
+
+/**
+ * @summary Create a project.
+ */
+export type postApiV1ProjectsResponse201 = {
+  data: Project
+  status: 201
+}
+
+export type postApiV1ProjectsResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+    
+export type postApiV1ProjectsResponseSuccess = (postApiV1ProjectsResponse201) & {
+  headers: Headers;
+};
+export type postApiV1ProjectsResponseError = (postApiV1ProjectsResponse400) & {
+  headers: Headers;
+};
+
+export type postApiV1ProjectsResponse = (postApiV1ProjectsResponseSuccess | postApiV1ProjectsResponseError)
+
+export const getPostApiV1ProjectsUrl = () => {
+
+
+  
+
+  return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/projects`
+}
+
+export const postApiV1Projects = async (createProjectInput: CreateProjectInput, options?: RequestInit): Promise<postApiV1ProjectsResponse> => {
+  
+  const res = await fetch(getPostApiV1ProjectsUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createProjectInput,)
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: postApiV1ProjectsResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as postApiV1ProjectsResponse
+}
+
+
+
+/**
+ * @summary Get a project.
+ */
+export type getApiV1ProjectsIdResponse200 = {
+  data: Project
+  status: 200
+}
+
+export type getApiV1ProjectsIdResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type getApiV1ProjectsIdResponse404 = {
+  data: ErrorResponse
+  status: 404
+}
+    
+export type getApiV1ProjectsIdResponseSuccess = (getApiV1ProjectsIdResponse200) & {
+  headers: Headers;
+};
+export type getApiV1ProjectsIdResponseError = (getApiV1ProjectsIdResponse400 | getApiV1ProjectsIdResponse404) & {
+  headers: Headers;
+};
+
+export type getApiV1ProjectsIdResponse = (getApiV1ProjectsIdResponseSuccess | getApiV1ProjectsIdResponseError)
+
+export const getGetApiV1ProjectsIdUrl = (id: number,) => {
+
+
+  
+
+  return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/projects/${id}`
+}
+
+export const getApiV1ProjectsId = async (id: number, options?: RequestInit): Promise<getApiV1ProjectsIdResponse> => {
+  
+  const res = await fetch(getGetApiV1ProjectsIdUrl(id),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: getApiV1ProjectsIdResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getApiV1ProjectsIdResponse
+}
+
+
+
+/**
+ * @summary Update a project.
+ */
+export type patchApiV1ProjectsIdResponse200 = {
+  data: Project
+  status: 200
+}
+
+export type patchApiV1ProjectsIdResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type patchApiV1ProjectsIdResponse404 = {
+  data: ErrorResponse
+  status: 404
+}
+    
+export type patchApiV1ProjectsIdResponseSuccess = (patchApiV1ProjectsIdResponse200) & {
+  headers: Headers;
+};
+export type patchApiV1ProjectsIdResponseError = (patchApiV1ProjectsIdResponse400 | patchApiV1ProjectsIdResponse404) & {
+  headers: Headers;
+};
+
+export type patchApiV1ProjectsIdResponse = (patchApiV1ProjectsIdResponseSuccess | patchApiV1ProjectsIdResponseError)
+
+export const getPatchApiV1ProjectsIdUrl = (id: number,) => {
+
+
+  
+
+  return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/projects/${id}`
+}
+
+export const patchApiV1ProjectsId = async (id: number,
+    updateProjectInput: UpdateProjectInput, options?: RequestInit): Promise<patchApiV1ProjectsIdResponse> => {
+  
+  const res = await fetch(getPatchApiV1ProjectsIdUrl(id),
+  {      
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateProjectInput,)
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: patchApiV1ProjectsIdResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as patchApiV1ProjectsIdResponse
+}
+
+
+
+/**
+ * @summary Delete a project and its workspaces.
+ */
+export type deleteApiV1ProjectsIdResponse204 = {
+  data: void
+  status: 204
+}
+
+export type deleteApiV1ProjectsIdResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type deleteApiV1ProjectsIdResponse404 = {
+  data: ErrorResponse
+  status: 404
+}
+    
+export type deleteApiV1ProjectsIdResponseSuccess = (deleteApiV1ProjectsIdResponse204) & {
+  headers: Headers;
+};
+export type deleteApiV1ProjectsIdResponseError = (deleteApiV1ProjectsIdResponse400 | deleteApiV1ProjectsIdResponse404) & {
+  headers: Headers;
+};
+
+export type deleteApiV1ProjectsIdResponse = (deleteApiV1ProjectsIdResponseSuccess | deleteApiV1ProjectsIdResponseError)
+
+export const getDeleteApiV1ProjectsIdUrl = (id: number,) => {
+
+
+  
+
+  return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/projects/${id}`
+}
+
+export const deleteApiV1ProjectsId = async (id: number, options?: RequestInit): Promise<deleteApiV1ProjectsIdResponse> => {
+  
+  const res = await fetch(getDeleteApiV1ProjectsIdUrl(id),
+  {      
+    ...options,
+    method: 'DELETE'
+    
+    
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: deleteApiV1ProjectsIdResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as deleteApiV1ProjectsIdResponse
+}
+
+
+
+/**
+ * @summary List workspaces.
+ */
+export type getApiV1WorkspacesResponse200 = {
+  data: Workspace[]
+  status: 200
+}
+
+export type getApiV1WorkspacesResponse500 = {
+  data: ErrorResponse
+  status: 500
+}
+    
+export type getApiV1WorkspacesResponseSuccess = (getApiV1WorkspacesResponse200) & {
+  headers: Headers;
+};
+export type getApiV1WorkspacesResponseError = (getApiV1WorkspacesResponse500) & {
+  headers: Headers;
+};
+
+export type getApiV1WorkspacesResponse = (getApiV1WorkspacesResponseSuccess | getApiV1WorkspacesResponseError)
+
+export const getGetApiV1WorkspacesUrl = () => {
+
+
+  
+
+  return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/workspaces`
+}
+
+export const getApiV1Workspaces = async ( options?: RequestInit): Promise<getApiV1WorkspacesResponse> => {
+  
+  const res = await fetch(getGetApiV1WorkspacesUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: getApiV1WorkspacesResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getApiV1WorkspacesResponse
+}
+
+
+
+/**
+ * @summary Create a workspace.
+ */
+export type postApiV1WorkspacesResponse201 = {
+  data: Workspace
+  status: 201
+}
+
+export type postApiV1WorkspacesResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type postApiV1WorkspacesResponse404 = {
+  data: ErrorResponse
+  status: 404
+}
+    
+export type postApiV1WorkspacesResponseSuccess = (postApiV1WorkspacesResponse201) & {
+  headers: Headers;
+};
+export type postApiV1WorkspacesResponseError = (postApiV1WorkspacesResponse400 | postApiV1WorkspacesResponse404) & {
+  headers: Headers;
+};
+
+export type postApiV1WorkspacesResponse = (postApiV1WorkspacesResponseSuccess | postApiV1WorkspacesResponseError)
+
+export const getPostApiV1WorkspacesUrl = () => {
+
+
+  
+
+  return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/workspaces`
+}
+
+export const postApiV1Workspaces = async (createWorkspaceInput: CreateWorkspaceInput, options?: RequestInit): Promise<postApiV1WorkspacesResponse> => {
+  
+  const res = await fetch(getPostApiV1WorkspacesUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createWorkspaceInput,)
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: postApiV1WorkspacesResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as postApiV1WorkspacesResponse
+}
+
+
+
+/**
+ * @summary Get a workspace.
+ */
+export type getApiV1WorkspacesIdResponse200 = {
+  data: Workspace
+  status: 200
+}
+
+export type getApiV1WorkspacesIdResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type getApiV1WorkspacesIdResponse404 = {
+  data: ErrorResponse
+  status: 404
+}
+    
+export type getApiV1WorkspacesIdResponseSuccess = (getApiV1WorkspacesIdResponse200) & {
+  headers: Headers;
+};
+export type getApiV1WorkspacesIdResponseError = (getApiV1WorkspacesIdResponse400 | getApiV1WorkspacesIdResponse404) & {
+  headers: Headers;
+};
+
+export type getApiV1WorkspacesIdResponse = (getApiV1WorkspacesIdResponseSuccess | getApiV1WorkspacesIdResponseError)
+
+export const getGetApiV1WorkspacesIdUrl = (id: number,) => {
+
+
+  
+
+  return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/workspaces/${id}`
+}
+
+export const getApiV1WorkspacesId = async (id: number, options?: RequestInit): Promise<getApiV1WorkspacesIdResponse> => {
+  
+  const res = await fetch(getGetApiV1WorkspacesIdUrl(id),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: getApiV1WorkspacesIdResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getApiV1WorkspacesIdResponse
+}
+
+
+
+/**
+ * @summary Update a workspace.
+ */
+export type patchApiV1WorkspacesIdResponse200 = {
+  data: Workspace
+  status: 200
+}
+
+export type patchApiV1WorkspacesIdResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type patchApiV1WorkspacesIdResponse404 = {
+  data: ErrorResponse
+  status: 404
+}
+    
+export type patchApiV1WorkspacesIdResponseSuccess = (patchApiV1WorkspacesIdResponse200) & {
+  headers: Headers;
+};
+export type patchApiV1WorkspacesIdResponseError = (patchApiV1WorkspacesIdResponse400 | patchApiV1WorkspacesIdResponse404) & {
+  headers: Headers;
+};
+
+export type patchApiV1WorkspacesIdResponse = (patchApiV1WorkspacesIdResponseSuccess | patchApiV1WorkspacesIdResponseError)
+
+export const getPatchApiV1WorkspacesIdUrl = (id: number,) => {
+
+
+  
+
+  return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/workspaces/${id}`
+}
+
+export const patchApiV1WorkspacesId = async (id: number,
+    updateWorkspaceInput: UpdateWorkspaceInput, options?: RequestInit): Promise<patchApiV1WorkspacesIdResponse> => {
+  
+  const res = await fetch(getPatchApiV1WorkspacesIdUrl(id),
+  {      
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateWorkspaceInput,)
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: patchApiV1WorkspacesIdResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as patchApiV1WorkspacesIdResponse
+}
+
+
+
+/**
+ * @summary Delete a workspace.
+ */
+export type deleteApiV1WorkspacesIdResponse204 = {
+  data: void
+  status: 204
+}
+
+export type deleteApiV1WorkspacesIdResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type deleteApiV1WorkspacesIdResponse404 = {
+  data: ErrorResponse
+  status: 404
+}
+    
+export type deleteApiV1WorkspacesIdResponseSuccess = (deleteApiV1WorkspacesIdResponse204) & {
+  headers: Headers;
+};
+export type deleteApiV1WorkspacesIdResponseError = (deleteApiV1WorkspacesIdResponse400 | deleteApiV1WorkspacesIdResponse404) & {
+  headers: Headers;
+};
+
+export type deleteApiV1WorkspacesIdResponse = (deleteApiV1WorkspacesIdResponseSuccess | deleteApiV1WorkspacesIdResponseError)
+
+export const getDeleteApiV1WorkspacesIdUrl = (id: number,) => {
+
+
+  
+
+  return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/workspaces/${id}`
+}
+
+export const deleteApiV1WorkspacesId = async (id: number, options?: RequestInit): Promise<deleteApiV1WorkspacesIdResponse> => {
+  
+  const res = await fetch(getDeleteApiV1WorkspacesIdUrl(id),
+  {      
+    ...options,
+    method: 'DELETE'
+    
+    
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: deleteApiV1WorkspacesIdResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as deleteApiV1WorkspacesIdResponse
 }
 
 

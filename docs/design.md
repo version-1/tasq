@@ -206,6 +206,16 @@ Current issue-tracker endpoints:
 
 - `GET /api/v1/health`
 - `GET /api/v1/summary`
+- `GET /api/v1/projects`
+- `POST /api/v1/projects`
+- `GET /api/v1/projects/{id}`
+- `PATCH /api/v1/projects/{id}`
+- `DELETE /api/v1/projects/{id}`
+- `GET /api/v1/workspaces`
+- `POST /api/v1/workspaces`
+- `GET /api/v1/workspaces/{id}`
+- `PATCH /api/v1/workspaces/{id}`
+- `DELETE /api/v1/workspaces/{id}`
 - `GET /api/v1/issues`
 - `POST /api/v1/issues`
 - `GET /api/v1/issues/{id}`

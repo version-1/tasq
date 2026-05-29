@@ -1,4 +1,4 @@
-package issue
+package entity
 
 import (
 	"errors"
@@ -46,6 +46,59 @@ const (
 	RunFailed          RunStatus = "failed"
 	RunCancelled       RunStatus = "cancelled"
 )
+
+type WorkspaceStatus string
+
+const (
+	WorkspaceActive   WorkspaceStatus = "active"
+	WorkspaceInactive WorkspaceStatus = "inactive"
+	WorkspaceArchived WorkspaceStatus = "archived"
+)
+
+type Project struct {
+	ID          int64     `json:"id"`
+	Key         string    `json:"key"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
+}
+
+type CreateProjectInput struct {
+	Key         string `json:"key"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
+type UpdateProjectInput struct {
+	Key         *string `json:"key"`
+	Name        *string `json:"name"`
+	Description *string `json:"description"`
+}
+
+type Workspace struct {
+	ID        int64           `json:"id"`
+	ProjectID int64           `json:"projectId"`
+	Name      string          `json:"name"`
+	Path      string          `json:"path"`
+	Status    WorkspaceStatus `json:"status"`
+	CreatedAt time.Time       `json:"createdAt"`
+	UpdatedAt time.Time       `json:"updatedAt"`
+}
+
+type CreateWorkspaceInput struct {
+	ProjectID int64           `json:"projectId"`
+	Name      string          `json:"name"`
+	Path      string          `json:"path"`
+	Status    WorkspaceStatus `json:"status"`
+}
+
+type UpdateWorkspaceInput struct {
+	ProjectID *int64           `json:"projectId"`
+	Name      *string          `json:"name"`
+	Path      *string          `json:"path"`
+	Status    *WorkspaceStatus `json:"status"`
+}
 
 type Issue struct {
 	ID          int64     `json:"id"`
@@ -158,6 +211,35 @@ func NormalizeCreate(input CreateIssueInput) (CreateIssueInput, error) {
 	return input, nil
 }
 
+func NormalizeCreateProject(input CreateProjectInput) (CreateProjectInput, error) {
+	if input.Key == "" {
+		return input, errors.New("key is required")
+	}
+	if input.Name == "" {
+		return input, errors.New("name is required")
+	}
+	return input, nil
+}
+
+func NormalizeCreateWorkspace(input CreateWorkspaceInput) (CreateWorkspaceInput, error) {
+	if input.ProjectID <= 0 {
+		return input, errors.New("projectId is required")
+	}
+	if input.Name == "" {
+		return input, errors.New("name is required")
+	}
+	if input.Path == "" {
+		return input, errors.New("path is required")
+	}
+	if input.Status == "" {
+		input.Status = WorkspaceActive
+	}
+	if !IsValidWorkspaceStatus(input.Status) {
+		return input, errors.New("status is invalid")
+	}
+	return input, nil
+}
+
 func IsValidStatus(status Status) bool {
 	switch status {
 	case StatusBacklog, StatusReady, StatusInProgress, StatusReview, StatusDone, StatusBlocked, StatusFailed:
@@ -170,6 +252,15 @@ func IsValidStatus(status Status) bool {
 func IsValidPriority(priority Priority) bool {
 	switch priority {
 	case PriorityLow, PriorityNormal, PriorityHigh, PriorityUrgent:
+		return true
+	default:
+		return false
+	}
+}
+
+func IsValidWorkspaceStatus(status WorkspaceStatus) bool {
+	switch status {
+	case WorkspaceActive, WorkspaceInactive, WorkspaceArchived:
 		return true
 	default:
 		return false
