@@ -21,6 +21,18 @@ This keeps browser-side state, API calls, and debug sessions visible in the clie
 
 The app is configured with `output: "export"` and must remain compatible with static export. Do not depend on Next.js rewrites, redirects, or headers for runtime behavior. Configure the issue-tracker API origin with `NEXT_PUBLIC_ISSUE_TRACKER_URL` when the static UI is served from a different origin.
 
+## API Client
+
+The issue-tracker API client is generated from `docs/openapi/issue-tracker.yml` with Orval.
+
+Run the generator from `web` whenever the OpenAPI definition changes:
+
+```sh
+npm run generate:api
+```
+
+Generated files live under `web/lib/generated` and must not be edited manually. Route-facing code should import API types through `web/lib/types.ts` unless it needs a generated operation directly.
+
 ## Component Structure
 
 Shared shell concerns, such as navigation, summary loading, refresh handling, and page selection, live outside route-specific component directories.

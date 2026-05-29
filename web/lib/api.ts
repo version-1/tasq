@@ -1,107 +1,34 @@
-import type { Issue, IssueStatus, Project, Summary, Workspace } from "@/lib/types";
+import {
+  getApiV1Summary,
+  patchApiV1IssuesId,
+  type ErrorResponse,
+  type Issue,
+  type IssueStatus,
+  type Summary,
+} from "@/lib/generated/issue-tracker";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? "";
+type ApiResponse<T> = {
+  data: T | ErrorResponse;
+  status: number;
+};
 
-async function request<T>(
-  path: string,
-  init?: RequestInit,
-): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...init?.headers,
-    },
-    cache: "no-store",
-  });
-
-  if (!response.ok) {
-    const payload = (await response.json().catch(() => null)) as
-      | { error?: string }
-      | null;
-    throw new Error(payload?.error ?? `${response.status} ${response.statusText}`);
-  }
-
-  if (response.status === 204) {
-    return undefined as T;
-  }
-
-  return (await response.json()) as T;
-}
+const noStore: RequestInit = {
+  cache: "no-store",
+};
 
 export function fetchSummary(): Promise<Summary> {
-  return request<Summary>("/api/v1/summary");
-}
-
-export type CreateProjectInput = {
-  key: string;
-  name: string;
-  description?: string;
-};
-
-export type UpdateProjectInput = Partial<CreateProjectInput>;
-
-export function fetchProjects(): Promise<Project[]> {
-  return request<Project[]>("/api/v1/projects");
-}
-
-export function createProject(input: CreateProjectInput): Promise<Project> {
-  return request<Project>("/api/v1/projects", {
-    method: "POST",
-    body: JSON.stringify(input),
-  });
-}
-
-export function updateProject(id: number, input: UpdateProjectInput): Promise<Project> {
-  return request<Project>(`/api/v1/projects/${id}`, {
-    method: "PATCH",
-    body: JSON.stringify(input),
-  });
-}
-
-export function deleteProject(id: number): Promise<void> {
-  return request<void>(`/api/v1/projects/${id}`, {
-    method: "DELETE",
-  });
-}
-
-export type CreateWorkspaceInput = {
-  projectId: number;
-  name: string;
-  path: string;
-  status?: Workspace["status"];
-};
-
-export type UpdateWorkspaceInput = Partial<CreateWorkspaceInput>;
-
-export function fetchWorkspaces(): Promise<Workspace[]> {
-  return request<Workspace[]>("/api/v1/workspaces");
-}
-
-export function createWorkspace(input: CreateWorkspaceInput): Promise<Workspace> {
-  return request<Workspace>("/api/v1/workspaces", {
-    method: "POST",
-    body: JSON.stringify(input),
-  });
-}
-
-export function updateWorkspace(id: number, input: UpdateWorkspaceInput): Promise<Workspace> {
-  return request<Workspace>(`/api/v1/workspaces/${id}`, {
-    method: "PATCH",
-    body: JSON.stringify(input),
-  });
-}
-
-export function deleteWorkspace(id: number): Promise<void> {
-  return request<void>(`/api/v1/workspaces/${id}`, {
-    method: "DELETE",
-  });
+  return unwrapResponse(getApiV1Summary(noStore));
 }
 
 export function updateIssueStatus(id: number, status: IssueStatus): Promise<Issue> {
-  return request<Issue>(`/api/v1/issues/${id}`, {
-    method: "PATCH",
-    body: JSON.stringify({ status }),
-  });
+  return unwrapResponse(patchApiV1IssuesId(id, { status }, noStore));
+}
+
+async function unwrapResponse<T>(response: Promise<ApiResponse<T>>): Promise<T> {
+  const resolved = await response;
+  if (resolved.status >= 400) {
+    const payload = resolved.data as ErrorResponse;
+    throw new Error(payload.error ?? String(resolved.status));
+  }
+  return resolved.data as T;
 }

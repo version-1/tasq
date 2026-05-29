@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build --webpack",
+    "generate:api": "orval --config orval.config.ts",
     "lint": "next lint",
     "typecheck": "tsc --noEmit"
   },
@@ -19,6 +20,7 @@
     "@types/node": "22.9.0",
     "@types/react": "19.2.15",
     "@types/react-dom": "19.2.3",
+    "orval": "^7.13.2",
     "typescript": "5.6.3"
   },
   "overrides": {

@@ -1,89 +1,36 @@
-export const issueStatuses = [
-  "backlog",
-  "ready",
-  "in_progress",
-  "review",
-  "blocked",
-  "failed",
-  "done",
-] as const;
+import {
+  IssueStatus as IssueStatusValues,
+  Priority as PriorityValues,
+  RunStatus as RunStatusValues,
+  WorkspaceStatus as WorkspaceStatusValues,
+  type Column,
+  type Issue,
+  type IssueStatus,
+  type IssueSummary,
+  type Priority,
+  type Project,
+  type RunSnapshot,
+  type RunStatus,
+  type Summary,
+  type Workspace,
+  type WorkspaceStatus,
+} from "@/lib/generated/issue-tracker";
 
-export type IssueStatus = (typeof issueStatuses)[number];
+export const issueStatuses = Object.values(IssueStatusValues);
+export const priorities = Object.values(PriorityValues);
+export const runStatuses = Object.values(RunStatusValues);
+export const workspaceStatuses = Object.values(WorkspaceStatusValues);
 
-export const priorities = ["low", "normal", "high", "urgent"] as const;
-
-export type Priority = (typeof priorities)[number];
-
-export const runStatuses = [
-  "queued",
-  "starting",
-  "running",
-  "waiting_for_input",
-  "succeeded",
-  "failed",
-  "cancelled",
-] as const;
-
-export type RunStatus = (typeof runStatuses)[number];
-
-export const workspaceStatuses = ["active", "inactive", "archived"] as const;
-
-export type WorkspaceStatus = (typeof workspaceStatuses)[number];
-
-export type Project = {
-  id: number;
-  key: string;
-  name: string;
-  description: string;
-  createdAt: string;
-  updatedAt: string;
-};
-
-export type Workspace = {
-  id: number;
-  projectId: number;
-  name: string;
-  path: string;
-  status: WorkspaceStatus;
-  createdAt: string;
-  updatedAt: string;
-};
-
-export type Issue = {
-  id: number;
-  title: string;
-  description: string;
-  status: IssueStatus;
-  priority: Priority;
-  assignee: string;
-  createdAt: string;
-  updatedAt: string;
-};
-
-export type RunSnapshot = {
-  issueId: number;
-  workItemId: number;
-  runId: string;
-  status: RunStatus;
-  workspace: string;
-  attempt: number;
-  error: string;
-  orchestratorId: string;
-  updatedAt: string;
-};
-
-export type IssueSummary = Issue & {
-  run?: RunSnapshot;
-};
-
-export type Column = {
-  status: IssueStatus;
-  title: string;
-  issues: IssueSummary[];
-};
-
-export type Summary = {
-  columns: Column[];
-  runs: RunSnapshot[];
-  generatedAt: string;
+export type {
+  Column,
+  Issue,
+  IssueStatus,
+  IssueSummary,
+  Priority,
+  Project,
+  RunSnapshot,
+  RunStatus,
+  Summary,
+  Workspace,
+  WorkspaceStatus,
 };
