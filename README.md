@@ -31,7 +31,7 @@ make web-up
 ```
 
 Docker Compose assigns available host ports automatically.
-After startup, `make web-up` prints the assigned web UI, issue-tracker API, and OpenAPI UI URLs.
+After startup, `make web-up` prints the assigned web UI, issue-tracker API, and OpenAPI UI URLs, then opens the web UI and OpenAPI UI in the browser.
 `make web-up` starts the issue-tracker first, reads its assigned host port, and passes that URL to the web UI as `NEXT_PUBLIC_ISSUE_TRACKER_URL`.
 
 You can show the assigned ports again at any time:
@@ -71,8 +71,10 @@ Run `make help` to list available commands.
 | `make dev-up-forward` | Start issue-tracker, orchestrator, OpenAPI UI, and web UI in the foreground. |
 | `make dev-up` | Start issue-tracker, orchestrator, OpenAPI UI, and web UI in the background. |
 | `make dev-down` | Stop Compose services. |
+| `make dev-restart` | Restart all Compose development services. |
 | `make dev-ps` | Show Compose service status. |
 | `make dev-ports` | Show assigned host ports for Compose services. |
+| `make dev-open` | Open the web UI and OpenAPI UI in a browser. |
 | `make dev-logs` | Follow Compose service logs. |
 | `make dev-shell` | Open a shell in a Go tool container. |
 | `make dev-exec CMD="go test ./..."` | Run an arbitrary command in a Go tool container. |

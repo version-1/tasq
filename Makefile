@@ -1,4 +1,5 @@
 COMPOSE ?= docker compose
+BROWSER_OPEN ?= open
 ISSUE_TRACKER_PORT ?=
 OPENAPI_PORT ?=
 WEB_PORT ?=
@@ -35,6 +36,7 @@ dev-up: dev-check ## Start issue-tracker, orchestrator, OpenAPI UI, and web UI i
 	printf "web NEXT_PUBLIC_ISSUE_TRACKER_URL=%s\n" "$$issue_url"; \
 	NEXT_PUBLIC_ISSUE_TRACKER_URL="$$issue_url" ISSUE_TRACKER_PORT=$(ISSUE_TRACKER_PORT) OPENAPI_PORT=$(OPENAPI_PORT) WEB_PORT=$(WEB_PORT) $(COMPOSE) up --build -d web
 	$(MAKE) dev-ports
+	$(MAKE) dev-open
 
 .PHONY: dev-up-d
 dev-up-d: dev-up
@@ -42,6 +44,11 @@ dev-up-d: dev-up
 .PHONY: dev-down
 dev-down: dev-check ## Stop Compose services.
 	$(COMPOSE) down
+
+.PHONY: dev-restart
+dev-restart: dev-check ## Restart all Compose development services.
+	$(COMPOSE) down
+	$(MAKE) dev-up
 
 .PHONY: dev-ps
 dev-ps: dev-check ## Show Compose service status.
@@ -66,6 +73,26 @@ dev-ports: dev-check ## Show assigned host ports for Compose services.
 		printf "web:           http://localhost:%s\n" "$$web_port"; \
 	else \
 		printf "web:           not running\n"; \
+	fi
+
+.PHONY: dev-open
+dev-open: dev-check ## Open the web UI and OpenAPI UI in a browser.
+	@opener="$(BROWSER_OPEN)"; \
+	if ! command -v "$$opener" >/dev/null 2>&1; then \
+		echo "browser opener '$$opener' is not available"; \
+		exit 0; \
+	fi; \
+	openapi_port="$$($(COMPOSE) port openapi 8080 2>/dev/null | sed 's/.*://')"; \
+	if [ -n "$$openapi_port" ]; then \
+		openapi_url="http://localhost:$$openapi_port"; \
+		printf "opening openapi: %s\n" "$$openapi_url"; \
+		"$$opener" "$$openapi_url" >/dev/null 2>&1 || true; \
+	fi; \
+	web_port="$$($(COMPOSE) port web 3000 2>/dev/null | sed 's/.*://')"; \
+	if [ -n "$$web_port" ]; then \
+		web_url="http://localhost:$$web_port"; \
+		printf "opening web:     %s\n" "$$web_url"; \
+		"$$opener" "$$web_url" >/dev/null 2>&1 || true; \
 	fi
 
 .PHONY: dev-logs
