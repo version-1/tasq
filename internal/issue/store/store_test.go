@@ -2,7 +2,9 @@ package store
 
 import (
 	"context"
+	"encoding/json"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/version-1/tasq/internal/issue/domain/entity"
@@ -142,6 +144,32 @@ func TestWorkspaceCRUD(t *testing.T) {
 	}
 	if len(workspaces) != 0 {
 		t.Fatalf("workspace count after delete = %d", len(workspaces))
+	}
+}
+
+func TestSummaryReturnsEmptyRunsArray(t *testing.T) {
+	t.Parallel()
+
+	store, err := Open(context.Background(), filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer store.Close()
+
+	summary, err := store.Summary(context.Background())
+	if err != nil {
+		t.Fatalf("read summary: %v", err)
+	}
+	if summary.Runs == nil {
+		t.Fatal("summary runs is nil")
+	}
+
+	payload, err := json.Marshal(summary)
+	if err != nil {
+		t.Fatalf("marshal summary: %v", err)
+	}
+	if !strings.Contains(string(payload), `"runs":[]`) {
+		t.Fatalf("summary json does not contain empty runs array: %s", payload)
 	}
 }
 

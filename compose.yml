@@ -5,7 +5,7 @@ services:
     command: >
       sh -c "mkdir -p /workspace/.data &&
       go mod download &&
-      go run ./cmd/issue-tracker -addr :8080 -db /workspace/.data/tasq-issues.sqlite"
+      go run github.com/air-verse/air@${AIR_VERSION:-v1.52.3} -c .air.issue-tracker.toml"
     ports:
       - "127.0.0.1:${ISSUE_TRACKER_PORT:-}:8080"
     volumes:
@@ -20,9 +20,7 @@ services:
     command: >
       sh -c "mkdir -p /workspace/.data &&
       go mod download &&
-      go run ./cmd/orchestrator
-      -db /workspace/.data/tasq-orchestrator.sqlite
-      -issue-tracker http://issue-tracker:8080"
+      go run github.com/air-verse/air@${AIR_VERSION:-v1.52.3} -c .air.orchestrator.toml"
     depends_on:
       - issue-tracker
     volumes:

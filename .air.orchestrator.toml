@@ -1,0 +1,21 @@
+root = "."
+tmp_dir = ".tmp/air-orchestrator"
+
+[build]
+cmd = "go build -o ./.tmp/air-orchestrator/orchestrator ./cmd/orchestrator"
+bin = ".tmp/air-orchestrator/orchestrator"
+full_bin = ".tmp/air-orchestrator/orchestrator -db /workspace/.data/tasq-orchestrator.sqlite -issue-tracker http://issue-tracker:8080"
+include_dir = ["cmd", "db", "internal"]
+include_ext = ["go", "mod", "sql", "sum"]
+exclude_dir = [".data", ".git", ".tmp", ".worktrees", "web"]
+exclude_regex = ["_test\\.go"]
+delay = 1000
+stop_on_error = true
+send_interrupt = true
+kill_delay = 500
+
+[log]
+time = true
+
+[misc]
+clean_on_exit = true

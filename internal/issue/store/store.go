@@ -561,7 +561,7 @@ func (s *Store) RunSnapshots(ctx context.Context) ([]entity.RunSnapshot, error) 
 		return nil, fmt.Errorf("list run snapshots: %w", err)
 	}
 	defer rows.Close()
-	var runs []entity.RunSnapshot
+	runs := []entity.RunSnapshot{}
 	for rows.Next() {
 		var run entity.RunSnapshot
 		var updatedAt string

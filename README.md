@@ -22,6 +22,8 @@ The Compose environment runs four services:
 - `openapi`: Swagger UI for the issue-tracker OpenAPI document on container port `8080`.
 - `web`: Next.js dev server on container port `3000`.
 
+The Compose `issue-tracker` and `orchestrator` services run through Air. Changes under `cmd`, `db`, or `internal` rebuild and restart the corresponding Go process automatically. The default Air version is pinned to `v1.52.3` because the Compose Go image uses Go 1.22.
+
 Start the full local environment in the background:
 
 ```sh
