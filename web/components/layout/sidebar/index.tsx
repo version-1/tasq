@@ -1,16 +1,14 @@
 import Link from "next/link";
 import { useTranslation } from "react-i18next";
+import type { Project } from "@/lib/types";
 import styles from "./index.module.css";
 
-const projectItems = [
-  { key: "all", labelKey: "sidebar.allProjects", state: "hollow" },
-  { key: "product", labelKey: "sidebar.productWebsite", state: "active" },
-  { key: "mobile", labelKey: "sidebar.mobileApp", state: "muted" },
-  { key: "api", labelKey: "sidebar.apiBackend", state: "muted" },
-  { key: "marketing", labelKey: "sidebar.marketing", state: "muted" },
-] as const;
+type SidebarProps = {
+  activeProjectID: number | null;
+  projects: Project[];
+};
 
-export function Sidebar() {
+export function Sidebar({ activeProjectID, projects }: SidebarProps) {
   const { t } = useTranslation();
 
   return (
@@ -25,17 +23,34 @@ export function Sidebar() {
           <button type="button" aria-label={t("sidebar.addProject")}>＋</button>
         </div>
         <div className={styles.projectList}>
-          {projectItems.map((item) => (
-            <button
-              key={item.key}
-              className={item.state === "active" ? `${styles.projectItem} ${styles.active}` : styles.projectItem}
-              type="button"
-            >
-              <span className={`${styles.projectDot} ${styles[item.state]}`} aria-hidden="true" />
-              {t(item.labelKey)}
-              {item.state === "active" ? <span className={styles.projectMore} aria-hidden="true">···</span> : null}
-            </button>
-          ))}
+          <button
+            className={activeProjectID === null ? `${styles.projectItem} ${styles.active}` : styles.projectItem}
+            type="button"
+          >
+            <span
+              className={`${styles.projectDot} ${activeProjectID === null ? styles.active : styles.hollow}`}
+              aria-hidden="true"
+            />
+            {t("sidebar.allProjects")}
+            {activeProjectID === null ? <span className={styles.projectMore} aria-hidden="true">···</span> : null}
+          </button>
+          {projects.map((project) => {
+            const isActive = project.id === activeProjectID;
+            return (
+              <button
+                key={project.id}
+                className={isActive ? `${styles.projectItem} ${styles.active}` : styles.projectItem}
+                type="button"
+              >
+                <span
+                  className={`${styles.projectDot} ${isActive ? styles.active : styles.muted}`}
+                  aria-hidden="true"
+                />
+                {project.name}
+                {isActive ? <span className={styles.projectMore} aria-hidden="true">···</span> : null}
+              </button>
+            );
+          })}
         </div>
       </section>
 

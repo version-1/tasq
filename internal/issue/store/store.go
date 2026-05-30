@@ -76,7 +76,7 @@ func (s *Store) Projects(ctx context.Context) ([]entity.Project, error) {
 	}
 	defer rows.Close()
 
-	var projects []entity.Project
+	projects := []entity.Project{}
 	for rows.Next() {
 		item, err := scanProject(rows)
 		if err != nil {

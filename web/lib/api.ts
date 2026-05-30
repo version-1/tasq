@@ -1,4 +1,5 @@
 import {
+  getApiV1Projects,
   getApiV1Summary,
   patchApiV1IssuesId,
   postApiV1Issues,
@@ -6,6 +7,7 @@ import {
   type ErrorResponse,
   type Issue,
   type IssueStatus,
+  type Project,
   type Summary,
 } from "@/lib/generated/issue-tracker";
 
@@ -24,6 +26,10 @@ export function fetchSummary(): Promise<Summary> {
 
 export function createIssue(input: CreateIssueInput): Promise<Issue> {
   return unwrapResponse(postApiV1Issues(input, noStore));
+}
+
+export function fetchProjects(): Promise<Project[]> {
+  return unwrapResponse(getApiV1Projects(noStore));
 }
 
 export function updateIssueStatus(id: number, status: IssueStatus): Promise<Issue> {
