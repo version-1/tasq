@@ -51,7 +51,7 @@ func (s *Server) health(w http.ResponseWriter, r *http.Request) {
 func (s *Server) summary(w http.ResponseWriter, r *http.Request) {
 	summary, err := s.store.Summary(r.Context())
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err)
+		writeError(w, http.StatusInternalServerError, "summary.get.internal_error", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, summary)
@@ -60,7 +60,7 @@ func (s *Server) summary(w http.ResponseWriter, r *http.Request) {
 func (s *Server) projects(w http.ResponseWriter, r *http.Request) {
 	items, err := s.store.Projects(r.Context())
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err)
+		writeError(w, http.StatusInternalServerError, "projects.list.internal_error", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, items)
@@ -69,55 +69,55 @@ func (s *Server) projects(w http.ResponseWriter, r *http.Request) {
 func (s *Server) createProject(w http.ResponseWriter, r *http.Request) {
 	var input entity.CreateProjectInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		writeError(w, http.StatusBadRequest, err)
+		writeError(w, http.StatusBadRequest, "projects.create.invalid_request", err)
 		return
 	}
 	created, err := s.store.CreateProject(r.Context(), input)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err)
+		writeError(w, http.StatusBadRequest, "projects.create.invalid_input", err)
 		return
 	}
 	writeJSON(w, http.StatusCreated, created)
 }
 
 func (s *Server) project(w http.ResponseWriter, r *http.Request) {
-	id, ok := pathID(w, r, "project")
+	id, ok := pathID(w, r, "project", "projects.get")
 	if !ok {
 		return
 	}
 	item, err := s.store.Project(r.Context(), id)
 	if err != nil {
-		writeStoreError(w, err, "project")
+		writeStoreError(w, err, "projects.get", "project")
 		return
 	}
 	writeJSON(w, http.StatusOK, item)
 }
 
 func (s *Server) updateProject(w http.ResponseWriter, r *http.Request) {
-	id, ok := pathID(w, r, "project")
+	id, ok := pathID(w, r, "project", "projects.update")
 	if !ok {
 		return
 	}
 	var input entity.UpdateProjectInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		writeError(w, http.StatusBadRequest, err)
+		writeError(w, http.StatusBadRequest, "projects.update.invalid_request", err)
 		return
 	}
 	updated, err := s.store.UpdateProject(r.Context(), id, input)
 	if err != nil {
-		writeStoreError(w, err, "project")
+		writeStoreError(w, err, "projects.update", "project")
 		return
 	}
 	writeJSON(w, http.StatusOK, updated)
 }
 
 func (s *Server) deleteProject(w http.ResponseWriter, r *http.Request) {
-	id, ok := pathID(w, r, "project")
+	id, ok := pathID(w, r, "project", "projects.delete")
 	if !ok {
 		return
 	}
 	if err := s.store.DeleteProject(r.Context(), id); err != nil {
-		writeStoreError(w, err, "project")
+		writeStoreError(w, err, "projects.delete", "project")
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -126,7 +126,7 @@ func (s *Server) deleteProject(w http.ResponseWriter, r *http.Request) {
 func (s *Server) workspaces(w http.ResponseWriter, r *http.Request) {
 	items, err := s.store.Workspaces(r.Context())
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err)
+		writeError(w, http.StatusInternalServerError, "workspaces.list.internal_error", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, items)
@@ -135,55 +135,55 @@ func (s *Server) workspaces(w http.ResponseWriter, r *http.Request) {
 func (s *Server) createWorkspace(w http.ResponseWriter, r *http.Request) {
 	var input entity.CreateWorkspaceInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		writeError(w, http.StatusBadRequest, err)
+		writeError(w, http.StatusBadRequest, "workspaces.create.invalid_request", err)
 		return
 	}
 	created, err := s.store.CreateWorkspace(r.Context(), input)
 	if err != nil {
-		writeStoreError(w, err, "workspace")
+		writeStoreError(w, err, "workspaces.create", "workspace")
 		return
 	}
 	writeJSON(w, http.StatusCreated, created)
 }
 
 func (s *Server) workspace(w http.ResponseWriter, r *http.Request) {
-	id, ok := pathID(w, r, "workspace")
+	id, ok := pathID(w, r, "workspace", "workspaces.get")
 	if !ok {
 		return
 	}
 	item, err := s.store.Workspace(r.Context(), id)
 	if err != nil {
-		writeStoreError(w, err, "workspace")
+		writeStoreError(w, err, "workspaces.get", "workspace")
 		return
 	}
 	writeJSON(w, http.StatusOK, item)
 }
 
 func (s *Server) updateWorkspace(w http.ResponseWriter, r *http.Request) {
-	id, ok := pathID(w, r, "workspace")
+	id, ok := pathID(w, r, "workspace", "workspaces.update")
 	if !ok {
 		return
 	}
 	var input entity.UpdateWorkspaceInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		writeError(w, http.StatusBadRequest, err)
+		writeError(w, http.StatusBadRequest, "workspaces.update.invalid_request", err)
 		return
 	}
 	updated, err := s.store.UpdateWorkspace(r.Context(), id, input)
 	if err != nil {
-		writeStoreError(w, err, "workspace")
+		writeStoreError(w, err, "workspaces.update", "workspace")
 		return
 	}
 	writeJSON(w, http.StatusOK, updated)
 }
 
 func (s *Server) deleteWorkspace(w http.ResponseWriter, r *http.Request) {
-	id, ok := pathID(w, r, "workspace")
+	id, ok := pathID(w, r, "workspace", "workspaces.delete")
 	if !ok {
 		return
 	}
 	if err := s.store.DeleteWorkspace(r.Context(), id); err != nil {
-		writeStoreError(w, err, "workspace")
+		writeStoreError(w, err, "workspaces.delete", "workspace")
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -192,7 +192,7 @@ func (s *Server) deleteWorkspace(w http.ResponseWriter, r *http.Request) {
 func (s *Server) issues(w http.ResponseWriter, r *http.Request) {
 	items, err := s.store.Issues(r.Context())
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err)
+		writeError(w, http.StatusInternalServerError, "issues.list.internal_error", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, items)
@@ -201,43 +201,43 @@ func (s *Server) issues(w http.ResponseWriter, r *http.Request) {
 func (s *Server) createIssue(w http.ResponseWriter, r *http.Request) {
 	var input entity.CreateIssueInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		writeError(w, http.StatusBadRequest, err)
+		writeError(w, http.StatusBadRequest, "issues.create.invalid_request", err)
 		return
 	}
 	created, err := s.store.CreateIssue(r.Context(), input)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err)
+		writeError(w, http.StatusBadRequest, "issues.create.invalid_input", err)
 		return
 	}
 	writeJSON(w, http.StatusCreated, created)
 }
 
 func (s *Server) issue(w http.ResponseWriter, r *http.Request) {
-	id, ok := issueID(w, r)
+	id, ok := issueID(w, r, "issues.get")
 	if !ok {
 		return
 	}
 	item, err := s.store.Issue(r.Context(), id)
 	if err != nil {
-		writeStoreError(w, err, "issue")
+		writeStoreError(w, err, "issues.get", "issue")
 		return
 	}
 	writeJSON(w, http.StatusOK, item)
 }
 
 func (s *Server) updateIssue(w http.ResponseWriter, r *http.Request) {
-	id, ok := issueID(w, r)
+	id, ok := issueID(w, r, "issues.update")
 	if !ok {
 		return
 	}
 	var input entity.UpdateIssueInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		writeError(w, http.StatusBadRequest, err)
+		writeError(w, http.StatusBadRequest, "issues.update.invalid_request", err)
 		return
 	}
 	updated, err := s.store.UpdateIssue(r.Context(), id, input)
 	if err != nil {
-		writeStoreError(w, err, "issue")
+		writeStoreError(w, err, "issues.update", "issue")
 		return
 	}
 	writeJSON(w, http.StatusOK, updated)
@@ -246,12 +246,12 @@ func (s *Server) updateIssue(w http.ResponseWriter, r *http.Request) {
 func (s *Server) claimWorkItem(w http.ResponseWriter, r *http.Request) {
 	var input entity.ClaimWorkItemInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		writeError(w, http.StatusBadRequest, err)
+		writeError(w, http.StatusBadRequest, "work_items.claim.invalid_request", err)
 		return
 	}
 	item, err := s.store.ClaimWorkItem(r.Context(), input)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err)
+		writeError(w, http.StatusBadRequest, "work_items.claim.invalid_input", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, entity.ClaimWorkItemOutput{WorkItem: item})
@@ -260,47 +260,71 @@ func (s *Server) claimWorkItem(w http.ResponseWriter, r *http.Request) {
 func (s *Server) receiveRunEvent(w http.ResponseWriter, r *http.Request) {
 	var input entity.RunEventInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		writeError(w, http.StatusBadRequest, err)
+		writeError(w, http.StatusBadRequest, "orchestrator_events.receive.invalid_request", err)
 		return
 	}
 	if err := s.store.ReceiveRunEvent(r.Context(), input); err != nil {
-		writeError(w, http.StatusBadRequest, err)
+		writeError(w, http.StatusBadRequest, "orchestrator_events.receive.invalid_input", err)
 		return
 	}
 	writeJSON(w, http.StatusAccepted, map[string]string{"status": "accepted"})
 }
 
-func issueID(w http.ResponseWriter, r *http.Request) (int64, bool) {
-	return pathID(w, r, "issue")
+func issueID(w http.ResponseWriter, r *http.Request, action string) (int64, bool) {
+	return pathID(w, r, "issue", action)
 }
 
-func pathID(w http.ResponseWriter, r *http.Request, resource string) (int64, bool) {
+func pathID(w http.ResponseWriter, r *http.Request, resource string, action string) (int64, bool) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil || id <= 0 {
-		writeError(w, http.StatusBadRequest, errors.New(resource+" id is invalid"))
+		writeError(w, http.StatusBadRequest, action+".invalid_id", errors.New(resource+" id is invalid"))
 		return 0, false
 	}
 	return id, true
 }
 
-func writeStoreError(w http.ResponseWriter, err error, resource string) {
+func writeStoreError(w http.ResponseWriter, err error, action string, resource string) {
 	if errors.Is(err, sql.ErrNoRows) {
-		writeError(w, http.StatusNotFound, errors.New(resource+" not found"))
+		writeError(w, http.StatusNotFound, action+".not_found", errors.New(resource+" not found"))
 		return
 	}
-	writeError(w, http.StatusBadRequest, err)
+	writeError(w, http.StatusBadRequest, action+".invalid_input", err)
+}
+
+type responseMeta struct{}
+
+type successResponse struct {
+	Data any          `json:"data"`
+	Meta responseMeta `json:"meta"`
+}
+
+type errorResponse struct {
+	Error responseError `json:"error"`
+	Meta  responseMeta  `json:"meta"`
+}
+
+type responseError struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
 }
 
 func writeJSON(w http.ResponseWriter, status int, value any) {
+	writeRawJSON(w, status, successResponse{Data: value, Meta: responseMeta{}})
+}
+
+func writeError(w http.ResponseWriter, status int, code string, err error) {
+	writeRawJSON(w, status, errorResponse{
+		Error: responseError{Code: code, Message: err.Error()},
+		Meta:  responseMeta{},
+	})
+}
+
+func writeRawJSON(w http.ResponseWriter, status int, value any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	if err := json.NewEncoder(w).Encode(value); err != nil {
 		log.Printf("write json response: %v", err)
 	}
-}
-
-func writeError(w http.ResponseWriter, status int, err error) {
-	writeJSON(w, status, map[string]string{"error": err.Error()})
 }
 
 func withLogging(next http.Handler) http.Handler {

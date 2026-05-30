@@ -101,11 +101,13 @@ func fetchSummary(ctx context.Context, apiURL string) (entity.Summary, error) {
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return entity.Summary{}, fmt.Errorf("GET %s returned %s", endpoint, resp.Status)
 	}
-	var summary entity.Summary
-	if err := json.NewDecoder(resp.Body).Decode(&summary); err != nil {
+	var payload struct {
+		Data entity.Summary `json:"data"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
 		return entity.Summary{}, err
 	}
-	return summary, nil
+	return payload.Data, nil
 }
 
 func clearScreen() {

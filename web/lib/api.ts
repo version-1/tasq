@@ -10,8 +10,13 @@ import {
 } from "@/lib/generated/issue-tracker";
 
 type ApiResponse<T> = {
-  data: T | ErrorResponse;
+  data: ApiEnvelope<T> | ErrorResponse;
   status: number;
+};
+
+type ApiEnvelope<T> = {
+  data: T;
+  meta: Record<string, unknown>;
 };
 
 const noStore: RequestInit = {
@@ -34,7 +39,7 @@ async function unwrapResponse<T>(response: Promise<ApiResponse<T>>): Promise<T> 
   const resolved = await response;
   if (resolved.status >= 400) {
     const payload = resolved.data as ErrorResponse;
-    throw new Error(payload.error ?? String(resolved.status));
+    throw new Error(`${payload.error.code}: ${payload.error.message}`);
   }
-  return resolved.data as T;
+  return (resolved.data as ApiEnvelope<T>).data;
 }

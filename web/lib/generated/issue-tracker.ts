@@ -3,18 +3,45 @@
  * Do not edit manually.
  * Tasq Issue Tracker API
  * Local issue tracking API used by the web UI, TUI, and orchestrator.
+
+JSON success responses use `{ "data": ..., "meta": {} }`.
+JSON error responses use `{ "error": { "code": "...", "message": "..." }, "meta": {} }`.
+`204 No Content` and CORS `OPTIONS` responses do not include a JSON body.
+
  * OpenAPI spec version: 0.1.0
  */
+/**
+ * Response metadata. Currently empty, reserved for future extensions.
+ */
+export interface ApiMeta { [key: string]: unknown }
+
+export interface ErrorInfo {
+  /** Stable error code using the <controller>.<action>.<error_type> format. */
+  code: string;
+  message: string;
+}
+
+export interface ErrorResponse {
+  error: ErrorInfo;
+  meta: ApiMeta;
+}
+
+export interface HealthData {
+  status: string;
+}
+
 export interface HealthResponse {
+  data: HealthData;
+  meta: ApiMeta;
+}
+
+export interface AcceptedData {
   status: string;
 }
 
 export interface AcceptedResponse {
-  status: string;
-}
-
-export interface ErrorResponse {
-  error: string;
+  data: AcceptedData;
+  meta: ApiMeta;
 }
 
 export type IssueStatus = typeof IssueStatus[keyof typeof IssueStatus];
@@ -220,6 +247,46 @@ export interface Summary {
   generatedAt: string;
 }
 
+export interface SummaryResponse {
+  data: Summary;
+  meta: ApiMeta;
+}
+
+export interface ProjectResponse {
+  data: Project;
+  meta: ApiMeta;
+}
+
+export interface ProjectListResponse {
+  data: Project[];
+  meta: ApiMeta;
+}
+
+export interface WorkspaceResponse {
+  data: Workspace;
+  meta: ApiMeta;
+}
+
+export interface WorkspaceListResponse {
+  data: Workspace[];
+  meta: ApiMeta;
+}
+
+export interface IssueResponse {
+  data: Issue;
+  meta: ApiMeta;
+}
+
+export interface IssueListResponse {
+  data: Issue[];
+  meta: ApiMeta;
+}
+
+export interface ClaimWorkItemResponse {
+  data: ClaimWorkItemOutput;
+  meta: ApiMeta;
+}
+
 /**
  * @summary Check API health.
  */
@@ -266,7 +333,7 @@ export const getApiV1Health = async ( options?: RequestInit): Promise<getApiV1He
  * @summary Get the issue board summary.
  */
 export type getApiV1SummaryResponse200 = {
-  data: Summary
+  data: SummaryResponse
   status: 200
 }
 
@@ -315,7 +382,7 @@ export const getApiV1Summary = async ( options?: RequestInit): Promise<getApiV1S
  * @summary List projects.
  */
 export type getApiV1ProjectsResponse200 = {
-  data: Project[]
+  data: ProjectListResponse
   status: 200
 }
 
@@ -364,7 +431,7 @@ export const getApiV1Projects = async ( options?: RequestInit): Promise<getApiV1
  * @summary Create a project.
  */
 export type postApiV1ProjectsResponse201 = {
-  data: Project
+  data: ProjectResponse
   status: 201
 }
 
@@ -414,7 +481,7 @@ export const postApiV1Projects = async (createProjectInput: CreateProjectInput, 
  * @summary Get a project.
  */
 export type getApiV1ProjectsIdResponse200 = {
-  data: Project
+  data: ProjectResponse
   status: 200
 }
 
@@ -468,7 +535,7 @@ export const getApiV1ProjectsId = async (id: number, options?: RequestInit): Pro
  * @summary Update a project.
  */
 export type patchApiV1ProjectsIdResponse200 = {
-  data: Project
+  data: ProjectResponse
   status: 200
 }
 
@@ -578,7 +645,7 @@ export const deleteApiV1ProjectsId = async (id: number, options?: RequestInit): 
  * @summary List workspaces.
  */
 export type getApiV1WorkspacesResponse200 = {
-  data: Workspace[]
+  data: WorkspaceListResponse
   status: 200
 }
 
@@ -627,7 +694,7 @@ export const getApiV1Workspaces = async ( options?: RequestInit): Promise<getApi
  * @summary Create a workspace.
  */
 export type postApiV1WorkspacesResponse201 = {
-  data: Workspace
+  data: WorkspaceResponse
   status: 201
 }
 
@@ -682,7 +749,7 @@ export const postApiV1Workspaces = async (createWorkspaceInput: CreateWorkspaceI
  * @summary Get a workspace.
  */
 export type getApiV1WorkspacesIdResponse200 = {
-  data: Workspace
+  data: WorkspaceResponse
   status: 200
 }
 
@@ -736,7 +803,7 @@ export const getApiV1WorkspacesId = async (id: number, options?: RequestInit): P
  * @summary Update a workspace.
  */
 export type patchApiV1WorkspacesIdResponse200 = {
-  data: Workspace
+  data: WorkspaceResponse
   status: 200
 }
 
@@ -846,7 +913,7 @@ export const deleteApiV1WorkspacesId = async (id: number, options?: RequestInit)
  * @summary List issues.
  */
 export type getApiV1IssuesResponse200 = {
-  data: Issue[]
+  data: IssueListResponse
   status: 200
 }
 
@@ -895,7 +962,7 @@ export const getApiV1Issues = async ( options?: RequestInit): Promise<getApiV1Is
  * @summary Create an issue.
  */
 export type postApiV1IssuesResponse201 = {
-  data: Issue
+  data: IssueResponse
   status: 201
 }
 
@@ -945,7 +1012,7 @@ export const postApiV1Issues = async (createIssueInput: CreateIssueInput, option
  * @summary Get an issue.
  */
 export type getApiV1IssuesIdResponse200 = {
-  data: Issue
+  data: IssueResponse
   status: 200
 }
 
@@ -999,7 +1066,7 @@ export const getApiV1IssuesId = async (id: number, options?: RequestInit): Promi
  * @summary Update an issue.
  */
 export type patchApiV1IssuesIdResponse200 = {
-  data: Issue
+  data: IssueResponse
   status: 200
 }
 
@@ -1055,7 +1122,7 @@ export const patchApiV1IssuesId = async (id: number,
  * @summary Claim the next pending work item.
  */
 export type postApiV1WorkItemsClaimResponse200 = {
-  data: ClaimWorkItemOutput
+  data: ClaimWorkItemResponse
   status: 200
 }
 
