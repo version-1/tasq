@@ -25,11 +25,13 @@ export function IssuesView({
   summary,
   selectedIssue,
   onSelectIssue,
+  onAddIssue,
   onStatusChange,
 }: {
   summary: Summary;
   selectedIssue: IssueSummary | null;
   onSelectIssue: (issueID: number) => void;
+  onAddIssue: (status?: IssueStatus) => void;
   onStatusChange: StatusChangeHandler;
 }) {
   const { t } = useTranslation();
@@ -39,6 +41,7 @@ export function IssuesView({
       <IssueBoard
         summary={summary}
         onSelectIssue={onSelectIssue}
+        onAddIssue={onAddIssue}
         onStatusChange={onStatusChange}
       />
       {selectedIssue ? (
@@ -53,10 +56,12 @@ export function IssuesView({
 function IssueBoard({
   summary,
   onSelectIssue,
+  onAddIssue,
   onStatusChange,
 }: {
   summary: Summary;
   onSelectIssue: (issueID: number) => void;
+  onAddIssue: (status?: IssueStatus) => void;
   onStatusChange: StatusChangeHandler;
 }) {
   const { t } = useTranslation();
@@ -76,7 +81,13 @@ function IssueBoard({
                 <span>{columnIssues.length}</span>
               </div>
               <div className={styles.columnActions}>
-                <button type="button" aria-label={t("issues.board.addTask")}>＋</button>
+                <button
+                  type="button"
+                  aria-label={t("issues.board.addTask")}
+                  onClick={() => onAddIssue(column.statuses[0])}
+                >
+                  ＋
+                </button>
                 <button type="button" aria-label={t("issues.board.columnActions")}>···</button>
               </div>
             </div>
@@ -94,7 +105,11 @@ function IssueBoard({
                 ))
               )}
             </div>
-            <button className={styles.addTaskButton} type="button">
+            <button
+              className={styles.addTaskButton}
+              type="button"
+              onClick={() => onAddIssue(column.statuses[0])}
+            >
               <span aria-hidden="true">＋</span>
               {t("issues.board.addTask")}
             </button>
