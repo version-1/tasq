@@ -2,7 +2,12 @@ openapi: 3.1.0
 info:
   title: Tasq Issue Tracker API
   version: 0.1.0
-  description: Local issue tracking API used by the web UI, TUI, and orchestrator.
+  description: |
+    Local issue tracking API used by the web UI, TUI, and orchestrator.
+
+    JSON success responses use `{ "data": ..., "meta": {} }`.
+    JSON error responses use `{ "error": { "code": "...", "message": "..." }, "meta": {} }`.
+    `204 No Content` and CORS `OPTIONS` responses do not include a JSON body.
 servers:
   - url: http://localhost:8080
     description: Local issue-tracker API
@@ -38,7 +43,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Summary"
+                $ref: "#/components/schemas/SummaryResponse"
         "500":
           $ref: "#/components/responses/Error"
   /api/v1/projects:
@@ -52,9 +57,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Project"
+                $ref: "#/components/schemas/ProjectListResponse"
         "500":
           $ref: "#/components/responses/Error"
     post:
@@ -73,7 +76,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Project"
+                $ref: "#/components/schemas/ProjectResponse"
         "400":
           $ref: "#/components/responses/Error"
   /api/v1/projects/{id}:
@@ -89,7 +92,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Project"
+                $ref: "#/components/schemas/ProjectResponse"
         "400":
           $ref: "#/components/responses/Error"
         "404":
@@ -110,7 +113,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Project"
+                $ref: "#/components/schemas/ProjectResponse"
         "400":
           $ref: "#/components/responses/Error"
         "404":
@@ -137,9 +140,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Workspace"
+                $ref: "#/components/schemas/WorkspaceListResponse"
         "500":
           $ref: "#/components/responses/Error"
     post:
@@ -158,7 +159,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Workspace"
+                $ref: "#/components/schemas/WorkspaceResponse"
         "400":
           $ref: "#/components/responses/Error"
         "404":
@@ -176,7 +177,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Workspace"
+                $ref: "#/components/schemas/WorkspaceResponse"
         "400":
           $ref: "#/components/responses/Error"
         "404":
@@ -197,7 +198,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Workspace"
+                $ref: "#/components/schemas/WorkspaceResponse"
         "400":
           $ref: "#/components/responses/Error"
         "404":
@@ -224,9 +225,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Issue"
+                $ref: "#/components/schemas/IssueListResponse"
         "500":
           $ref: "#/components/responses/Error"
     post:
@@ -245,7 +244,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Issue"
+                $ref: "#/components/schemas/IssueResponse"
         "400":
           $ref: "#/components/responses/Error"
   /api/v1/issues/{id}:
@@ -261,7 +260,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Issue"
+                $ref: "#/components/schemas/IssueResponse"
         "400":
           $ref: "#/components/responses/Error"
         "404":
@@ -282,7 +281,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Issue"
+                $ref: "#/components/schemas/IssueResponse"
         "400":
           $ref: "#/components/responses/Error"
         "404":
@@ -304,7 +303,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClaimWorkItemOutput"
+                $ref: "#/components/schemas/ClaimWorkItemResponse"
         "400":
           $ref: "#/components/responses/Error"
   /api/v1/orchestrator-events:
@@ -361,7 +360,34 @@ components:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
   schemas:
-    HealthResponse:
+    ApiMeta:
+      type: object
+      additionalProperties: true
+      description: Response metadata. Currently empty, reserved for future extensions.
+    ErrorInfo:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          description: Stable error code using the <controller>.<action>.<error_type> format.
+          example: projects.get.not_found
+        message:
+          type: string
+          example: project not found
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - meta
+      properties:
+        error:
+          $ref: "#/components/schemas/ErrorInfo"
+        meta:
+          $ref: "#/components/schemas/ApiMeta"
+    HealthData:
       type: object
       required:
         - status
@@ -369,7 +395,17 @@ components:
         status:
           type: string
           example: ok
-    AcceptedResponse:
+    HealthResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          $ref: "#/components/schemas/HealthData"
+        meta:
+          $ref: "#/components/schemas/ApiMeta"
+    AcceptedData:
       type: object
       required:
         - status
@@ -377,13 +413,16 @@ components:
         status:
           type: string
           example: accepted
-    ErrorResponse:
+    AcceptedResponse:
       type: object
       required:
-        - error
+        - data
+        - meta
       properties:
-        error:
-          type: string
+        data:
+          $ref: "#/components/schemas/AcceptedData"
+        meta:
+          $ref: "#/components/schemas/ApiMeta"
     IssueStatus:
       type: string
       enum:
@@ -763,3 +802,89 @@ components:
         generatedAt:
           type: string
           format: date-time
+    SummaryResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          $ref: "#/components/schemas/Summary"
+        meta:
+          $ref: "#/components/schemas/ApiMeta"
+    ProjectResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          $ref: "#/components/schemas/Project"
+        meta:
+          $ref: "#/components/schemas/ApiMeta"
+    ProjectListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Project"
+        meta:
+          $ref: "#/components/schemas/ApiMeta"
+    WorkspaceResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          $ref: "#/components/schemas/Workspace"
+        meta:
+          $ref: "#/components/schemas/ApiMeta"
+    WorkspaceListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Workspace"
+        meta:
+          $ref: "#/components/schemas/ApiMeta"
+    IssueResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          $ref: "#/components/schemas/Issue"
+        meta:
+          $ref: "#/components/schemas/ApiMeta"
+    IssueListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Issue"
+        meta:
+          $ref: "#/components/schemas/ApiMeta"
+    ClaimWorkItemResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          $ref: "#/components/schemas/ClaimWorkItemOutput"
+        meta:
+          $ref: "#/components/schemas/ApiMeta"

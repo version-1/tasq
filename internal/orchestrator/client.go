@@ -75,16 +75,25 @@ func (c *IssueTrackerClient) request(ctx context.Context, method string, path st
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		var payload struct {
-			Error string `json:"error"`
+			Error struct {
+				Code    string `json:"code"`
+				Message string `json:"message"`
+			} `json:"error"`
 		}
 		_ = json.NewDecoder(resp.Body).Decode(&payload)
-		if payload.Error != "" {
-			return fmt.Errorf("%s %s returned %s: %s", method, path, resp.Status, payload.Error)
+		if payload.Error.Message != "" {
+			return fmt.Errorf("%s %s returned %s: %s: %s", method, path, resp.Status, payload.Error.Code, payload.Error.Message)
 		}
 		return fmt.Errorf("%s %s returned %s", method, path, resp.Status)
 	}
 	if output != nil {
-		if err := json.NewDecoder(resp.Body).Decode(output); err != nil {
+		var payload struct {
+			Data json.RawMessage `json:"data"`
+		}
+		if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+			return err
+		}
+		if err := json.Unmarshal(payload.Data, output); err != nil {
 			return err
 		}
 	}
