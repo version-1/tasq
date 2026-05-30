@@ -14,3 +14,11 @@ git worktree add .worktrees/2 <branch>
 ```
 
 Before starting work, check the existing numbers under `.worktrees/` and use the next available number.
+
+## GitHub Operations
+
+Use the GitHub CLI (`gh`) for GitHub operations such as viewing pull requests, creating pull requests, and checking pull request status.
+
+## API Generation
+
+Use `generate:api` for API generation.
