@@ -4,6 +4,7 @@ import {
   RunStatus as RunStatusValues,
   WorkspaceStatus as WorkspaceStatusValues,
   type Column,
+  type CreateIssueInput,
   type Issue,
   type IssueStatus,
   type IssueSummary,
@@ -23,6 +24,7 @@ export const workspaceStatuses = Object.values(WorkspaceStatusValues);
 
 export type {
   Column,
+  CreateIssueInput,
   Issue,
   IssueStatus,
   IssueSummary,

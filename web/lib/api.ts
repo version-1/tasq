@@ -1,6 +1,8 @@
 import {
   getApiV1Summary,
   patchApiV1IssuesId,
+  postApiV1Issues,
+  type CreateIssueInput,
   type ErrorResponse,
   type Issue,
   type IssueStatus,
@@ -18,6 +20,10 @@ const noStore: RequestInit = {
 
 export function fetchSummary(): Promise<Summary> {
   return unwrapResponse(getApiV1Summary(noStore));
+}
+
+export function createIssue(input: CreateIssueInput): Promise<Issue> {
+  return unwrapResponse(postApiV1Issues(input, noStore));
 }
 
 export function updateIssueStatus(id: number, status: IssueStatus): Promise<Issue> {

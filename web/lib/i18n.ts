@@ -16,6 +16,28 @@ const resources = {
         title: "エージェント実行",
         workspacePending: "workspace 未確定",
       },
+      addIssue: {
+        cancel: "キャンセル",
+        close: "閉じる",
+        errors: {
+          titleRequired: "タイトルを入力してください",
+        },
+        fields: {
+          assignee: "担当者",
+          description: "説明",
+          priority: "優先度",
+          status: "ステータス",
+          title: "タイトル",
+        },
+        placeholders: {
+          assignee: "未割り当て",
+          description: "タスクの背景や完了条件",
+          title: "タスク名",
+        },
+        saving: "追加中...",
+        submit: "追加",
+        title: "タスクを追加",
+      },
       common: {
         pending: "未確定",
       },
@@ -70,6 +92,7 @@ const resources = {
       },
       layout: {
         apiUnavailable: "API を利用できません",
+        failedToCreateIssue: "issue の作成に失敗しました",
         failedToLoadSummary: "summary の読み込みに失敗しました",
         failedToUpdateIssue: "issue の更新に失敗しました",
         loading: "読み込み中",
@@ -153,6 +176,28 @@ const resources = {
         title: "Agent Runs",
         workspacePending: "workspace pending",
       },
+      addIssue: {
+        cancel: "Cancel",
+        close: "Close",
+        errors: {
+          titleRequired: "Enter a title",
+        },
+        fields: {
+          assignee: "Assignee",
+          description: "Description",
+          priority: "Priority",
+          status: "Status",
+          title: "Title",
+        },
+        placeholders: {
+          assignee: "Unassigned",
+          description: "Background or completion criteria",
+          title: "Task name",
+        },
+        saving: "Adding...",
+        submit: "Add",
+        title: "Add task",
+      },
       common: {
         pending: "pending",
       },
@@ -207,6 +252,7 @@ const resources = {
       },
       layout: {
         apiUnavailable: "API unavailable",
+        failedToCreateIssue: "failed to create issue",
         failedToLoadSummary: "failed to load summary",
         failedToUpdateIssue: "failed to update issue",
         loading: "Loading",

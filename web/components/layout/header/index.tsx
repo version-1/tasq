@@ -8,7 +8,7 @@ type HeaderProps = {
   activePage: HeaderPage;
   issueCount: number | null;
   runCount: number | null;
-  onRefresh: () => void;
+  onAddTask: () => void;
 };
 
 const pages = [
@@ -22,7 +22,7 @@ export function Header({
   activePage,
   issueCount,
   runCount,
-  onRefresh,
+  onAddTask,
 }: HeaderProps) {
   const { t } = useTranslation();
 
@@ -61,7 +61,7 @@ export function Header({
         <div className={styles.statusStrip}>
           <span>{issueCount === null ? t("header.loading") : t("header.issueCount", { count: issueCount })}</span>
           <span>{runCount === null ? t("header.trackedRunLoading") : t("header.trackedRunCount", { count: runCount })}</span>
-          <button className={styles.primaryButton} type="button" onClick={onRefresh}>
+          <button className={styles.primaryButton} type="button" onClick={onAddTask}>
             <span aria-hidden="true">＋</span>
             {t("header.addTask")}
           </button>
