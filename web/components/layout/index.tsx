@@ -11,10 +11,10 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { fetchSummary, updateIssueStatus } from "@/lib/api";
+import { fetchProjects, fetchSummary, updateIssueStatus } from "@/lib/api";
 import "@/lib/i18n";
 import { i18n, type SupportedLanguage } from "@/lib/i18n";
-import type { IssueStatus, IssueSummary, Summary } from "@/lib/types";
+import type { IssueStatus, IssueSummary, Project, Summary } from "@/lib/types";
 import { Header } from "./header";
 import { Sidebar } from "./sidebar";
 import styles from "./index.module.css";
@@ -23,7 +23,7 @@ export type TasqPage = "issues" | "agents" | "workspace" | "settings";
 
 type LoadState =
   | { kind: "loading" }
-  | { kind: "ready"; summary: Summary }
+  | { kind: "ready"; projects: Project[]; summary: Summary }
   | { kind: "error"; message: string };
 
 type LayoutData = {
@@ -66,8 +66,8 @@ export function Layout({ children }: { children: ReactNode }) {
 
   const load = useCallback(async () => {
     try {
-      const summary = await fetchSummary();
-      setLoadState({ kind: "ready", summary });
+      const [summary, projects] = await Promise.all([fetchSummary(), fetchProjects()]);
+      setLoadState({ kind: "ready", projects, summary });
       setSelectedIssueID((current) => current ?? firstIssueID(summary));
     } catch (error) {
       setLoadState({
@@ -86,6 +86,8 @@ export function Layout({ children }: { children: ReactNode }) {
   }, [load, refreshIntervalMs]);
 
   const summary = loadState.kind === "ready" ? loadState.summary : null;
+  const projects = loadState.kind === "ready" ? loadState.projects : [];
+  const activeProject = projects[0] ?? null;
   const issues = useMemo(() => {
     if (!summary) return [];
     return summary.columns.flatMap((column) => column.issues);
@@ -131,10 +133,11 @@ export function Layout({ children }: { children: ReactNode }) {
 
   return (
     <div className={styles.appFrame}>
-      <Sidebar />
+      <Sidebar activeProjectID={activeProject?.id ?? null} projects={projects} />
       <main className={styles.shell}>
         <Header
           activePage={activePage}
+          projectName={activeProject?.name ?? null}
           issueCount={summary ? issues.length : null}
           runCount={summary ? summary.runs.length : null}
           onRefresh={() => void load()}

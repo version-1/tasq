@@ -2,9 +2,9 @@ root = "."
 tmp_dir = ".tmp/air-orchestrator"
 
 [build]
-cmd = "go build -o ./.tmp/air-orchestrator/orchestrator ./cmd/orchestrator"
-bin = ".tmp/air-orchestrator/orchestrator"
-full_bin = ".tmp/air-orchestrator/orchestrator -db /workspace/.data/tasq-orchestrator.sqlite -issue-tracker http://issue-tracker:8080"
+cmd = "mkdir -p .tmp/air-orchestrator && rm -f .tmp/air-orchestrator/orchestrator && go build -o .tmp/air-orchestrator/orchestrator ./cmd/orchestrator"
+bin = "./.tmp/air-orchestrator/orchestrator"
+full_bin = "./.tmp/air-orchestrator/orchestrator -db /workspace/.data/tasq-orchestrator.sqlite -issue-tracker http://issue-tracker:8080"
 include_dir = ["cmd", "db", "internal"]
 include_ext = ["go", "mod", "sql", "sum"]
 exclude_dir = [".data", ".git", ".tmp", ".worktrees", "web"]

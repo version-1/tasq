@@ -6,6 +6,7 @@ type HeaderPage = "issues" | "agents" | "workspace" | "settings";
 
 type HeaderProps = {
   activePage: HeaderPage;
+  projectName: string | null;
   issueCount: number | null;
   runCount: number | null;
   onRefresh: () => void;
@@ -20,11 +21,13 @@ const pages = [
 
 export function Header({
   activePage,
+  projectName,
   issueCount,
   runCount,
   onRefresh,
 }: HeaderProps) {
   const { t } = useTranslation();
+  const displayedProjectName = projectName ?? t("header.projectName");
 
   return (
     <header className={styles.header}>
@@ -33,7 +36,7 @@ export function Header({
           <span>{t("header.project")}</span>
           <span aria-hidden="true">/</span>
           <button className={styles.projectSwitch} type="button">
-            {t("header.projectName")}
+            {displayedProjectName}
             <span aria-hidden="true">⌄</span>
           </button>
         </div>
@@ -52,7 +55,7 @@ export function Header({
 
       <div className={styles.titleRow}>
         <div className={styles.titleGroup}>
-          <h1>{t(pageHeadingKey(activePage))}</h1>
+          <h1>{activePage === "issues" ? displayedProjectName : t(pageHeadingKey(activePage))}</h1>
           <button className={styles.moreButton} type="button" aria-label={t("header.moreProjectActions")}>
             ···
           </button>
@@ -94,10 +97,8 @@ export function Header({
   );
 }
 
-function pageHeadingKey(page: HeaderPage): string {
+function pageHeadingKey(page: Exclude<HeaderPage, "issues">): string {
   switch (page) {
-    case "issues":
-      return "header.productWebsite";
     case "agents":
       return "header.agentRuns";
     case "workspace":
