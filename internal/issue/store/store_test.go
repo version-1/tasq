@@ -92,6 +92,32 @@ func TestProjectCRUD(t *testing.T) {
 	}
 }
 
+func TestProjectsReturnsEmptyArray(t *testing.T) {
+	t.Parallel()
+
+	store, err := Open(context.Background(), filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer store.Close()
+
+	projects, err := store.Projects(context.Background())
+	if err != nil {
+		t.Fatalf("list projects: %v", err)
+	}
+	if projects == nil {
+		t.Fatal("projects is nil")
+	}
+
+	payload, err := json.Marshal(projects)
+	if err != nil {
+		t.Fatalf("marshal projects: %v", err)
+	}
+	if string(payload) != "[]" {
+		t.Fatalf("projects json = %s", payload)
+	}
+}
+
 func TestWorkspaceCRUD(t *testing.T) {
 	t.Parallel()
 
