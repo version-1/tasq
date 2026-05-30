@@ -3,7 +3,7 @@ services:
     image: golang:1.22-bookworm
     working_dir: /workspace
     command: >
-      sh -c "mkdir -p /workspace/.data &&
+      sh -c "mkdir -p /workspace/.data /workspace/.tmp &&
       go mod download &&
       go run github.com/air-verse/air@${AIR_VERSION:-v1.52.3} -c .air.issue-tracker.toml"
     ports:
@@ -18,7 +18,7 @@ services:
     image: golang:1.22-bookworm
     working_dir: /workspace
     command: >
-      sh -c "mkdir -p /workspace/.data &&
+      sh -c "mkdir -p /workspace/.data /workspace/.tmp &&
       go mod download &&
       go run github.com/air-verse/air@${AIR_VERSION:-v1.52.3} -c .air.orchestrator.toml"
     depends_on:
