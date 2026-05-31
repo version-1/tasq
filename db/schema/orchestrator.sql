@@ -31,9 +31,25 @@ CREATE TABLE IF NOT EXISTS workspace_metadata (
 	issue_id INTEGER NOT NULL,
 	path TEXT NOT NULL,
 	created_now INTEGER NOT NULL DEFAULT 0,
+	source_path TEXT NOT NULL DEFAULT '',
+	populated_at TEXT NOT NULL DEFAULT '',
+	cleanup_status TEXT NOT NULL DEFAULT '',
+	cleanup_at TEXT NOT NULL DEFAULT '',
+	last_error TEXT NOT NULL DEFAULT '',
 	created_at TEXT NOT NULL,
 	updated_at TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS workspace_setup_failures (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	issue_id INTEGER NOT NULL,
+	workspace_key TEXT NOT NULL DEFAULT '',
+	path TEXT NOT NULL DEFAULT '',
+	error TEXT NOT NULL,
+	occurred_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS workspace_setup_failures_issue_idx ON workspace_setup_failures(issue_id, id);
 
 CREATE TABLE IF NOT EXISTS outbox_events (
 	id INTEGER PRIMARY KEY AUTOINCREMENT,

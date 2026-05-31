@@ -90,7 +90,7 @@ Responsibilities:
 - workspace 内で task を実行する。
 - JSON-RPC 経由で execution progress を orchestrator に報告する。
 
-MVP では実 agent process は起動しません。issue-tracker/orchestrator contract を先に検証するため、最小限の run lifecycle のみを記録します。
+orchestrator は runner boundary を通じて Codex app-server を起動し、issue-tracker/orchestrator contract により run progress を記録します。
 
 ### workspace
 
@@ -102,7 +102,7 @@ Responsibilities:
 - isolated workspace で parallel execution と verification をサポートする。
 - debugging と recovery に必要な metadata を保持する。
 
-現在の workspace manager は sanitized per-issue workspace directory を作成し、その path を run state に記録します。terminal cleanup と repository population は今後の作業です。
+現在の workspace manager は sanitized per-issue workspace directory を作成し、新規 workspace を configured repository source から populate し、recovery と debugging のために cleanup/population metadata を記録します。
 
 ## Dependency Direction
 
@@ -190,14 +190,14 @@ issue-tracker は run event を idempotent に受け入れます。
 - `cmd/issue-tracker`
 - `cmd/orchestrator`
 - issue、work item、received orchestrator event、run snapshot のための issue-tracker SQLite table。
-- run と outbox event のための orchestrator SQLite table。
+- run、outbox event、runner event、workspace metadata、workspace setup failure のための orchestrator SQLite table。
 - web-ui と tui が利用する issue-tracker summary API。
 - lease-backed work item claim API。
 - idempotent run event receiver。
-- orchestrator の polling、claim、run creation、outbox delivery。
-- 最小限の simulated run lifecycle: `queued -> running -> succeeded`。
+- orchestrator の polling、claim、run creation、lease renewal、retry handling、workspace cleanup、outbox delivery。
+- Codex runner lifecycle: app-server startup、live-thread turn、enabled 時の continuation turn、terminal run status reporting。
 
-simulated lifecycle は意図的に一時的なものです。目的は Codex app-server runner、terminal workspace cleanup、repository population を追加する前に service boundary を検証することです。
+simulated runner は narrow test 用に残しますが、production wiring は Codex app-server runner を使います。
 
 ## API Surface
 
@@ -268,11 +268,6 @@ Manual MVP verification:
 
 ## Open Decisions
 
-- 正確な Codex app-server JSON-RPC contract。
-- Agent runner process lifecycle と cancellation behavior。
-- long-running real agent の lease renewal cadence。
-- Workspace cleanup policy と repository population strategy。
-- Retry limit と manual intervention threshold。
 - external tracker sync を issue-tracker 内に置くか provider interface の behind に置くか。
 - Production authentication、authorization、network exposure。
-- run log を SQLite に直接保存するか filesystem artifact として参照するか。
+- large full-fidelity Codex transcript を SQLite に残すか filesystem artifact に移すか。

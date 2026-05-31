@@ -31,17 +31,23 @@ Implemented or in progress:
 - Existing issue-tracker work queue polling and durable outbox delivery.
 - Claim-token-based lease renewal for active work item runs.
 - SQLite runner event logging and workspace metadata records.
+- Config-gated continuation turns on a live Codex app-server thread.
+- In-process retry scheduling with capped exponential backoff.
+- Active-run reconciliation for terminal/non-active issue states and stall handling.
+- Repository-source workspace population on first workspace creation.
+- Terminal and failed/cancelled workspace cleanup with cleanup metadata.
+- Operator-facing logs for unsent outbox events and workspace setup failures.
 
 Not yet implemented:
 
 - Dynamic `WORKFLOW.md` reload.
-- Full YAML front matter support.
 - Strict prompt rendering with full variable and filter checking.
-- Continuation turns on a live agent thread.
-- Stall detection and active-run reconciliation against tracker state.
-- Terminal workspace cleanup.
 - Token/rate-limit accounting.
 - Optional Symphony HTTP status/API surface.
+
+Tasq intentionally keeps workflow front matter parsing to the supported Tasq-specific subset
+documented in [WORKFLOW_CONTRACT.md](WORKFLOW_CONTRACT.md). Full generic YAML compatibility is not a
+current product requirement.
 
 ## Compatibility Notes
 

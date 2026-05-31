@@ -20,8 +20,11 @@ type Definition struct {
 type Config struct {
 	PollInterval      time.Duration
 	WorkspaceRoot     string
+	WorkspaceSource   string
 	MaxConcurrentRuns int
 	MaxTurns          int
+	ContinuationTurns bool
+	MaxRetryAttempts  int
 	MaxRetryBackoff   time.Duration
 	StallTimeout      time.Duration
 	CodexCommand      string
@@ -56,8 +59,11 @@ func DefaultConfig(workflowDir string) Config {
 	return Config{
 		PollInterval:      30 * time.Second,
 		WorkspaceRoot:     filepath.Join(os.TempDir(), "symphony_workspaces"),
+		WorkspaceSource:   workflowDir,
 		MaxConcurrentRuns: 10,
 		MaxTurns:          20,
+		ContinuationTurns: false,
+		MaxRetryAttempts:  3,
 		MaxRetryBackoff:   5 * time.Minute,
 		StallTimeout:      5 * time.Minute,
 		CodexCommand:      "codex app-server",
@@ -160,8 +166,11 @@ func applyValue(config *Config, section string, key string, value string) error 
 			config.PollInterval = parsed
 		}
 	case "workspace":
-		if key == "root" {
+		switch key {
+		case "root":
 			config.WorkspaceRoot = value
+		case "source":
+			config.WorkspaceSource = value
 		}
 	case "agent":
 		switch key {
@@ -177,6 +186,18 @@ func applyValue(config *Config, section string, key string, value string) error 
 				return fmt.Errorf("workflow_parse_error: agent.max_turns: %w", err)
 			}
 			config.MaxTurns = parsed
+		case "continuation_turns_enabled":
+			parsed, err := parseBool(value)
+			if err != nil {
+				return fmt.Errorf("workflow_parse_error: agent.continuation_turns_enabled: %w", err)
+			}
+			config.ContinuationTurns = parsed
+		case "max_retry_attempts":
+			parsed, err := parsePositiveInt(value)
+			if err != nil {
+				return fmt.Errorf("workflow_parse_error: agent.max_retry_attempts: %w", err)
+			}
+			config.MaxRetryAttempts = parsed
 		case "max_retry_backoff_ms":
 			parsed, err := parseMillis(value)
 			if err != nil {
@@ -221,6 +242,9 @@ func normalizeConfig(config *Config, workflowDir string) error {
 	if config.MaxTurns <= 0 {
 		return errors.New("workflow_parse_error: agent.max_turns must be positive")
 	}
+	if config.MaxRetryAttempts <= 0 {
+		return errors.New("workflow_parse_error: agent.max_retry_attempts must be positive")
+	}
 	if config.MaxRetryBackoff <= 0 {
 		return errors.New("workflow_parse_error: agent.max_retry_backoff_ms must be positive")
 	}
@@ -238,6 +262,11 @@ func normalizeConfig(config *Config, workflowDir string) error {
 		return err
 	}
 	config.WorkspaceRoot = root
+	source, err := resolveConfigPath(config.WorkspaceSource, workflowDir)
+	if err != nil {
+		return err
+	}
+	config.WorkspaceSource = source
 	return nil
 }
 
@@ -288,4 +317,15 @@ func parsePositiveInt(value string) (int, error) {
 		return 0, errors.New("must be positive")
 	}
 	return parsed, nil
+}
+
+func parseBool(value string) (bool, error) {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "true", "yes", "on":
+		return true, nil
+	case "false", "no", "off":
+		return false, nil
+	default:
+		return false, fmt.Errorf("invalid bool %q", value)
+	}
 }
