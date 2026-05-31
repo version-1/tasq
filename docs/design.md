@@ -7,7 +7,7 @@ The current architecture separates issue management from orchestration. The issu
 ## Goals
 
 - Keep issue state and run state as separate concepts with separate owners.
-- Let web-ui and tui use one user-facing API surface.
+- Let web-ui, tui, and agent-facing CLI tools use one user-facing API surface.
 - Make work assignment safe for parallel orchestrator instances.
 - Preserve run state changes when the issue-tracker is temporarily unavailable.
 - Keep the first implementation slice small enough to verify before adding a real Codex app-server runner.
@@ -44,6 +44,18 @@ Responsibilities:
 - Fetch issue summaries from the issue-tracker.
 - Render issue columns and latest run state.
 - Support one-shot and watch-mode rendering.
+- Avoid direct calls to the orchestrator.
+
+### tq
+
+`tq` is a standalone Go CLI for agents and workflow tools that need to mutate issue state without embedding HTTP details.
+
+Responsibilities:
+
+- Create, read, list, and update issues through the issue-tracker API.
+- Support human-readable output by default and JSON output for tool use.
+- Resolve the issue-tracker API URL from `--api-url`, `TQ_API_URL`, or `http://localhost:8080`.
+- Return machine-readable JSON errors on stderr and a non-zero exit code when a command fails.
 - Avoid direct calls to the orchestrator.
 
 ### issue-tracker
@@ -106,14 +118,14 @@ The current workspace manager creates sanitized per-issue workspace directories,
 
 ## Dependency Direction
 
-User-facing clients depend on the issue-tracker API only.
+User-facing clients and agent-facing workflow tools depend on the issue-tracker API only.
 
 The orchestrator depends on the issue-tracker work queue and event receiver APIs. The issue-tracker does not poll the orchestrator. Instead, it stores the latest run snapshots from orchestrator push events.
 
 ```text
 web-ui ─┐
-        ├─ issue-tracker ── SQLite: issues, work_items, received_events, run_snapshots
-tui ────┘       ▲
+tui ────┼─ issue-tracker ── SQLite: issues, work_items, received_events, run_snapshots
+tq ─────┘       ▲
                 │ claim work item / push run event
                 │
         orchestrator ───── SQLite: runs, outbox_events
@@ -188,10 +200,12 @@ This allows the orchestrator to retry delivery without double-applying state tra
 The current implementation slice includes:
 
 - `cmd/issue-tracker`
+- `cmd/tq`
 - `cmd/orchestrator`
 - issue-tracker SQLite tables for issues, work items, received orchestrator events, and run snapshots.
 - orchestrator SQLite tables for runs, outbox events, runner events, workspace metadata, and workspace setup failures.
 - issue-tracker summary API consumed by web-ui and tui.
+- issue CRUD API consumed by `tq`.
 - lease-backed work item claim API.
 - idempotent run event receiver.
 - orchestrator polling, claim, run creation, lease renewal, retry handling, workspace cleanup, and outbox delivery.
@@ -226,6 +240,15 @@ Current issue-tracker endpoints:
 
 JSON success responses use `{ "data": ..., "meta": {} }`. JSON error responses use `{ "error": { "code": "...", "message": "..." }, "meta": {} }`.
 
+The `tq` CLI wraps issue CRUD endpoints with these commands:
+
+- `tq issue list`
+- `tq issue get <id>`
+- `tq issue create --title <title> [--description ...] [--status ...] [--priority ...] [--assignee ...]`
+- `tq issue update <id> [--title ...] [--description ...] [--status ...] [--priority ...] [--assignee ...]`
+
+`tq` uses human-readable output by default and JSON output when `--output json` is set.
+
 The orchestrator currently has no user-facing HTTP API. Its external dependency is the issue-tracker API.
 
 ## Development Environment
@@ -241,6 +264,11 @@ Recommended commands:
 - `make web-up`
 - `make tui-up`
 - `make dev-status`
+
+Host commands:
+
+- `go run ./cmd/tq --api-url http://localhost:8080 issue list`
+- `TQ_API_URL=http://localhost:8080 go run ./cmd/tq issue get 1`
 
 `make web-up` starts the issue-tracker, orchestrator, and web-ui. The web UI proxies `/api/v1/...` to the issue-tracker inside the Compose network.
 

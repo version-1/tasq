@@ -6,6 +6,7 @@ Local-first issue tracker and task orchestrator for managing executable work, as
 
 - Issue Tracker: Go REST API backed by SQLite. It owns issues, work items, and UI summaries.
 - Orchestrator: Go worker backed by SQLite. It claims executable work and records run state.
+- `tq`: Go CLI for agents and workflow tools to create, read, list, and update issues through the issue-tracker API.
 - Web UI: Next.js client for the issue-tracker API.
 - TUI: Go terminal client for the same issue-tracker API.
 
@@ -74,3 +75,35 @@ Japanese counterpart: [README.ja.md](README.ja.md).
 - Compose stores Go module/build caches and `web/node_modules` in named Docker volumes.
 - The orchestrator reads `WORKFLOW.md` for Symphony-oriented runtime settings.
 - The Web UI calls the issue-tracker API through `NEXT_PUBLIC_ISSUE_TRACKER_URL` when served from a different origin.
+- `tq` resolves the issue-tracker API URL from `--api-url`, `TQ_API_URL`, or `http://localhost:8080`.
+
+## tq CLI
+
+List issues:
+
+```sh
+go run ./cmd/tq --api-url http://localhost:8080 issue list
+```
+
+Get an issue through the default `TQ_API_URL`:
+
+```sh
+TQ_API_URL=http://localhost:8080 go run ./cmd/tq issue get 1
+```
+
+Create an issue:
+
+```sh
+go run ./cmd/tq issue create \
+  --api-url http://localhost:8080 \
+  --title "Wire Symphony workflow" \
+  --description "Define the first workflow contract" \
+  --status ready \
+  --priority high
+```
+
+Use `--output json` for machine-readable output:
+
+```sh
+go run ./cmd/tq --api-url http://localhost:8080 --output json issue list
+```
