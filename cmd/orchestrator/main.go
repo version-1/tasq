@@ -4,10 +4,12 @@ import (
 	"context"
 	"flag"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"github.com/version-1/tasq/internal/orchestrator/httpserver"
 	"github.com/version-1/tasq/internal/orchestrator/runner"
 	"github.com/version-1/tasq/internal/orchestrator/runstore"
 	"github.com/version-1/tasq/internal/orchestrator/tracker"
@@ -22,6 +24,7 @@ func main() {
 	pollInterval := flag.Duration("poll-interval", 0, "override work item polling interval")
 	leaseSeconds := flag.Int("lease-seconds", 30, "work item claim lease duration")
 	workflowPath := flag.String("workflow", "WORKFLOW.md", "Symphony workflow file path")
+	httpPort := flag.Int("port", -1, "orchestrator HTTP server port; overrides workflow server.port when >= 0")
 	flag.Parse()
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -48,6 +51,17 @@ func main() {
 	orchestratorWorker, err := worker.NewWithConfig(store, client, *orchestratorID, *leaseSeconds, definition, runner.CodexRunner{})
 	if err != nil {
 		log.Fatalf("create orchestrator worker: %v", err)
+	}
+	port := definition.Config.ServerPort
+	if *httpPort >= 0 {
+		port = *httpPort
+	}
+	if port >= 0 {
+		address, err := httpserver.ListenAndServe(ctx, port, httpserver.New(store, orchestratorWorker).Handler())
+		if err != nil && err != http.ErrServerClosed {
+			log.Fatalf("start orchestrator http server: %v", err)
+		}
+		log.Printf("orchestrator http server listening on %s", address)
 	}
 	log.Printf("orchestrator %s polling %s every %s workspace_root=%s", *orchestratorID, *issueTrackerURL, definition.Config.PollInterval.String(), definition.Config.WorkspaceRoot)
 	orchestratorWorker.Run(ctx)

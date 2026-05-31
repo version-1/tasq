@@ -2,8 +2,12 @@ package runstore
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"path/filepath"
 	"testing"
+
+	"github.com/version-1/tasq/internal/orchestrator/run"
 )
 
 func TestOpenAppliesOrchestratorSchema(t *testing.T) {
@@ -18,6 +22,8 @@ func TestOpenAppliesOrchestratorSchema(t *testing.T) {
 	for _, name := range []string{
 		"runs",
 		"runs_work_item_idx",
+		"runs_issue_idx",
+		"runs_status_updated_idx",
 		"runner_events",
 		"runner_events_run_idx",
 		"workspace_metadata",
@@ -29,6 +35,62 @@ func TestOpenAppliesOrchestratorSchema(t *testing.T) {
 		if !schemaObjectExists(t, store, name) {
 			t.Fatalf("schema object %q does not exist", name)
 		}
+	}
+}
+
+func TestStoreQueriesActiveRunsAndLatestRunByIssueID(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store, err := Open(ctx, filepath.Join(t.TempDir(), "orchestrator.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer store.Close()
+
+	queued := createRun(t, ctx, store, 1, 101)
+	running := createRun(t, ctx, store, 2, 201)
+	running, err = store.UpdateRunStatus(ctx, running.RunID, run.StatusRunning, "")
+	if err != nil {
+		t.Fatalf("mark running: %v", err)
+	}
+	succeeded := createRun(t, ctx, store, 3, 301)
+	if _, err := store.UpdateRunStatus(ctx, succeeded.RunID, run.StatusSucceeded, ""); err != nil {
+		t.Fatalf("mark succeeded: %v", err)
+	}
+	latestForIssue := createRun(t, ctx, store, 2, 202)
+
+	activeRuns, err := store.ActiveRuns(ctx)
+	if err != nil {
+		t.Fatalf("active runs: %v", err)
+	}
+	activeByRunID := map[string]run.Run{}
+	for _, activeRun := range activeRuns {
+		activeByRunID[activeRun.RunID] = activeRun
+	}
+	if _, ok := activeByRunID[queued.RunID]; !ok {
+		t.Fatalf("queued run missing from active runs: %+v", activeRuns)
+	}
+	if _, ok := activeByRunID[running.RunID]; !ok {
+		t.Fatalf("running run missing from active runs: %+v", activeRuns)
+	}
+	if _, ok := activeByRunID[latestForIssue.RunID]; !ok {
+		t.Fatalf("latest queued run missing from active runs: %+v", activeRuns)
+	}
+	if _, ok := activeByRunID[succeeded.RunID]; ok {
+		t.Fatalf("succeeded run should not be active: %+v", activeRuns)
+	}
+
+	latest, err := store.RunByIssueID(ctx, 2)
+	if err != nil {
+		t.Fatalf("run by issue id: %v", err)
+	}
+	if latest.RunID != latestForIssue.RunID {
+		t.Fatalf("latest run = %s, want %s", latest.RunID, latestForIssue.RunID)
+	}
+
+	if _, err := store.RunByIssueID(ctx, 99); !errors.Is(err, sql.ErrNoRows) {
+		t.Fatalf("missing issue error = %v, want sql.ErrNoRows", err)
 	}
 }
 
@@ -98,4 +160,21 @@ func schemaObjectExists(t *testing.T, store *Store, name string) bool {
 		t.Fatalf("query schema object %q: %v", name, err)
 	}
 	return exists
+}
+
+func createRun(t *testing.T, ctx context.Context, store *Store, issueID int64, workItemID int64) run.Run {
+	t.Helper()
+
+	storedRun, err := store.CreateRun(ctx, CreateRunInput{
+		IssueID:        issueID,
+		WorkItemID:     workItemID,
+		ClaimToken:     "claim-token",
+		Workspace:      "/tmp/workspace",
+		Attempt:        1,
+		OrchestratorID: "orchestrator",
+	})
+	if err != nil {
+		t.Fatalf("create run: %v", err)
+	}
+	return storedRun
 }

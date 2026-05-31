@@ -35,6 +35,7 @@ type Worker struct {
 	workspaceManager  *workspace.Manager
 	running           map[int64]runningRun
 	claimed           map[int64]struct{}
+	refreshCh         chan struct{}
 }
 
 type trackerClient interface {
@@ -92,7 +93,15 @@ func NewWithConfig(store *runstore.Store, client trackerClient, orchestratorID s
 		workspaceManager:  workspaceManager,
 		running:           map[int64]runningRun{},
 		claimed:           map[int64]struct{}{},
+		refreshCh:         make(chan struct{}, 1),
 	}, nil
+}
+
+func (w *Worker) RequestRefresh() {
+	select {
+	case w.refreshCh <- struct{}{}:
+	default:
+	}
 }
 
 func (w *Worker) Run(ctx context.Context) {
@@ -105,6 +114,8 @@ func (w *Worker) Run(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			return
+		case <-w.refreshCh:
+			w.tick(ctx)
 		case <-ticker.C:
 			w.tick(ctx)
 		}
