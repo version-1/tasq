@@ -173,6 +173,122 @@ func TestWorkspaceCRUD(t *testing.T) {
 	}
 }
 
+func TestIssuesByStates(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store, err := Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer store.Close()
+
+	backlog, err := store.CreateIssue(ctx, entity.CreateIssueInput{Title: "Plan tracker", Status: entity.StatusBacklog})
+	if err != nil {
+		t.Fatalf("create backlog issue: %v", err)
+	}
+	ready, err := store.CreateIssue(ctx, entity.CreateIssueInput{Title: "Build worker", Status: entity.StatusReady})
+	if err != nil {
+		t.Fatalf("create ready issue: %v", err)
+	}
+	review, err := store.CreateIssue(ctx, entity.CreateIssueInput{Title: "Review API", Status: entity.StatusReview})
+	if err != nil {
+		t.Fatalf("create review issue: %v", err)
+	}
+
+	filtered, err := store.IssuesByStates(ctx, []entity.Status{entity.StatusReady, entity.StatusReview})
+	if err != nil {
+		t.Fatalf("list issues by states: %v", err)
+	}
+	assertIssueIDs(t, filtered, []int64{ready.ID, review.ID})
+	assertIssueStatuses(t, filtered, []entity.Status{entity.StatusReady, entity.StatusReview})
+
+	allByStates, err := store.IssuesByStates(ctx, nil)
+	if err != nil {
+		t.Fatalf("list issues with empty states: %v", err)
+	}
+	all, err := store.Issues(ctx)
+	if err != nil {
+		t.Fatalf("list all issues: %v", err)
+	}
+	assertIssueIDs(t, allByStates, []int64{backlog.ID, ready.ID, review.ID})
+	if len(allByStates) != len(all) {
+		t.Fatalf("empty states issue count = %d, all issue count = %d", len(allByStates), len(all))
+	}
+}
+
+func TestIssueStatesByIDs(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store, err := Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer store.Close()
+
+	backlog, err := store.CreateIssue(ctx, entity.CreateIssueInput{Title: "Plan tracker", Status: entity.StatusBacklog})
+	if err != nil {
+		t.Fatalf("create backlog issue: %v", err)
+	}
+	ready, err := store.CreateIssue(ctx, entity.CreateIssueInput{Title: "Build worker", Status: entity.StatusReady})
+	if err != nil {
+		t.Fatalf("create ready issue: %v", err)
+	}
+	review, err := store.CreateIssue(ctx, entity.CreateIssueInput{Title: "Review API", Status: entity.StatusReview})
+	if err != nil {
+		t.Fatalf("create review issue: %v", err)
+	}
+
+	states, err := store.IssueStatesByIDs(ctx, []int64{review.ID, 999999, backlog.ID, ready.ID})
+	if err != nil {
+		t.Fatalf("list issue states by ids: %v", err)
+	}
+	if len(states) != 3 {
+		t.Fatalf("issue state count = %d, states = %+v", len(states), states)
+	}
+	got := map[int64]entity.Status{}
+	for _, state := range states {
+		got[state.ID] = state.Status
+	}
+	for id, want := range map[int64]entity.Status{
+		backlog.ID: entity.StatusBacklog,
+		ready.ID:   entity.StatusReady,
+		review.ID:  entity.StatusReview,
+	} {
+		if got[id] != want {
+			t.Fatalf("issue state for id %d = %q, want %q", id, got[id], want)
+		}
+	}
+	if _, ok := got[999999]; ok {
+		t.Fatal("missing issue id was returned")
+	}
+}
+
+func TestIssueStatesByIDsWithEmptyIDsDoesNotQuery(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store, err := Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	if err := store.Close(); err != nil {
+		t.Fatalf("close store: %v", err)
+	}
+
+	states, err := store.IssueStatesByIDs(ctx, nil)
+	if err != nil {
+		t.Fatalf("list issue states by empty ids: %v", err)
+	}
+	if states == nil {
+		t.Fatal("issue states is nil")
+	}
+	if len(states) != 0 {
+		t.Fatalf("issue state count = %d", len(states))
+	}
+}
+
 func TestSummaryReturnsEmptyRunsArray(t *testing.T) {
 	t.Parallel()
 
@@ -261,4 +377,35 @@ func schemaObjectExists(t *testing.T, store *Store, name string) bool {
 		t.Fatalf("query schema object %q: %v", name, err)
 	}
 	return exists
+}
+
+func assertIssueIDs(t *testing.T, issues []entity.Issue, want []int64) {
+	t.Helper()
+
+	got := map[int64]bool{}
+	for _, issue := range issues {
+		got[issue.ID] = true
+	}
+	for _, id := range want {
+		if !got[id] {
+			t.Fatalf("issue id %d is missing from %+v", id, issues)
+		}
+	}
+	if len(got) != len(want) {
+		t.Fatalf("issue ids count = %d, want %d, issues = %+v", len(got), len(want), issues)
+	}
+}
+
+func assertIssueStatuses(t *testing.T, issues []entity.Issue, want []entity.Status) {
+	t.Helper()
+
+	allowed := map[entity.Status]bool{}
+	for _, status := range want {
+		allowed[status] = true
+	}
+	for _, issue := range issues {
+		if !allowed[issue.Status] {
+			t.Fatalf("issue status %q is not expected in %+v", issue.Status, issues)
+		}
+	}
 }

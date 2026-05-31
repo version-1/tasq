@@ -37,6 +37,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("DELETE /api/v1/workspaces/{id}", s.deleteWorkspace)
 	mux.HandleFunc("GET /api/v1/issues", s.issues)
 	mux.HandleFunc("POST /api/v1/issues", s.createIssue)
+	mux.HandleFunc("POST /api/v1/issues/states", s.issueStates)
 	mux.HandleFunc("GET /api/v1/issues/{id}", s.issue)
 	mux.HandleFunc("PATCH /api/v1/issues/{id}", s.updateIssue)
 	mux.HandleFunc("POST /api/v1/work-items/claim", s.claimWorkItem)
@@ -191,12 +192,38 @@ func (s *Server) deleteWorkspace(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) issues(w http.ResponseWriter, r *http.Request) {
-	items, err := s.store.Issues(r.Context())
+	states, ok := parseIssueStates(w, r)
+	if !ok {
+		return
+	}
+	items, err := s.store.IssuesByStates(r.Context(), states)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "issues.list.internal_error", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, items)
+}
+
+func parseIssueStates(w http.ResponseWriter, r *http.Request) ([]entity.Status, bool) {
+	value := r.URL.Query().Get("states")
+	if value == "" {
+		return nil, true
+	}
+
+	parts := strings.Split(value, ",")
+	states := make([]entity.Status, 0, len(parts))
+	for _, part := range parts {
+		state := entity.Status(strings.TrimSpace(part))
+		if state == "" {
+			continue
+		}
+		if !entity.IsValidStatus(state) {
+			writeError(w, http.StatusBadRequest, "issues.list.invalid_states", errors.New("states contains invalid status"))
+			return nil, false
+		}
+		states = append(states, state)
+	}
+	return states, true
 }
 
 func (s *Server) createIssue(w http.ResponseWriter, r *http.Request) {
@@ -242,6 +269,24 @@ func (s *Server) updateIssue(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, updated)
+}
+
+type issueStatesInput struct {
+	IDs []int64 `json:"ids"`
+}
+
+func (s *Server) issueStates(w http.ResponseWriter, r *http.Request) {
+	var input issueStatesInput
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		writeError(w, http.StatusBadRequest, "issues.states.invalid_request", err)
+		return
+	}
+	items, err := s.store.IssueStatesByIDs(r.Context(), input.IDs)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "issues.states.internal_error", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, items)
 }
 
 func (s *Server) claimWorkItem(w http.ResponseWriter, r *http.Request) {
