@@ -203,6 +203,18 @@ export interface ClaimWorkItemOutput {
   workItem: ClaimWorkItemOutputWorkItem;
 }
 
+export interface RenewWorkItemLeaseInput {
+  workItemId: number;
+  claimToken: string;
+  orchestratorId: string;
+  /** @minimum 1 */
+  leaseSeconds: number;
+}
+
+export interface RenewWorkItemLeaseOutput {
+  workItem: WorkItem;
+}
+
 export interface RunEventInput {
   eventId: string;
   workItemId: number;
@@ -284,6 +296,11 @@ export interface IssueListResponse {
 
 export interface ClaimWorkItemResponse {
   data: ClaimWorkItemOutput;
+  meta: ApiMeta;
+}
+
+export interface RenewWorkItemLeaseResponse {
+  data: RenewWorkItemLeaseOutput;
   meta: ApiMeta;
 }
 
@@ -1164,6 +1181,56 @@ export const postApiV1WorkItemsClaim = async (claimWorkItemInput: ClaimWorkItemI
   
   const data: postApiV1WorkItemsClaimResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as postApiV1WorkItemsClaimResponse
+}
+
+
+
+/**
+ * @summary Renew a claimed work item lease.
+ */
+export type postApiV1WorkItemsRenewLeaseResponse200 = {
+  data: RenewWorkItemLeaseResponse
+  status: 200
+}
+
+export type postApiV1WorkItemsRenewLeaseResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+    
+export type postApiV1WorkItemsRenewLeaseResponseSuccess = (postApiV1WorkItemsRenewLeaseResponse200) & {
+  headers: Headers;
+};
+export type postApiV1WorkItemsRenewLeaseResponseError = (postApiV1WorkItemsRenewLeaseResponse400) & {
+  headers: Headers;
+};
+
+export type postApiV1WorkItemsRenewLeaseResponse = (postApiV1WorkItemsRenewLeaseResponseSuccess | postApiV1WorkItemsRenewLeaseResponseError)
+
+export const getPostApiV1WorkItemsRenewLeaseUrl = () => {
+
+
+  
+
+  return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/work-items/renew-lease`
+}
+
+export const postApiV1WorkItemsRenewLease = async (renewWorkItemLeaseInput: RenewWorkItemLeaseInput, options?: RequestInit): Promise<postApiV1WorkItemsRenewLeaseResponse> => {
+  
+  const res = await fetch(getPostApiV1WorkItemsRenewLeaseUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      renewWorkItemLeaseInput,)
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: postApiV1WorkItemsRenewLeaseResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as postApiV1WorkItemsRenewLeaseResponse
 }
 
 

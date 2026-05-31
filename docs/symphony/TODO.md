@@ -4,25 +4,20 @@ This document tracks Symphony-related implementation work that is intentionally 
 
 ## Orchestrator
 
-- Replace the simulated runner with a real Codex app-server runner.
-- Define and implement the exact Codex app-server JSON-RPC contract.
-- Add runner process lifecycle management, cancellation, and timeout handling.
-- Add long-running lease renewal for active agent runs.
-- Persist enough runner progress and logs for debugging and recovery.
-- Define retry limits and manual intervention thresholds for failed runs.
+- Add continuation turns on a live Codex app-server thread.
+- Add retry scheduling, retry limits, and manual intervention thresholds for failed runs.
+- Add active-run reconciliation and stall handling for long-running Codex turns.
 
 ## Workspace
 
 - Populate per-issue workspaces from the repository instead of only creating directories.
 - Define workspace cleanup and retention policy.
 - Add terminal cleanup for completed, failed, and cancelled runs.
-- Preserve enough workspace metadata to support recovery and debugging.
+- Expand workspace metadata with repository population and cleanup state.
 
 ## Workflow Contract
 
-- Decide whether `WORKFLOW.md` should be reloaded dynamically or only at process startup.
 - Expand workflow parsing if the project needs full YAML front matter compatibility.
-- Document supported Tasq-specific workflow fields once the contract stabilizes.
 
 ## Tracker Integration
 
@@ -32,5 +27,5 @@ This document tracks Symphony-related implementation work that is intentionally 
 
 ## Observability
 
-- Decide whether run logs live in SQLite or filesystem artifacts.
 - Add operator-facing visibility for stuck leases, outbox retries, and failed workspace setup.
+- Decide whether large Codex transcript artifacts should stay in SQLite or move to filesystem artifacts.

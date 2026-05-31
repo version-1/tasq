@@ -23,6 +23,10 @@ type Worker struct {
 	leaseSeconds     int
 	maxConcurrent    int
 	maxTurns         int
+	promptTemplate   string
+	codexCommand     string
+	codexReadTimeout time.Duration
+	codexTurnTimeout time.Duration
 	runner           runner.Runner
 	workspaceManager *workspace.Manager
 	running          map[int64]runningRun
@@ -35,7 +39,8 @@ type runningRun struct {
 	startedAt time.Time
 }
 
-func NewWithConfig(store *runstore.Store, client *tracker.Client, orchestratorID string, leaseSeconds int, config workflow.Config, agentRunner runner.Runner) (*Worker, error) {
+func NewWithConfig(store *runstore.Store, client *tracker.Client, orchestratorID string, leaseSeconds int, definition workflow.Definition, agentRunner runner.Runner) (*Worker, error) {
+	config := definition.Config
 	if config.PollInterval <= 0 {
 		config.PollInterval = 3 * time.Second
 	}
@@ -63,6 +68,10 @@ func NewWithConfig(store *runstore.Store, client *tracker.Client, orchestratorID
 		leaseSeconds:     leaseSeconds,
 		maxConcurrent:    config.MaxConcurrentRuns,
 		maxTurns:         config.MaxTurns,
+		promptTemplate:   definition.PromptTemplate,
+		codexCommand:     config.CodexCommand,
+		codexReadTimeout: config.CodexReadTimeout,
+		codexTurnTimeout: config.CodexTurnTimeout,
 		runner:           agentRunner,
 		workspaceManager: workspaceManager,
 		running:          map[int64]runningRun{},
@@ -111,6 +120,14 @@ func (w *Worker) tick(ctx context.Context) {
 		log.Printf("create workspace issue_id=%d: %v", item.IssueID, err)
 		return
 	}
+	if err := w.store.UpsertWorkspaceMetadata(ctx, runstore.WorkspaceMetadataInput{
+		WorkspaceKey: workspace.WorkspaceKey,
+		IssueID:      item.IssueID,
+		Path:         workspace.Path,
+		CreatedNow:   workspace.CreatedNow,
+	}); err != nil {
+		log.Printf("record workspace metadata issue_id=%d workspace=%s: %v", item.IssueID, workspace.Path, err)
+	}
 	createdRun, err := w.store.CreateRun(ctx, runstore.CreateRunInput{
 		IssueID:        item.IssueID,
 		WorkItemID:     item.ID,
@@ -136,12 +153,7 @@ func (w *Worker) tick(ctx context.Context) {
 	if err := w.flushOutbox(ctx); err != nil {
 		log.Printf("flush outbox: %v", err)
 	}
-	result := w.runner.Run(ctx, runner.Task{
-		WorkItem:  *item,
-		RunID:     createdRun.RunID,
-		Workspace: workspace,
-		MaxTurns:  w.maxTurns,
-	})
+	result := w.runWithLeaseRenewal(ctx, createdRun.RunID, *item, workspace)
 	if result.Status == "" {
 		result.Status = run.StatusSucceeded
 	}
@@ -151,6 +163,53 @@ func (w *Worker) tick(ctx context.Context) {
 	}
 	if err := w.flushOutbox(ctx); err != nil {
 		log.Printf("flush outbox: %v", err)
+	}
+}
+
+func (w *Worker) runWithLeaseRenewal(ctx context.Context, runID string, item entity.WorkItem, workspace workspace.Workspace) runner.Result {
+	runCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	done := make(chan runner.Result, 1)
+	go func() {
+		done <- w.runner.Run(runCtx, runner.Task{
+			WorkItem:       item,
+			RunID:          runID,
+			Workspace:      workspace,
+			PromptTemplate: w.promptTemplate,
+			MaxTurns:       w.maxTurns,
+			Command:        w.codexCommand,
+			ReadTimeout:    w.codexReadTimeout,
+			TurnTimeout:    w.codexTurnTimeout,
+			OnEvent: func(event runner.Event) {
+				if err := w.store.RecordRunnerEvent(context.Background(), runID, event.EventType, event.Message, event.PayloadJSON); err != nil {
+					log.Printf("record runner event run_id=%s event_type=%s: %v", runID, event.EventType, err)
+				}
+			},
+		})
+	}()
+	renewInterval := time.Duration(w.leaseSeconds) * time.Second / 2
+	if renewInterval <= 0 {
+		renewInterval = 15 * time.Second
+	}
+	ticker := time.NewTicker(renewInterval)
+	defer ticker.Stop()
+	for {
+		select {
+		case result := <-done:
+			return result
+		case <-ctx.Done():
+			cancel()
+			return <-done
+		case <-ticker.C:
+			if err := w.client.RenewWorkItemLease(ctx, entity.RenewWorkItemLeaseInput{
+				WorkItemID:     item.ID,
+				ClaimToken:     item.ClaimToken,
+				OrchestratorID: w.orchestratorID,
+				LeaseSeconds:   w.leaseSeconds,
+			}); err != nil {
+				log.Printf("renew work item lease issue_id=%d work_item_id=%d: %v", item.IssueID, item.ID, err)
+			}
+		}
 	}
 }
 

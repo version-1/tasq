@@ -101,6 +101,79 @@ func (s *Store) UpdateRunStatus(ctx context.Context, runID string, status run.St
 	return updatedRun, nil
 }
 
+func (s *Store) RecordRunnerEvent(ctx context.Context, runID string, eventType string, message string, payloadJSON string) error {
+	if eventType == "" {
+		eventType = "event"
+	}
+	_, err := s.db.ExecContext(ctx, `INSERT INTO runner_events (
+		run_id, event_type, message, payload_json, occurred_at
+	) VALUES (?, ?, ?, ?, ?)`, runID, eventType, message, payloadJSON, nowString())
+	if err != nil {
+		return fmt.Errorf("record runner event: %w", err)
+	}
+	return nil
+}
+
+func (s *Store) RunnerEvents(ctx context.Context, runID string, limit int) ([]run.RunnerEvent, error) {
+	if limit <= 0 {
+		limit = 100
+	}
+	rows, err := s.db.QueryContext(ctx, `SELECT id, run_id, event_type, message, payload_json, occurred_at
+		FROM runner_events
+		WHERE run_id = ?
+		ORDER BY id ASC
+		LIMIT ?`, runID, limit)
+	if err != nil {
+		return nil, fmt.Errorf("list runner events: %w", err)
+	}
+	defer rows.Close()
+	var events []run.RunnerEvent
+	for rows.Next() {
+		var event run.RunnerEvent
+		var occurredAt string
+		if err := rows.Scan(&event.ID, &event.RunID, &event.EventType, &event.Message, &event.PayloadJSON, &occurredAt); err != nil {
+			return nil, err
+		}
+		parsed, err := parseTime(occurredAt)
+		if err != nil {
+			return nil, err
+		}
+		event.OccurredAt = parsed
+		events = append(events, event)
+	}
+	return events, rows.Err()
+}
+
+func (s *Store) UpsertWorkspaceMetadata(ctx context.Context, input WorkspaceMetadataInput) error {
+	now := nowString()
+	_, err := s.db.ExecContext(ctx, `INSERT INTO workspace_metadata (
+		workspace_key, issue_id, path, created_now, created_at, updated_at
+	) VALUES (?, ?, ?, ?, ?, ?)
+	ON CONFLICT(workspace_key) DO UPDATE SET
+		issue_id = excluded.issue_id,
+		path = excluded.path,
+		created_now = excluded.created_now,
+		updated_at = excluded.updated_at`,
+		input.WorkspaceKey,
+		input.IssueID,
+		input.Path,
+		boolInt(input.CreatedNow),
+		now,
+		now,
+	)
+	if err != nil {
+		return fmt.Errorf("upsert workspace metadata: %w", err)
+	}
+	return nil
+}
+
+type WorkspaceMetadataInput struct {
+	WorkspaceKey string
+	IssueID      int64
+	Path         string
+	CreatedNow   bool
+}
+
 func (s *Store) RunByRunID(ctx context.Context, runID string) (run.Run, error) {
 	row := s.db.QueryRowContext(ctx, `SELECT id, run_id, issue_id, work_item_id, claim_token, status, workspace, attempt, error, orchestrator_id, created_at, updated_at
 		FROM runs WHERE run_id = ?`, runID)
@@ -217,6 +290,13 @@ func randomID(prefix string) (string, error) {
 
 func nowString() string {
 	return formatTime(time.Now().UTC())
+}
+
+func boolInt(value bool) int {
+	if value {
+		return 1
+	}
+	return 0
 }
 
 func formatTime(value time.Time) string {

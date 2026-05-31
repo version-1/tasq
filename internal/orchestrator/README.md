@@ -79,9 +79,9 @@ Responsibilities:
 
 - Define the runner interface.
 - Define runner task input and result output.
-- Provide the temporary simulated runner used by the MVP.
+- Provide a simulated runner for tests and a Codex app-server subprocess runner for real execution.
 
-The simulated runner exists only to verify the issue-tracker/orchestrator contract. A real Codex app-server runner should be added behind the same interface.
+The Codex runner follows the contract documented in [../../docs/symphony/CODEX_APP_SERVER.md](../../docs/symphony/CODEX_APP_SERVER.md).
 
 ### `worker`
 

@@ -25,6 +25,8 @@ type Config struct {
 	MaxRetryBackoff   time.Duration
 	StallTimeout      time.Duration
 	CodexCommand      string
+	CodexReadTimeout  time.Duration
+	CodexTurnTimeout  time.Duration
 }
 
 func Load(path string) (Definition, error) {
@@ -59,6 +61,8 @@ func DefaultConfig(workflowDir string) Config {
 		MaxRetryBackoff:   5 * time.Minute,
 		StallTimeout:      5 * time.Minute,
 		CodexCommand:      "codex app-server",
+		CodexReadTimeout:  5 * time.Second,
+		CodexTurnTimeout:  time.Hour,
 	}
 }
 
@@ -190,6 +194,18 @@ func applyValue(config *Config, section string, key string, value string) error 
 				return fmt.Errorf("workflow_parse_error: codex.stall_timeout_ms: %w", err)
 			}
 			config.StallTimeout = parsed
+		case "read_timeout_ms":
+			parsed, err := parseMillis(value)
+			if err != nil {
+				return fmt.Errorf("workflow_parse_error: codex.read_timeout_ms: %w", err)
+			}
+			config.CodexReadTimeout = parsed
+		case "turn_timeout_ms":
+			parsed, err := parseMillis(value)
+			if err != nil {
+				return fmt.Errorf("workflow_parse_error: codex.turn_timeout_ms: %w", err)
+			}
+			config.CodexTurnTimeout = parsed
 		}
 	}
 	return nil
@@ -210,6 +226,12 @@ func normalizeConfig(config *Config, workflowDir string) error {
 	}
 	if config.CodexCommand == "" {
 		return errors.New("workflow_parse_error: codex.command must be present")
+	}
+	if config.CodexReadTimeout <= 0 {
+		return errors.New("workflow_parse_error: codex.read_timeout_ms must be positive")
+	}
+	if config.CodexTurnTimeout <= 0 {
+		return errors.New("workflow_parse_error: codex.turn_timeout_ms must be positive")
 	}
 	root, err := resolveConfigPath(config.WorkspaceRoot, workflowDir)
 	if err != nil {

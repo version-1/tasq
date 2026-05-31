@@ -149,6 +149,17 @@ type ClaimWorkItemOutput struct {
 	WorkItem *WorkItem `json:"workItem"`
 }
 
+type RenewWorkItemLeaseInput struct {
+	WorkItemID     int64  `json:"workItemId"`
+	ClaimToken     string `json:"claimToken"`
+	OrchestratorID string `json:"orchestratorId"`
+	LeaseSeconds   int    `json:"leaseSeconds"`
+}
+
+type RenewWorkItemLeaseOutput struct {
+	WorkItem WorkItem `json:"workItem"`
+}
+
 type RunEventInput struct {
 	EventID        string    `json:"eventId"`
 	WorkItemID     int64     `json:"workItemId"`

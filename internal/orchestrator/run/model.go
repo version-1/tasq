@@ -42,3 +42,12 @@ type OutboxEvent struct {
 	OccurredAt     time.Time  `json:"occurredAt"`
 	SentAt         *time.Time `json:"sentAt,omitempty"`
 }
+
+type RunnerEvent struct {
+	ID          int64     `json:"id"`
+	RunID       string    `json:"runId"`
+	EventType   string    `json:"eventType"`
+	Message     string    `json:"message"`
+	PayloadJSON string    `json:"payloadJson"`
+	OccurredAt  time.Time `json:"occurredAt"`
+}
