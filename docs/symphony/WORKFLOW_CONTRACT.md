@@ -64,3 +64,54 @@ Hook failure behavior:
   cleanup proceeds.
 
 Because front matter is YAML, multiline hook scripts can use literal block scalars (`|`).
+
+## Prompt Template
+
+Everything after the closing `---` of the front matter is the prompt template. The orchestrator
+renders it once per agent attempt and sends the result as the initial message to the coding agent.
+
+### Available Variables
+
+| Variable                 | Type   | Description                                      |
+|--------------------------|--------|--------------------------------------------------|
+| `{{ issue.id }}`         | int    | Numeric issue ID from the issue-tracker           |
+| `{{ issue.title }}`      | string | Issue title                                       |
+| `{{ issue.description }}`| string | Issue description body                            |
+| `{{ attempt }}`          | int    | Attempt number (0 for first run, >=1 for retries) |
+
+Variables are replaced by simple string substitution. Unrecognized `{{ ... }}` tokens are left
+as-is.
+
+### Authoring Guidelines
+
+A prompt template should tell the agent **what to do** and **what tools are available** for
+interacting with the issue-tracker.
+
+#### Issue Status Updates
+
+The agent updates issue status through the `tq` CLI. The runtime environment must have `tq` on
+`PATH` and `TQ_API_URL` set to the issue-tracker endpoint.
+
+Example instruction in a prompt template:
+
+```
+When work is complete, update the issue status:
+
+  tq issue update {{ issue.id }} -status review
+```
+
+#### Deliverables
+
+Define the expected deliverables so the agent knows when the task is done. Common patterns:
+
+- Commit changes and open a pull request.
+- Update issue status to a handoff state (e.g., `review`).
+- Leave implementation notes in the issue description or a comment.
+
+Be explicit about which status the agent should transition the issue to on success and on failure.
+
+#### What Not to Include
+
+- Runtime configuration (poll intervals, concurrency, timeouts) belongs in front matter, not in
+  the prompt.
+- Secrets and credentials should come from the environment, not from the template text.
