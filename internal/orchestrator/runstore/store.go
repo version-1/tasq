@@ -239,13 +239,47 @@ func (s *Store) WorkspaceSetupFailureCount(ctx context.Context) (int, error) {
 func (s *Store) RunByRunID(ctx context.Context, runID string) (run.Run, error) {
 	row := s.db.QueryRowContext(ctx, `SELECT id, run_id, issue_id, work_item_id, claim_token, status, workspace, attempt, error, orchestrator_id, created_at, updated_at
 		FROM runs WHERE run_id = ?`, runID)
+	return scanRun(row)
+}
+
+func (s *Store) ActiveRuns(ctx context.Context) ([]run.Run, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT id, run_id, issue_id, work_item_id, claim_token, status, workspace, attempt, error, orchestrator_id, created_at, updated_at
+		FROM runs
+		WHERE status IN (?, ?)
+		ORDER BY updated_at DESC, id DESC`, run.StatusQueued, run.StatusRunning)
+	if err != nil {
+		return nil, fmt.Errorf("list active runs: %w", err)
+	}
+	defer rows.Close()
+
+	var runs []run.Run
+	for rows.Next() {
+		storedRun, err := scanRun(rows)
+		if err != nil {
+			return nil, err
+		}
+		runs = append(runs, storedRun)
+	}
+	return runs, rows.Err()
+}
+
+func (s *Store) RunByIssueID(ctx context.Context, issueID int64) (run.Run, error) {
+	row := s.db.QueryRowContext(ctx, `SELECT id, run_id, issue_id, work_item_id, claim_token, status, workspace, attempt, error, orchestrator_id, created_at, updated_at
+		FROM runs
+		WHERE issue_id = ?
+		ORDER BY id DESC
+		LIMIT 1`, issueID)
+	return scanRun(row)
+}
+
+func scanRun(row scanner) (run.Run, error) {
 	var storedRun run.Run
 	var createdAt string
 	var updatedAt string
-	err := row.Scan(&storedRun.ID, &storedRun.RunID, &storedRun.IssueID, &storedRun.WorkItemID, &storedRun.ClaimToken, &storedRun.Status, &storedRun.Workspace, &storedRun.Attempt, &storedRun.Error, &storedRun.OrchestratorID, &createdAt, &updatedAt)
-	if err != nil {
+	if err := row.Scan(&storedRun.ID, &storedRun.RunID, &storedRun.IssueID, &storedRun.WorkItemID, &storedRun.ClaimToken, &storedRun.Status, &storedRun.Workspace, &storedRun.Attempt, &storedRun.Error, &storedRun.OrchestratorID, &createdAt, &updatedAt); err != nil {
 		return run.Run{}, err
 	}
+	var err error
 	storedRun.CreatedAt, err = parseTime(createdAt)
 	if err != nil {
 		return run.Run{}, err

@@ -30,6 +30,7 @@ type Config struct {
 	CodexCommand      string
 	CodexReadTimeout  time.Duration
 	CodexTurnTimeout  time.Duration
+	ServerPort        int
 }
 
 func Load(path string) (Definition, error) {
@@ -69,6 +70,7 @@ func DefaultConfig(workflowDir string) Config {
 		CodexCommand:      "codex app-server",
 		CodexReadTimeout:  5 * time.Second,
 		CodexTurnTimeout:  time.Hour,
+		ServerPort:        -1,
 	}
 }
 
@@ -228,6 +230,14 @@ func applyValue(config *Config, section string, key string, value string) error 
 			}
 			config.CodexTurnTimeout = parsed
 		}
+	case "server":
+		if key == "port" {
+			parsed, err := parseNonNegativeInt(value)
+			if err != nil {
+				return fmt.Errorf("workflow_parse_error: server.port: %w", err)
+			}
+			config.ServerPort = parsed
+		}
 	}
 	return nil
 }
@@ -315,6 +325,17 @@ func parsePositiveInt(value string) (int, error) {
 	}
 	if parsed <= 0 {
 		return 0, errors.New("must be positive")
+	}
+	return parsed, nil
+}
+
+func parseNonNegativeInt(value string) (int, error) {
+	parsed, err := strconv.Atoi(value)
+	if err != nil {
+		return 0, err
+	}
+	if parsed < 0 {
+		return 0, errors.New("must be non-negative")
 	}
 	return parsed, nil
 }

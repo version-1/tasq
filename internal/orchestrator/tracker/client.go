@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/version-1/tasq/internal/issue/domain/entity"
@@ -52,6 +53,38 @@ func (c *Client) Issue(ctx context.Context, id int64) (entity.Issue, error) {
 func (c *Client) Issues(ctx context.Context) ([]entity.Issue, error) {
 	var output []entity.Issue
 	if err := c.request(ctx, http.MethodGet, "/api/v1/issues", nil, &output); err != nil {
+		return nil, err
+	}
+	return output, nil
+}
+
+func (c *Client) IssuesByStates(ctx context.Context, states []string) ([]entity.Issue, error) {
+	if len(states) == 0 {
+		return []entity.Issue{}, nil
+	}
+	query := url.Values{}
+	query.Set("states", strings.Join(states, ","))
+
+	var output []entity.Issue
+	if err := c.request(ctx, http.MethodGet, "/api/v1/issues?"+query.Encode(), nil, &output); err != nil {
+		return nil, err
+	}
+	return output, nil
+}
+
+type IssueState struct {
+	ID     int64         `json:"id"`
+	Status entity.Status `json:"status"`
+}
+
+func (c *Client) IssueStatesByIDs(ctx context.Context, ids []int64) ([]IssueState, error) {
+	if len(ids) == 0 {
+		return []IssueState{}, nil
+	}
+	var output []IssueState
+	if err := c.request(ctx, http.MethodPost, "/api/v1/issues/states", map[string][]int64{
+		"ids": ids,
+	}, &output); err != nil {
 		return nil, err
 	}
 	return output, nil

@@ -14,6 +14,8 @@ CREATE TABLE IF NOT EXISTS runs (
 );
 
 CREATE INDEX IF NOT EXISTS runs_work_item_idx ON runs(work_item_id);
+CREATE INDEX IF NOT EXISTS runs_issue_idx ON runs(issue_id, id);
+CREATE INDEX IF NOT EXISTS runs_status_updated_idx ON runs(status, updated_at, id);
 
 CREATE TABLE IF NOT EXISTS runner_events (
 	id INTEGER PRIMARY KEY AUTOINCREMENT,

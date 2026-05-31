@@ -29,6 +29,8 @@ codex:
   read_timeout_ms: 6000
   turn_timeout_ms: 7000
   stall_timeout_ms: 5000
+server:
+  port: 8081
 ---
 # Prompt
 
@@ -77,6 +79,9 @@ Work on {{ issue.title }}.
 	}
 	if workflow.Config.CodexCommand != "codex app-server --debug" {
 		t.Fatalf("codex command = %q", workflow.Config.CodexCommand)
+	}
+	if workflow.Config.ServerPort != 8081 {
+		t.Fatalf("server port = %d", workflow.Config.ServerPort)
 	}
 	if workflow.PromptTemplate != "# Prompt\n\nWork on {{ issue.title }}." {
 		t.Fatalf("prompt = %q", workflow.PromptTemplate)
