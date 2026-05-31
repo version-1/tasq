@@ -246,6 +246,118 @@ func TestIssueStatesRejectsInvalidJSON(t *testing.T) {
 	}
 }
 
+func TestCreateComment(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer(t)
+	issue := createIssue(t, server, "Commented issue", entity.StatusBacklog)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/issues/"+stringID(issue.ID)+"/comments", bytes.NewBufferString(`{
+		"author": "codex",
+		"type": "progress",
+		"body": "Added comment endpoint."
+	}`))
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	comment := decodeData[entity.Comment](t, rec)
+	if comment.IssueID != issue.ID || comment.Author != "codex" || comment.Type != entity.CommentProgress || comment.Body != "Added comment endpoint." {
+		t.Fatalf("comment = %+v", comment)
+	}
+}
+
+func TestCreateCommentMissingIssue(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer(t)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/issues/999999/comments", bytes.NewBufferString(`{
+		"author": "codex",
+		"body": "Missing issue."
+	}`))
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status = %d", rec.Code)
+	}
+	assertErrorCode(t, rec, "comments.create.issue_not_found")
+}
+
+func TestCreateCommentRejectsInvalidInput(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer(t)
+	issue := createIssue(t, server, "Invalid comment", entity.StatusBacklog)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/issues/"+stringID(issue.ID)+"/comments", bytes.NewBufferString(`{
+		"author": "",
+		"body": "Missing author."
+	}`))
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d", rec.Code)
+	}
+	assertErrorCode(t, rec, "comments.create.invalid_input")
+}
+
+func TestCommentsPagination(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer(t)
+	issue := createIssue(t, server, "List comments", entity.StatusBacklog)
+	first := createComment(t, server, issue.ID, "first")
+	second := createComment(t, server, issue.ID, "second")
+	third := createComment(t, server, issue.ID, "third")
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/issues/"+stringID(issue.ID)+"/comments?cursor="+stringID(first.ID)+"&limit=2", nil)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	var payload struct {
+		Data []entity.Comment `json:"data"`
+		Meta struct {
+			Cursor     int64  `json:"cursor"`
+			Limit      int    `json:"limit"`
+			NextCursor *int64 `json:"nextCursor"`
+		} `json:"meta"`
+	}
+	if err := json.NewDecoder(rec.Body).Decode(&payload); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	assertCommentIDs(t, payload.Data, []int64{second.ID, third.ID})
+	if payload.Meta.Cursor != first.ID || payload.Meta.Limit != 2 {
+		t.Fatalf("meta = %+v", payload.Meta)
+	}
+	if payload.Meta.NextCursor == nil || *payload.Meta.NextCursor != third.ID {
+		t.Fatalf("nextCursor = %v, want %d", payload.Meta.NextCursor, third.ID)
+	}
+}
+
+func TestCommentsRejectsInvalidQuery(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer(t)
+	issue := createIssue(t, server, "Invalid comment query", entity.StatusBacklog)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/issues/"+stringID(issue.ID)+"/comments?cursor=bad", nil)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d", rec.Code)
+	}
+	assertErrorCode(t, rec, "comments.list.invalid_input")
+}
+
 func newTestServer(t *testing.T) *Server {
 	t.Helper()
 
@@ -278,6 +390,21 @@ func createIssue(t *testing.T, server *Server, title string, status entity.Statu
 	return issue
 }
 
+func createComment(t *testing.T, server *Server, issueID int64, body string) entity.Comment {
+	t.Helper()
+
+	comment, err := server.store.CreateComment(context.Background(), entity.CreateCommentInput{
+		IssueID: issueID,
+		Author:  "codex",
+		Type:    entity.CommentGeneral,
+		Body:    body,
+	})
+	if err != nil {
+		t.Fatalf("create comment: %v", err)
+	}
+	return comment
+}
+
 func decodeData[T any](t *testing.T, rec *httptest.ResponseRecorder) T {
 	t.Helper()
 
@@ -290,6 +417,22 @@ func decodeData[T any](t *testing.T, rec *httptest.ResponseRecorder) T {
 	return payload.Data
 }
 
+func assertErrorCode(t *testing.T, rec *httptest.ResponseRecorder, want string) {
+	t.Helper()
+
+	var payload struct {
+		Error struct {
+			Code string `json:"code"`
+		} `json:"error"`
+	}
+	if err := json.NewDecoder(rec.Body).Decode(&payload); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if payload.Error.Code != want {
+		t.Fatalf("error.code = %q, want %q", payload.Error.Code, want)
+	}
+}
+
 func assertIssueIDs(t *testing.T, issues []entity.Issue, want []int64) {
 	t.Helper()
 
@@ -299,6 +442,19 @@ func assertIssueIDs(t *testing.T, issues []entity.Issue, want []int64) {
 	for i, issue := range issues {
 		if issue.ID != want[i] {
 			t.Fatalf("issues[%d].id = %d, want %d; issues = %+v", i, issue.ID, want[i], issues)
+		}
+	}
+}
+
+func assertCommentIDs(t *testing.T, comments []entity.Comment, want []int64) {
+	t.Helper()
+
+	if len(comments) != len(want) {
+		t.Fatalf("comment length = %d, want %d; comments = %+v", len(comments), len(want), comments)
+	}
+	for i, comment := range comments {
+		if comment.ID != want[i] {
+			t.Fatalf("comments[%d].id = %d, want %d; comments = %+v", i, comment.ID, want[i], comments)
 		}
 	}
 }

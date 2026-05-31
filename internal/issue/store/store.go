@@ -454,6 +454,80 @@ func (s *Store) UpdateIssue(ctx context.Context, id int64, input entity.UpdateIs
 	return s.Issue(ctx, id)
 }
 
+func (s *Store) CreateComment(ctx context.Context, input entity.CreateCommentInput) (entity.Comment, error) {
+	normalized, err := entity.NormalizeCreateComment(input)
+	if err != nil {
+		return entity.Comment{}, err
+	}
+	if _, err := s.Issue(ctx, normalized.IssueID); err != nil {
+		return entity.Comment{}, err
+	}
+	now := nowString()
+	result, err := s.db.ExecContext(ctx, `INSERT INTO comments (
+		issue_id, author, type, body, created_at
+	) VALUES (?, ?, ?, ?, ?)`,
+		normalized.IssueID,
+		normalized.Author,
+		normalized.Type,
+		normalized.Body,
+		now,
+	)
+	if err != nil {
+		return entity.Comment{}, fmt.Errorf("create comment: %w", err)
+	}
+	id, err := result.LastInsertId()
+	if err != nil {
+		return entity.Comment{}, fmt.Errorf("read created comment id: %w", err)
+	}
+	return s.Comment(ctx, id)
+}
+
+func (s *Store) CommentsByIssueID(ctx context.Context, issueID int64, cursor int64, limit int) ([]entity.Comment, error) {
+	if issueID <= 0 {
+		return nil, errors.New("issueId is required")
+	}
+	if cursor < 0 {
+		return nil, errors.New("cursor is invalid")
+	}
+	if _, err := s.Issue(ctx, issueID); err != nil {
+		return nil, err
+	}
+	limit = normalizeCommentLimit(limit)
+	rows, err := s.db.QueryContext(ctx, `SELECT `+commentColumns()+` FROM comments
+		WHERE issue_id = ? AND id > ?
+		ORDER BY id ASC
+		LIMIT ?`, issueID, cursor, limit)
+	if err != nil {
+		return nil, fmt.Errorf("list comments: %w", err)
+	}
+	defer rows.Close()
+
+	comments := []entity.Comment{}
+	for rows.Next() {
+		item, err := scanComment(rows)
+		if err != nil {
+			return nil, err
+		}
+		comments = append(comments, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate comments: %w", err)
+	}
+	return comments, nil
+}
+
+func (s *Store) Comment(ctx context.Context, id int64) (entity.Comment, error) {
+	row := s.db.QueryRowContext(ctx, `SELECT `+commentColumns()+` FROM comments WHERE id = ?`, id)
+	item, err := scanComment(row)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return entity.Comment{}, sql.ErrNoRows
+		}
+		return entity.Comment{}, fmt.Errorf("read comment: %w", err)
+	}
+	return item, nil
+}
+
 func (s *Store) Summary(ctx context.Context) (entity.Summary, error) {
 	issues, err := s.Issues(ctx)
 	if err != nil {
@@ -477,8 +551,22 @@ func issueColumns() string {
 	return `id, title, description, status, priority, assignee, created_at, updated_at`
 }
 
+func commentColumns() string {
+	return `id, issue_id, author, type, body, created_at`
+}
+
 func projectColumns() string {
 	return `id, key, name, description, created_at, updated_at`
+}
+
+func normalizeCommentLimit(limit int) int {
+	if limit <= 0 {
+		return 50
+	}
+	if limit > 100 {
+		return 100
+	}
+	return limit
 }
 
 func workspaceColumns() string {
@@ -511,6 +599,21 @@ func scanIssue(row rowScanner) (entity.Issue, error) {
 	}
 	item.CreatedAt = parsedCreatedAt
 	item.UpdatedAt = parsedUpdatedAt
+	return item, nil
+}
+
+func scanComment(row rowScanner) (entity.Comment, error) {
+	var item entity.Comment
+	var createdAt string
+	err := row.Scan(&item.ID, &item.IssueID, &item.Author, &item.Type, &item.Body, &createdAt)
+	if err != nil {
+		return entity.Comment{}, err
+	}
+	parsedCreatedAt, err := parseTime(createdAt)
+	if err != nil {
+		return entity.Comment{}, err
+	}
+	item.CreatedAt = parsedCreatedAt
 	return item, nil
 }
 

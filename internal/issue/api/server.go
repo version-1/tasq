@@ -40,6 +40,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/v1/issues/states", s.issueStates)
 	mux.HandleFunc("GET /api/v1/issues/{id}", s.issue)
 	mux.HandleFunc("PATCH /api/v1/issues/{id}", s.updateIssue)
+	mux.HandleFunc("GET /api/v1/issues/{issueId}/comments", s.comments)
+	mux.HandleFunc("POST /api/v1/issues/{issueId}/comments", s.createComment)
 	return withCORS(withLogging(mux))
 }
 
@@ -286,12 +288,102 @@ func (s *Server) issueStates(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, items)
 }
 
+func (s *Server) createComment(w http.ResponseWriter, r *http.Request) {
+	issueID, ok := issueIDPath(w, r, "comments.create")
+	if !ok {
+		return
+	}
+	var input entity.CreateCommentInput
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		writeError(w, http.StatusBadRequest, "comments.create.invalid_request", err)
+		return
+	}
+	input.IssueID = issueID
+	created, err := s.store.CreateComment(r.Context(), input)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			writeError(w, http.StatusNotFound, "comments.create.issue_not_found", errors.New("issue not found"))
+			return
+		}
+		writeError(w, http.StatusBadRequest, "comments.create.invalid_input", err)
+		return
+	}
+	writeJSON(w, http.StatusCreated, created)
+}
+
+func (s *Server) comments(w http.ResponseWriter, r *http.Request) {
+	issueID, ok := issueIDPath(w, r, "comments.list")
+	if !ok {
+		return
+	}
+	cursor, limit, ok := parseCommentListQuery(w, r)
+	if !ok {
+		return
+	}
+	items, err := s.store.CommentsByIssueID(r.Context(), issueID, cursor, limit)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			writeError(w, http.StatusNotFound, "comments.list.issue_not_found", errors.New("issue not found"))
+			return
+		}
+		writeError(w, http.StatusBadRequest, "comments.list.invalid_input", err)
+		return
+	}
+	var nextCursor *int64
+	if len(items) == limit {
+		next := items[len(items)-1].ID
+		nextCursor = &next
+	}
+	writeJSONWithMeta(w, http.StatusOK, items, responseMeta{
+		"cursor":     cursor,
+		"limit":      limit,
+		"nextCursor": nextCursor,
+	})
+}
+
+func parseCommentListQuery(w http.ResponseWriter, r *http.Request) (int64, int, bool) {
+	cursor, err := parseOptionalInt64Query(r, "cursor", 0)
+	if err != nil || cursor < 0 {
+		writeError(w, http.StatusBadRequest, "comments.list.invalid_input", errors.New("cursor is invalid"))
+		return 0, 0, false
+	}
+	limit64, err := parseOptionalInt64Query(r, "limit", 50)
+	if err != nil || limit64 < 0 {
+		writeError(w, http.StatusBadRequest, "comments.list.invalid_input", errors.New("limit is invalid"))
+		return 0, 0, false
+	}
+	limit := int(limit64)
+	if limit <= 0 {
+		limit = 50
+	}
+	if limit > 100 {
+		limit = 100
+	}
+	return cursor, limit, true
+}
+
+func parseOptionalInt64Query(r *http.Request, name string, fallback int64) (int64, error) {
+	value := r.URL.Query().Get(name)
+	if value == "" {
+		return fallback, nil
+	}
+	return strconv.ParseInt(value, 10, 64)
+}
+
 func issueID(w http.ResponseWriter, r *http.Request, action string) (int64, bool) {
 	return pathID(w, r, "issue", action)
 }
 
 func pathID(w http.ResponseWriter, r *http.Request, resource string, action string) (int64, bool) {
-	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	return pathParamID(w, r, "id", resource, action)
+}
+
+func issueIDPath(w http.ResponseWriter, r *http.Request, action string) (int64, bool) {
+	return pathParamID(w, r, "issueId", "issue", action)
+}
+
+func pathParamID(w http.ResponseWriter, r *http.Request, name string, resource string, action string) (int64, bool) {
+	id, err := strconv.ParseInt(r.PathValue(name), 10, 64)
 	if err != nil || id <= 0 {
 		writeError(w, http.StatusBadRequest, action+".invalid_id", errors.New(resource+" id is invalid"))
 		return 0, false
@@ -307,7 +399,7 @@ func writeStoreError(w http.ResponseWriter, err error, action string, resource s
 	writeError(w, http.StatusBadRequest, action+".invalid_input", err)
 }
 
-type responseMeta struct{}
+type responseMeta map[string]any
 
 type successResponse struct {
 	Data any          `json:"data"`
@@ -326,6 +418,10 @@ type responseError struct {
 
 func writeJSON(w http.ResponseWriter, status int, value any) {
 	writeRawJSON(w, status, successResponse{Data: value, Meta: responseMeta{}})
+}
+
+func writeJSONWithMeta(w http.ResponseWriter, status int, value any, meta responseMeta) {
+	writeRawJSON(w, status, successResponse{Data: value, Meta: meta})
 }
 
 func writeError(w http.ResponseWriter, status int, code string, err error) {
