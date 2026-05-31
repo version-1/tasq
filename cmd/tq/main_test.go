@@ -6,11 +6,15 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/version-1/tasq/internal/issue/api"
 	"github.com/version-1/tasq/internal/issue/domain/entity"
+	"github.com/version-1/tasq/internal/issue/store"
 )
 
 func TestIssueListJSON(t *testing.T) {
@@ -104,6 +108,137 @@ func TestIssueUpdateSendsSpecifiedFieldsOnly(t *testing.T) {
 	}
 }
 
+func TestCommentAdd(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost || r.URL.Path != "/api/v1/issues/42/comments" {
+			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
+		var input entity.CreateCommentInput
+		if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+			t.Fatal(err)
+		}
+		if input.Author != "codex" || input.Type != entity.CommentBlocker || input.Body != "Blocked on credentials" {
+			t.Fatalf("unexpected input: %+v", input)
+		}
+		w.WriteHeader(http.StatusCreated)
+		writeTestJSON(t, w, apiResponse[entity.Comment]{Data: entity.Comment{
+			ID:        3,
+			IssueID:   42,
+			Author:    input.Author,
+			Type:      input.Type,
+			Body:      input.Body,
+			CreatedAt: time.Date(2026, 5, 31, 0, 0, 0, 0, time.UTC),
+		}})
+	}))
+	defer server.Close()
+
+	stdout, stderr, code := runCLI(t, []string{
+		"--api-url", server.URL,
+		"comment", "add", "42",
+		"--author", "codex",
+		"--type", "blocker",
+		"--body", "Blocked on credentials",
+	})
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr)
+	}
+	if !strings.Contains(stdout, "ID: 3") || !strings.Contains(stdout, "Type: blocker") {
+		t.Fatalf("unexpected stdout: %s", stdout)
+	}
+}
+
+func TestCommentAddDefaultsAuthorFromEnvironment(t *testing.T) {
+	t.Setenv("TQ_AUTHOR", "agent")
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var input entity.CreateCommentInput
+		if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+			t.Fatal(err)
+		}
+		if input.Author != "agent" || input.Type != entity.CommentGeneral || input.Body != "Progress" {
+			t.Fatalf("unexpected input: %+v", input)
+		}
+		w.WriteHeader(http.StatusCreated)
+		writeTestJSON(t, w, apiResponse[entity.Comment]{Data: entity.Comment{
+			ID:      4,
+			IssueID: 42,
+			Author:  input.Author,
+			Type:    input.Type,
+			Body:    input.Body,
+		}})
+	}))
+	defer server.Close()
+
+	stdout, stderr, code := runCLI(t, []string{
+		"--api-url", server.URL,
+		"comment", "add", "42",
+		"--body", "Progress",
+	})
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr)
+	}
+	if !strings.Contains(stdout, "Author: agent") {
+		t.Fatalf("unexpected stdout: %s", stdout)
+	}
+}
+
+func TestCommentListJSON(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet || r.URL.Path != "/api/v1/issues/42/comments" {
+			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
+		writeTestJSON(t, w, apiResponse[[]entity.Comment]{
+			Data: []entity.Comment{{ID: 7, IssueID: 42, Author: "codex", Type: entity.CommentProgress, Body: "Working"}},
+		})
+	}))
+	defer server.Close()
+
+	stdout, stderr, code := runCLI(t, []string{"--api-url", server.URL, "--output", "json", "comment", "list", "42"})
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr)
+	}
+	if !strings.Contains(stdout, `"id": 7`) || !strings.Contains(stdout, `"body": "Working"`) {
+		t.Fatalf("unexpected stdout: %s", stdout)
+	}
+}
+
+func TestCommentCommandsAgainstIssueTrackerAPI(t *testing.T) {
+	ctx := context.Background()
+	issueStore, err := store.Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer issueStore.Close()
+
+	issue, err := issueStore.CreateIssue(ctx, entity.CreateIssueInput{Title: "Comment through CLI"})
+	if err != nil {
+		t.Fatalf("create issue: %v", err)
+	}
+	server := httptest.NewServer(api.NewServer(issueStore).Handler())
+	defer server.Close()
+
+	stdout, stderr, code := runCLI(t, []string{
+		"--api-url", server.URL,
+		"comment", "add", stringID(issue.ID),
+		"--author", "codex",
+		"--type", "handoff",
+		"--body", "Ready for review",
+	})
+	if code != 0 {
+		t.Fatalf("add code=%d stderr=%s", code, stderr)
+	}
+	if !strings.Contains(stdout, "Type: handoff") {
+		t.Fatalf("unexpected add stdout: %s", stdout)
+	}
+
+	stdout, stderr, code = runCLI(t, []string{"--api-url", server.URL, "comment", "list", stringID(issue.ID)})
+	if code != 0 {
+		t.Fatalf("list code=%d stderr=%s", code, stderr)
+	}
+	if !strings.Contains(stdout, "Ready for review") {
+		t.Fatalf("unexpected list stdout: %s", stdout)
+	}
+}
+
 func TestIssueGetAPIError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
@@ -172,6 +307,10 @@ func TestAPIURLDefaultsToEnvironment(t *testing.T) {
 	if stdout != "" {
 		t.Fatalf("unexpected stdout: %s", stdout)
 	}
+}
+
+func stringID(id int64) string {
+	return strconv.FormatInt(id, 10)
 }
 
 func runCLI(t *testing.T, args []string) (string, string, int) {

@@ -2,8 +2,11 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/version-1/tasq/internal/issue/domain/entity"
@@ -21,6 +24,8 @@ func TestOpenAppliesIssueTrackerSchema(t *testing.T) {
 	for _, name := range []string{
 		"issues",
 		"issues_status_idx",
+		"comments",
+		"comments_issue_id_idx",
 		"projects",
 		"projects_key_idx",
 		"workspaces",
@@ -30,6 +35,179 @@ func TestOpenAppliesIssueTrackerSchema(t *testing.T) {
 		if !schemaObjectExists(t, store, name) {
 			t.Fatalf("schema object %q does not exist", name)
 		}
+	}
+}
+
+func TestCreateComment(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store, err := Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer store.Close()
+
+	issue, err := store.CreateIssue(ctx, entity.CreateIssueInput{Title: "Add comments", Status: entity.StatusBacklog})
+	if err != nil {
+		t.Fatalf("create issue: %v", err)
+	}
+	comment, err := store.CreateComment(ctx, entity.CreateCommentInput{
+		IssueID: issue.ID,
+		Author:  "codex",
+		Type:    entity.CommentProgress,
+		Body:    "Implemented storage.",
+	})
+	if err != nil {
+		t.Fatalf("create comment: %v", err)
+	}
+	if comment.ID == 0 || comment.IssueID != issue.ID || comment.Author != "codex" || comment.Type != entity.CommentProgress || comment.Body != "Implemented storage." {
+		t.Fatalf("comment = %+v", comment)
+	}
+	if comment.CreatedAt.IsZero() {
+		t.Fatal("comment created_at is zero")
+	}
+
+	defaultType, err := store.CreateComment(ctx, entity.CreateCommentInput{
+		IssueID: issue.ID,
+		Author:  "codex",
+		Body:    "Default type.",
+	})
+	if err != nil {
+		t.Fatalf("create default type comment: %v", err)
+	}
+	if defaultType.Type != entity.CommentGeneral {
+		t.Fatalf("default type = %q", defaultType.Type)
+	}
+}
+
+func TestCreateCommentRejectsInvalidInput(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store, err := Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer store.Close()
+
+	issue, err := store.CreateIssue(ctx, entity.CreateIssueInput{Title: "Validate comments"})
+	if err != nil {
+		t.Fatalf("create issue: %v", err)
+	}
+	tests := []struct {
+		name  string
+		input entity.CreateCommentInput
+	}{
+		{
+			name:  "empty author",
+			input: entity.CreateCommentInput{IssueID: issue.ID, Body: "body"},
+		},
+		{
+			name:  "empty body",
+			input: entity.CreateCommentInput{IssueID: issue.ID, Author: "codex"},
+		},
+		{
+			name:  "body too long",
+			input: entity.CreateCommentInput{IssueID: issue.ID, Author: "codex", Body: strings.Repeat("x", 10001)},
+		},
+		{
+			name:  "invalid type",
+			input: entity.CreateCommentInput{IssueID: issue.ID, Author: "codex", Type: entity.CommentType("note"), Body: "body"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if _, err := store.CreateComment(ctx, tt.input); err == nil {
+				t.Fatal("expected error")
+			}
+		})
+	}
+}
+
+func TestCreateCommentRequiresExistingIssue(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store, err := Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer store.Close()
+
+	_, err = store.CreateComment(ctx, entity.CreateCommentInput{
+		IssueID: 999999,
+		Author:  "codex",
+		Type:    entity.CommentGeneral,
+		Body:    "Missing issue.",
+	})
+	if !errors.Is(err, sql.ErrNoRows) {
+		t.Fatalf("err = %v, want sql.ErrNoRows", err)
+	}
+}
+
+func TestCommentsByIssueID(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store, err := Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer store.Close()
+
+	issue, err := store.CreateIssue(ctx, entity.CreateIssueInput{Title: "List comments"})
+	if err != nil {
+		t.Fatalf("create issue: %v", err)
+	}
+	first := createComment(t, store, issue.ID, "first")
+	second := createComment(t, store, issue.ID, "second")
+	third := createComment(t, store, issue.ID, "third")
+
+	comments, err := store.CommentsByIssueID(ctx, issue.ID, 0, 2)
+	if err != nil {
+		t.Fatalf("list comments: %v", err)
+	}
+	assertCommentIDs(t, comments, []int64{first.ID, second.ID})
+
+	comments, err = store.CommentsByIssueID(ctx, issue.ID, second.ID, 50)
+	if err != nil {
+		t.Fatalf("list comments after cursor: %v", err)
+	}
+	assertCommentIDs(t, comments, []int64{third.ID})
+
+	comments, err = store.CommentsByIssueID(ctx, issue.ID, third.ID, 50)
+	if err != nil {
+		t.Fatalf("list comments after final cursor: %v", err)
+	}
+	if comments == nil || len(comments) != 0 {
+		t.Fatalf("comments = %+v, want empty slice", comments)
+	}
+}
+
+func TestCommentsByIssueIDClampsLimit(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store, err := Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer store.Close()
+
+	issue, err := store.CreateIssue(ctx, entity.CreateIssueInput{Title: "Clamp comments"})
+	if err != nil {
+		t.Fatalf("create issue: %v", err)
+	}
+	for i := 0; i < 105; i++ {
+		createComment(t, store, issue.ID, "comment")
+	}
+	comments, err := store.CommentsByIssueID(ctx, issue.ID, 0, 101)
+	if err != nil {
+		t.Fatalf("list comments: %v", err)
+	}
+	if len(comments) != 100 {
+		t.Fatalf("comment count = %d, want 100", len(comments))
 	}
 }
 
@@ -350,6 +528,34 @@ func assertIssueStatuses(t *testing.T, issues []entity.Issue, want []entity.Stat
 	for _, issue := range issues {
 		if !allowed[issue.Status] {
 			t.Fatalf("issue status %q is not expected in %+v", issue.Status, issues)
+		}
+	}
+}
+
+func createComment(t *testing.T, store *Store, issueID int64, body string) entity.Comment {
+	t.Helper()
+
+	comment, err := store.CreateComment(context.Background(), entity.CreateCommentInput{
+		IssueID: issueID,
+		Author:  "codex",
+		Type:    entity.CommentGeneral,
+		Body:    body,
+	})
+	if err != nil {
+		t.Fatalf("create comment: %v", err)
+	}
+	return comment
+}
+
+func assertCommentIDs(t *testing.T, comments []entity.Comment, want []int64) {
+	t.Helper()
+
+	if len(comments) != len(want) {
+		t.Fatalf("comment length = %d, want %d; comments = %+v", len(comments), len(want), comments)
+	}
+	for i, comment := range comments {
+		if comment.ID != want[i] {
+			t.Fatalf("comments[%d].id = %d, want %d; comments = %+v", i, comment.ID, want[i], comments)
 		}
 	}
 }

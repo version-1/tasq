@@ -87,10 +87,14 @@ func (a app) route(ctx context.Context, args []string, cfg config) error {
 		return nil
 	}
 	resource := args[0]
-	if resource != "issue" {
+	switch resource {
+	case "issue":
+		return a.routeIssue(ctx, args[1:], cfg)
+	case "comment":
+		return a.routeComment(ctx, args[1:], cfg)
+	default:
 		return usageError("unknown resource %q", resource)
 	}
-	return a.routeIssue(ctx, args[1:], cfg)
 }
 
 func (a app) routeIssue(ctx context.Context, args []string, cfg config) error {
@@ -111,6 +115,73 @@ func (a app) routeIssue(ctx context.Context, args []string, cfg config) error {
 	default:
 		return usageError("unknown issue action %q", action)
 	}
+}
+
+func (a app) routeComment(ctx context.Context, args []string, cfg config) error {
+	if len(args) == 0 || args[0] == "help" || args[0] == "-help" || args[0] == "--help" {
+		printCommentHelp(a.stdout)
+		return nil
+	}
+	action := args[0]
+	switch action {
+	case "add":
+		return a.commentAdd(ctx, args[1:], cfg)
+	case "list":
+		return a.commentList(ctx, args[1:], cfg)
+	default:
+		return usageError("unknown comment action %q", action)
+	}
+}
+
+func (a app) commentAdd(ctx context.Context, args []string, cfg config) error {
+	if len(args) == 0 {
+		return usageError("usage: tq comment add <issue-id> [flags]")
+	}
+	issueID, err := parseID(args[0])
+	if err != nil {
+		return err
+	}
+	fs := newFlagSet("comment add")
+	author := fs.String("author", defaultCommentAuthor(), "comment author")
+	commentType := fs.String("type", string(entity.CommentGeneral), "comment type")
+	body := fs.String("body", "", "comment body")
+	if err := fs.Parse(args[1:]); err != nil {
+		return usageError(err.Error())
+	}
+	if fs.NArg() != 0 {
+		return usageError("comment add does not accept extra positional arguments")
+	}
+	if *author == "" {
+		return usageError("author is required")
+	}
+	if *body == "" {
+		return usageError("body is required")
+	}
+	input := entity.CreateCommentInput{
+		Author: *author,
+		Type:   entity.CommentType(*commentType),
+		Body:   *body,
+	}
+	comment, err := a.client.createComment(ctx, issueID, input)
+	if err != nil {
+		return err
+	}
+	return writeComment(a.stdout, cfg.output, comment)
+}
+
+func (a app) commentList(ctx context.Context, args []string, cfg config) error {
+	if len(args) != 1 {
+		return usageError("usage: tq comment list <issue-id>")
+	}
+	issueID, err := parseID(args[0])
+	if err != nil {
+		return err
+	}
+	comments, err := a.client.listComments(ctx, issueID)
+	if err != nil {
+		return err
+	}
+	return writeComments(a.stdout, cfg.output, comments)
 }
 
 func (a app) issueList(ctx context.Context, args []string, cfg config) error {
@@ -314,6 +385,22 @@ func (c *apiClient) updateIssue(ctx context.Context, id int64, patch map[string]
 	return issue, nil
 }
 
+func (c *apiClient) createComment(ctx context.Context, issueID int64, input entity.CreateCommentInput) (entity.Comment, error) {
+	var comment entity.Comment
+	if err := c.do(ctx, http.MethodPost, fmt.Sprintf("/api/v1/issues/%d/comments", issueID), input, &comment); err != nil {
+		return entity.Comment{}, err
+	}
+	return comment, nil
+}
+
+func (c *apiClient) listComments(ctx context.Context, issueID int64) ([]entity.Comment, error) {
+	var comments []entity.Comment
+	if err := c.do(ctx, http.MethodGet, fmt.Sprintf("/api/v1/issues/%d/comments", issueID), nil, &comments); err != nil {
+		return nil, err
+	}
+	return comments, nil
+}
+
 func (c *apiClient) do(ctx context.Context, method, path string, body any, output any) error {
 	var reader io.Reader
 	if body != nil {
@@ -388,6 +475,29 @@ func writeIssue(w io.Writer, format string, issue entity.Issue) error {
 	return nil
 }
 
+func writeComments(w io.Writer, format string, comments []entity.Comment) error {
+	if format == "json" {
+		return writeJSON(w, comments)
+	}
+	for _, comment := range comments {
+		fmt.Fprintf(w, "#%d\tissue:%d\t%s\t%s\t%s\n", comment.ID, comment.IssueID, comment.Type, comment.Author, comment.Body)
+	}
+	return nil
+}
+
+func writeComment(w io.Writer, format string, comment entity.Comment) error {
+	if format == "json" {
+		return writeJSON(w, comment)
+	}
+	fmt.Fprintf(w, "ID: %d\n", comment.ID)
+	fmt.Fprintf(w, "Issue: %d\n", comment.IssueID)
+	fmt.Fprintf(w, "Author: %s\n", comment.Author)
+	fmt.Fprintf(w, "Type: %s\n", comment.Type)
+	fmt.Fprintf(w, "Body: %s\n", comment.Body)
+	fmt.Fprintf(w, "Created: %s\n", formatTime(comment.CreatedAt))
+	return nil
+}
+
 func writeJSON(w io.Writer, value any) error {
 	encoder := json.NewEncoder(w)
 	encoder.SetIndent("", "  ")
@@ -428,6 +538,13 @@ func valueOrDefault(value, fallback string) string {
 	return value
 }
 
+func defaultCommentAuthor() string {
+	if value := strings.TrimSpace(os.Getenv("TQ_AUTHOR")); value != "" {
+		return value
+	}
+	return strings.TrimSpace(os.Getenv("USER"))
+}
+
 func formatTime(value time.Time) string {
 	if value.IsZero() {
 		return ""
@@ -440,6 +557,7 @@ func printRootHelp(w io.Writer) {
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "Resources:")
 	fmt.Fprintln(w, "  issue    create, get, list, and update issues")
+	fmt.Fprintln(w, "  comment  add and list issue comments")
 }
 
 func printIssueHelp(w io.Writer) {
@@ -450,4 +568,12 @@ func printIssueHelp(w io.Writer) {
 	fmt.Fprintln(w, "  get      Get an issue by ID")
 	fmt.Fprintln(w, "  list     List issues")
 	fmt.Fprintln(w, "  update   Update an issue")
+}
+
+func printCommentHelp(w io.Writer) {
+	fmt.Fprintln(w, "Usage: tq comment <action> [flags]")
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, "Actions:")
+	fmt.Fprintln(w, "  add      Add a comment to an issue")
+	fmt.Fprintln(w, "  list     List comments for an issue")
 }

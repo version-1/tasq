@@ -3,6 +3,7 @@ package entity
 import (
 	"errors"
 	"time"
+	"unicode/utf8"
 )
 
 type Status string
@@ -24,6 +25,15 @@ const (
 	PriorityNormal Priority = "normal"
 	PriorityHigh   Priority = "high"
 	PriorityUrgent Priority = "urgent"
+)
+
+type CommentType string
+
+const (
+	CommentProgress CommentType = "progress"
+	CommentBlocker  CommentType = "blocker"
+	CommentHandoff  CommentType = "handoff"
+	CommentGeneral  CommentType = "general"
 )
 
 type WorkspaceStatus string
@@ -111,6 +121,22 @@ type UpdateIssueInput struct {
 	Assignee    *string   `json:"assignee"`
 }
 
+type Comment struct {
+	ID        int64       `json:"id"`
+	IssueID   int64       `json:"issueId"`
+	Author    string      `json:"author"`
+	Type      CommentType `json:"type"`
+	Body      string      `json:"body"`
+	CreatedAt time.Time   `json:"createdAt"`
+}
+
+type CreateCommentInput struct {
+	IssueID int64       `json:"issueId"`
+	Author  string      `json:"author"`
+	Type    CommentType `json:"type"`
+	Body    string      `json:"body"`
+}
+
 type IssueSummary struct {
 	Issue
 }
@@ -174,6 +200,28 @@ func NormalizeCreateWorkspace(input CreateWorkspaceInput) (CreateWorkspaceInput,
 	return input, nil
 }
 
+func NormalizeCreateComment(input CreateCommentInput) (CreateCommentInput, error) {
+	if input.IssueID <= 0 {
+		return input, errors.New("issueId is required")
+	}
+	if input.Author == "" {
+		return input, errors.New("author is required")
+	}
+	if input.Type == "" {
+		input.Type = CommentGeneral
+	}
+	if !IsValidCommentType(input.Type) {
+		return input, errors.New("type is invalid")
+	}
+	if input.Body == "" {
+		return input, errors.New("body is required")
+	}
+	if utf8.RuneCountInString(input.Body) > 10000 {
+		return input, errors.New("body must be 10000 characters or fewer")
+	}
+	return input, nil
+}
+
 func IsValidStatus(status Status) bool {
 	switch status {
 	case StatusBacklog, StatusReady, StatusInProgress, StatusReview, StatusDone, StatusBlocked, StatusFailed:
@@ -186,6 +234,15 @@ func IsValidStatus(status Status) bool {
 func IsValidPriority(priority Priority) bool {
 	switch priority {
 	case PriorityLow, PriorityNormal, PriorityHigh, PriorityUrgent:
+		return true
+	default:
+		return false
+	}
+}
+
+func IsValidCommentType(commentType CommentType) bool {
+	switch commentType {
+	case CommentProgress, CommentBlocker, CommentHandoff, CommentGeneral:
 		return true
 	default:
 		return false
