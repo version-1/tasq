@@ -1,7 +1,6 @@
 package workflow
 
 import (
-	"bufio"
 	"errors"
 	"fmt"
 	"os"
@@ -9,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"gopkg.in/yaml.v3"
 )
 
 type Definition struct {
@@ -31,6 +32,11 @@ type Config struct {
 	CodexReadTimeout  time.Duration
 	CodexTurnTimeout  time.Duration
 	ServerPort        int
+	HookAfterCreate   string
+	HookBeforeRun     string
+	HookAfterRun      string
+	HookBeforeRemove  string
+	HookTimeout       time.Duration
 }
 
 func Load(path string) (Definition, error) {
@@ -71,6 +77,7 @@ func DefaultConfig(workflowDir string) Config {
 		CodexReadTimeout:  5 * time.Second,
 		CodexTurnTimeout:  time.Hour,
 		ServerPort:        -1,
+		HookTimeout:       60 * time.Second,
 	}
 }
 
@@ -81,163 +88,178 @@ func parse(raw []byte, workflowDir string) (Config, string, error) {
 		return config, text, nil
 	}
 
-	scanner := bufio.NewScanner(strings.NewReader(text))
-	if !scanner.Scan() {
-		return Config{}, "", errors.New("workflow_parse_error: empty workflow")
-	}
-	var frontMatter []string
-	var body []string
-	inFrontMatter := true
-	for scanner.Scan() {
-		line := scanner.Text()
-		if inFrontMatter {
-			if strings.TrimSpace(line) == "---" {
-				inFrontMatter = false
-				continue
-			}
-			frontMatter = append(frontMatter, line)
-			continue
-		}
-		body = append(body, line)
-	}
-	if err := scanner.Err(); err != nil {
-		return Config{}, "", fmt.Errorf("workflow_parse_error: %w", err)
-	}
-	if inFrontMatter {
+	rest := strings.TrimPrefix(text, "---\n")
+	frontMatter, body, ok := splitFrontMatter(rest)
+	if !ok {
 		return Config{}, "", errors.New("workflow_parse_error: unterminated front matter")
 	}
-	if err := applyFrontMatter(&config, frontMatter, workflowDir); err != nil {
+	if err := applyFrontMatter(&config, []byte(frontMatter), workflowDir); err != nil {
 		return Config{}, "", err
 	}
-	return config, strings.Join(body, "\n"), nil
+	return config, body, nil
 }
 
-func applyFrontMatter(config *Config, lines []string, workflowDir string) error {
-	section := ""
-	for _, raw := range lines {
-		withoutComment := strings.SplitN(raw, "#", 2)[0]
-		if strings.TrimSpace(withoutComment) == "" {
-			continue
-		}
-		indent := len(withoutComment) - len(strings.TrimLeft(withoutComment, " "))
-		line := strings.TrimSpace(withoutComment)
-		if indent == 0 {
-			key, value, ok := splitConfigLine(line)
-			if !ok {
-				return fmt.Errorf("workflow_parse_error: invalid front matter line %q", raw)
-			}
-			if value != "" {
-				return fmt.Errorf("workflow_front_matter_not_a_map: %s must be an object", key)
-			}
-			section = key
-			continue
-		}
-		key, value, ok := splitConfigLine(line)
-		if !ok {
-			return fmt.Errorf("workflow_parse_error: invalid front matter line %q", raw)
-		}
-		if err := applyValue(config, section, key, value); err != nil {
-			return err
-		}
+func splitFrontMatter(rest string) (string, string, bool) {
+	if strings.HasSuffix(rest, "\n---") {
+		return strings.TrimSuffix(rest, "\n---"), "", true
+	}
+	frontMatter, body, ok := strings.Cut(rest, "\n---\n")
+	return frontMatter, body, ok
+}
+
+type frontMatterConfig struct {
+	Polling struct {
+		IntervalMs configScalar `yaml:"interval_ms"`
+	} `yaml:"polling"`
+	Workspace struct {
+		Root   configScalar `yaml:"root"`
+		Source configScalar `yaml:"source"`
+	} `yaml:"workspace"`
+	Agent struct {
+		MaxConcurrentAgents      configScalar `yaml:"max_concurrent_agents"`
+		MaxTurns                 configScalar `yaml:"max_turns"`
+		ContinuationTurnsEnabled configScalar `yaml:"continuation_turns_enabled"`
+		MaxRetryAttempts         configScalar `yaml:"max_retry_attempts"`
+		MaxRetryBackoffMs        configScalar `yaml:"max_retry_backoff_ms"`
+	} `yaml:"agent"`
+	Codex struct {
+		Command        configScalar `yaml:"command"`
+		StallTimeoutMs configScalar `yaml:"stall_timeout_ms"`
+		ReadTimeoutMs  configScalar `yaml:"read_timeout_ms"`
+		TurnTimeoutMs  configScalar `yaml:"turn_timeout_ms"`
+	} `yaml:"codex"`
+	Server struct {
+		Port configScalar `yaml:"port"`
+	} `yaml:"server"`
+	Hooks struct {
+		AfterCreate  configScalar `yaml:"after_create"`
+		BeforeRun    configScalar `yaml:"before_run"`
+		AfterRun     configScalar `yaml:"after_run"`
+		BeforeRemove configScalar `yaml:"before_remove"`
+		TimeoutMs    configScalar `yaml:"timeout_ms"`
+	} `yaml:"hooks"`
+}
+
+type configScalar struct {
+	Value string
+	Set   bool
+}
+
+func (s *configScalar) UnmarshalYAML(node *yaml.Node) error {
+	s.Set = true
+	s.Value = node.Value
+	return nil
+}
+
+func applyFrontMatter(config *Config, raw []byte, workflowDir string) error {
+	var frontMatter frontMatterConfig
+	if err := yaml.Unmarshal(raw, &frontMatter); err != nil {
+		return fmt.Errorf("workflow_parse_error: %w", err)
+	}
+	if err := applyWorkflowYAML(config, frontMatter); err != nil {
+		return err
 	}
 	return normalizeConfig(config, workflowDir)
 }
 
-func splitConfigLine(line string) (string, string, bool) {
-	key, value, ok := strings.Cut(line, ":")
-	if !ok {
-		return "", "", false
+func applyWorkflowYAML(config *Config, frontMatter frontMatterConfig) error {
+	if frontMatter.Polling.IntervalMs.Set {
+		parsed, err := parseMillis(frontMatter.Polling.IntervalMs.Value)
+		if err != nil {
+			return fmt.Errorf("workflow_parse_error: polling.interval_ms: %w", err)
+		}
+		config.PollInterval = parsed
 	}
-	return strings.TrimSpace(key), trimScalar(value), true
-}
-
-func trimScalar(value string) string {
-	value = strings.TrimSpace(value)
-	value = strings.Trim(value, `"'`)
-	return value
-}
-
-func applyValue(config *Config, section string, key string, value string) error {
-	switch section {
-	case "polling":
-		if key == "interval_ms" {
-			parsed, err := parseMillis(value)
-			if err != nil {
-				return fmt.Errorf("workflow_parse_error: polling.interval_ms: %w", err)
-			}
-			config.PollInterval = parsed
+	if frontMatter.Workspace.Root.Set {
+		config.WorkspaceRoot = frontMatter.Workspace.Root.Value
+	}
+	if frontMatter.Workspace.Source.Set {
+		config.WorkspaceSource = frontMatter.Workspace.Source.Value
+	}
+	if frontMatter.Agent.MaxConcurrentAgents.Set {
+		parsed, err := parsePositiveInt(frontMatter.Agent.MaxConcurrentAgents.Value)
+		if err != nil {
+			return fmt.Errorf("workflow_parse_error: agent.max_concurrent_agents: %w", err)
 		}
-	case "workspace":
-		switch key {
-		case "root":
-			config.WorkspaceRoot = value
-		case "source":
-			config.WorkspaceSource = value
+		config.MaxConcurrentRuns = parsed
+	}
+	if frontMatter.Agent.MaxTurns.Set {
+		parsed, err := parsePositiveInt(frontMatter.Agent.MaxTurns.Value)
+		if err != nil {
+			return fmt.Errorf("workflow_parse_error: agent.max_turns: %w", err)
 		}
-	case "agent":
-		switch key {
-		case "max_concurrent_agents":
-			parsed, err := parsePositiveInt(value)
-			if err != nil {
-				return fmt.Errorf("workflow_parse_error: agent.max_concurrent_agents: %w", err)
-			}
-			config.MaxConcurrentRuns = parsed
-		case "max_turns":
-			parsed, err := parsePositiveInt(value)
-			if err != nil {
-				return fmt.Errorf("workflow_parse_error: agent.max_turns: %w", err)
-			}
-			config.MaxTurns = parsed
-		case "continuation_turns_enabled":
-			parsed, err := parseBool(value)
-			if err != nil {
-				return fmt.Errorf("workflow_parse_error: agent.continuation_turns_enabled: %w", err)
-			}
-			config.ContinuationTurns = parsed
-		case "max_retry_attempts":
-			parsed, err := parsePositiveInt(value)
-			if err != nil {
-				return fmt.Errorf("workflow_parse_error: agent.max_retry_attempts: %w", err)
-			}
-			config.MaxRetryAttempts = parsed
-		case "max_retry_backoff_ms":
-			parsed, err := parseMillis(value)
-			if err != nil {
-				return fmt.Errorf("workflow_parse_error: agent.max_retry_backoff_ms: %w", err)
-			}
-			config.MaxRetryBackoff = parsed
+		config.MaxTurns = parsed
+	}
+	if frontMatter.Agent.ContinuationTurnsEnabled.Set {
+		parsed, err := parseBool(frontMatter.Agent.ContinuationTurnsEnabled.Value)
+		if err != nil {
+			return fmt.Errorf("workflow_parse_error: agent.continuation_turns_enabled: %w", err)
 		}
-	case "codex":
-		switch key {
-		case "command":
-			config.CodexCommand = value
-		case "stall_timeout_ms":
-			parsed, err := parseMillis(value)
-			if err != nil {
-				return fmt.Errorf("workflow_parse_error: codex.stall_timeout_ms: %w", err)
-			}
-			config.StallTimeout = parsed
-		case "read_timeout_ms":
-			parsed, err := parseMillis(value)
-			if err != nil {
-				return fmt.Errorf("workflow_parse_error: codex.read_timeout_ms: %w", err)
-			}
-			config.CodexReadTimeout = parsed
-		case "turn_timeout_ms":
-			parsed, err := parseMillis(value)
-			if err != nil {
-				return fmt.Errorf("workflow_parse_error: codex.turn_timeout_ms: %w", err)
-			}
-			config.CodexTurnTimeout = parsed
+		config.ContinuationTurns = parsed
+	}
+	if frontMatter.Agent.MaxRetryAttempts.Set {
+		parsed, err := parsePositiveInt(frontMatter.Agent.MaxRetryAttempts.Value)
+		if err != nil {
+			return fmt.Errorf("workflow_parse_error: agent.max_retry_attempts: %w", err)
 		}
-	case "server":
-		if key == "port" {
-			parsed, err := parseNonNegativeInt(value)
-			if err != nil {
-				return fmt.Errorf("workflow_parse_error: server.port: %w", err)
-			}
-			config.ServerPort = parsed
+		config.MaxRetryAttempts = parsed
+	}
+	if frontMatter.Agent.MaxRetryBackoffMs.Set {
+		parsed, err := parseMillis(frontMatter.Agent.MaxRetryBackoffMs.Value)
+		if err != nil {
+			return fmt.Errorf("workflow_parse_error: agent.max_retry_backoff_ms: %w", err)
 		}
+		config.MaxRetryBackoff = parsed
+	}
+	if frontMatter.Codex.Command.Set {
+		config.CodexCommand = frontMatter.Codex.Command.Value
+	}
+	if frontMatter.Codex.StallTimeoutMs.Set {
+		parsed, err := parseMillis(frontMatter.Codex.StallTimeoutMs.Value)
+		if err != nil {
+			return fmt.Errorf("workflow_parse_error: codex.stall_timeout_ms: %w", err)
+		}
+		config.StallTimeout = parsed
+	}
+	if frontMatter.Codex.ReadTimeoutMs.Set {
+		parsed, err := parseMillis(frontMatter.Codex.ReadTimeoutMs.Value)
+		if err != nil {
+			return fmt.Errorf("workflow_parse_error: codex.read_timeout_ms: %w", err)
+		}
+		config.CodexReadTimeout = parsed
+	}
+	if frontMatter.Codex.TurnTimeoutMs.Set {
+		parsed, err := parseMillis(frontMatter.Codex.TurnTimeoutMs.Value)
+		if err != nil {
+			return fmt.Errorf("workflow_parse_error: codex.turn_timeout_ms: %w", err)
+		}
+		config.CodexTurnTimeout = parsed
+	}
+	if frontMatter.Server.Port.Set {
+		parsed, err := parseNonNegativeInt(frontMatter.Server.Port.Value)
+		if err != nil {
+			return fmt.Errorf("workflow_parse_error: server.port: %w", err)
+		}
+		config.ServerPort = parsed
+	}
+	if frontMatter.Hooks.AfterCreate.Set {
+		config.HookAfterCreate = frontMatter.Hooks.AfterCreate.Value
+	}
+	if frontMatter.Hooks.BeforeRun.Set {
+		config.HookBeforeRun = frontMatter.Hooks.BeforeRun.Value
+	}
+	if frontMatter.Hooks.AfterRun.Set {
+		config.HookAfterRun = frontMatter.Hooks.AfterRun.Value
+	}
+	if frontMatter.Hooks.BeforeRemove.Set {
+		config.HookBeforeRemove = frontMatter.Hooks.BeforeRemove.Value
+	}
+	if frontMatter.Hooks.TimeoutMs.Set {
+		parsed, err := parseMillis(frontMatter.Hooks.TimeoutMs.Value)
+		if err != nil {
+			return fmt.Errorf("workflow_parse_error: hooks.timeout_ms: %w", err)
+		}
+		config.HookTimeout = parsed
 	}
 	return nil
 }

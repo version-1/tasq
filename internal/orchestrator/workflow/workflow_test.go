@@ -31,6 +31,14 @@ codex:
   stall_timeout_ms: 5000
 server:
   port: 8081
+hooks:
+  after_create: touch after-create
+  before_run: |
+    echo before
+    echo run
+  after_run: echo after
+  before_remove: echo remove
+  timeout_ms: 9000
 ---
 # Prompt
 
@@ -83,7 +91,125 @@ Work on {{ issue.title }}.
 	if workflow.Config.ServerPort != 8081 {
 		t.Fatalf("server port = %d", workflow.Config.ServerPort)
 	}
+	if workflow.Config.HookAfterCreate != "touch after-create" {
+		t.Fatalf("after_create hook = %q", workflow.Config.HookAfterCreate)
+	}
+	if workflow.Config.HookBeforeRun != "echo before\necho run\n" {
+		t.Fatalf("before_run hook = %q", workflow.Config.HookBeforeRun)
+	}
+	if workflow.Config.HookAfterRun != "echo after" {
+		t.Fatalf("after_run hook = %q", workflow.Config.HookAfterRun)
+	}
+	if workflow.Config.HookBeforeRemove != "echo remove" {
+		t.Fatalf("before_remove hook = %q", workflow.Config.HookBeforeRemove)
+	}
+	if workflow.Config.HookTimeout != 9*time.Second {
+		t.Fatalf("hook timeout = %s", workflow.Config.HookTimeout)
+	}
 	if workflow.PromptTemplate != "# Prompt\n\nWork on {{ issue.title }}." {
+		t.Fatalf("prompt = %q", workflow.PromptTemplate)
+	}
+}
+
+func TestLoadParsesYAMLCommentsAndIgnoresUnknownKeys(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "WORKFLOW.md")
+	if err := os.WriteFile(path, []byte(`---
+polling:
+  interval_ms: 1200 # comment
+unknown:
+  future_key: true
+agent:
+  unknown_key: ignored
+---
+Prompt
+`), 0o644); err != nil {
+		t.Fatalf("write workflow: %v", err)
+	}
+
+	workflow, err := Load(path)
+	if err != nil {
+		t.Fatalf("load workflow: %v", err)
+	}
+
+	if workflow.Config.PollInterval != 1200*time.Millisecond {
+		t.Fatalf("poll interval = %s", workflow.Config.PollInterval)
+	}
+	if workflow.PromptTemplate != "Prompt" {
+		t.Fatalf("prompt = %q", workflow.PromptTemplate)
+	}
+}
+
+func TestLoadDefaultsHookTimeout(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "WORKFLOW.md")
+	if err := os.WriteFile(path, []byte(`---
+hooks:
+  after_create: echo created
+---
+Prompt
+`), 0o644); err != nil {
+		t.Fatalf("write workflow: %v", err)
+	}
+
+	workflow, err := Load(path)
+	if err != nil {
+		t.Fatalf("load workflow: %v", err)
+	}
+
+	if workflow.Config.HookTimeout != time.Minute {
+		t.Fatalf("hook timeout = %s", workflow.Config.HookTimeout)
+	}
+}
+
+func TestLoadRejectsInvalidHookTimeout(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "WORKFLOW.md")
+	if err := os.WriteFile(path, []byte(`---
+hooks:
+  timeout_ms: 0
+---
+Prompt
+`), 0o644); err != nil {
+		t.Fatalf("write workflow: %v", err)
+	}
+
+	if _, err := Load(path); err == nil {
+		t.Fatal("expected invalid hook timeout error")
+	}
+}
+
+func TestLoadKeepsIndentedDocumentMarkerInMultilineHook(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "WORKFLOW.md")
+	if err := os.WriteFile(path, []byte(`---
+hooks:
+  before_run: |
+    echo before
+    ---
+    echo after
+---
+Prompt
+`), 0o644); err != nil {
+		t.Fatalf("write workflow: %v", err)
+	}
+
+	workflow, err := Load(path)
+	if err != nil {
+		t.Fatalf("load workflow: %v", err)
+	}
+	if workflow.Config.HookBeforeRun != "echo before\n---\necho after" {
+		t.Fatalf("before_run hook = %q", workflow.Config.HookBeforeRun)
+	}
+	if workflow.PromptTemplate != "Prompt" {
 		t.Fatalf("prompt = %q", workflow.PromptTemplate)
 	}
 }

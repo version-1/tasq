@@ -2,6 +2,7 @@ package worker
 
 import (
 	"context"
+	"os"
 	"path/filepath"
 	"sync"
 	"testing"
@@ -12,6 +13,7 @@ import (
 	"github.com/version-1/tasq/internal/orchestrator/runner"
 	"github.com/version-1/tasq/internal/orchestrator/runstore"
 	"github.com/version-1/tasq/internal/orchestrator/workflow"
+	"github.com/version-1/tasq/internal/orchestrator/workspace"
 )
 
 func TestRequestRefreshCoalescesWithoutBlocking(t *testing.T) {
@@ -71,6 +73,56 @@ func TestRunProcessesRefreshBeforeNextPoll(t *testing.T) {
 	waitClaim(t, tracker.claims)
 }
 
+func TestRunWithRetriesRunsBeforeAndAfterHooks(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	worker := &Worker{
+		maxRetryAttempts: 1,
+		hookConfig: workspace.HookConfig{
+			BeforeRun: `echo before >> hooks.out`,
+			AfterRun:  `echo after >> hooks.out`,
+			Timeout:   time.Second,
+		},
+		runner: recordingRunner{result: runner.Result{Status: run.StatusSucceeded}},
+	}
+
+	result := worker.runWithRetries(context.Background(), "run-1", entity.WorkItem{IssueID: 1}, workspace.Workspace{Path: dir})
+	if result.Status != run.StatusSucceeded {
+		t.Fatalf("status = %q error=%q", result.Status, result.Error)
+	}
+
+	content, err := os.ReadFile(filepath.Join(dir, "hooks.out"))
+	if err != nil {
+		t.Fatalf("read hook output: %v", err)
+	}
+	if string(content) != "before\nafter\n" {
+		t.Fatalf("hook output = %q", content)
+	}
+}
+
+func TestRunWithRetriesBeforeRunFailureAbortsAttempt(t *testing.T) {
+	t.Parallel()
+
+	agentRunner := &countingRunner{result: runner.Result{Status: run.StatusSucceeded}}
+	worker := &Worker{
+		maxRetryAttempts: 1,
+		hookConfig: workspace.HookConfig{
+			BeforeRun: `echo no >&2; exit 1`,
+			Timeout:   time.Second,
+		},
+		runner: agentRunner,
+	}
+
+	result := worker.runWithRetries(context.Background(), "run-1", entity.WorkItem{IssueID: 1}, workspace.Workspace{Path: t.TempDir()})
+	if result.Status != run.StatusFailed {
+		t.Fatalf("status = %q", result.Status)
+	}
+	if agentRunner.count != 0 {
+		t.Fatalf("runner calls = %d, want 0", agentRunner.count)
+	}
+}
+
 func waitClaim(t *testing.T, claims <-chan struct{}) {
 	t.Helper()
 	select {
@@ -83,6 +135,24 @@ func waitClaim(t *testing.T, claims <-chan struct{}) {
 type fakeTrackerClient struct {
 	mu     sync.Mutex
 	claims chan struct{}
+}
+
+type recordingRunner struct {
+	result runner.Result
+}
+
+func (r recordingRunner) Run(ctx context.Context, task runner.Task) runner.Result {
+	return r.result
+}
+
+type countingRunner struct {
+	count  int
+	result runner.Result
+}
+
+func (r *countingRunner) Run(ctx context.Context, task runner.Task) runner.Result {
+	r.count++
+	return r.result
 }
 
 func (f *fakeTrackerClient) ClaimWorkItem(ctx context.Context, orchestratorID string, leaseSeconds int) (*entity.WorkItem, error) {
