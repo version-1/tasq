@@ -219,6 +219,14 @@ paths:
       tags:
         - Issues
       summary: List issues.
+      parameters:
+        - name: states
+          in: query
+          required: false
+          description: Comma-separated issue statuses. Omit this parameter or pass an empty value to list all issues.
+          schema:
+            type: string
+            example: ready,in_progress
       responses:
         "200":
           description: Issue list.
@@ -226,6 +234,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/IssueListResponse"
+        "400":
+          $ref: "#/components/responses/Error"
         "500":
           $ref: "#/components/responses/Error"
     post:
@@ -246,6 +256,28 @@ paths:
               schema:
                 $ref: "#/components/schemas/IssueResponse"
         "400":
+          $ref: "#/components/responses/Error"
+  /api/v1/issues/states:
+    post:
+      tags:
+        - Issues
+      summary: Get issue states by issue IDs.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IssueStatesInput"
+      responses:
+        "200":
+          description: Issue states. Missing issue IDs are omitted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IssueStateListResponse"
+        "400":
+          $ref: "#/components/responses/Error"
+        "500":
           $ref: "#/components/responses/Error"
   /api/v1/issues/{id}:
     parameters:
@@ -620,6 +652,17 @@ components:
         updatedAt:
           type: string
           format: date-time
+    IssueState:
+      type: object
+      required:
+        - id
+        - status
+      properties:
+        id:
+          type: integer
+          format: int64
+        status:
+          $ref: "#/components/schemas/IssueStatus"
     CreateIssueInput:
       type: object
       required:
@@ -650,6 +693,16 @@ components:
           $ref: "#/components/schemas/Priority"
         assignee:
           type: string
+    IssueStatesInput:
+      type: object
+      required:
+        - ids
+      properties:
+        ids:
+          type: array
+          items:
+            type: integer
+            format: int64
     WorkItem:
       type: object
       required:
@@ -921,6 +974,18 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Issue"
+        meta:
+          $ref: "#/components/schemas/ApiMeta"
+    IssueStateListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/IssueState"
         meta:
           $ref: "#/components/schemas/ApiMeta"
     ClaimWorkItemResponse:
