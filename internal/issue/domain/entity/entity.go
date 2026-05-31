@@ -111,6 +111,11 @@ type Issue struct {
 	UpdatedAt   time.Time `json:"updatedAt"`
 }
 
+type IssueState struct {
+	ID     int64  `json:"id"`
+	Status Status `json:"status"`
+}
+
 type CreateIssueInput struct {
 	Title       string   `json:"title"`
 	Description string   `json:"description"`

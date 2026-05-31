@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	_ "modernc.org/sqlite"
@@ -344,6 +345,65 @@ func (s *Store) Issues(ctx context.Context) ([]entity.Issue, error) {
 		return nil, fmt.Errorf("iterate issues: %w", err)
 	}
 	return issues, nil
+}
+
+func (s *Store) IssuesByStates(ctx context.Context, states []entity.Status) ([]entity.Issue, error) {
+	if len(states) == 0 {
+		return s.Issues(ctx)
+	}
+	args := make([]any, 0, len(states))
+	for _, status := range states {
+		if !entity.IsValidStatus(status) {
+			return nil, errors.New("status is invalid")
+		}
+		args = append(args, status)
+	}
+	rows, err := s.db.QueryContext(ctx, `SELECT `+issueColumns()+` FROM issues WHERE status IN (`+placeholders(len(states))+`) ORDER BY updated_at DESC, id DESC`, args...)
+	if err != nil {
+		return nil, fmt.Errorf("list issues by states: %w", err)
+	}
+	defer rows.Close()
+
+	var issues []entity.Issue
+	for rows.Next() {
+		item, err := scanIssue(rows)
+		if err != nil {
+			return nil, err
+		}
+		issues = append(issues, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate issues by states: %w", err)
+	}
+	return issues, nil
+}
+
+func (s *Store) IssueStatesByIDs(ctx context.Context, ids []int64) ([]entity.IssueState, error) {
+	if len(ids) == 0 {
+		return []entity.IssueState{}, nil
+	}
+	args := make([]any, 0, len(ids))
+	for _, id := range ids {
+		args = append(args, id)
+	}
+	rows, err := s.db.QueryContext(ctx, `SELECT id, status FROM issues WHERE id IN (`+placeholders(len(ids))+`) ORDER BY id ASC`, args...)
+	if err != nil {
+		return nil, fmt.Errorf("list issue states by ids: %w", err)
+	}
+	defer rows.Close()
+
+	states := []entity.IssueState{}
+	for rows.Next() {
+		var state entity.IssueState
+		if err := rows.Scan(&state.ID, &state.Status); err != nil {
+			return nil, err
+		}
+		states = append(states, state)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate issue states by ids: %w", err)
+	}
+	return states, nil
 }
 
 func (s *Store) Issue(ctx context.Context, id int64) (entity.Issue, error) {
@@ -713,6 +773,10 @@ func projectColumns() string {
 
 func workspaceColumns() string {
 	return `id, project_id, name, path, status, created_at, updated_at`
+}
+
+func placeholders(count int) string {
+	return strings.TrimRight(strings.Repeat("?,", count), ",")
 }
 
 type rowScanner interface {
