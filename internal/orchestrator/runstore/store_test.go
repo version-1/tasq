@@ -21,7 +21,6 @@ func TestOpenAppliesOrchestratorSchema(t *testing.T) {
 
 	for _, name := range []string{
 		"runs",
-		"runs_work_item_idx",
 		"runs_issue_idx",
 		"runs_status_updated_idx",
 		"runner_events",
@@ -29,8 +28,6 @@ func TestOpenAppliesOrchestratorSchema(t *testing.T) {
 		"workspace_metadata",
 		"workspace_setup_failures",
 		"workspace_setup_failures_issue_idx",
-		"outbox_events",
-		"outbox_events_unsent_idx",
 	} {
 		if !schemaObjectExists(t, store, name) {
 			t.Fatalf("schema object %q does not exist", name)
@@ -48,17 +45,17 @@ func TestStoreQueriesActiveRunsAndLatestRunByIssueID(t *testing.T) {
 	}
 	defer store.Close()
 
-	queued := createRun(t, ctx, store, 1, 101)
-	running := createRun(t, ctx, store, 2, 201)
+	queued := createRun(t, ctx, store, 1)
+	running := createRun(t, ctx, store, 2)
 	running, err = store.UpdateRunStatus(ctx, running.RunID, run.StatusRunning, "")
 	if err != nil {
 		t.Fatalf("mark running: %v", err)
 	}
-	succeeded := createRun(t, ctx, store, 3, 301)
+	succeeded := createRun(t, ctx, store, 3)
 	if _, err := store.UpdateRunStatus(ctx, succeeded.RunID, run.StatusSucceeded, ""); err != nil {
 		t.Fatalf("mark succeeded: %v", err)
 	}
-	latestForIssue := createRun(t, ctx, store, 2, 202)
+	latestForIssue := createRun(t, ctx, store, 2)
 
 	activeRuns, err := store.ActiveRuns(ctx)
 	if err != nil {
@@ -137,13 +134,6 @@ func TestStoreRecordsRunnerEventAndWorkspaceMetadata(t *testing.T) {
 	if count != 1 {
 		t.Fatalf("workspace setup failure count = %d", count)
 	}
-	outboxCount, err := store.UnsentOutboxCount(ctx)
-	if err != nil {
-		t.Fatalf("count unsent outbox: %v", err)
-	}
-	if outboxCount != 0 {
-		t.Fatalf("unsent outbox count = %d", outboxCount)
-	}
 	if !schemaObjectExists(t, store, "workspace_metadata") {
 		t.Fatal("workspace_metadata does not exist")
 	}
@@ -162,13 +152,11 @@ func schemaObjectExists(t *testing.T, store *Store, name string) bool {
 	return exists
 }
 
-func createRun(t *testing.T, ctx context.Context, store *Store, issueID int64, workItemID int64) run.Run {
+func createRun(t *testing.T, ctx context.Context, store *Store, issueID int64) run.Run {
 	t.Helper()
 
 	storedRun, err := store.CreateRun(ctx, CreateRunInput{
 		IssueID:        issueID,
-		WorkItemID:     workItemID,
-		ClaimToken:     "claim-token",
 		Workspace:      "/tmp/workspace",
 		Attempt:        1,
 		OrchestratorID: "orchestrator",

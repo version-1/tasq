@@ -8,11 +8,10 @@ type WorkspaceViewProps = {
 };
 
 export function WorkspaceView({ summary, issues }: WorkspaceViewProps) {
-  const { t } = useTranslation();
-  const activeIssues = issues.filter((issue) => issue.status !== "done").length;
-  const activeRuns = summary.runs.filter((run) => run.status === "running" || run.status === "starting").length;
+	const { t } = useTranslation();
+	const activeIssues = issues.filter((issue) => issue.status !== "done").length;
 
-  return (
+	return (
     <section className={styles.panelGrid}>
       <div className={styles.widePanel}>
         <h2>{t("workspace.title")}</h2>
@@ -25,15 +24,7 @@ export function WorkspaceView({ summary, issues }: WorkspaceViewProps) {
             <dt>{t("workspace.activeIssues")}</dt>
             <dd>{activeIssues}</dd>
           </div>
-          <div>
-            <dt>{t("workspace.totalRuns")}</dt>
-            <dd>{summary.runs.length}</dd>
-          </div>
-          <div>
-            <dt>{t("workspace.activeRuns")}</dt>
-            <dd>{activeRuns}</dd>
-          </div>
-        </dl>
+				</dl>
         <p className={styles.generatedAt}>
           {t("workspace.generatedAt")}: {summary.generatedAt || t("common.pending")}
         </p>

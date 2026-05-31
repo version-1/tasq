@@ -43,8 +43,8 @@ paths:
         - Refresh
       summary: Request an immediate poll and reconciliation cycle.
       description: |
-        Queues a coalesced refresh request for the worker. Multiple refresh
-        requests may be collapsed into one pending tick.
+        Queues a coalesced refresh request when a worker refresher is available.
+        In builds without the worker coordinator this endpoint returns 503.
       responses:
         "202":
           description: Refresh request accepted.
@@ -52,6 +52,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RefreshResponse"
+        "503":
+          $ref: "#/components/responses/Error"
   /api/v1/{issue_identifier}:
     parameters:
       - $ref: "#/components/parameters/IssueIdentifier"

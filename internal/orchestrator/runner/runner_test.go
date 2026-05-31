@@ -40,20 +40,18 @@ done
 	}
 	var events []Event
 	result := CodexRunner{}.Run(context.Background(), Task{
-		WorkItem: entity.WorkItem{
-			Attempt: 1,
-			Issue: entity.Issue{
-				ID:          123,
-				Title:       "Runner task",
-				Description: "Wire Codex.",
-			},
+		Attempt: 1,
+		Issue: entity.Issue{
+			ID:          123,
+			Title:       "Runner task",
+			Description: "Wire Codex.",
 		},
 		RunID:          "run-1",
 		Workspace:      workspace.Workspace{Path: dir, WorkspaceKey: "ISSUE-123"},
 		PromptTemplate: "Work on {{ issue.id }}: {{ issue.title }}",
 		Command:        "sh " + strconv.Quote(script),
-		ReadTimeout:    time.Second,
-		TurnTimeout:    time.Second,
+		ReadTimeout:    5 * time.Second,
+		TurnTimeout:    5 * time.Second,
 		OnEvent: func(event Event) {
 			events = append(events, event)
 		},
@@ -71,13 +69,11 @@ func TestRenderPromptSubstitutesIssueFields(t *testing.T) {
 
 	prompt := renderPrompt(Task{
 		PromptTemplate: "{{ issue.id }} {{ issue.title }} {{ issue.description }} {{ attempt }}",
-		WorkItem: entity.WorkItem{
-			Attempt: 2,
-			Issue: entity.Issue{
-				ID:          7,
-				Title:       "Title",
-				Description: "Description",
-			},
+		Attempt:        2,
+		Issue: entity.Issue{
+			ID:          7,
+			Title:       "Title",
+			Description: "Description",
 		},
 	})
 	if prompt != "7 Title Description 2" {

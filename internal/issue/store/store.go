@@ -2,9 +2,7 @@ package store
 
 import (
 	"context"
-	"crypto/rand"
 	"database/sql"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"strings"
@@ -318,11 +316,6 @@ func (s *Store) CreateIssue(ctx context.Context, input entity.CreateIssueInput) 
 	if err != nil {
 		return entity.Issue{}, fmt.Errorf("read created issue id: %w", err)
 	}
-	if normalized.Status == entity.StatusReady {
-		if err := s.ensurePendingWorkItem(ctx, id); err != nil {
-			return entity.Issue{}, err
-		}
-	}
 	return s.Issue(ctx, id)
 }
 
@@ -458,180 +451,13 @@ func (s *Store) UpdateIssue(ctx context.Context, id int64, input entity.UpdateIs
 	if err != nil {
 		return entity.Issue{}, fmt.Errorf("update issue: %w", err)
 	}
-	if current.Status == entity.StatusReady {
-		if err := s.ensurePendingWorkItem(ctx, id); err != nil {
-			return entity.Issue{}, err
-		}
-	}
 	return s.Issue(ctx, id)
-}
-
-func (s *Store) ClaimWorkItem(ctx context.Context, input entity.ClaimWorkItemInput) (*entity.WorkItem, error) {
-	if input.OrchestratorID == "" {
-		return nil, errors.New("orchestratorId is required")
-	}
-	if input.LeaseSeconds <= 0 {
-		input.LeaseSeconds = 30
-	}
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		if tx != nil {
-			_ = tx.Rollback()
-		}
-	}()
-
-	now := time.Now().UTC()
-	row := tx.QueryRowContext(ctx, `SELECT id FROM work_items
-		WHERE status = ? OR (status = ? AND lease_until < ?)
-		ORDER BY created_at ASC, id ASC
-		LIMIT 1`, entity.WorkItemPending, entity.WorkItemClaimed, formatTime(now))
-	var id int64
-	if err := row.Scan(&id); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("find claimable work item: %w", err)
-	}
-	token, err := randomToken()
-	if err != nil {
-		return nil, err
-	}
-	leaseUntil := now.Add(time.Duration(input.LeaseSeconds) * time.Second)
-	_, err = tx.ExecContext(ctx, `UPDATE work_items SET
-		status = ?, claimed_by = ?, claim_token = ?, lease_until = ?, attempt = attempt + 1, updated_at = ?
-		WHERE id = ?`,
-		entity.WorkItemClaimed,
-		input.OrchestratorID,
-		token,
-		formatTime(leaseUntil),
-		formatTime(now),
-		id,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("claim work item: %w", err)
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-	tx = nil
-	item, err := s.WorkItem(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	return &item, nil
-}
-
-func (s *Store) WorkItem(ctx context.Context, id int64) (entity.WorkItem, error) {
-	row := s.db.QueryRowContext(ctx, `SELECT
-		w.id, w.issue_id, w.status, w.claimed_by, w.claim_token, w.lease_until, w.attempt, w.created_at, w.updated_at,
-		i.id, i.title, i.description, i.status, i.priority, i.assignee, i.created_at, i.updated_at
-		FROM work_items w
-		JOIN issues i ON i.id = w.issue_id
-		WHERE w.id = ?`, id)
-	return scanWorkItem(row)
-}
-
-func (s *Store) RenewWorkItemLease(ctx context.Context, input entity.RenewWorkItemLeaseInput) (entity.WorkItem, error) {
-	if input.WorkItemID <= 0 {
-		return entity.WorkItem{}, errors.New("workItemId is required")
-	}
-	if input.ClaimToken == "" {
-		return entity.WorkItem{}, errors.New("claimToken is required")
-	}
-	if input.OrchestratorID == "" {
-		return entity.WorkItem{}, errors.New("orchestratorId is required")
-	}
-	if input.LeaseSeconds <= 0 {
-		input.LeaseSeconds = 30
-	}
-	now := time.Now().UTC()
-	leaseUntil := now.Add(time.Duration(input.LeaseSeconds) * time.Second)
-	result, err := s.db.ExecContext(ctx, `UPDATE work_items SET
-		lease_until = ?, updated_at = ?
-		WHERE id = ? AND status = ? AND claim_token = ? AND claimed_by = ?`,
-		formatTime(leaseUntil),
-		formatTime(now),
-		input.WorkItemID,
-		entity.WorkItemClaimed,
-		input.ClaimToken,
-		input.OrchestratorID,
-	)
-	if err != nil {
-		return entity.WorkItem{}, fmt.Errorf("renew work item lease: %w", err)
-	}
-	affected, err := result.RowsAffected()
-	if err != nil {
-		return entity.WorkItem{}, err
-	}
-	if affected == 0 {
-		return entity.WorkItem{}, errors.New("work item claim is not renewable")
-	}
-	return s.WorkItem(ctx, input.WorkItemID)
-}
-
-func (s *Store) ReceiveRunEvent(ctx context.Context, input entity.RunEventInput) error {
-	if input.EventID == "" {
-		return errors.New("eventId is required")
-	}
-	now := nowString()
-	occurredAt := input.OccurredAt
-	if occurredAt.IsZero() {
-		occurredAt = time.Now().UTC()
-	}
-	result, err := s.db.ExecContext(ctx, `INSERT OR IGNORE INTO orchestrator_events (
-		event_id, work_item_id, issue_id, run_id, claim_token, status, workspace, attempt, error, occurred_at, orchestrator_id, received_at
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		input.EventID,
-		input.WorkItemID,
-		input.IssueID,
-		input.RunID,
-		input.ClaimToken,
-		input.Status,
-		input.Workspace,
-		input.Attempt,
-		input.Error,
-		formatTime(occurredAt),
-		input.OrchestratorID,
-		now,
-	)
-	if err != nil {
-		return fmt.Errorf("record orchestrator event: %w", err)
-	}
-	affected, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if affected == 0 {
-		return nil
-	}
-	currentToken, err := s.currentClaimToken(ctx, input.WorkItemID)
-	if err != nil {
-		return err
-	}
-	if currentToken != input.ClaimToken {
-		return nil
-	}
-	if err := s.upsertRunSnapshot(ctx, input, occurredAt); err != nil {
-		return err
-	}
-	return s.applyRunStatus(ctx, input)
 }
 
 func (s *Store) Summary(ctx context.Context) (entity.Summary, error) {
 	issues, err := s.Issues(ctx)
 	if err != nil {
 		return entity.Summary{}, err
-	}
-	runs, err := s.RunSnapshots(ctx)
-	if err != nil {
-		return entity.Summary{}, err
-	}
-	runByIssue := map[int64]entity.RunSnapshot{}
-	for _, run := range runs {
-		runByIssue[run.IssueID] = run
 	}
 	columns := make([]entity.Column, 0, len(entity.OrderedStatuses()))
 	for _, status := range entity.OrderedStatuses() {
@@ -640,127 +466,11 @@ func (s *Store) Summary(ctx context.Context) (entity.Summary, error) {
 			if item.Status != status {
 				continue
 			}
-			summary := entity.IssueSummary{Issue: item}
-			if run, ok := runByIssue[item.ID]; ok {
-				runCopy := run
-				summary.Run = &runCopy
-			}
-			column.Issues = append(column.Issues, summary)
+			column.Issues = append(column.Issues, entity.IssueSummary{Issue: item})
 		}
 		columns = append(columns, column)
 	}
-	return entity.Summary{Columns: columns, Runs: runs, GeneratedAt: time.Now().UTC()}, nil
-}
-
-func (s *Store) RunSnapshots(ctx context.Context) ([]entity.RunSnapshot, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT issue_id, work_item_id, run_id, status, workspace, attempt, error, orchestrator_id, updated_at
-		FROM run_snapshots ORDER BY updated_at DESC`)
-	if err != nil {
-		return nil, fmt.Errorf("list run snapshots: %w", err)
-	}
-	defer rows.Close()
-	runs := []entity.RunSnapshot{}
-	for rows.Next() {
-		var run entity.RunSnapshot
-		var updatedAt string
-		if err := rows.Scan(&run.IssueID, &run.WorkItemID, &run.RunID, &run.Status, &run.Workspace, &run.Attempt, &run.Error, &run.OrchestratorID, &updatedAt); err != nil {
-			return nil, err
-		}
-		parsed, err := parseTime(updatedAt)
-		if err != nil {
-			return nil, err
-		}
-		run.UpdatedAt = parsed
-		runs = append(runs, run)
-	}
-	return runs, rows.Err()
-}
-
-func (s *Store) ensurePendingWorkItem(ctx context.Context, issueID int64) error {
-	var exists int
-	err := s.db.QueryRowContext(ctx, `SELECT 1 FROM work_items
-		WHERE issue_id = ? AND status IN (?, ?)
-		LIMIT 1`, issueID, entity.WorkItemPending, entity.WorkItemClaimed).Scan(&exists)
-	if err == nil {
-		return nil
-	}
-	if !errors.Is(err, sql.ErrNoRows) {
-		return err
-	}
-	now := nowString()
-	_, err = s.db.ExecContext(ctx, `INSERT INTO work_items (
-		issue_id, status, created_at, updated_at
-	) VALUES (?, ?, ?, ?)`, issueID, entity.WorkItemPending, now, now)
-	if err != nil {
-		return fmt.Errorf("create work item: %w", err)
-	}
-	return nil
-}
-
-func (s *Store) currentClaimToken(ctx context.Context, workItemID int64) (string, error) {
-	var token string
-	err := s.db.QueryRowContext(ctx, `SELECT claim_token FROM work_items WHERE id = ?`, workItemID).Scan(&token)
-	if err != nil {
-		return "", fmt.Errorf("read claim token: %w", err)
-	}
-	return token, nil
-}
-
-func (s *Store) upsertRunSnapshot(ctx context.Context, input entity.RunEventInput, occurredAt time.Time) error {
-	_, err := s.db.ExecContext(ctx, `INSERT INTO run_snapshots (
-		issue_id, work_item_id, run_id, status, workspace, attempt, error, orchestrator_id, updated_at
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-	ON CONFLICT(issue_id) DO UPDATE SET
-		work_item_id = excluded.work_item_id,
-		run_id = excluded.run_id,
-		status = excluded.status,
-		workspace = excluded.workspace,
-		attempt = excluded.attempt,
-		error = excluded.error,
-		orchestrator_id = excluded.orchestrator_id,
-		updated_at = excluded.updated_at`,
-		input.IssueID,
-		input.WorkItemID,
-		input.RunID,
-		input.Status,
-		input.Workspace,
-		input.Attempt,
-		input.Error,
-		input.OrchestratorID,
-		formatTime(occurredAt),
-	)
-	if err != nil {
-		return fmt.Errorf("upsert run snapshot: %w", err)
-	}
-	return nil
-}
-
-func (s *Store) applyRunStatus(ctx context.Context, input entity.RunEventInput) error {
-	now := nowString()
-	switch input.Status {
-	case entity.RunQueued, entity.RunStarting, entity.RunRunning:
-		_, err := s.db.ExecContext(ctx, `UPDATE issues SET status = ?, updated_at = ? WHERE id = ?`, entity.StatusInProgress, now, input.IssueID)
-		return err
-	case entity.RunWaitingForInput:
-		_, err := s.db.ExecContext(ctx, `UPDATE issues SET status = ?, updated_at = ? WHERE id = ?`, entity.StatusBlocked, now, input.IssueID)
-		return err
-	case entity.RunSucceeded:
-		_, err := s.db.ExecContext(ctx, `UPDATE work_items SET status = ?, updated_at = ? WHERE id = ?`, entity.WorkItemDone, now, input.WorkItemID)
-		if err != nil {
-			return err
-		}
-		_, err = s.db.ExecContext(ctx, `UPDATE issues SET status = ?, updated_at = ? WHERE id = ?`, entity.StatusReview, now, input.IssueID)
-		return err
-	case entity.RunFailed, entity.RunCancelled:
-		_, err := s.db.ExecContext(ctx, `UPDATE work_items SET status = ?, updated_at = ? WHERE id = ?`, entity.WorkItemFailed, now, input.WorkItemID)
-		if err != nil {
-			return err
-		}
-		_, err = s.db.ExecContext(ctx, `UPDATE issues SET status = ?, updated_at = ? WHERE id = ?`, entity.StatusFailed, now, input.IssueID)
-		return err
-	default:
-		return nil
-	}
+	return entity.Summary{Columns: columns, GeneratedAt: time.Now().UTC()}, nil
 }
 
 func issueColumns() string {
@@ -844,58 +554,6 @@ func scanWorkspace(row rowScanner) (entity.Workspace, error) {
 	item.CreatedAt = parsedCreatedAt
 	item.UpdatedAt = parsedUpdatedAt
 	return item, nil
-}
-
-func scanWorkItem(row rowScanner) (entity.WorkItem, error) {
-	var item entity.WorkItem
-	var leaseUntil string
-	var createdAt string
-	var updatedAt string
-	var issueCreatedAt string
-	var issueUpdatedAt string
-	err := row.Scan(
-		&item.ID, &item.IssueID, &item.Status, &item.ClaimedBy, &item.ClaimToken, &leaseUntil, &item.Attempt, &createdAt, &updatedAt,
-		&item.Issue.ID, &item.Issue.Title, &item.Issue.Description, &item.Issue.Status, &item.Issue.Priority, &item.Issue.Assignee, &issueCreatedAt, &issueUpdatedAt,
-	)
-	if err != nil {
-		return entity.WorkItem{}, err
-	}
-	if leaseUntil != "" {
-		parsed, err := parseTime(leaseUntil)
-		if err != nil {
-			return entity.WorkItem{}, err
-		}
-		item.LeaseUntil = &parsed
-	}
-	parsedCreatedAt, err := parseTime(createdAt)
-	if err != nil {
-		return entity.WorkItem{}, err
-	}
-	parsedUpdatedAt, err := parseTime(updatedAt)
-	if err != nil {
-		return entity.WorkItem{}, err
-	}
-	parsedIssueCreatedAt, err := parseTime(issueCreatedAt)
-	if err != nil {
-		return entity.WorkItem{}, err
-	}
-	parsedIssueUpdatedAt, err := parseTime(issueUpdatedAt)
-	if err != nil {
-		return entity.WorkItem{}, err
-	}
-	item.CreatedAt = parsedCreatedAt
-	item.UpdatedAt = parsedUpdatedAt
-	item.Issue.CreatedAt = parsedIssueCreatedAt
-	item.Issue.UpdatedAt = parsedIssueUpdatedAt
-	return item, nil
-}
-
-func randomToken() (string, error) {
-	var raw [16]byte
-	if _, err := rand.Read(raw[:]); err != nil {
-		return "", fmt.Errorf("generate claim token: %w", err)
-	}
-	return hex.EncodeToString(raw[:]), nil
 }
 
 func nowString() string {

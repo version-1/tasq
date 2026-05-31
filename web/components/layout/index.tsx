@@ -173,7 +173,6 @@ export function Layout({ children }: { children: ReactNode }) {
           activePage={activePage}
           projectName={activeProject?.name ?? null}
           issueCount={summary ? issues.length : null}
-          runCount={summary ? summary.runs.length : null}
           onAddTask={() => setAddIssueState({ kind: "open", initialStatus: "backlog" })}
         />
 

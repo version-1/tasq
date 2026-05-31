@@ -93,6 +93,19 @@ func TestRefreshRequestsWorkerRefresh(t *testing.T) {
 	}
 }
 
+func TestRefreshUnavailableWithoutWorker(t *testing.T) {
+	t.Parallel()
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/refresh", nil)
+	rec := httptest.NewRecorder()
+
+	New(&fakeStore{}, nil).Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Fatalf("status = %d body = %s", rec.Code, rec.Body.String())
+	}
+}
+
 type fakeStore struct {
 	activeRuns    []run.Run
 	runByIssue    run.Run
