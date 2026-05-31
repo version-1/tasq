@@ -64,12 +64,10 @@ func (s *Store) CreateRun(ctx context.Context, input CreateRunInput) (run.Run, e
 	}
 	now := nowString()
 	_, err = s.db.ExecContext(ctx, `INSERT INTO runs (
-		run_id, issue_id, work_item_id, claim_token, status, workspace, attempt, orchestrator_id, created_at, updated_at
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		run_id, issue_id, status, workspace, attempt, orchestrator_id, created_at, updated_at
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
 		runID,
 		input.IssueID,
-		input.WorkItemID,
-		input.ClaimToken,
 		run.StatusQueued,
 		input.Workspace,
 		input.Attempt,
@@ -84,16 +82,11 @@ func (s *Store) CreateRun(ctx context.Context, input CreateRunInput) (run.Run, e
 	if err != nil {
 		return run.Run{}, err
 	}
-	if err := s.EnqueueRunEvent(ctx, createdRun); err != nil {
-		return run.Run{}, err
-	}
 	return createdRun, nil
 }
 
 type CreateRunInput struct {
 	IssueID        int64
-	WorkItemID     int64
-	ClaimToken     string
 	Workspace      string
 	Attempt        int
 	OrchestratorID string
@@ -107,9 +100,6 @@ func (s *Store) UpdateRunStatus(ctx context.Context, runID string, status run.St
 	}
 	updatedRun, err := s.RunByRunID(ctx, runID)
 	if err != nil {
-		return run.Run{}, err
-	}
-	if err := s.EnqueueRunEvent(ctx, updatedRun); err != nil {
 		return run.Run{}, err
 	}
 	return updatedRun, nil
@@ -220,14 +210,6 @@ func (s *Store) RecordWorkspaceSetupFailure(ctx context.Context, issueID int64, 
 	return nil
 }
 
-func (s *Store) UnsentOutboxCount(ctx context.Context) (int, error) {
-	var count int
-	if err := s.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM outbox_events WHERE sent_at = ''`).Scan(&count); err != nil {
-		return 0, fmt.Errorf("count unsent outbox events: %w", err)
-	}
-	return count, nil
-}
-
 func (s *Store) WorkspaceSetupFailureCount(ctx context.Context) (int, error) {
 	var count int
 	if err := s.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM workspace_setup_failures`).Scan(&count); err != nil {
@@ -237,13 +219,13 @@ func (s *Store) WorkspaceSetupFailureCount(ctx context.Context) (int, error) {
 }
 
 func (s *Store) RunByRunID(ctx context.Context, runID string) (run.Run, error) {
-	row := s.db.QueryRowContext(ctx, `SELECT id, run_id, issue_id, work_item_id, claim_token, status, workspace, attempt, error, orchestrator_id, created_at, updated_at
+	row := s.db.QueryRowContext(ctx, `SELECT id, run_id, issue_id, status, workspace, attempt, error, orchestrator_id, created_at, updated_at
 		FROM runs WHERE run_id = ?`, runID)
 	return scanRun(row)
 }
 
 func (s *Store) ActiveRuns(ctx context.Context) ([]run.Run, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT id, run_id, issue_id, work_item_id, claim_token, status, workspace, attempt, error, orchestrator_id, created_at, updated_at
+	rows, err := s.db.QueryContext(ctx, `SELECT id, run_id, issue_id, status, workspace, attempt, error, orchestrator_id, created_at, updated_at
 		FROM runs
 		WHERE status IN (?, ?)
 		ORDER BY updated_at DESC, id DESC`, run.StatusQueued, run.StatusRunning)
@@ -264,7 +246,7 @@ func (s *Store) ActiveRuns(ctx context.Context) ([]run.Run, error) {
 }
 
 func (s *Store) RunByIssueID(ctx context.Context, issueID int64) (run.Run, error) {
-	row := s.db.QueryRowContext(ctx, `SELECT id, run_id, issue_id, work_item_id, claim_token, status, workspace, attempt, error, orchestrator_id, created_at, updated_at
+	row := s.db.QueryRowContext(ctx, `SELECT id, run_id, issue_id, status, workspace, attempt, error, orchestrator_id, created_at, updated_at
 		FROM runs
 		WHERE issue_id = ?
 		ORDER BY id DESC
@@ -276,7 +258,7 @@ func scanRun(row scanner) (run.Run, error) {
 	var storedRun run.Run
 	var createdAt string
 	var updatedAt string
-	if err := row.Scan(&storedRun.ID, &storedRun.RunID, &storedRun.IssueID, &storedRun.WorkItemID, &storedRun.ClaimToken, &storedRun.Status, &storedRun.Workspace, &storedRun.Attempt, &storedRun.Error, &storedRun.OrchestratorID, &createdAt, &updatedAt); err != nil {
+	if err := row.Scan(&storedRun.ID, &storedRun.RunID, &storedRun.IssueID, &storedRun.Status, &storedRun.Workspace, &storedRun.Attempt, &storedRun.Error, &storedRun.OrchestratorID, &createdAt, &updatedAt); err != nil {
 		return run.Run{}, err
 	}
 	var err error
@@ -291,89 +273,8 @@ func scanRun(row scanner) (run.Run, error) {
 	return storedRun, nil
 }
 
-func (s *Store) EnqueueRunEvent(ctx context.Context, storedRun run.Run) error {
-	eventID, err := randomID("evt")
-	if err != nil {
-		return err
-	}
-	_, err = s.db.ExecContext(ctx, `INSERT INTO outbox_events (
-		event_id, run_id, issue_id, work_item_id, claim_token, status, workspace, attempt, error, orchestrator_id, occurred_at
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		eventID,
-		storedRun.RunID,
-		storedRun.IssueID,
-		storedRun.WorkItemID,
-		storedRun.ClaimToken,
-		storedRun.Status,
-		storedRun.Workspace,
-		storedRun.Attempt,
-		storedRun.Error,
-		storedRun.OrchestratorID,
-		formatTime(storedRun.UpdatedAt),
-	)
-	if err != nil {
-		return fmt.Errorf("enqueue outbox event: %w", err)
-	}
-	return nil
-}
-
-func (s *Store) UnsentOutboxEvents(ctx context.Context, limit int) ([]run.OutboxEvent, error) {
-	if limit <= 0 {
-		limit = 20
-	}
-	rows, err := s.db.QueryContext(ctx, `SELECT id, event_id, run_id, issue_id, work_item_id, claim_token, status, workspace, attempt, error, orchestrator_id, occurred_at, sent_at
-		FROM outbox_events
-		WHERE sent_at = ''
-		ORDER BY id ASC
-		LIMIT ?`, limit)
-	if err != nil {
-		return nil, fmt.Errorf("list unsent outbox events: %w", err)
-	}
-	defer rows.Close()
-
-	var events []run.OutboxEvent
-	for rows.Next() {
-		event, err := scanOutboxEvent(rows)
-		if err != nil {
-			return nil, err
-		}
-		events = append(events, event)
-	}
-	return events, rows.Err()
-}
-
-func (s *Store) MarkOutboxEventSent(ctx context.Context, id int64) error {
-	_, err := s.db.ExecContext(ctx, `UPDATE outbox_events SET sent_at = ? WHERE id = ?`, nowString(), id)
-	if err != nil {
-		return fmt.Errorf("mark outbox event sent: %w", err)
-	}
-	return nil
-}
-
 type scanner interface {
 	Scan(dest ...any) error
-}
-
-func scanOutboxEvent(row scanner) (run.OutboxEvent, error) {
-	var event run.OutboxEvent
-	var occurredAt string
-	var sentAt string
-	err := row.Scan(&event.ID, &event.EventID, &event.RunID, &event.IssueID, &event.WorkItemID, &event.ClaimToken, &event.Status, &event.Workspace, &event.Attempt, &event.Error, &event.OrchestratorID, &occurredAt, &sentAt)
-	if err != nil {
-		return run.OutboxEvent{}, err
-	}
-	event.OccurredAt, err = parseTime(occurredAt)
-	if err != nil {
-		return run.OutboxEvent{}, err
-	}
-	if sentAt != "" {
-		parsed, err := parseTime(sentAt)
-		if err != nil {
-			return run.OutboxEvent{}, err
-		}
-		event.SentAt = &parsed
-	}
-	return event, nil
 }
 
 func (s *Store) addColumnIfMissing(ctx context.Context, table string, column string, definition string) error {

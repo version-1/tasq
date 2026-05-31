@@ -229,9 +229,11 @@ func (s *Server) issue(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) refresh(w http.ResponseWriter, r *http.Request) {
-	if s.refresher != nil {
-		s.refresher.RequestRefresh()
+	if s.refresher == nil {
+		writeError(w, http.StatusServiceUnavailable, "refresh_unavailable", "worker refresh is unavailable")
+		return
 	}
+	s.refresher.RequestRefresh()
 	writeJSON(w, http.StatusAccepted, map[string]any{
 		"queued":       true,
 		"coalesced":    false,

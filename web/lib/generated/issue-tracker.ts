@@ -35,15 +35,6 @@ export interface HealthResponse {
   meta: ApiMeta;
 }
 
-export interface AcceptedData {
-  status: string;
-}
-
-export interface AcceptedResponse {
-  data: AcceptedData;
-  meta: ApiMeta;
-}
-
 export type IssueStatus = typeof IssueStatus[keyof typeof IssueStatus];
 
 
@@ -67,31 +58,6 @@ export const Priority = {
   normal: 'normal',
   high: 'high',
   urgent: 'urgent',
-} as const;
-
-export type WorkItemStatus = typeof WorkItemStatus[keyof typeof WorkItemStatus];
-
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const WorkItemStatus = {
-  pending: 'pending',
-  claimed: 'claimed',
-  done: 'done',
-  failed: 'failed',
-} as const;
-
-export type RunStatus = typeof RunStatus[keyof typeof RunStatus];
-
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const RunStatus = {
-  queued: 'queued',
-  starting: 'starting',
-  running: 'running',
-  waiting_for_input: 'waiting_for_input',
-  succeeded: 'succeeded',
-  failed: 'failed',
-  cancelled: 'cancelled',
 } as const;
 
 export type WorkspaceStatus = typeof WorkspaceStatus[keyof typeof WorkspaceStatus];
@@ -162,6 +128,11 @@ export interface Issue {
   updatedAt: string;
 }
 
+export interface IssueState {
+  id: number;
+  status: IssueStatus;
+}
+
 export interface CreateIssueInput {
   title: string;
   description?: string;
@@ -178,84 +149,20 @@ export interface UpdateIssueInput {
   assignee?: string;
 }
 
-export interface WorkItem {
-  id: number;
-  issueId: number;
-  status: WorkItemStatus;
-  claimedBy: string;
-  claimToken: string;
-  leaseUntil?: string;
-  attempt: number;
-  createdAt: string;
-  updatedAt: string;
-  issue: Issue;
+export interface IssueStatesInput {
+  ids: number[];
 }
 
-export interface ClaimWorkItemInput {
-  orchestratorId: string;
-  /** @minimum 1 */
-  leaseSeconds: number;
-}
-
-export type ClaimWorkItemOutputWorkItem = WorkItem | null;
-
-export interface ClaimWorkItemOutput {
-  workItem: ClaimWorkItemOutputWorkItem;
-}
-
-export interface RenewWorkItemLeaseInput {
-  workItemId: number;
-  claimToken: string;
-  orchestratorId: string;
-  /** @minimum 1 */
-  leaseSeconds: number;
-}
-
-export interface RenewWorkItemLeaseOutput {
-  workItem: WorkItem;
-}
-
-export interface RunEventInput {
-  eventId: string;
-  workItemId: number;
-  issueId: number;
-  runId: string;
-  claimToken: string;
-  status: RunStatus;
-  workspace: string;
-  attempt: number;
-  error: string;
-  occurredAt: string;
-  orchestratorId: string;
-}
-
-export interface RunSnapshot {
-  issueId: number;
-  workItemId: number;
-  runId: string;
-  status: RunStatus;
-  workspace: string;
-  attempt: number;
-  error: string;
-  orchestratorId: string;
-  updatedAt: string;
-}
-
-export type IssueSummaryAllOf = {
-  run?: RunSnapshot;
-};
-
-export type IssueSummary = Issue & IssueSummaryAllOf;
+export type IssueSummary = Issue;
 
 export interface Column {
   status: IssueStatus;
   title: string;
-  issues: IssueSummary[];
+  issues: Issue[];
 }
 
 export interface Summary {
   columns: Column[];
-  runs: RunSnapshot[];
   generatedAt: string;
 }
 
@@ -294,15 +201,17 @@ export interface IssueListResponse {
   meta: ApiMeta;
 }
 
-export interface ClaimWorkItemResponse {
-  data: ClaimWorkItemOutput;
+export interface IssueStateListResponse {
+  data: IssueState[];
   meta: ApiMeta;
 }
 
-export interface RenewWorkItemLeaseResponse {
-  data: RenewWorkItemLeaseOutput;
-  meta: ApiMeta;
-}
+export type GetApiV1IssuesParams = {
+/**
+ * Comma-separated issue statuses. Omit this parameter or pass an empty value to list all issues.
+ */
+states?: string;
+};
 
 /**
  * @summary Check API health.
@@ -311,7 +220,7 @@ export type getApiV1HealthResponse200 = {
   data: HealthResponse
   status: 200
 }
-    
+
 export type getApiV1HealthResponseSuccess = (getApiV1HealthResponse200) & {
   headers: Headers;
 };
@@ -322,24 +231,24 @@ export type getApiV1HealthResponse = (getApiV1HealthResponseSuccess)
 export const getGetApiV1HealthUrl = () => {
 
 
-  
+
 
   return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/health`
 }
 
 export const getApiV1Health = async ( options?: RequestInit): Promise<getApiV1HealthResponse> => {
-  
+
   const res = await fetch(getGetApiV1HealthUrl(),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: getApiV1HealthResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as getApiV1HealthResponse
 }
@@ -358,7 +267,7 @@ export type getApiV1SummaryResponse500 = {
   data: ErrorResponse
   status: 500
 }
-    
+
 export type getApiV1SummaryResponseSuccess = (getApiV1SummaryResponse200) & {
   headers: Headers;
 };
@@ -371,24 +280,24 @@ export type getApiV1SummaryResponse = (getApiV1SummaryResponseSuccess | getApiV1
 export const getGetApiV1SummaryUrl = () => {
 
 
-  
+
 
   return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/summary`
 }
 
 export const getApiV1Summary = async ( options?: RequestInit): Promise<getApiV1SummaryResponse> => {
-  
+
   const res = await fetch(getGetApiV1SummaryUrl(),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: getApiV1SummaryResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as getApiV1SummaryResponse
 }
@@ -407,7 +316,7 @@ export type getApiV1ProjectsResponse500 = {
   data: ErrorResponse
   status: 500
 }
-    
+
 export type getApiV1ProjectsResponseSuccess = (getApiV1ProjectsResponse200) & {
   headers: Headers;
 };
@@ -420,24 +329,24 @@ export type getApiV1ProjectsResponse = (getApiV1ProjectsResponseSuccess | getApi
 export const getGetApiV1ProjectsUrl = () => {
 
 
-  
+
 
   return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/projects`
 }
 
 export const getApiV1Projects = async ( options?: RequestInit): Promise<getApiV1ProjectsResponse> => {
-  
+
   const res = await fetch(getGetApiV1ProjectsUrl(),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: getApiV1ProjectsResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as getApiV1ProjectsResponse
 }
@@ -456,7 +365,7 @@ export type postApiV1ProjectsResponse400 = {
   data: ErrorResponse
   status: 400
 }
-    
+
 export type postApiV1ProjectsResponseSuccess = (postApiV1ProjectsResponse201) & {
   headers: Headers;
 };
@@ -469,15 +378,15 @@ export type postApiV1ProjectsResponse = (postApiV1ProjectsResponseSuccess | post
 export const getPostApiV1ProjectsUrl = () => {
 
 
-  
+
 
   return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/projects`
 }
 
 export const postApiV1Projects = async (createProjectInput: CreateProjectInput, options?: RequestInit): Promise<postApiV1ProjectsResponse> => {
-  
+
   const res = await fetch(getPostApiV1ProjectsUrl(),
-  {      
+  {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -487,7 +396,7 @@ export const postApiV1Projects = async (createProjectInput: CreateProjectInput, 
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: postApiV1ProjectsResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as postApiV1ProjectsResponse
 }
@@ -511,7 +420,7 @@ export type getApiV1ProjectsIdResponse404 = {
   data: ErrorResponse
   status: 404
 }
-    
+
 export type getApiV1ProjectsIdResponseSuccess = (getApiV1ProjectsIdResponse200) & {
   headers: Headers;
 };
@@ -524,24 +433,24 @@ export type getApiV1ProjectsIdResponse = (getApiV1ProjectsIdResponseSuccess | ge
 export const getGetApiV1ProjectsIdUrl = (id: number,) => {
 
 
-  
+
 
   return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/projects/${id}`
 }
 
 export const getApiV1ProjectsId = async (id: number, options?: RequestInit): Promise<getApiV1ProjectsIdResponse> => {
-  
+
   const res = await fetch(getGetApiV1ProjectsIdUrl(id),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: getApiV1ProjectsIdResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as getApiV1ProjectsIdResponse
 }
@@ -565,7 +474,7 @@ export type patchApiV1ProjectsIdResponse404 = {
   data: ErrorResponse
   status: 404
 }
-    
+
 export type patchApiV1ProjectsIdResponseSuccess = (patchApiV1ProjectsIdResponse200) & {
   headers: Headers;
 };
@@ -578,16 +487,16 @@ export type patchApiV1ProjectsIdResponse = (patchApiV1ProjectsIdResponseSuccess 
 export const getPatchApiV1ProjectsIdUrl = (id: number,) => {
 
 
-  
+
 
   return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/projects/${id}`
 }
 
 export const patchApiV1ProjectsId = async (id: number,
     updateProjectInput: UpdateProjectInput, options?: RequestInit): Promise<patchApiV1ProjectsIdResponse> => {
-  
+
   const res = await fetch(getPatchApiV1ProjectsIdUrl(id),
-  {      
+  {
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -597,7 +506,7 @@ export const patchApiV1ProjectsId = async (id: number,
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: patchApiV1ProjectsIdResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as patchApiV1ProjectsIdResponse
 }
@@ -621,7 +530,7 @@ export type deleteApiV1ProjectsIdResponse404 = {
   data: ErrorResponse
   status: 404
 }
-    
+
 export type deleteApiV1ProjectsIdResponseSuccess = (deleteApiV1ProjectsIdResponse204) & {
   headers: Headers;
 };
@@ -634,24 +543,24 @@ export type deleteApiV1ProjectsIdResponse = (deleteApiV1ProjectsIdResponseSucces
 export const getDeleteApiV1ProjectsIdUrl = (id: number,) => {
 
 
-  
+
 
   return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/projects/${id}`
 }
 
 export const deleteApiV1ProjectsId = async (id: number, options?: RequestInit): Promise<deleteApiV1ProjectsIdResponse> => {
-  
+
   const res = await fetch(getDeleteApiV1ProjectsIdUrl(id),
-  {      
+  {
     ...options,
     method: 'DELETE'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: deleteApiV1ProjectsIdResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as deleteApiV1ProjectsIdResponse
 }
@@ -670,7 +579,7 @@ export type getApiV1WorkspacesResponse500 = {
   data: ErrorResponse
   status: 500
 }
-    
+
 export type getApiV1WorkspacesResponseSuccess = (getApiV1WorkspacesResponse200) & {
   headers: Headers;
 };
@@ -683,24 +592,24 @@ export type getApiV1WorkspacesResponse = (getApiV1WorkspacesResponseSuccess | ge
 export const getGetApiV1WorkspacesUrl = () => {
 
 
-  
+
 
   return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/workspaces`
 }
 
 export const getApiV1Workspaces = async ( options?: RequestInit): Promise<getApiV1WorkspacesResponse> => {
-  
+
   const res = await fetch(getGetApiV1WorkspacesUrl(),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: getApiV1WorkspacesResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as getApiV1WorkspacesResponse
 }
@@ -724,7 +633,7 @@ export type postApiV1WorkspacesResponse404 = {
   data: ErrorResponse
   status: 404
 }
-    
+
 export type postApiV1WorkspacesResponseSuccess = (postApiV1WorkspacesResponse201) & {
   headers: Headers;
 };
@@ -737,15 +646,15 @@ export type postApiV1WorkspacesResponse = (postApiV1WorkspacesResponseSuccess | 
 export const getPostApiV1WorkspacesUrl = () => {
 
 
-  
+
 
   return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/workspaces`
 }
 
 export const postApiV1Workspaces = async (createWorkspaceInput: CreateWorkspaceInput, options?: RequestInit): Promise<postApiV1WorkspacesResponse> => {
-  
+
   const res = await fetch(getPostApiV1WorkspacesUrl(),
-  {      
+  {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -755,7 +664,7 @@ export const postApiV1Workspaces = async (createWorkspaceInput: CreateWorkspaceI
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: postApiV1WorkspacesResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as postApiV1WorkspacesResponse
 }
@@ -779,7 +688,7 @@ export type getApiV1WorkspacesIdResponse404 = {
   data: ErrorResponse
   status: 404
 }
-    
+
 export type getApiV1WorkspacesIdResponseSuccess = (getApiV1WorkspacesIdResponse200) & {
   headers: Headers;
 };
@@ -792,24 +701,24 @@ export type getApiV1WorkspacesIdResponse = (getApiV1WorkspacesIdResponseSuccess 
 export const getGetApiV1WorkspacesIdUrl = (id: number,) => {
 
 
-  
+
 
   return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/workspaces/${id}`
 }
 
 export const getApiV1WorkspacesId = async (id: number, options?: RequestInit): Promise<getApiV1WorkspacesIdResponse> => {
-  
+
   const res = await fetch(getGetApiV1WorkspacesIdUrl(id),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: getApiV1WorkspacesIdResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as getApiV1WorkspacesIdResponse
 }
@@ -833,7 +742,7 @@ export type patchApiV1WorkspacesIdResponse404 = {
   data: ErrorResponse
   status: 404
 }
-    
+
 export type patchApiV1WorkspacesIdResponseSuccess = (patchApiV1WorkspacesIdResponse200) & {
   headers: Headers;
 };
@@ -846,16 +755,16 @@ export type patchApiV1WorkspacesIdResponse = (patchApiV1WorkspacesIdResponseSucc
 export const getPatchApiV1WorkspacesIdUrl = (id: number,) => {
 
 
-  
+
 
   return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/workspaces/${id}`
 }
 
 export const patchApiV1WorkspacesId = async (id: number,
     updateWorkspaceInput: UpdateWorkspaceInput, options?: RequestInit): Promise<patchApiV1WorkspacesIdResponse> => {
-  
+
   const res = await fetch(getPatchApiV1WorkspacesIdUrl(id),
-  {      
+  {
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -865,7 +774,7 @@ export const patchApiV1WorkspacesId = async (id: number,
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: patchApiV1WorkspacesIdResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as patchApiV1WorkspacesIdResponse
 }
@@ -889,7 +798,7 @@ export type deleteApiV1WorkspacesIdResponse404 = {
   data: ErrorResponse
   status: 404
 }
-    
+
 export type deleteApiV1WorkspacesIdResponseSuccess = (deleteApiV1WorkspacesIdResponse204) & {
   headers: Headers;
 };
@@ -902,24 +811,24 @@ export type deleteApiV1WorkspacesIdResponse = (deleteApiV1WorkspacesIdResponseSu
 export const getDeleteApiV1WorkspacesIdUrl = (id: number,) => {
 
 
-  
+
 
   return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/workspaces/${id}`
 }
 
 export const deleteApiV1WorkspacesId = async (id: number, options?: RequestInit): Promise<deleteApiV1WorkspacesIdResponse> => {
-  
+
   const res = await fetch(getDeleteApiV1WorkspacesIdUrl(id),
-  {      
+  {
     ...options,
     method: 'DELETE'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: deleteApiV1WorkspacesIdResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as deleteApiV1WorkspacesIdResponse
 }
@@ -934,41 +843,53 @@ export type getApiV1IssuesResponse200 = {
   status: 200
 }
 
+export type getApiV1IssuesResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
 export type getApiV1IssuesResponse500 = {
   data: ErrorResponse
   status: 500
 }
-    
+
 export type getApiV1IssuesResponseSuccess = (getApiV1IssuesResponse200) & {
   headers: Headers;
 };
-export type getApiV1IssuesResponseError = (getApiV1IssuesResponse500) & {
+export type getApiV1IssuesResponseError = (getApiV1IssuesResponse400 | getApiV1IssuesResponse500) & {
   headers: Headers;
 };
 
 export type getApiV1IssuesResponse = (getApiV1IssuesResponseSuccess | getApiV1IssuesResponseError)
 
-export const getGetApiV1IssuesUrl = () => {
+export const getGetApiV1IssuesUrl = (params?: GetApiV1IssuesParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
-  
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
 
-  return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/issues`
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/issues?${stringifiedParams}` : `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/issues`
 }
 
-export const getApiV1Issues = async ( options?: RequestInit): Promise<getApiV1IssuesResponse> => {
-  
-  const res = await fetch(getGetApiV1IssuesUrl(),
-  {      
+export const getApiV1Issues = async (params?: GetApiV1IssuesParams, options?: RequestInit): Promise<getApiV1IssuesResponse> => {
+
+  const res = await fetch(getGetApiV1IssuesUrl(params),
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: getApiV1IssuesResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as getApiV1IssuesResponse
 }
@@ -987,7 +908,7 @@ export type postApiV1IssuesResponse400 = {
   data: ErrorResponse
   status: 400
 }
-    
+
 export type postApiV1IssuesResponseSuccess = (postApiV1IssuesResponse201) & {
   headers: Headers;
 };
@@ -1000,15 +921,15 @@ export type postApiV1IssuesResponse = (postApiV1IssuesResponseSuccess | postApiV
 export const getPostApiV1IssuesUrl = () => {
 
 
-  
+
 
   return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/issues`
 }
 
 export const postApiV1Issues = async (createIssueInput: CreateIssueInput, options?: RequestInit): Promise<postApiV1IssuesResponse> => {
-  
+
   const res = await fetch(getPostApiV1IssuesUrl(),
-  {      
+  {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -1018,9 +939,64 @@ export const postApiV1Issues = async (createIssueInput: CreateIssueInput, option
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: postApiV1IssuesResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as postApiV1IssuesResponse
+}
+
+
+
+/**
+ * @summary Get issue states by issue IDs.
+ */
+export type postApiV1IssuesStatesResponse200 = {
+  data: IssueStateListResponse
+  status: 200
+}
+
+export type postApiV1IssuesStatesResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type postApiV1IssuesStatesResponse500 = {
+  data: ErrorResponse
+  status: 500
+}
+
+export type postApiV1IssuesStatesResponseSuccess = (postApiV1IssuesStatesResponse200) & {
+  headers: Headers;
+};
+export type postApiV1IssuesStatesResponseError = (postApiV1IssuesStatesResponse400 | postApiV1IssuesStatesResponse500) & {
+  headers: Headers;
+};
+
+export type postApiV1IssuesStatesResponse = (postApiV1IssuesStatesResponseSuccess | postApiV1IssuesStatesResponseError)
+
+export const getPostApiV1IssuesStatesUrl = () => {
+
+
+
+
+  return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/issues/states`
+}
+
+export const postApiV1IssuesStates = async (issueStatesInput: IssueStatesInput, options?: RequestInit): Promise<postApiV1IssuesStatesResponse> => {
+
+  const res = await fetch(getPostApiV1IssuesStatesUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      issueStatesInput,)
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: postApiV1IssuesStatesResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as postApiV1IssuesStatesResponse
 }
 
 
@@ -1042,7 +1018,7 @@ export type getApiV1IssuesIdResponse404 = {
   data: ErrorResponse
   status: 404
 }
-    
+
 export type getApiV1IssuesIdResponseSuccess = (getApiV1IssuesIdResponse200) & {
   headers: Headers;
 };
@@ -1055,24 +1031,24 @@ export type getApiV1IssuesIdResponse = (getApiV1IssuesIdResponseSuccess | getApi
 export const getGetApiV1IssuesIdUrl = (id: number,) => {
 
 
-  
+
 
   return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/issues/${id}`
 }
 
 export const getApiV1IssuesId = async (id: number, options?: RequestInit): Promise<getApiV1IssuesIdResponse> => {
-  
+
   const res = await fetch(getGetApiV1IssuesIdUrl(id),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: getApiV1IssuesIdResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as getApiV1IssuesIdResponse
 }
@@ -1096,7 +1072,7 @@ export type patchApiV1IssuesIdResponse404 = {
   data: ErrorResponse
   status: 404
 }
-    
+
 export type patchApiV1IssuesIdResponseSuccess = (patchApiV1IssuesIdResponse200) & {
   headers: Headers;
 };
@@ -1109,16 +1085,16 @@ export type patchApiV1IssuesIdResponse = (patchApiV1IssuesIdResponseSuccess | pa
 export const getPatchApiV1IssuesIdUrl = (id: number,) => {
 
 
-  
+
 
   return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/issues/${id}`
 }
 
 export const patchApiV1IssuesId = async (id: number,
     updateIssueInput: UpdateIssueInput, options?: RequestInit): Promise<patchApiV1IssuesIdResponse> => {
-  
+
   const res = await fetch(getPatchApiV1IssuesIdUrl(id),
-  {      
+  {
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -1128,157 +1104,7 @@ export const patchApiV1IssuesId = async (id: number,
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: patchApiV1IssuesIdResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as patchApiV1IssuesIdResponse
-}
-
-
-
-/**
- * @summary Claim the next pending work item.
- */
-export type postApiV1WorkItemsClaimResponse200 = {
-  data: ClaimWorkItemResponse
-  status: 200
-}
-
-export type postApiV1WorkItemsClaimResponse400 = {
-  data: ErrorResponse
-  status: 400
-}
-    
-export type postApiV1WorkItemsClaimResponseSuccess = (postApiV1WorkItemsClaimResponse200) & {
-  headers: Headers;
-};
-export type postApiV1WorkItemsClaimResponseError = (postApiV1WorkItemsClaimResponse400) & {
-  headers: Headers;
-};
-
-export type postApiV1WorkItemsClaimResponse = (postApiV1WorkItemsClaimResponseSuccess | postApiV1WorkItemsClaimResponseError)
-
-export const getPostApiV1WorkItemsClaimUrl = () => {
-
-
-  
-
-  return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/work-items/claim`
-}
-
-export const postApiV1WorkItemsClaim = async (claimWorkItemInput: ClaimWorkItemInput, options?: RequestInit): Promise<postApiV1WorkItemsClaimResponse> => {
-  
-  const res = await fetch(getPostApiV1WorkItemsClaimUrl(),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      claimWorkItemInput,)
-  }
-)
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
-  const data: postApiV1WorkItemsClaimResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as postApiV1WorkItemsClaimResponse
-}
-
-
-
-/**
- * @summary Renew a claimed work item lease.
- */
-export type postApiV1WorkItemsRenewLeaseResponse200 = {
-  data: RenewWorkItemLeaseResponse
-  status: 200
-}
-
-export type postApiV1WorkItemsRenewLeaseResponse400 = {
-  data: ErrorResponse
-  status: 400
-}
-    
-export type postApiV1WorkItemsRenewLeaseResponseSuccess = (postApiV1WorkItemsRenewLeaseResponse200) & {
-  headers: Headers;
-};
-export type postApiV1WorkItemsRenewLeaseResponseError = (postApiV1WorkItemsRenewLeaseResponse400) & {
-  headers: Headers;
-};
-
-export type postApiV1WorkItemsRenewLeaseResponse = (postApiV1WorkItemsRenewLeaseResponseSuccess | postApiV1WorkItemsRenewLeaseResponseError)
-
-export const getPostApiV1WorkItemsRenewLeaseUrl = () => {
-
-
-  
-
-  return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/work-items/renew-lease`
-}
-
-export const postApiV1WorkItemsRenewLease = async (renewWorkItemLeaseInput: RenewWorkItemLeaseInput, options?: RequestInit): Promise<postApiV1WorkItemsRenewLeaseResponse> => {
-  
-  const res = await fetch(getPostApiV1WorkItemsRenewLeaseUrl(),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      renewWorkItemLeaseInput,)
-  }
-)
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
-  const data: postApiV1WorkItemsRenewLeaseResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as postApiV1WorkItemsRenewLeaseResponse
-}
-
-
-
-/**
- * @summary Receive an orchestrator run event.
- */
-export type postApiV1OrchestratorEventsResponse202 = {
-  data: AcceptedResponse
-  status: 202
-}
-
-export type postApiV1OrchestratorEventsResponse400 = {
-  data: ErrorResponse
-  status: 400
-}
-    
-export type postApiV1OrchestratorEventsResponseSuccess = (postApiV1OrchestratorEventsResponse202) & {
-  headers: Headers;
-};
-export type postApiV1OrchestratorEventsResponseError = (postApiV1OrchestratorEventsResponse400) & {
-  headers: Headers;
-};
-
-export type postApiV1OrchestratorEventsResponse = (postApiV1OrchestratorEventsResponseSuccess | postApiV1OrchestratorEventsResponseError)
-
-export const getPostApiV1OrchestratorEventsUrl = () => {
-
-
-  
-
-  return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/orchestrator-events`
-}
-
-export const postApiV1OrchestratorEvents = async (runEventInput: RunEventInput, options?: RequestInit): Promise<postApiV1OrchestratorEventsResponse> => {
-  
-  const res = await fetch(getPostApiV1OrchestratorEventsUrl(),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      runEventInput,)
-  }
-)
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
-  const data: postApiV1OrchestratorEventsResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as postApiV1OrchestratorEventsResponse
 }

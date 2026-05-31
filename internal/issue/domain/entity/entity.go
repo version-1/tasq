@@ -26,27 +26,6 @@ const (
 	PriorityUrgent Priority = "urgent"
 )
 
-type WorkItemStatus string
-
-const (
-	WorkItemPending WorkItemStatus = "pending"
-	WorkItemClaimed WorkItemStatus = "claimed"
-	WorkItemDone    WorkItemStatus = "done"
-	WorkItemFailed  WorkItemStatus = "failed"
-)
-
-type RunStatus string
-
-const (
-	RunQueued          RunStatus = "queued"
-	RunStarting        RunStatus = "starting"
-	RunRunning         RunStatus = "running"
-	RunWaitingForInput RunStatus = "waiting_for_input"
-	RunSucceeded       RunStatus = "succeeded"
-	RunFailed          RunStatus = "failed"
-	RunCancelled       RunStatus = "cancelled"
-)
-
 type WorkspaceStatus string
 
 const (
@@ -132,68 +111,8 @@ type UpdateIssueInput struct {
 	Assignee    *string   `json:"assignee"`
 }
 
-type WorkItem struct {
-	ID         int64          `json:"id"`
-	IssueID    int64          `json:"issueId"`
-	Status     WorkItemStatus `json:"status"`
-	ClaimedBy  string         `json:"claimedBy"`
-	ClaimToken string         `json:"claimToken"`
-	LeaseUntil *time.Time     `json:"leaseUntil,omitempty"`
-	Attempt    int            `json:"attempt"`
-	CreatedAt  time.Time      `json:"createdAt"`
-	UpdatedAt  time.Time      `json:"updatedAt"`
-	Issue      Issue          `json:"issue"`
-}
-
-type ClaimWorkItemInput struct {
-	OrchestratorID string `json:"orchestratorId"`
-	LeaseSeconds   int    `json:"leaseSeconds"`
-}
-
-type ClaimWorkItemOutput struct {
-	WorkItem *WorkItem `json:"workItem"`
-}
-
-type RenewWorkItemLeaseInput struct {
-	WorkItemID     int64  `json:"workItemId"`
-	ClaimToken     string `json:"claimToken"`
-	OrchestratorID string `json:"orchestratorId"`
-	LeaseSeconds   int    `json:"leaseSeconds"`
-}
-
-type RenewWorkItemLeaseOutput struct {
-	WorkItem WorkItem `json:"workItem"`
-}
-
-type RunEventInput struct {
-	EventID        string    `json:"eventId"`
-	WorkItemID     int64     `json:"workItemId"`
-	IssueID        int64     `json:"issueId"`
-	RunID          string    `json:"runId"`
-	ClaimToken     string    `json:"claimToken"`
-	Status         RunStatus `json:"status"`
-	Workspace      string    `json:"workspace"`
-	Attempt        int       `json:"attempt"`
-	Error          string    `json:"error"`
-	OccurredAt     time.Time `json:"occurredAt"`
-	OrchestratorID string    `json:"orchestratorId"`
-}
-
-type RunSnapshot struct {
-	IssueID        int64     `json:"issueId"`
-	WorkItemID     int64     `json:"workItemId"`
-	RunID          string    `json:"runId"`
-	Status         RunStatus `json:"status"`
-	Workspace      string    `json:"workspace"`
-	Attempt        int       `json:"attempt"`
-	Error          string    `json:"error"`
-	OrchestratorID string    `json:"orchestratorId"`
-	UpdatedAt      time.Time `json:"updatedAt"`
-}
-
 type IssueSummary struct {
 	Issue
-	Run *RunSnapshot `json:"run,omitempty"`
 }
 
 type Column struct {
@@ -203,9 +122,8 @@ type Column struct {
 }
 
 type Summary struct {
-	Columns     []Column      `json:"columns"`
-	Runs        []RunSnapshot `json:"runs"`
-	GeneratedAt time.Time     `json:"generatedAt"`
+	Columns     []Column  `json:"columns"`
+	GeneratedAt time.Time `json:"generatedAt"`
 }
 
 func NormalizeCreate(input CreateIssueInput) (CreateIssueInput, error) {

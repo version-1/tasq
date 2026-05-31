@@ -23,7 +23,8 @@ type Runner interface {
 }
 
 type Task struct {
-	WorkItem       entity.WorkItem
+	Issue          entity.Issue
+	Attempt        int
 	RunID          string
 	Workspace      workspace.Workspace
 	PromptTemplate string
@@ -395,10 +396,10 @@ func renderPrompt(task Task) string {
 		prompt = "Work on issue {{ issue.id }}: {{ issue.title }}\n\n{{ issue.description }}"
 	}
 	replacements := map[string]string{
-		"{{ issue.id }}":          strconv.FormatInt(task.WorkItem.Issue.ID, 10),
-		"{{ issue.title }}":       task.WorkItem.Issue.Title,
-		"{{ issue.description }}": task.WorkItem.Issue.Description,
-		"{{ attempt }}":           strconv.Itoa(task.WorkItem.Attempt),
+		"{{ issue.id }}":          strconv.FormatInt(task.Issue.ID, 10),
+		"{{ issue.title }}":       task.Issue.Title,
+		"{{ issue.description }}": task.Issue.Description,
+		"{{ attempt }}":           strconv.Itoa(task.Attempt),
 	}
 	for key, value := range replacements {
 		prompt = strings.ReplaceAll(prompt, key, value)

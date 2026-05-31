@@ -2,7 +2,7 @@
 
 This document records intentional differences between Tasq and the upstream Symphony service specification in [SPEC.md](SPEC.md).
 
-Tasq uses the Symphony specification as the direction for orchestration, workspace, workflow, agent-runner, tracker, and observability behavior. Some implementation choices differ because Tasq already has a local issue-tracker service that owns issue state and exposes a work queue for orchestrators.
+Tasq uses the Symphony specification as the direction for orchestration, workspace, workflow, agent-runner, tracker, and observability behavior. Some implementation choices differ because Tasq already has a local issue-tracker service that owns issue state.
 
 ## Tracker Adapter
 
@@ -10,10 +10,9 @@ Tasq does not implement the Linear tracker client described in Section 11 of the
 
 Instead, Tasq treats its local issue-tracker API as the tracker adapter boundary:
 
-- The issue-tracker owns issue state, work item eligibility, and lease-backed work item claims.
-- The orchestrator polls `POST /api/v1/work-items/claim` instead of querying Linear directly.
-- The orchestrator sends run facts to `POST /api/v1/orchestrator-events`.
-- The issue-tracker applies issue status transitions from accepted run facts.
+- The issue-tracker owns issue state, project data, and workspace records.
+- The issue-tracker exposes issue listing and issue-state query endpoints for tracker adapter reads.
+- The orchestrator keeps historical run and runner-event data in its own SQLite store.
 
 This keeps external tracker integrations out of the orchestrator and preserves the repository's existing service boundary.
 
@@ -27,23 +26,20 @@ Implemented or in progress:
 - `WORKFLOW.md` is loaded at process startup only; runtime reload is intentionally deferred.
 - Workspace root resolution and sanitized per-issue workspace directories.
 - A runner interface with both simulated and Codex app-server subprocess implementations.
-- In-memory running and claimed issue tracking inside the worker.
-- Existing issue-tracker work queue polling and durable outbox delivery.
-- Claim-token-based lease renewal for active work item runs.
 - SQLite runner event logging and workspace metadata records.
 - Config-gated continuation turns on a live Codex app-server thread.
 - In-process retry scheduling with capped exponential backoff.
 - Active-run reconciliation for terminal/non-active issue states and stall handling.
 - Repository-source workspace population on first workspace creation.
 - Terminal and failed/cancelled workspace cleanup with cleanup metadata.
-- Operator-facing logs for unsent outbox events and workspace setup failures.
+- Operator-facing logs for workspace setup failures.
 
 Not yet implemented:
 
 - Dynamic `WORKFLOW.md` reload.
 - Strict prompt rendering with full variable and filter checking.
 - Token/rate-limit accounting.
-- Optional Symphony HTTP status/API surface.
+- Full optional Symphony HTTP status/API surface.
 
 Tasq intentionally keeps workflow front matter parsing to the supported Tasq-specific subset
 documented in [WORKFLOW_CONTRACT.md](WORKFLOW_CONTRACT.md). Full generic YAML compatibility is not a

@@ -47,16 +47,6 @@ func render(ctx context.Context, apiURL string) error {
 
 	clearScreen()
 	fmt.Printf("Tasq Issues  generated=%s\n", summary.GeneratedAt.Local().Format(time.RFC3339))
-	fmt.Printf("Runs: %d tracked\n\n", len(summary.Runs))
-
-	if len(summary.Runs) == 0 {
-		fmt.Println("Run status: no orchestrator runs")
-	} else {
-		fmt.Println("Run status:")
-		for _, run := range summary.Runs {
-			fmt.Printf("  issue=%d work_item=%d %-18s %s\n", run.IssueID, run.WorkItemID, run.Status, run.Workspace)
-		}
-	}
 	fmt.Println()
 
 	for _, column := range summary.Columns {
@@ -72,14 +62,7 @@ func render(ctx context.Context, apiURL string) error {
 				assignee = "unassigned"
 			}
 			fmt.Printf("  #%d [%s] %s\n", item.ID, item.Priority, item.Title)
-			runStatus := "no_run"
-			if item.Run != nil {
-				runStatus = string(item.Run.Status)
-			}
-			fmt.Printf("      issue=%s run=%s assignee=%s updated=%s\n", item.Status, runStatus, assignee, item.UpdatedAt.Local().Format("01-02 15:04"))
-			if item.Run != nil && item.Run.Error != "" {
-				fmt.Printf("      error=%s\n", item.Run.Error)
-			}
+			fmt.Printf("      issue=%s assignee=%s updated=%s\n", item.Status, assignee, item.UpdatedAt.Local().Format("01-02 15:04"))
 		}
 		fmt.Println()
 	}

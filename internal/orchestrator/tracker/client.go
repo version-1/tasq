@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/version-1/tasq/internal/issue/domain/entity"
-	"github.com/version-1/tasq/internal/orchestrator/run"
 )
 
 type Client struct {
@@ -23,23 +22,6 @@ func NewClient(baseURL string) *Client {
 		baseURL: strings.TrimRight(baseURL, "/"),
 		client:  http.DefaultClient,
 	}
-}
-
-func (c *Client) ClaimWorkItem(ctx context.Context, orchestratorID string, leaseSeconds int) (*entity.WorkItem, error) {
-	var output entity.ClaimWorkItemOutput
-	err := c.request(ctx, http.MethodPost, "/api/v1/work-items/claim", entity.ClaimWorkItemInput{
-		OrchestratorID: orchestratorID,
-		LeaseSeconds:   leaseSeconds,
-	}, &output)
-	if err != nil {
-		return nil, err
-	}
-	return output.WorkItem, nil
-}
-
-func (c *Client) RenewWorkItemLease(ctx context.Context, input entity.RenewWorkItemLeaseInput) error {
-	var output entity.RenewWorkItemLeaseOutput
-	return c.request(ctx, http.MethodPost, "/api/v1/work-items/renew-lease", input, &output)
 }
 
 func (c *Client) Issue(ctx context.Context, id int64) (entity.Issue, error) {
@@ -88,22 +70,6 @@ func (c *Client) IssueStatesByIDs(ctx context.Context, ids []int64) ([]IssueStat
 		return nil, err
 	}
 	return output, nil
-}
-
-func (c *Client) SendRunEvent(ctx context.Context, event run.OutboxEvent) error {
-	return c.request(ctx, http.MethodPost, "/api/v1/orchestrator-events", entity.RunEventInput{
-		EventID:        event.EventID,
-		WorkItemID:     event.WorkItemID,
-		IssueID:        event.IssueID,
-		RunID:          event.RunID,
-		ClaimToken:     event.ClaimToken,
-		Status:         entity.RunStatus(event.Status),
-		Workspace:      event.Workspace,
-		Attempt:        event.Attempt,
-		Error:          event.Error,
-		OccurredAt:     event.OccurredAt,
-		OrchestratorID: event.OrchestratorID,
-	}, nil)
 }
 
 func (c *Client) request(ctx context.Context, method string, path string, input any, output any) error {

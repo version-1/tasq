@@ -1,6 +1,6 @@
 # Orchestrator Packages
 
-The orchestrator owns agent run state, work assignment state, workspace setup, and durable delivery of run events to the issue-tracker.
+The orchestrator owns agent run state, runner events, workspace setup metadata, and optional local runtime inspection.
 
 `cmd/orchestrator` is the composition root. It wires the packages in this directory together and should stay responsible for process-level concerns such as flags, signal handling, and startup logging.
 
@@ -14,9 +14,8 @@ Responsibilities:
 
 - Define run status values.
 - Define persisted run records.
-- Define outbox event records.
 
-This package should not depend on storage, HTTP clients, workers, or runner implementations.
+This package should not depend on storage, HTTP clients, or runner implementations.
 
 ### `runstore`
 
@@ -27,9 +26,8 @@ Responsibilities:
 - Open and migrate the orchestrator database.
 - Create run records.
 - Update run status.
-- Enqueue outbox events whenever run state changes.
-- List unsent outbox events.
-- Mark outbox events as sent.
+- Record runner events and workspace metadata.
+- Query active runs and issue-specific run details for the HTTP API.
 
 This package depends on `run` for domain types. It should not call the issue-tracker API or run agents.
 
@@ -39,8 +37,7 @@ Adapts the local issue-tracker HTTP API for orchestrator use.
 
 Responsibilities:
 
-- Claim executable work items.
-- Send orchestrator run events.
+- Fetch issues and issue states.
 - Decode the standard API envelope used by issue-tracker.
 - Surface issue-tracker error responses with their error code and message.
 
@@ -85,40 +82,18 @@ Responsibilities:
 
 The Codex runner follows the contract documented in [../../docs/symphony/CODEX_APP_SERVER.md](../../docs/symphony/CODEX_APP_SERVER.md).
 
-### `worker`
-
-Coordinates polling, claiming, workspace creation, runner dispatch, and outbox delivery.
-
-Responsibilities:
-
-- Poll the issue-tracker work item queue.
-- Claim work items with a lease.
-- Respect configured concurrency and turn limits.
-- Create a workspace for each claimed item.
-- Create and update run records through `runstore`.
-- Invoke the configured `runner.Runner`.
-- Renew leases, retry failed runs, reconcile issue state, and clean terminal workspaces.
-- Flush outbox events through `tracker`.
-
-This package coordinates components but should avoid owning their internal details. Persistence belongs in `runstore`, tracker API behavior belongs in `tracker`, workspace path safety belongs in `workspace`, and agent execution belongs behind `runner`.
-
 ## Dependency Direction
 
 Keep dependencies flowing inward to small contracts and outward only from coordinators.
 
 ```text
 cmd/orchestrator
-  └─ worker
-       ├─ runstore ── run
-       ├─ tracker ─── run
-       ├─ runner ──── run, workspace
-       ├─ workflow
-       └─ workspace
+  ├─ httpserver ── runstore ── run
+  └─ workflow
 ```
 
 Rules:
 
 - `run` should remain dependency-light.
-- `runstore`, `tracker`, `workflow`, `workspace`, and `runner` should not import `worker`.
-- `worker` may coordinate other packages, but should not duplicate their responsibilities.
+- `runstore`, `tracker`, `workflow`, `workspace`, `runner`, and `httpserver` should remain focused on their own contracts.
 - `cmd/orchestrator` should wire packages together instead of hiding construction behind a broad root package.

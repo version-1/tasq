@@ -139,7 +139,7 @@ function IssueCard({
       <p>{issue.description || t("issues.noDescription")}</p>
       <div className={styles.metaRow}>
         <span className={priorityClassName(issue.priority)}>{t(`priorities.${issue.priority}`)}</span>
-        <span>{issue.run ? t(`runStatuses.${issue.run.status}`) : t("issues.noRun")}</span>
+        <span>{t(`statuses.${issue.status}`)}</span>
       </div>
       <select
         aria-label={t("issues.moveLabel", { title: issue.title })}
@@ -176,11 +176,7 @@ function IssueDetail({
           <div><dt>{t("issues.detail.issueStatus")}</dt><dd>{t(`statuses.${issue.status}`)}</dd></div>
           <div><dt>{t("issues.detail.priority")}</dt><dd>{t(`priorities.${issue.priority}`)}</dd></div>
           <div><dt>{t("issues.assignee")}</dt><dd>{issue.assignee || t("issues.unassigned")}</dd></div>
-          <div><dt>{t("issues.detail.runStatus")}</dt><dd>{issue.run ? t(`runStatuses.${issue.run.status}`) : t("issues.noRun")}</dd></div>
-          <div><dt>{t("issues.detail.workspace")}</dt><dd>{issue.run?.workspace || t("common.pending")}</dd></div>
-          <div><dt>{t("issues.attempt")}</dt><dd>{issue.run?.attempt ?? 0}</dd></div>
         </dl>
-        {issue.run?.error ? <p className={styles.errorText}>{issue.run.error}</p> : null}
         <div className={styles.actions}>
           {issueStatuses.map((status) => (
             <button

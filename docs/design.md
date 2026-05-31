@@ -120,15 +120,14 @@ The current workspace manager creates sanitized per-issue workspace directories,
 
 User-facing clients and agent-facing workflow tools depend on the issue-tracker API only.
 
-The orchestrator depends on the issue-tracker work queue and event receiver APIs. The issue-tracker does not poll the orchestrator. Instead, it stores the latest run snapshots from orchestrator push events.
+The orchestrator no longer uses issue-tracker work queue or event receiver endpoints. Historical run and runner-event data stays in the orchestrator SQLite store and is exposed by the optional orchestrator HTTP API.
 
 ```text
 web-ui ─┐
-tui ────┼─ issue-tracker ── SQLite: issues, work_items, received_events, run_snapshots
-tq ─────┘       ▲
-                │ claim work item / push run event
-                │
-        orchestrator ───── SQLite: runs, outbox_events
+tui ────┼─ issue-tracker ── SQLite: issues, projects, workspaces
+tq ─────┘
+
+        orchestrator ───── SQLite: runs, runner_events, workspace metadata
                 │
                 ├─ future: agent-runner ── Codex app-server over JSON-RPC
                 └─ workspace manager ── git workspace / isolated runtime
@@ -233,10 +232,9 @@ Current issue-tracker endpoints:
 - `DELETE /api/v1/workspaces/{id}`
 - `GET /api/v1/issues`
 - `POST /api/v1/issues`
+- `POST /api/v1/issues/states`
 - `GET /api/v1/issues/{id}`
 - `PATCH /api/v1/issues/{id}`
-- `POST /api/v1/work-items/claim`
-- `POST /api/v1/orchestrator-events`
 
 JSON success responses use `{ "data": ..., "meta": {} }`. JSON error responses use `{ "error": { "code": "...", "message": "..." }, "meta": {} }`.
 
@@ -249,11 +247,11 @@ The `tq` CLI wraps issue CRUD endpoints with these commands:
 
 `tq` uses human-readable output by default and JSON output when `--output json` is set.
 
-The orchestrator currently has no user-facing HTTP API. Its external dependency is the issue-tracker API.
+The orchestrator exposes an optional loopback HTTP API for runtime inspection when enabled with `--port` or `server.port`.
 
 ## Development Environment
 
-Docker Compose runs the issue-tracker on container port `8080`, the web-ui on container port `3000`, and the orchestrator as a background worker.
+Docker Compose runs the issue-tracker on container port `8080`, the web-ui on container port `3000`, and the orchestrator service for optional runtime inspection.
 
 Recommended commands:
 

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/version-1/tasq/internal/issue/domain/entity"
@@ -27,10 +26,6 @@ func TestOpenAppliesIssueTrackerSchema(t *testing.T) {
 		"workspaces",
 		"workspaces_project_id_idx",
 		"workspaces_status_idx",
-		"work_items",
-		"work_items_status_lease_idx",
-		"orchestrator_events",
-		"run_snapshots",
 	} {
 		if !schemaObjectExists(t, store, name) {
 			t.Fatalf("schema object %q does not exist", name)
@@ -289,7 +284,7 @@ func TestIssueStatesByIDsWithEmptyIDsDoesNotQuery(t *testing.T) {
 	}
 }
 
-func TestSummaryReturnsEmptyRunsArray(t *testing.T) {
+func TestSummaryReturnsColumnsWithoutRuns(t *testing.T) {
 	t.Parallel()
 
 	store, err := Open(context.Background(), filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
@@ -302,67 +297,16 @@ func TestSummaryReturnsEmptyRunsArray(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read summary: %v", err)
 	}
-	if summary.Runs == nil {
-		t.Fatal("summary runs is nil")
-	}
-
 	payload, err := json.Marshal(summary)
 	if err != nil {
 		t.Fatalf("marshal summary: %v", err)
 	}
-	if !strings.Contains(string(payload), `"runs":[]`) {
-		t.Fatalf("summary json does not contain empty runs array: %s", payload)
+	var decoded map[string]any
+	if err := json.Unmarshal(payload, &decoded); err != nil {
+		t.Fatalf("decode summary: %v", err)
 	}
-}
-
-func TestRenewWorkItemLeaseRequiresCurrentClaim(t *testing.T) {
-	t.Parallel()
-
-	ctx := context.Background()
-	store, err := Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
-	if err != nil {
-		t.Fatalf("open store: %v", err)
-	}
-	defer store.Close()
-
-	issue, err := store.CreateIssue(ctx, entity.CreateIssueInput{
-		Title:  "Implement runner",
-		Status: entity.StatusReady,
-	})
-	if err != nil {
-		t.Fatalf("create issue: %v", err)
-	}
-	item, err := store.ClaimWorkItem(ctx, entity.ClaimWorkItemInput{
-		OrchestratorID: "orch-1",
-		LeaseSeconds:   1,
-	})
-	if err != nil {
-		t.Fatalf("claim work item: %v", err)
-	}
-	if item == nil || item.IssueID != issue.ID {
-		t.Fatalf("claimed item = %+v, issue_id = %d", item, issue.ID)
-	}
-
-	renewed, err := store.RenewWorkItemLease(ctx, entity.RenewWorkItemLeaseInput{
-		WorkItemID:     item.ID,
-		ClaimToken:     item.ClaimToken,
-		OrchestratorID: "orch-1",
-		LeaseSeconds:   60,
-	})
-	if err != nil {
-		t.Fatalf("renew lease: %v", err)
-	}
-	if renewed.LeaseUntil == nil || !renewed.LeaseUntil.After(*item.LeaseUntil) {
-		t.Fatalf("lease was not extended: before=%v after=%v", item.LeaseUntil, renewed.LeaseUntil)
-	}
-
-	if _, err := store.RenewWorkItemLease(ctx, entity.RenewWorkItemLeaseInput{
-		WorkItemID:     item.ID,
-		ClaimToken:     "stale-token",
-		OrchestratorID: "orch-1",
-		LeaseSeconds:   60,
-	}); err == nil {
-		t.Fatal("expected stale token renewal to fail")
+	if _, ok := decoded["runs"]; ok {
+		t.Fatalf("summary json contains runs: %s", payload)
 	}
 }
 

@@ -120,15 +120,14 @@ Responsibilities:
 
 User-facing client と agent-facing workflow tool は issue-tracker API のみに依存します。
 
-orchestrator は issue-tracker の work queue と event receiver API に依存します。issue-tracker は orchestrator を poll しません。代わりに、orchestrator push event から latest run snapshot を保存します。
+orchestrator は issue-tracker の work queue や event receiver endpoint を使いません。historical run と runner-event data は orchestrator SQLite store に残り、optional orchestrator HTTP API から参照します。
 
 ```text
 web-ui ─┐
-tui ────┼─ issue-tracker ── SQLite: issues, work_items, received_events, run_snapshots
-tq ─────┘       ▲
-                │ claim work item / push run event
-                │
-        orchestrator ───── SQLite: runs, outbox_events
+tui ────┼─ issue-tracker ── SQLite: issues, projects, workspaces
+tq ─────┘
+
+        orchestrator ───── SQLite: runs, runner_events, workspace metadata
                 │
                 ├─ future: agent-runner ── Codex app-server over JSON-RPC
                 └─ workspace manager ── git workspace / isolated runtime
@@ -233,10 +232,9 @@ issue-tracker は user-facing API です。
 - `DELETE /api/v1/workspaces/{id}`
 - `GET /api/v1/issues`
 - `POST /api/v1/issues`
+- `POST /api/v1/issues/states`
 - `GET /api/v1/issues/{id}`
 - `PATCH /api/v1/issues/{id}`
-- `POST /api/v1/work-items/claim`
-- `POST /api/v1/orchestrator-events`
 
 JSON success response は `{ "data": ..., "meta": {} }` を使います。JSON error response は `{ "error": { "code": "...", "message": "..." }, "meta": {} }` を使います。
 
@@ -249,11 +247,11 @@ JSON success response は `{ "data": ..., "meta": {} }` を使います。JSON e
 
 `tq` は default では human-readable output を使い、`--output json` が指定された場合は JSON output を使います。
 
-orchestrator は現在 user-facing HTTP API を持ちません。外部依存は issue-tracker API です。
+orchestrator は `--port` または `server.port` で有効化したときに runtime inspection 用の optional loopback HTTP API を公開します。
 
 ## Development Environment
 
-Docker Compose は issue-tracker を container port `8080`、web-ui を container port `3000`、orchestrator を background worker として実行します。
+Docker Compose は issue-tracker を container port `8080`、web-ui を container port `3000`、orchestrator service を optional runtime inspection 用に実行します。
 
 Recommended commands:
 
