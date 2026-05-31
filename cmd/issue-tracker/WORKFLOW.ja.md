@@ -1,13 +1,13 @@
 # Issue Tracker Workflow
 
-issue-tracker はユーザー向け API であり、issue、work item、受信済み orchestrator event id、最新 run snapshot の source of truth です。
+issue-tracker はユーザー向け API であり、issue、project、workspace、issue summary の source of truth です。
 
 `cmd/issue-tracker`、`internal/issue`、`db/schema/issue_tracker.sql`、issue-tracker の OpenAPI contract を変更するときは、この workflow を使います。
 
 ## Scope
 
-- issue state と work item claim state は issue-tracker が所有します。
-- orchestrator の run state は受信した fact として扱い、issue-tracker が直接管理する状態にしません。
+- issue state は issue-tracker が所有します。
+- orchestrator run state は issue-tracker の persistence model に含めません。
 - UI と TUI client は issue-tracker API だけを呼びます。
 - contract 変更は `docs/openapi/issue-tracker.yml` に反映します。
 
@@ -61,6 +61,6 @@ Compose toolchain で確認するときは `make dev-test` を使います。
 
 ## Operational Notes
 
-- Claim token は work item claim の generation marker です。
-- Duplicate orchestrator event id は idempotent に受け付ける必要があります。
-- Expired claim からの late event は記録してもよいですが、current issue state を更新してはいけません。
+- issue status change は issue API 経由で行います。
+- Summary response は orchestrator run snapshot ではなく issue data だけを反映します。
+- work item claim や orchestrator event receiver など削除済み endpoint family は、明示的な contract 変更なしに再導入しません。

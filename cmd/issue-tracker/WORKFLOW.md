@@ -1,13 +1,13 @@
 # Issue Tracker Workflow
 
-The issue-tracker is the user-facing API and the source of truth for issues, work items, received orchestrator event ids, and latest run snapshots.
+The issue-tracker is the user-facing API and the source of truth for issues, projects, workspaces, and issue summaries.
 
 Use this workflow when changing `cmd/issue-tracker`, `internal/issue`, `db/schema/issue_tracker.sql`, or the issue-tracker OpenAPI contract.
 
 ## Scope
 
-- Keep issue state and work item claim state owned by the issue-tracker.
-- Keep orchestrator run state as received facts, not as directly managed issue-tracker state.
+- Keep issue state owned by the issue-tracker.
+- Keep orchestrator run state out of the issue-tracker persistence model.
 - Keep UI and TUI clients talking to the issue-tracker API only.
 - Keep contract changes reflected in `docs/openapi/issue-tracker.yml`.
 
@@ -61,6 +61,6 @@ Use `make dev-test` when verifying through the Compose toolchain.
 
 ## Operational Notes
 
-- Claim tokens are generation markers for work item claims.
-- Duplicate orchestrator event ids must be accepted idempotently.
-- Late events from expired claims may be recorded, but must not update current issue state.
+- Issue status changes must go through issue APIs.
+- Summary responses should reflect issue data only, not orchestrator run snapshots.
+- Removed endpoint families such as work item claims and orchestrator event receivers must not be reintroduced without an explicit contract change.
