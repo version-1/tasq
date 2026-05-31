@@ -13,6 +13,8 @@ This directory stores a local copy of the Symphony service specification used by
 
 - [SPEC.md](SPEC.md): English source specification copied from upstream.
 - [SPEC.ja.md](SPEC.ja.md): Japanese translation maintained alongside the English copy.
+- [DEVIATIONS.md](DEVIATIONS.md): Tasq-specific deviations from the upstream specification.
+- [TODO.md](TODO.md): Unimplemented Symphony compliance work.
 
 ## Repository Guidance
 
