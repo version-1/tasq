@@ -35,14 +35,15 @@ Use this flow from the start of a task to handoff.
 5. Make focused changes that match the existing component boundary and ownership.
 6. Update related documentation and generated artifacts when the change affects contracts, setup, or developer workflow.
 7. Run the narrowest useful verification first, then broaden verification when the change affects shared behavior, contracts, persistence, or user-facing flows.
-8. Review the final diff before handoff:
+8. Review the final diff before creating a pull request:
 
    ```sh
    git diff
    git status --short
    ```
 
-9. Handoff with a concise summary of changed files, verification performed, and any remaining risks or skipped checks.
+9. Create or update a pull request for the task.
+10. Handoff with the pull request URL, a concise summary of changed files, verification performed, and any remaining risks or skipped checks.
 
 ## GitHub Operations
 

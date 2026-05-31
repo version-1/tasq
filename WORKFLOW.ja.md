@@ -35,14 +35,15 @@ Task の開始から handoff までは、この flow を使います。
 5. 既存の component boundary と ownership に合わせて、focused changes を行います。
 6. Contract、setup、developer workflow に影響する場合は、関連 documentation と generated artifacts も更新します。
 7. まず narrowest useful verification を実行し、shared behavior、contract、persistence、user-facing flow に影響する変更では verification を広げます。
-8. Handoff 前に final diff を確認します。
+8. Pull Request を作成する前に final diff を確認します。
 
    ```sh
    git diff
    git status --short
    ```
 
-9. Changed files、実行した verification、残っている risks または skipped checks を簡潔にまとめて handoff します。
+9. Task の Pull Request を作成または更新します。
+10. Pull Request URL、changed files、実行した verification、残っている risks または skipped checks を簡潔にまとめて handoff します。
 
 ## GitHub 操作
 
