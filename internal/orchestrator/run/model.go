@@ -1,14 +1,15 @@
-package orchestrator
+package run
 
 import "time"
 
-type RunStatus string
+type Status string
 
 const (
-	RunQueued    RunStatus = "queued"
-	RunRunning   RunStatus = "running"
-	RunSucceeded RunStatus = "succeeded"
-	RunFailed    RunStatus = "failed"
+	StatusQueued    Status = "queued"
+	StatusRunning   Status = "running"
+	StatusSucceeded Status = "succeeded"
+	StatusFailed    Status = "failed"
+	StatusCancelled Status = "cancelled"
 )
 
 type Run struct {
@@ -17,7 +18,7 @@ type Run struct {
 	IssueID        int64     `json:"issueId"`
 	WorkItemID     int64     `json:"workItemId"`
 	ClaimToken     string    `json:"claimToken"`
-	Status         RunStatus `json:"status"`
+	Status         Status    `json:"status"`
 	Workspace      string    `json:"workspace"`
 	Attempt        int       `json:"attempt"`
 	Error          string    `json:"error"`
@@ -33,7 +34,7 @@ type OutboxEvent struct {
 	IssueID        int64      `json:"issueId"`
 	WorkItemID     int64      `json:"workItemId"`
 	ClaimToken     string     `json:"claimToken"`
-	Status         RunStatus  `json:"status"`
+	Status         Status     `json:"status"`
 	Workspace      string     `json:"workspace"`
 	Attempt        int        `json:"attempt"`
 	Error          string     `json:"error"`

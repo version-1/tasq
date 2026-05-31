@@ -1,4 +1,4 @@
-package orchestrator
+package runstore
 
 import (
 	"context"
@@ -11,6 +11,7 @@ import (
 	_ "modernc.org/sqlite"
 
 	"github.com/version-1/tasq/db/schema"
+	"github.com/version-1/tasq/internal/orchestrator/run"
 )
 
 type Store struct {
@@ -42,10 +43,10 @@ func (s *Store) migrate(ctx context.Context) error {
 	return nil
 }
 
-func (s *Store) CreateRun(ctx context.Context, input CreateRunInput) (Run, error) {
+func (s *Store) CreateRun(ctx context.Context, input CreateRunInput) (run.Run, error) {
 	runID, err := randomID("run")
 	if err != nil {
-		return Run{}, err
+		return run.Run{}, err
 	}
 	now := nowString()
 	_, err = s.db.ExecContext(ctx, `INSERT INTO runs (
@@ -55,7 +56,7 @@ func (s *Store) CreateRun(ctx context.Context, input CreateRunInput) (Run, error
 		input.IssueID,
 		input.WorkItemID,
 		input.ClaimToken,
-		RunQueued,
+		run.StatusQueued,
 		input.Workspace,
 		input.Attempt,
 		input.OrchestratorID,
@@ -63,16 +64,16 @@ func (s *Store) CreateRun(ctx context.Context, input CreateRunInput) (Run, error
 		now,
 	)
 	if err != nil {
-		return Run{}, fmt.Errorf("create run: %w", err)
+		return run.Run{}, fmt.Errorf("create run: %w", err)
 	}
-	run, err := s.RunByRunID(ctx, runID)
+	createdRun, err := s.RunByRunID(ctx, runID)
 	if err != nil {
-		return Run{}, err
+		return run.Run{}, err
 	}
-	if err := s.EnqueueRunEvent(ctx, run); err != nil {
-		return Run{}, err
+	if err := s.EnqueueRunEvent(ctx, createdRun); err != nil {
+		return run.Run{}, err
 	}
-	return run, nil
+	return createdRun, nil
 }
 
 type CreateRunInput struct {
@@ -84,44 +85,44 @@ type CreateRunInput struct {
 	OrchestratorID string
 }
 
-func (s *Store) UpdateRunStatus(ctx context.Context, runID string, status RunStatus, errText string) (Run, error) {
+func (s *Store) UpdateRunStatus(ctx context.Context, runID string, status run.Status, errText string) (run.Run, error) {
 	now := nowString()
 	_, err := s.db.ExecContext(ctx, `UPDATE runs SET status = ?, error = ?, updated_at = ? WHERE run_id = ?`, status, errText, now, runID)
 	if err != nil {
-		return Run{}, fmt.Errorf("update run status: %w", err)
+		return run.Run{}, fmt.Errorf("update run status: %w", err)
 	}
-	run, err := s.RunByRunID(ctx, runID)
+	updatedRun, err := s.RunByRunID(ctx, runID)
 	if err != nil {
-		return Run{}, err
+		return run.Run{}, err
 	}
-	if err := s.EnqueueRunEvent(ctx, run); err != nil {
-		return Run{}, err
+	if err := s.EnqueueRunEvent(ctx, updatedRun); err != nil {
+		return run.Run{}, err
 	}
-	return run, nil
+	return updatedRun, nil
 }
 
-func (s *Store) RunByRunID(ctx context.Context, runID string) (Run, error) {
+func (s *Store) RunByRunID(ctx context.Context, runID string) (run.Run, error) {
 	row := s.db.QueryRowContext(ctx, `SELECT id, run_id, issue_id, work_item_id, claim_token, status, workspace, attempt, error, orchestrator_id, created_at, updated_at
 		FROM runs WHERE run_id = ?`, runID)
-	var run Run
+	var storedRun run.Run
 	var createdAt string
 	var updatedAt string
-	err := row.Scan(&run.ID, &run.RunID, &run.IssueID, &run.WorkItemID, &run.ClaimToken, &run.Status, &run.Workspace, &run.Attempt, &run.Error, &run.OrchestratorID, &createdAt, &updatedAt)
+	err := row.Scan(&storedRun.ID, &storedRun.RunID, &storedRun.IssueID, &storedRun.WorkItemID, &storedRun.ClaimToken, &storedRun.Status, &storedRun.Workspace, &storedRun.Attempt, &storedRun.Error, &storedRun.OrchestratorID, &createdAt, &updatedAt)
 	if err != nil {
-		return Run{}, err
+		return run.Run{}, err
 	}
-	run.CreatedAt, err = parseTime(createdAt)
+	storedRun.CreatedAt, err = parseTime(createdAt)
 	if err != nil {
-		return Run{}, err
+		return run.Run{}, err
 	}
-	run.UpdatedAt, err = parseTime(updatedAt)
+	storedRun.UpdatedAt, err = parseTime(updatedAt)
 	if err != nil {
-		return Run{}, err
+		return run.Run{}, err
 	}
-	return run, nil
+	return storedRun, nil
 }
 
-func (s *Store) EnqueueRunEvent(ctx context.Context, run Run) error {
+func (s *Store) EnqueueRunEvent(ctx context.Context, storedRun run.Run) error {
 	eventID, err := randomID("evt")
 	if err != nil {
 		return err
@@ -130,16 +131,16 @@ func (s *Store) EnqueueRunEvent(ctx context.Context, run Run) error {
 		event_id, run_id, issue_id, work_item_id, claim_token, status, workspace, attempt, error, orchestrator_id, occurred_at
 	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		eventID,
-		run.RunID,
-		run.IssueID,
-		run.WorkItemID,
-		run.ClaimToken,
-		run.Status,
-		run.Workspace,
-		run.Attempt,
-		run.Error,
-		run.OrchestratorID,
-		formatTime(run.UpdatedAt),
+		storedRun.RunID,
+		storedRun.IssueID,
+		storedRun.WorkItemID,
+		storedRun.ClaimToken,
+		storedRun.Status,
+		storedRun.Workspace,
+		storedRun.Attempt,
+		storedRun.Error,
+		storedRun.OrchestratorID,
+		formatTime(storedRun.UpdatedAt),
 	)
 	if err != nil {
 		return fmt.Errorf("enqueue outbox event: %w", err)
@@ -147,7 +148,7 @@ func (s *Store) EnqueueRunEvent(ctx context.Context, run Run) error {
 	return nil
 }
 
-func (s *Store) UnsentOutboxEvents(ctx context.Context, limit int) ([]OutboxEvent, error) {
+func (s *Store) UnsentOutboxEvents(ctx context.Context, limit int) ([]run.OutboxEvent, error) {
 	if limit <= 0 {
 		limit = 20
 	}
@@ -161,7 +162,7 @@ func (s *Store) UnsentOutboxEvents(ctx context.Context, limit int) ([]OutboxEven
 	}
 	defer rows.Close()
 
-	var events []OutboxEvent
+	var events []run.OutboxEvent
 	for rows.Next() {
 		event, err := scanOutboxEvent(rows)
 		if err != nil {
@@ -184,22 +185,22 @@ type scanner interface {
 	Scan(dest ...any) error
 }
 
-func scanOutboxEvent(row scanner) (OutboxEvent, error) {
-	var event OutboxEvent
+func scanOutboxEvent(row scanner) (run.OutboxEvent, error) {
+	var event run.OutboxEvent
 	var occurredAt string
 	var sentAt string
 	err := row.Scan(&event.ID, &event.EventID, &event.RunID, &event.IssueID, &event.WorkItemID, &event.ClaimToken, &event.Status, &event.Workspace, &event.Attempt, &event.Error, &event.OrchestratorID, &occurredAt, &sentAt)
 	if err != nil {
-		return OutboxEvent{}, err
+		return run.OutboxEvent{}, err
 	}
 	event.OccurredAt, err = parseTime(occurredAt)
 	if err != nil {
-		return OutboxEvent{}, err
+		return run.OutboxEvent{}, err
 	}
 	if sentAt != "" {
 		parsed, err := parseTime(sentAt)
 		if err != nil {
-			return OutboxEvent{}, err
+			return run.OutboxEvent{}, err
 		}
 		event.SentAt = &parsed
 	}

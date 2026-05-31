@@ -134,8 +134,10 @@ go run ./cmd/issue-tracker -addr :8080 -db tasq-issues.sqlite
 Run the orchestrator:
 
 ```sh
-go run ./cmd/orchestrator -db tasq-orchestrator.sqlite -issue-tracker http://localhost:8080
+go run ./cmd/orchestrator -db tasq-orchestrator.sqlite -issue-tracker http://localhost:8080 -workflow WORKFLOW.md
 ```
+
+The orchestrator reads `WORKFLOW.md` for Symphony-oriented runtime settings such as polling, workspace root, concurrency, and Codex command defaults. Tasq intentionally uses the local issue-tracker API as the tracker adapter instead of a direct Linear tracker client; see `docs/symphony/DEVIATIONS.md`.
 
 Run the web UI:
 

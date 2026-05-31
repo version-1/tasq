@@ -17,7 +17,6 @@ The current architecture separates issue management from orchestration. The issu
 - Hosted multi-tenant operation.
 - Production authentication and authorization.
 - A complete Codex app-server runner in the first slice.
-- Full workspace lifecycle management in the first slice.
 - External tracker integrations such as Linear in the first slice.
 - A distributed queue beyond the SQLite-backed issue-tracker work item queue.
 
@@ -73,6 +72,8 @@ Responsibilities:
 - Poll the issue-tracker work item queue.
 - Claim executable work items with a lease.
 - Create run records in its own SQLite database.
+- Load the repository workflow contract used to configure orchestration.
+- Create sanitized per-issue workspaces under the configured workspace root.
 - Emit run state changes through a durable outbox.
 - Retry outbox delivery to the issue-tracker until accepted.
 - In the MVP, simulate the run lifecycle enough to verify the boundary.
@@ -93,7 +94,7 @@ The MVP does not start a real agent process. It records a minimal run lifecycle 
 
 ### workspace
 
-The future workspace manager provides isolated execution environments for agents.
+The workspace manager provides isolated execution environments for agents.
 
 Responsibilities:
 
@@ -101,7 +102,7 @@ Responsibilities:
 - Support parallel execution and verification in isolated workspaces.
 - Retain enough metadata for debugging and recovery.
 
-The MVP stores workspace identifiers on run state but does not create or clean real workspaces.
+The current workspace manager creates sanitized per-issue workspace directories and records their paths on run state. Terminal cleanup and repository population are still future work.
 
 ## Dependency Direction
 
@@ -118,7 +119,7 @@ tui ────┘       ▲
         orchestrator ───── SQLite: runs, outbox_events
                 │
                 ├─ future: agent-runner ── Codex app-server over JSON-RPC
-                └─ future: workspace manager ── git workspace / isolated runtime
+                └─ workspace manager ── git workspace / isolated runtime
 ```
 
 ## State Ownership
@@ -196,7 +197,7 @@ The current implementation slice includes:
 - orchestrator polling, claim, run creation, and outbox delivery.
 - a minimal simulated run lifecycle: `queued -> running -> succeeded`.
 
-The simulated lifecycle is intentionally temporary. Its purpose is to prove the service boundary before adding the Codex app-server runner and real workspace manager.
+The simulated lifecycle is intentionally temporary. Its purpose is to prove the service boundary before adding the Codex app-server runner, terminal workspace cleanup, and repository population.
 
 ## API Surface
 
@@ -223,7 +224,7 @@ Current issue-tracker endpoints:
 - `POST /api/v1/work-items/claim`
 - `POST /api/v1/orchestrator-events`
 
-Errors are returned as JSON objects with an `error` field.
+JSON success responses use `{ "data": ..., "meta": {} }`. JSON error responses use `{ "error": { "code": "...", "message": "..." }, "meta": {} }`.
 
 The orchestrator currently has no user-facing HTTP API. Its external dependency is the issue-tracker API.
 
@@ -270,7 +271,7 @@ Manual MVP verification:
 - Exact Codex app-server JSON-RPC contract.
 - Agent runner process lifecycle and cancellation behavior.
 - Lease renewal cadence for long-running real agents.
-- Workspace implementation strategy and cleanup policy.
+- Workspace cleanup policy and repository population strategy.
 - Retry limits and manual intervention thresholds.
 - Whether external tracker sync belongs inside issue-tracker or behind a provider interface.
 - Production authentication, authorization, and network exposure.

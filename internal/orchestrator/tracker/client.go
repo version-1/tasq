@@ -1,4 +1,4 @@
-package orchestrator
+package tracker
 
 import (
 	"bytes"
@@ -9,21 +9,22 @@ import (
 	"strings"
 
 	"github.com/version-1/tasq/internal/issue/domain/entity"
+	"github.com/version-1/tasq/internal/orchestrator/run"
 )
 
-type IssueTrackerClient struct {
+type Client struct {
 	baseURL string
 	client  *http.Client
 }
 
-func NewIssueTrackerClient(baseURL string) *IssueTrackerClient {
-	return &IssueTrackerClient{
+func NewClient(baseURL string) *Client {
+	return &Client{
 		baseURL: strings.TrimRight(baseURL, "/"),
 		client:  http.DefaultClient,
 	}
 }
 
-func (c *IssueTrackerClient) ClaimWorkItem(ctx context.Context, orchestratorID string, leaseSeconds int) (*entity.WorkItem, error) {
+func (c *Client) ClaimWorkItem(ctx context.Context, orchestratorID string, leaseSeconds int) (*entity.WorkItem, error) {
 	var output entity.ClaimWorkItemOutput
 	err := c.request(ctx, http.MethodPost, "/api/v1/work-items/claim", entity.ClaimWorkItemInput{
 		OrchestratorID: orchestratorID,
@@ -35,7 +36,7 @@ func (c *IssueTrackerClient) ClaimWorkItem(ctx context.Context, orchestratorID s
 	return output.WorkItem, nil
 }
 
-func (c *IssueTrackerClient) SendRunEvent(ctx context.Context, event OutboxEvent) error {
+func (c *Client) SendRunEvent(ctx context.Context, event run.OutboxEvent) error {
 	return c.request(ctx, http.MethodPost, "/api/v1/orchestrator-events", entity.RunEventInput{
 		EventID:        event.EventID,
 		WorkItemID:     event.WorkItemID,
@@ -51,7 +52,7 @@ func (c *IssueTrackerClient) SendRunEvent(ctx context.Context, event OutboxEvent
 	}, nil)
 }
 
-func (c *IssueTrackerClient) request(ctx context.Context, method string, path string, input any, output any) error {
+func (c *Client) request(ctx context.Context, method string, path string, input any, output any) error {
 	var body *bytes.Reader
 	if input == nil {
 		body = bytes.NewReader(nil)
