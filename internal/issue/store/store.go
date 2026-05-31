@@ -474,6 +474,44 @@ func (s *Store) WorkItem(ctx context.Context, id int64) (entity.WorkItem, error)
 	return scanWorkItem(row)
 }
 
+func (s *Store) RenewWorkItemLease(ctx context.Context, input entity.RenewWorkItemLeaseInput) (entity.WorkItem, error) {
+	if input.WorkItemID <= 0 {
+		return entity.WorkItem{}, errors.New("workItemId is required")
+	}
+	if input.ClaimToken == "" {
+		return entity.WorkItem{}, errors.New("claimToken is required")
+	}
+	if input.OrchestratorID == "" {
+		return entity.WorkItem{}, errors.New("orchestratorId is required")
+	}
+	if input.LeaseSeconds <= 0 {
+		input.LeaseSeconds = 30
+	}
+	now := time.Now().UTC()
+	leaseUntil := now.Add(time.Duration(input.LeaseSeconds) * time.Second)
+	result, err := s.db.ExecContext(ctx, `UPDATE work_items SET
+		lease_until = ?, updated_at = ?
+		WHERE id = ? AND status = ? AND claim_token = ? AND claimed_by = ?`,
+		formatTime(leaseUntil),
+		formatTime(now),
+		input.WorkItemID,
+		entity.WorkItemClaimed,
+		input.ClaimToken,
+		input.OrchestratorID,
+	)
+	if err != nil {
+		return entity.WorkItem{}, fmt.Errorf("renew work item lease: %w", err)
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return entity.WorkItem{}, err
+	}
+	if affected == 0 {
+		return entity.WorkItem{}, errors.New("work item claim is not renewable")
+	}
+	return s.WorkItem(ctx, input.WorkItemID)
+}
+
 func (s *Store) ReceiveRunEvent(ctx context.Context, input entity.RunEventInput) error {
 	if input.EventID == "" {
 		return errors.New("eventId is required")

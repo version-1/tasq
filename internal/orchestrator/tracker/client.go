@@ -36,6 +36,11 @@ func (c *Client) ClaimWorkItem(ctx context.Context, orchestratorID string, lease
 	return output.WorkItem, nil
 }
 
+func (c *Client) RenewWorkItemLease(ctx context.Context, input entity.RenewWorkItemLeaseInput) error {
+	var output entity.RenewWorkItemLeaseOutput
+	return c.request(ctx, http.MethodPost, "/api/v1/work-items/renew-lease", input, &output)
+}
+
 func (c *Client) SendRunEvent(ctx context.Context, event run.OutboxEvent) error {
 	return c.request(ctx, http.MethodPost, "/api/v1/orchestrator-events", entity.RunEventInput{
 		EventID:        event.EventID,

@@ -23,6 +23,8 @@ agent:
   max_retry_backoff_ms: 4000
 codex:
   command: codex app-server --debug
+  read_timeout_ms: 6000
+  turn_timeout_ms: 7000
   stall_timeout_ms: 5000
 ---
 # Prompt
@@ -54,6 +56,12 @@ Work on {{ issue.title }}.
 	}
 	if workflow.Config.StallTimeout != 5*time.Second {
 		t.Fatalf("stall timeout = %s", workflow.Config.StallTimeout)
+	}
+	if workflow.Config.CodexReadTimeout != 6*time.Second {
+		t.Fatalf("codex read timeout = %s", workflow.Config.CodexReadTimeout)
+	}
+	if workflow.Config.CodexTurnTimeout != 7*time.Second {
+		t.Fatalf("codex turn timeout = %s", workflow.Config.CodexTurnTimeout)
 	}
 	if workflow.Config.CodexCommand != "codex app-server --debug" {
 		t.Fatalf("codex command = %q", workflow.Config.CodexCommand)

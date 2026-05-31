@@ -306,6 +306,26 @@ paths:
                 $ref: "#/components/schemas/ClaimWorkItemResponse"
         "400":
           $ref: "#/components/responses/Error"
+  /api/v1/work-items/renew-lease:
+    post:
+      tags:
+        - Work Items
+      summary: Renew a claimed work item lease.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RenewWorkItemLeaseInput"
+      responses:
+        "200":
+          description: Renewed work item lease.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RenewWorkItemLeaseResponse"
+        "400":
+          $ref: "#/components/responses/Error"
   /api/v1/orchestrator-events:
     post:
       tags:
@@ -688,6 +708,31 @@ components:
           oneOf:
             - $ref: "#/components/schemas/WorkItem"
             - type: "null"
+    RenewWorkItemLeaseInput:
+      type: object
+      required:
+        - workItemId
+        - claimToken
+        - orchestratorId
+        - leaseSeconds
+      properties:
+        workItemId:
+          type: integer
+          format: int64
+        claimToken:
+          type: string
+        orchestratorId:
+          type: string
+        leaseSeconds:
+          type: integer
+          minimum: 1
+    RenewWorkItemLeaseOutput:
+      type: object
+      required:
+        - workItem
+      properties:
+        workItem:
+          $ref: "#/components/schemas/WorkItem"
     RunEventInput:
       type: object
       required:
@@ -886,5 +931,15 @@ components:
       properties:
         data:
           $ref: "#/components/schemas/ClaimWorkItemOutput"
+        meta:
+          $ref: "#/components/schemas/ApiMeta"
+    RenewWorkItemLeaseResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          $ref: "#/components/schemas/RenewWorkItemLeaseOutput"
         meta:
           $ref: "#/components/schemas/ApiMeta"

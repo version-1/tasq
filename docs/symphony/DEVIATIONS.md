@@ -24,17 +24,19 @@ The current orchestrator is moving toward Symphony conformance incrementally. It
 Implemented or in progress:
 
 - Workflow file loading with a small supported subset of Symphony front matter.
+- `WORKFLOW.md` is loaded at process startup only; runtime reload is intentionally deferred.
 - Workspace root resolution and sanitized per-issue workspace directories.
-- A runner interface with a simulated runner implementation.
+- A runner interface with both simulated and Codex app-server subprocess implementations.
 - In-memory running and claimed issue tracking inside the worker.
 - Existing issue-tracker work queue polling and durable outbox delivery.
+- Claim-token-based lease renewal for active work item runs.
+- SQLite runner event logging and workspace metadata records.
 
 Not yet implemented:
 
 - Dynamic `WORKFLOW.md` reload.
 - Full YAML front matter support.
-- Codex app-server subprocess integration.
-- Prompt rendering with strict variable and filter checking.
+- Strict prompt rendering with full variable and filter checking.
 - Continuation turns on a live agent thread.
 - Stall detection and active-run reconciliation against tracker state.
 - Terminal workspace cleanup.

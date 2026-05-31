@@ -40,6 +40,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/v1/issues/{id}", s.issue)
 	mux.HandleFunc("PATCH /api/v1/issues/{id}", s.updateIssue)
 	mux.HandleFunc("POST /api/v1/work-items/claim", s.claimWorkItem)
+	mux.HandleFunc("POST /api/v1/work-items/renew-lease", s.renewWorkItemLease)
 	mux.HandleFunc("POST /api/v1/orchestrator-events", s.receiveRunEvent)
 	return withCORS(withLogging(mux))
 }
@@ -255,6 +256,20 @@ func (s *Server) claimWorkItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, entity.ClaimWorkItemOutput{WorkItem: item})
+}
+
+func (s *Server) renewWorkItemLease(w http.ResponseWriter, r *http.Request) {
+	var input entity.RenewWorkItemLeaseInput
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		writeError(w, http.StatusBadRequest, "work_items.renew_lease.invalid_request", err)
+		return
+	}
+	item, err := s.store.RenewWorkItemLease(r.Context(), input)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "work_items.renew_lease.invalid_input", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, entity.RenewWorkItemLeaseOutput{WorkItem: item})
 }
 
 func (s *Server) receiveRunEvent(w http.ResponseWriter, r *http.Request) {

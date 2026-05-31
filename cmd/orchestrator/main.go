@@ -45,7 +45,7 @@ func main() {
 	if *pollInterval > 0 {
 		definition.Config.PollInterval = *pollInterval
 	}
-	orchestratorWorker, err := worker.NewWithConfig(store, client, *orchestratorID, *leaseSeconds, definition.Config, runner.SimulatedRunner{})
+	orchestratorWorker, err := worker.NewWithConfig(store, client, *orchestratorID, *leaseSeconds, definition, runner.CodexRunner{})
 	if err != nil {
 		log.Fatalf("create orchestrator worker: %v", err)
 	}

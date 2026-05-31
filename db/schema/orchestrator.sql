@@ -15,6 +15,26 @@ CREATE TABLE IF NOT EXISTS runs (
 
 CREATE INDEX IF NOT EXISTS runs_work_item_idx ON runs(work_item_id);
 
+CREATE TABLE IF NOT EXISTS runner_events (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	run_id TEXT NOT NULL,
+	event_type TEXT NOT NULL,
+	message TEXT NOT NULL DEFAULT '',
+	payload_json TEXT NOT NULL DEFAULT '',
+	occurred_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS runner_events_run_idx ON runner_events(run_id, id);
+
+CREATE TABLE IF NOT EXISTS workspace_metadata (
+	workspace_key TEXT PRIMARY KEY,
+	issue_id INTEGER NOT NULL,
+	path TEXT NOT NULL,
+	created_now INTEGER NOT NULL DEFAULT 0,
+	created_at TEXT NOT NULL,
+	updated_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS outbox_events (
 	id INTEGER PRIMARY KEY AUTOINCREMENT,
 	event_id TEXT NOT NULL UNIQUE,
