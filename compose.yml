@@ -32,11 +32,12 @@ services:
   openapi:
     image: swaggerapi/swagger-ui:v5.18.2
     environment:
-      SWAGGER_JSON: /openapi/issue-tracker.yml
+      URLS: '[{"url":"/openapi/issue-tracker.yml","name":"Issue Tracker"},{"url":"/openapi/orchestrator.yml","name":"Orchestrator"}]'
+      URLS_PRIMARY_NAME: Issue Tracker
     ports:
       - "127.0.0.1:${OPENAPI_PORT:-}:8080"
     volumes:
-      - ./docs/openapi:/openapi:ro
+      - ./docs/openapi:/usr/share/nginx/html/openapi:ro
     restart: unless-stopped
 
   web:
