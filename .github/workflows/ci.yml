@@ -27,7 +27,7 @@ jobs:
         run: go mod download
 
       - name: Test Go packages
-        run: go test $(go list ./... | grep -v '^github.com/version-1/tasq/cmd/tq$')
+        run: go test $(go list ./... | grep -Ev '^github.com/version-1/tasq/(cmd/tq|internal/cli/tq)$')
 
       - name: Build issue-tracker
         run: go build ./cmd/issue-tracker
@@ -55,7 +55,7 @@ jobs:
         run: go mod download
 
       - name: Test TQ command
-        run: go test ./cmd/tq
+        run: go test ./internal/cli/tq
 
       - name: Build TQ command
         run: go build ./cmd/tq
