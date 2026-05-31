@@ -15,6 +15,7 @@ This directory stores a local copy of the Symphony service specification used by
 - [SPEC.ja.md](SPEC.ja.md): Japanese translation maintained alongside the English copy.
 - [DEVIATIONS.md](DEVIATIONS.md): Tasq-specific deviations from the upstream specification.
 - [WORKFLOW_CONTRACT.md](WORKFLOW_CONTRACT.md): Supported Tasq workflow front matter fields.
+- [ENTITY_MAPPING.md](ENTITY_MAPPING.md): Mapping between Symphony SPEC domain model and Tasq entities.
 
 ## Repository Guidance
 
