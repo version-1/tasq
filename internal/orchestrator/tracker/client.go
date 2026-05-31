@@ -41,6 +41,22 @@ func (c *Client) RenewWorkItemLease(ctx context.Context, input entity.RenewWorkI
 	return c.request(ctx, http.MethodPost, "/api/v1/work-items/renew-lease", input, &output)
 }
 
+func (c *Client) Issue(ctx context.Context, id int64) (entity.Issue, error) {
+	var output entity.Issue
+	if err := c.request(ctx, http.MethodGet, fmt.Sprintf("/api/v1/issues/%d", id), nil, &output); err != nil {
+		return entity.Issue{}, err
+	}
+	return output, nil
+}
+
+func (c *Client) Issues(ctx context.Context) ([]entity.Issue, error) {
+	var output []entity.Issue
+	if err := c.request(ctx, http.MethodGet, "/api/v1/issues", nil, &output); err != nil {
+		return nil, err
+	}
+	return output, nil
+}
+
 func (c *Client) SendRunEvent(ctx context.Context, event run.OutboxEvent) error {
 	return c.request(ctx, http.MethodPost, "/api/v1/orchestrator-events", entity.RunEventInput{
 		EventID:        event.EventID,

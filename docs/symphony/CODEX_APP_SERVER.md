@@ -25,5 +25,5 @@ unsupported JSON-RPC errors. This prevents unattended runs from waiting indefini
 input. Approval, sandbox, and user-input behavior should be revisited before enabling wider
 production usage.
 
-Runner progress is persisted to SQLite in `runner_events`. Large full-fidelity transcript artifacts
-are not yet implemented and remain a separate observability decision.
+Runner progress is persisted to SQLite in `runner_events`. The current implementation does not write
+separate large transcript artifacts to the filesystem.

@@ -90,7 +90,7 @@ Responsibilities:
 - Execute the task inside a workspace.
 - Report execution progress to the orchestrator over JSON-RPC.
 
-The MVP does not start a real agent process. It records a minimal run lifecycle so the issue-tracker/orchestrator contract can be verified first.
+The orchestrator starts Codex app-server through the runner boundary and records run progress through the issue-tracker/orchestrator contract.
 
 ### workspace
 
@@ -102,7 +102,7 @@ Responsibilities:
 - Support parallel execution and verification in isolated workspaces.
 - Retain enough metadata for debugging and recovery.
 
-The current workspace manager creates sanitized per-issue workspace directories and records their paths on run state. Terminal cleanup and repository population are still future work.
+The current workspace manager creates sanitized per-issue workspace directories, populates newly created workspaces from the configured repository source, and records cleanup/population metadata for recovery and debugging.
 
 ## Dependency Direction
 
@@ -190,14 +190,14 @@ The current implementation slice includes:
 - `cmd/issue-tracker`
 - `cmd/orchestrator`
 - issue-tracker SQLite tables for issues, work items, received orchestrator events, and run snapshots.
-- orchestrator SQLite tables for runs and outbox events.
+- orchestrator SQLite tables for runs, outbox events, runner events, workspace metadata, and workspace setup failures.
 - issue-tracker summary API consumed by web-ui and tui.
 - lease-backed work item claim API.
 - idempotent run event receiver.
-- orchestrator polling, claim, run creation, and outbox delivery.
-- a minimal simulated run lifecycle: `queued -> running -> succeeded`.
+- orchestrator polling, claim, run creation, lease renewal, retry handling, workspace cleanup, and outbox delivery.
+- Codex runner lifecycle: app-server startup, live-thread turns, continuation turns when enabled, and terminal run status reporting.
 
-The simulated lifecycle is intentionally temporary. Its purpose is to prove the service boundary before adding the Codex app-server runner, terminal workspace cleanup, and repository population.
+The simulated runner remains available for narrow tests, but production wiring uses the Codex app-server runner.
 
 ## API Surface
 
@@ -268,11 +268,6 @@ Manual MVP verification:
 
 ## Open Decisions
 
-- Exact Codex app-server JSON-RPC contract.
-- Agent runner process lifecycle and cancellation behavior.
-- Lease renewal cadence for long-running real agents.
-- Workspace cleanup policy and repository population strategy.
-- Retry limits and manual intervention thresholds.
 - Whether external tracker sync belongs inside issue-tracker or behind a provider interface.
 - Production authentication, authorization, and network exposure.
-- Whether run logs are stored directly in SQLite or referenced as filesystem artifacts.
+- Whether large full-fidelity Codex transcripts should remain in SQLite or move to filesystem artifacts.

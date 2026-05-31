@@ -1,0 +1,563 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tasq Symphony Orchestrator Structure - 日本語版</title>
+  <style>
+    :root {
+      --bg: #f6f7fb;
+      --panel: #ffffff;
+      --ink: #1f2937;
+      --muted: #64748b;
+      --line: #d8dee9;
+      --blue: #2563eb;
+      --green: #0f8b6f;
+      --amber: #b7791f;
+      --red: #c2413d;
+      --purple: #6f42c1;
+      --code: #111827;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font: 14px/1.65 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    a { color: var(--blue); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    nav {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: auto;
+      padding: 24px 18px;
+      border-right: 1px solid var(--line);
+      background: #ffffff;
+    }
+
+    nav h1 {
+      margin: 0 0 4px;
+      font-size: 18px;
+      line-height: 1.25;
+    }
+
+    nav .scope {
+      margin: 0 0 20px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    nav a {
+      display: block;
+      padding: 8px 10px;
+      border-radius: 6px;
+      color: #334155;
+      font-weight: 600;
+    }
+
+    nav a:hover {
+      background: #eef2ff;
+      text-decoration: none;
+    }
+
+    main {
+      min-width: 0;
+      padding: 28px 34px 56px;
+    }
+
+    header {
+      max-width: 1220px;
+      margin: 0 auto 24px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    header h2 {
+      margin: 0 0 8px;
+      font-size: 32px;
+      line-height: 1.15;
+      letter-spacing: 0;
+    }
+
+    header p {
+      max-width: 920px;
+      margin: 0;
+      color: var(--muted);
+    }
+
+    section {
+      max-width: 1220px;
+      margin: 0 auto 28px;
+      padding: 22px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+    }
+
+    section h3 {
+      margin: 0 0 14px;
+      font-size: 21px;
+      line-height: 1.25;
+    }
+
+    section > p {
+      margin: 0 0 16px;
+      color: var(--muted);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .metric, .note, .contract {
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfcff;
+    }
+
+    .metric strong, .note strong, .contract strong {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--code);
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .metric span, .note span, .contract span { color: var(--muted); }
+
+    .diagram {
+      overflow-x: auto;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fcfdff;
+    }
+
+    .mermaid {
+      min-width: 720px;
+      text-align: center;
+    }
+
+    .svg-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fcfdff;
+    }
+
+    svg { display: block; width: 100%; min-width: 880px; height: auto; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    th, td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #f1f5f9;
+      color: #334155;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    tr:last-child td { border-bottom: 0; }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(320px, 0.65fr);
+      gap: 14px;
+      align-items: start;
+    }
+
+    input[type="search"] {
+      width: 360px;
+      max-width: 100%;
+      padding: 8px 10px;
+      margin-bottom: 10px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      font: inherit;
+    }
+
+    details {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      overflow: hidden;
+    }
+
+    details + details { margin-top: 8px; }
+
+    summary {
+      cursor: pointer;
+      padding: 10px 12px;
+      background: #f8fafc;
+      font-weight: 700;
+    }
+
+    details ul {
+      margin: 0;
+      padding: 10px 14px 14px 28px;
+      color: var(--muted);
+    }
+
+    .risk { border-left: 4px solid var(--amber); }
+    .risk.high { border-left-color: var(--red); }
+
+    footer {
+      max-width: 1220px;
+      margin: 0 auto;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    @media (max-width: 980px) {
+      .layout { grid-template-columns: 1fr; }
+      nav {
+        position: static;
+        height: auto;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+      nav a { display: inline-block; }
+      main { padding: 20px 14px 40px; }
+      .grid, .two-col { grid-template-columns: 1fr; }
+      header h2 { font-size: 26px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <nav aria-label="ページナビゲーション">
+      <h1>Orchestrator Map</h1>
+      <p class="scope">tasq / Symphony / 2026-05-31 生成</p>
+      <a href="#overview">概要</a>
+      <a href="#architecture">アーキテクチャ</a>
+      <a href="#structure">パッケージ構造</a>
+      <a href="#runtime">実行フロー</a>
+      <a href="#runner">Runner プロトコル</a>
+      <a href="#state">状態と永続化</a>
+      <a href="#contracts">契約</a>
+      <a href="#risks">リスク</a>
+      <a href="#appendix">付録</a>
+    </nav>
+
+    <main>
+      <header>
+        <h2>Tasq Symphony Orchestrator Structure</h2>
+        <p>
+          ローカル Symphony orchestrator の構造を、composition root、パッケージ境界、
+          実行時の協調、runner プロトコル、永続化状態、運用上の注意点に分けて整理した HTML です。
+        </p>
+      </header>
+
+      <section id="overview">
+        <h3>概要</h3>
+        <div class="grid">
+          <div class="metric"><strong>Composition root</strong><span><code>cmd/orchestrator</code> が SQLite store、issue tracker client、workflow config、Codex runner を組み立てます。</span></div>
+          <div class="metric"><strong>Coordinator</strong><span><code>worker</code> が polling、claim、workspace setup、run lifecycle、lease renewal、retry、reconciliation、cleanup、outbox flush を担当します。</span></div>
+          <div class="metric"><strong>Persistence</strong><span><code>runstore</code> が runs、runner events、workspace metadata、setup failures、outbox events を SQLite に保存します。</span></div>
+          <div class="metric"><strong>External APIs</strong><span><code>tracker</code> は issue-tracker HTTP API、<code>runner.CodexRunner</code> は <code>codex app-server</code> の JSON-RPC と接続します。</span></div>
+          <div class="metric"><strong>Workspace boundary</strong><span><code>workspace.Manager</code> が issue key を sanitize し、root escape を防ぎ、必要に応じて source をコピーします。</span></div>
+          <div class="metric"><strong>Workflow contract</strong><span><code>WORKFLOW.md</code> の front matter が poll interval、workspace path、concurrency、turn、retry、stall、Codex timeout を制御します。</span></div>
+        </div>
+      </section>
+
+      <section id="architecture">
+        <h3>アーキテクチャ</h3>
+        <p>orchestrator は command bootstrapping、coordinator、adapter、domain model、外部境界に分かれています。</p>
+        <div class="svg-wrap">
+          <svg viewBox="0 0 1180 520" role="img" aria-labelledby="arch-title arch-desc">
+            <title id="arch-title">Symphony orchestrator のレイヤー構造</title>
+            <desc id="arch-desc">command entrypoint、coordinator、adapter、domain model、SQLite、issue tracker API、workspace、Codex app-server process の関係を示します。</desc>
+            <defs>
+              <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+                <path d="M0,0 L0,6 L9,3 z" fill="#64748b"></path>
+              </marker>
+              <style>
+                .box { fill: #fff; stroke: #cbd5e1; stroke-width: 1.4; rx: 8; }
+                .cmd { fill: #eef2ff; stroke: #818cf8; }
+                .coord { fill: #ecfeff; stroke: #0891b2; }
+                .adapter { fill: #f0fdf4; stroke: #22c55e; }
+                .domain { fill: #fff7ed; stroke: #f59e0b; }
+                .external { fill: #fef2f2; stroke: #ef4444; }
+                .label { font: 700 16px system-ui, sans-serif; fill: #111827; }
+                .small { font: 12px system-ui, sans-serif; fill: #475569; }
+                .edge { stroke: #64748b; stroke-width: 1.6; fill: none; marker-end: url(#arrow); }
+              </style>
+            </defs>
+            <rect class="box cmd" x="470" y="28" width="240" height="74"></rect>
+            <text class="label" x="590" y="58" text-anchor="middle">cmd/orchestrator</text>
+            <text class="small" x="590" y="82" text-anchor="middle">flags, signals, config, wiring</text>
+            <rect class="box coord" x="430" y="160" width="320" height="96"></rect>
+            <text class="label" x="590" y="196" text-anchor="middle">worker</text>
+            <text class="small" x="590" y="220" text-anchor="middle">poll, claim, run, renew, retry, cleanup</text>
+            <rect class="box adapter" x="70" y="330" width="200" height="96"></rect>
+            <text class="label" x="170" y="366" text-anchor="middle">tracker</text>
+            <text class="small" x="170" y="390" text-anchor="middle">HTTP issue-tracker adapter</text>
+            <rect class="box adapter" x="330" y="330" width="200" height="96"></rect>
+            <text class="label" x="430" y="366" text-anchor="middle">runstore</text>
+            <text class="small" x="430" y="390" text-anchor="middle">SQLite persistence + outbox</text>
+            <rect class="box domain" x="590" y="330" width="200" height="96"></rect>
+            <text class="label" x="690" y="366" text-anchor="middle">run</text>
+            <text class="small" x="690" y="390" text-anchor="middle">Run, Status, OutboxEvent</text>
+            <rect class="box adapter" x="850" y="330" width="200" height="96"></rect>
+            <text class="label" x="950" y="366" text-anchor="middle">runner / workspace</text>
+            <text class="small" x="950" y="390" text-anchor="middle">Codex process + per-issue dirs</text>
+            <rect class="box external" x="50" y="466" width="240" height="38"></rect>
+            <text class="small" x="170" y="490" text-anchor="middle">Issue Tracker API</text>
+            <rect class="box external" x="330" y="466" width="200" height="38"></rect>
+            <text class="small" x="430" y="490" text-anchor="middle">SQLite DB</text>
+            <rect class="box external" x="830" y="466" width="240" height="38"></rect>
+            <text class="small" x="950" y="490" text-anchor="middle">codex app-server / filesystem</text>
+            <path class="edge" d="M590,102 L590,156"></path>
+            <path class="edge" d="M470,256 C360,282 270,300 190,326"></path>
+            <path class="edge" d="M535,256 C500,286 470,304 442,326"></path>
+            <path class="edge" d="M650,256 C660,286 675,304 685,326"></path>
+            <path class="edge" d="M710,256 C790,285 860,304 928,326"></path>
+            <path class="edge" d="M170,426 L170,462"></path>
+            <path class="edge" d="M430,426 L430,462"></path>
+            <path class="edge" d="M950,426 L950,462"></path>
+          </svg>
+        </div>
+      </section>
+
+      <section id="structure">
+        <h3>パッケージ構造</h3>
+        <p>パッケージ名、責務、ファイル名で絞り込めます。</p>
+        <input id="packageFilter" type="search" placeholder="例: runner, outbox, workspace">
+        <table id="packageTable">
+          <thead><tr><th>Package</th><th>主な責務</th><th>主要ファイル</th><th>依存先</th></tr></thead>
+          <tbody>
+            <tr><td><code>cmd/orchestrator</code></td><td>CLI flags、signal context、store/client/workflow/runner の構築。</td><td><code>main.go</code>, <code>WORKFLOW.md</code></td><td>worker, runstore, tracker, workflow, runner</td></tr>
+            <tr><td><code>worker</code></td><td>polling、claim、workspace creation、run status、lease renewal、retry、reconciliation、cleanup、outbox flush。</td><td><code>worker.go</code></td><td>store, trackerClient, runner, workspace, workflow config</td></tr>
+            <tr><td><code>runstore</code></td><td>SQLite migration と runs / runner_events / workspace metadata / outbox events の永続化。</td><td><code>store.go</code>, <code>db/schema/orchestrator.sql</code></td><td>run domain, schema</td></tr>
+            <tr><td><code>run</code></td><td>Run、Status、OutboxEvent、RunnerEvent の安定した domain record。</td><td><code>model.go</code></td><td>標準ライブラリのみ</td></tr>
+            <tr><td><code>tracker</code></td><td>work item claim、lease renewal、issue fetch、run event 送信の HTTP adapter。</td><td><code>client.go</code></td><td>issue tracker API contracts, run events</td></tr>
+            <tr><td><code>runner</code></td><td>Runner abstraction、SimulatedRunner、Codex app-server runner。</td><td><code>runner.go</code></td><td>run statuses, workspace, issue entity</td></tr>
+            <tr><td><code>workflow</code></td><td><code>WORKFLOW.md</code> の load、front matter parse、path normalize、prompt template 提供。</td><td><code>workflow.go</code></td><td>標準ライブラリのみ</td></tr>
+            <tr><td><code>workspace</code></td><td>issue ごとの workspace 作成、source copy、root escape 防止、terminal cleanup。</td><td><code>workspace.go</code></td><td>filesystem</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="runtime">
+        <h3>実行フロー</h3>
+        <p>各 tick は未送信 outbox を先に flush し、その後 work item を claim して runner 実行と lease renewal を進めます。</p>
+        <div class="diagram">
+          <pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant Main as cmd/orchestrator
+  participant Worker as worker
+  participant Store as runstore
+  participant Tracker as issue tracker
+  participant WS as workspace.Manager
+  participant Runner as runner.CodexRunner
+
+  Main->>Store: Open(db) + migrate schema
+  Main->>Worker: NewWithConfig(definition, CodexRunner)
+  Worker->>Tracker: Issues()
+  Worker->>WS: terminal issue workspace cleanup
+  loop poll interval
+    Worker->>Store: UnsentOutboxEvents(limit=20)
+    Worker->>Tracker: SendRunEvent(event)
+    Worker->>Store: MarkOutboxEventSent(id)
+    Worker->>Tracker: ClaimWorkItem(orchestratorID, leaseSeconds)
+    alt work item なし
+      Worker-->>Worker: 次の tick まで待機
+    else claim 成功
+      Worker->>WS: CreateForIssue("issue-{id}")
+      Worker->>Store: UpsertWorkspaceMetadata(...)
+      Worker->>Store: CreateRun(status=queued)
+      Worker->>Store: UpdateRunStatus(running)
+      par runner execution
+        Worker->>Runner: Run(ctx, Task)
+        Runner-->>Store: RecordRunnerEvent via callback
+      and lease loop
+        Worker->>Tracker: Issue(id) for reconcile
+        Worker->>Tracker: RenewWorkItemLease(...)
+      end
+      Worker->>Store: UpdateRunStatus(result.status, result.error)
+      Worker->>Store: UnsentOutboxEvents(...)
+      Worker->>Tracker: SendRunEvent(...)
+      opt failed or cancelled
+        Worker->>WS: RemoveForIssue(...)
+        Worker->>Store: MarkWorkspaceCleanup(...)
+      end
+    end
+  end
+          </pre>
+        </div>
+      </section>
+
+      <section id="runner">
+        <h3>Runner プロトコル</h3>
+        <div class="two-col">
+          <div class="diagram">
+            <pre class="mermaid">
+flowchart TD
+  A[Task validation: workspace, command, timeouts] --> B[Prompt template rendering]
+  B --> C[Start bash -lc codex app-server]
+  C --> D[JSON-RPC initialize]
+  D --> E[initialized notification]
+  E --> F[thread/start]
+  F --> G[turn/start first prompt]
+  G --> H{turn/completed?}
+  H -- succeeded --> I{continuation enabled and turns remain?}
+  I -- yes --> J[turn/start continuation guidance]
+  J --> H
+  I -- no --> K[Result succeeded]
+  H -- failed/error --> L[Result failed with error text]
+  C --> M[stderr scanner records runner event]
+            </pre>
+          </div>
+          <div>
+            <div class="contract"><strong>Task contract</strong><span><code>WorkItem</code>、<code>RunID</code>、<code>Workspace</code>、prompt template、max turns、continuation flag、command、read/turn timeout、<code>OnEvent</code> を渡します。</span></div>
+            <div class="contract" style="margin-top:10px"><strong>Result contract</strong><span><code>Status</code> は run status に戻されます。<code>Error</code> は永続化され、outbox 経由で tracker に送られます。</span></div>
+            <div class="contract" style="margin-top:10px"><strong>Event contract</strong><span>runner event は event type、message、payload JSON、run id、occurred_at を保存し、運用可視性を確保します。</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="state">
+        <h3>状態と永続化</h3>
+        <p>状態は worker のメモリ、SQLite、filesystem workspace、tracker 側 lease/status に分かれています。</p>
+        <div class="diagram">
+          <pre class="mermaid">
+stateDiagram-v2
+  [*] --> queued: CreateRun
+  queued --> running: UpdateRunStatus
+  running --> succeeded: runner success
+  running --> failed: runner failure / stalled / retries exhausted
+  running --> cancelled: terminal or non-active issue reconcile
+  failed --> [*]
+  succeeded --> [*]
+  cancelled --> [*]
+          </pre>
+        </div>
+        <table style="margin-top:14px">
+          <thead><tr><th>Owner</th><th>State</th><th>更新元</th><th>目的</th></tr></thead>
+          <tbody>
+            <tr><td>Worker memory</td><td><code>running</code>, <code>claimed</code></td><td><code>canDispatch</code>, <code>markRunning</code>, <code>release</code></td><td>同一 issue の重複実行を避け、process 内 concurrency を制御します。</td></tr>
+            <tr><td>SQLite</td><td><code>runs</code></td><td><code>CreateRun</code>, <code>UpdateRunStatus</code></td><td>run lifecycle と結果を永続化します。</td></tr>
+            <tr><td>SQLite</td><td><code>outbox_events</code></td><td><code>EnqueueRunEvent</code>, <code>MarkOutboxEventSent</code></td><td>run state change を tracker へ確実に届けます。</td></tr>
+            <tr><td>SQLite</td><td><code>runner_events</code></td><td><code>RecordRunnerEvent</code></td><td>process、JSON-RPC、stderr、retry、診断イベントの timeline を残します。</td></tr>
+            <tr><td>SQLite</td><td><code>workspace_metadata</code>, <code>workspace_setup_failures</code></td><td>workspace setup / cleanup</td><td>workspace lifecycle と setup failure を監査可能にします。</td></tr>
+            <tr><td>Filesystem</td><td>per-issue workspace</td><td><code>workspace.Manager</code></td><td>issue ごとの隔離された作業ディレクトリです。</td></tr>
+            <tr><td>Issue tracker</td><td>work item lease / issue status</td><td><code>ClaimWorkItem</code>, <code>RenewWorkItemLease</code>, <code>Issue</code></td><td>複数 orchestrator 間の協調と cancellation の source of truth です。</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="contracts">
+        <h3>契約</h3>
+        <div class="grid">
+          <div class="note"><strong>trackerClient</strong><span><code>ClaimWorkItem</code>、<code>RenewWorkItemLease</code>、<code>SendRunEvent</code>、<code>Issue</code>、<code>Issues</code> が worker から見える API surface です。</span></div>
+          <div class="note"><strong>workflow front matter</strong><span><code>polling.interval_ms</code>、<code>workspace.root/source</code>、<code>agent.max_concurrent_agents</code>、<code>max_turns</code>、continuation、retry、Codex timeout を扱います。</span></div>
+          <div class="note"><strong>workspace keys</strong><span>issue identifier は英数字、dot、underscore、dash のみを残し、それ以外は underscore に変換します。</span></div>
+        </div>
+      </section>
+
+      <section id="risks">
+        <h3>リスク / 未確認点</h3>
+        <div class="grid">
+          <div class="note risk high"><strong>Concurrency semantics</strong><span><code>maxConcurrent</code>、<code>running</code>、<code>claimed</code> はありますが、現在の tick path は claim した item を inline で実行します。設定値どおりの並列 throughput を前提にする前に確認が必要です。</span></div>
+          <div class="note risk"><strong>Process restart recovery</strong><span>runs と outbox は永続化されますが、active な <code>running</code>/<code>claimed</code> メモリ状態を active run から replay して復元する形ではありません。</span></div>
+          <div class="note risk"><strong>Prompt rendering</strong><span>template substitution は issue id/title/description と attempt に絞られています。追加 field は contract 変更が必要です。</span></div>
+          <div class="note risk"><strong>Runner observability</strong><span>runner events と setup failures は保存されますが、運用 UI/API として見せる部分は別途 consumer 側に依存します。</span></div>
+          <div class="note risk"><strong>Filesystem cost</strong><span>source tree copy は <code>.git</code>、<code>.worktrees</code>、<code>node_modules</code> を skip しますが、大きい repo ではまだコストが高くなり得ます。</span></div>
+          <div class="note risk"><strong>External process contract</strong><span><code>CodexRunner</code> は <code>codex app-server</code> の JSON-RPC shape に依存します。protocol drift には integration coverage が必要です。</span></div>
+        </div>
+      </section>
+
+      <section id="appendix">
+        <h3>付録</h3>
+        <div class="two-col">
+          <details open>
+            <summary>この図の根拠にしたファイル</summary>
+            <ul>
+              <li><code>internal/orchestrator/README.md</code></li>
+              <li><code>cmd/orchestrator/main.go</code></li>
+              <li><code>internal/orchestrator/worker/worker.go</code></li>
+              <li><code>internal/orchestrator/runner/runner.go</code></li>
+              <li><code>internal/orchestrator/runstore/store.go</code></li>
+              <li><code>db/schema/orchestrator.sql</code></li>
+              <li><code>internal/orchestrator/workflow/workflow.go</code></li>
+              <li><code>internal/orchestrator/workspace/workspace.go</code></li>
+            </ul>
+          </details>
+          <details open>
+            <summary>CDN と offline 時の挙動</summary>
+            <ul>
+              <li>使用 CDN は Mermaid のみ: <code>https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs</code></li>
+              <li>inline SVG、table、本文は offline でも読めます。</li>
+              <li>Mermaid 図は CDN script が読める環境、または browser cache が必要です。</li>
+            </ul>
+          </details>
+        </div>
+      </section>
+
+      <footer>
+        このファイルは構造理解用のローカル HTML です。runtime code は変更していません。
+      </footer>
+    </main>
+  </div>
+
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({
+      startOnLoad: true,
+      securityLevel: "strict",
+      theme: "base",
+      themeVariables: {
+        fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif",
+        primaryColor: "#eef2ff",
+        primaryTextColor: "#111827",
+        primaryBorderColor: "#818cf8",
+        lineColor: "#64748b",
+        secondaryColor: "#ecfeff",
+        tertiaryColor: "#f8fafc"
+      }
+    });
+
+    const input = document.querySelector("#packageFilter");
+    const rows = Array.from(document.querySelectorAll("#packageTable tbody tr"));
+    input.addEventListener("input", () => {
+      const query = input.value.trim().toLowerCase();
+      rows.forEach((row) => {
+        row.style.display = row.textContent.toLowerCase().includes(query) ? "" : "none";
+      });
+    });
+  </script>
+</body>
+</html>

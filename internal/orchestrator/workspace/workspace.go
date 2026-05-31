@@ -2,13 +2,15 @@ package workspace
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
 )
 
 type Manager struct {
-	root string
+	root   string
+	source string
 }
 
 type Workspace struct {
@@ -18,6 +20,10 @@ type Workspace struct {
 }
 
 func NewManager(root string) (*Manager, error) {
+	return NewManagerWithSource(root, "")
+}
+
+func NewManagerWithSource(root string, source string) (*Manager, error) {
 	if root == "" {
 		return nil, fmt.Errorf("workspace root is required")
 	}
@@ -25,11 +31,23 @@ func NewManager(root string) (*Manager, error) {
 	if err != nil {
 		return nil, fmt.Errorf("resolve workspace root: %w", err)
 	}
-	return &Manager{root: filepath.Clean(abs)}, nil
+	manager := &Manager{root: filepath.Clean(abs)}
+	if source != "" {
+		sourceAbs, err := filepath.Abs(source)
+		if err != nil {
+			return nil, fmt.Errorf("resolve workspace source: %w", err)
+		}
+		manager.source = filepath.Clean(sourceAbs)
+	}
+	return manager, nil
 }
 
 func (m *Manager) Root() string {
 	return m.root
+}
+
+func (m *Manager) Source() string {
+	return m.source
 }
 
 func (m *Manager) CreateForIssue(identifier string) (Workspace, error) {
@@ -56,7 +74,63 @@ func (m *Manager) CreateForIssue(identifier string) (Workspace, error) {
 		return Workspace{}, fmt.Errorf("create workspace: %w", err)
 	}
 	createdNow = true
+	if m.source != "" {
+		if err := m.populate(path); err != nil {
+			return Workspace{}, err
+		}
+	}
 	return Workspace{Path: path, WorkspaceKey: key, CreatedNow: createdNow}, nil
+}
+
+func (m *Manager) RemoveForIssue(identifier string) error {
+	key := sanitizeKey(identifier)
+	if key == "" {
+		return fmt.Errorf("workspace key is empty")
+	}
+	path := filepath.Join(m.root, key)
+	if err := m.validatePath(path); err != nil {
+		return err
+	}
+	if err := os.RemoveAll(path); err != nil {
+		return fmt.Errorf("remove workspace: %w", err)
+	}
+	return nil
+}
+
+func (m *Manager) populate(destination string) error {
+	info, err := os.Stat(m.source)
+	if err != nil {
+		return fmt.Errorf("stat workspace source: %w", err)
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("workspace source is not a directory: %s", m.source)
+	}
+	return filepath.WalkDir(m.source, func(path string, entry os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		rel, err := filepath.Rel(m.source, path)
+		if err != nil {
+			return err
+		}
+		if rel == "." {
+			return nil
+		}
+		if shouldSkip(rel, path, m.root) {
+			if entry.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		target := filepath.Join(destination, rel)
+		if entry.IsDir() {
+			return os.MkdirAll(target, 0o755)
+		}
+		if entry.Type()&os.ModeSymlink != 0 {
+			return nil
+		}
+		return copyFile(path, target)
+	})
 }
 
 func (m *Manager) validatePath(path string) error {
@@ -84,4 +158,35 @@ func sanitizeKey(identifier string) string {
 		builder.WriteByte('_')
 	}
 	return builder.String()
+}
+
+func shouldSkip(rel string, path string, root string) bool {
+	name := strings.Split(rel, string(filepath.Separator))[0]
+	if name == ".git" || name == ".worktrees" || name == "node_modules" {
+		return true
+	}
+	relativeToRoot, err := filepath.Rel(root, path)
+	return err == nil && (relativeToRoot == "." || !strings.HasPrefix(relativeToRoot, ".."+string(filepath.Separator)))
+}
+
+func copyFile(source string, destination string) error {
+	if err := os.MkdirAll(filepath.Dir(destination), 0o755); err != nil {
+		return err
+	}
+	input, err := os.Open(source)
+	if err != nil {
+		return err
+	}
+	defer input.Close()
+	info, err := input.Stat()
+	if err != nil {
+		return err
+	}
+	output, err := os.OpenFile(destination, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, info.Mode().Perm())
+	if err != nil {
+		return err
+	}
+	defer output.Close()
+	_, err = io.Copy(output, input)
+	return err
 }

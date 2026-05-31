@@ -28,6 +28,7 @@ type Task struct {
 	Workspace      workspace.Workspace
 	PromptTemplate string
 	MaxTurns       int
+	ContinueTurns  bool
 	Command        string
 	ReadTimeout    time.Duration
 	TurnTimeout    time.Duration
@@ -121,26 +122,23 @@ func (r CodexRunner) Run(ctx context.Context, task Task) Result {
 	}
 	emit(task, "session_started", "thread_id="+threadStart.Thread.ID, "")
 
-	var turnStart struct {
-		Turn struct {
-			ID string `json:"id"`
-		} `json:"turn"`
+	maxTurns := 1
+	if task.ContinueTurns && task.MaxTurns > 1 {
+		maxTurns = task.MaxTurns
 	}
-	if err := session.request(ctx, task.ReadTimeout, "turn/start", map[string]any{
-		"threadId": threadStart.Thread.ID,
-		"cwd":      task.Workspace.Path,
-		"input": []map[string]any{
-			{"type": "text", "text": prompt},
-		},
-	}, &turnStart); err != nil {
-		return Result{Status: run.StatusFailed, Error: err.Error()}
-	}
-	if turnStart.Turn.ID == "" {
-		return Result{Status: run.StatusFailed, Error: "turn/start returned empty turn id"}
-	}
-	emit(task, "turn_started", "turn_id="+turnStart.Turn.ID, "")
-	if err := session.waitTurn(ctx, task.TurnTimeout, task, threadStart.Thread.ID, turnStart.Turn.ID); err != nil {
-		return Result{Status: run.StatusFailed, Error: err.Error()}
+	for turnNumber := 1; turnNumber <= maxTurns; turnNumber++ {
+		turnPrompt := prompt
+		if turnNumber > 1 {
+			turnPrompt = "Continue the same task in this live thread. Do not repeat completed work. Stop when the workflow is ready for handoff."
+		}
+		turnID, err := session.startTurn(ctx, task, threadStart.Thread.ID, turnPrompt)
+		if err != nil {
+			return Result{Status: run.StatusFailed, Error: err.Error()}
+		}
+		emit(task, "turn_started", fmt.Sprintf("turn_id=%s turn_number=%d", turnID, turnNumber), "")
+		if err := session.waitTurn(ctx, task.TurnTimeout, task, threadStart.Thread.ID, turnID); err != nil {
+			return Result{Status: run.StatusFailed, Error: err.Error()}
+		}
 	}
 	return Result{Status: run.StatusSucceeded}
 }
@@ -287,6 +285,27 @@ func (s *session) request(ctx context.Context, timeout time.Duration, method str
 
 func (s *session) notify(method string, params any) error {
 	return s.write(map[string]any{"method": method, "params": params})
+}
+
+func (s *session) startTurn(ctx context.Context, task Task, threadID string, prompt string) (string, error) {
+	var turnStart struct {
+		Turn struct {
+			ID string `json:"id"`
+		} `json:"turn"`
+	}
+	if err := s.request(ctx, task.ReadTimeout, "turn/start", map[string]any{
+		"threadId": threadID,
+		"cwd":      task.Workspace.Path,
+		"input": []map[string]any{
+			{"type": "text", "text": prompt},
+		},
+	}, &turnStart); err != nil {
+		return "", err
+	}
+	if turnStart.Turn.ID == "" {
+		return "", errors.New("turn/start returned empty turn id")
+	}
+	return turnStart.Turn.ID, nil
 }
 
 func (s *session) waitTurn(ctx context.Context, timeout time.Duration, task Task, threadID string, turnID string) error {
