@@ -50,8 +50,8 @@ done
 		Workspace:      workspace.Workspace{Path: dir, WorkspaceKey: "ISSUE-123"},
 		PromptTemplate: "Work on {{ issue.id }}: {{ issue.title }}",
 		Command:        "sh " + strconv.Quote(script),
-		ReadTimeout:    time.Second,
-		TurnTimeout:    time.Second,
+		ReadTimeout:    5 * time.Second,
+		TurnTimeout:    5 * time.Second,
 		OnEvent: func(event Event) {
 			events = append(events, event)
 		},
