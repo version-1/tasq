@@ -1,0 +1,798 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Symphony Service Specification - Visual Guide</title>
+  <!-- Allowed fonts from the format-rich-html-diagram skill. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --panel: #ffffff;
+      --text: #1f2933;
+      --muted: #667085;
+      --line: #d8dee8;
+      --blue: #2463eb;
+      --green: #16845f;
+      --orange: #b86412;
+      --red: #ba2f3b;
+      --violet: #6e49cb;
+      --cyan: #0e7490;
+      --shadow: 0 12px 30px rgba(31, 41, 51, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      color: var(--text);
+      background: var(--bg);
+      font-family: "Noto Sans JP", system-ui, sans-serif;
+      line-height: 1.6;
+    }
+
+    code, pre, .mono {
+      font-family: "JetBrains Mono", ui-monospace, monospace;
+    }
+
+    a { color: var(--blue); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    aside {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: auto;
+      border-right: 1px solid var(--line);
+      background: #ffffff;
+      padding: 22px 18px;
+    }
+
+    aside h2 {
+      font-size: 14px;
+      margin: 0 0 14px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    nav a {
+      display: block;
+      padding: 8px 10px;
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 14px;
+    }
+
+    nav a:hover {
+      background: #eef4ff;
+      text-decoration: none;
+    }
+
+    main {
+      max-width: 1280px;
+      padding: 42px 48px 80px;
+    }
+
+    header {
+      margin-bottom: 28px;
+    }
+
+    .eyebrow {
+      color: var(--blue);
+      font-weight: 700;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+    }
+
+    h1 {
+      font-size: 42px;
+      line-height: 1.12;
+      margin: 0 0 12px;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      font-size: 26px;
+      margin: 46px 0 14px;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      font-size: 18px;
+      margin: 24px 0 10px;
+      letter-spacing: 0;
+    }
+
+    p { margin: 0 0 14px; }
+
+    .lead {
+      max-width: 900px;
+      color: #394452;
+      font-size: 17px;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 999px;
+      padding: 6px 10px;
+      color: #405063;
+      font-size: 13px;
+    }
+
+    .section {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      box-shadow: var(--shadow);
+      padding: 24px;
+      margin: 20px 0;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .grid.two {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .item {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfcfe;
+      padding: 14px;
+    }
+
+    .item strong {
+      display: block;
+      margin-bottom: 6px;
+      color: #182230;
+    }
+
+    .tag {
+      display: inline-block;
+      border-radius: 6px;
+      padding: 2px 7px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #fff;
+      background: var(--blue);
+      margin-right: 6px;
+    }
+
+    .tag.green { background: var(--green); }
+    .tag.orange { background: var(--orange); }
+    .tag.red { background: var(--red); }
+    .tag.violet { background: var(--violet); }
+    .tag.cyan { background: var(--cyan); }
+
+    .diagram {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      padding: 16px;
+      overflow: auto;
+      margin: 16px 0;
+    }
+
+    .mermaid {
+      min-width: 680px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0;
+      font-size: 14px;
+    }
+
+    th, td {
+      border: 1px solid var(--line);
+      padding: 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #f1f5f9;
+      color: #344054;
+      font-weight: 700;
+    }
+
+    pre {
+      white-space: pre-wrap;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #101828;
+      color: #e6edf7;
+      padding: 14px;
+      overflow: auto;
+      font-size: 13px;
+    }
+
+    .timeline {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(140px, 1fr));
+      gap: 10px;
+      margin: 18px 0;
+      overflow-x: auto;
+    }
+
+    .step {
+      min-height: 132px;
+      border-top: 5px solid var(--blue);
+      border-radius: 8px;
+      background: #fff;
+      border-left: 1px solid var(--line);
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      padding: 12px;
+    }
+
+    .step:nth-child(2) { border-top-color: var(--cyan); }
+    .step:nth-child(3) { border-top-color: var(--green); }
+    .step:nth-child(4) { border-top-color: var(--orange); }
+    .step:nth-child(5) { border-top-color: var(--violet); }
+    .step:nth-child(6) { border-top-color: var(--red); }
+
+    .step .num {
+      font-weight: 700;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    button {
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--text);
+      padding: 8px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      font: inherit;
+      font-size: 14px;
+    }
+
+    button.active {
+      border-color: var(--blue);
+      background: #eef4ff;
+      color: var(--blue);
+      font-weight: 700;
+    }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    .note {
+      border-left: 4px solid var(--orange);
+      background: #fff7ed;
+      padding: 12px 14px;
+      border-radius: 8px;
+      color: #5f3b16;
+      margin: 14px 0;
+    }
+
+    .risk {
+      border-left: 4px solid var(--red);
+      background: #fff1f3;
+      padding: 12px 14px;
+      border-radius: 8px;
+      color: #6f1d2a;
+      margin: 14px 0;
+    }
+
+    .svg-wrap {
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      padding: 10px;
+    }
+
+    svg text {
+      font-family: "Noto Sans JP", system-ui, sans-serif;
+    }
+
+    footer {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 36px;
+    }
+
+    @media (max-width: 980px) {
+      .layout { grid-template-columns: 1fr; }
+      aside { position: relative; height: auto; }
+      main { padding: 28px 20px 64px; }
+      .grid, .grid.two { grid-template-columns: 1fr; }
+      h1 { font-size: 32px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside>
+      <h2>Guide</h2>
+      <nav>
+        <a href="#overview">Overview</a>
+        <a href="#architecture">Architecture</a>
+        <a href="#runtime">Runtime Flow</a>
+        <a href="#state">State Model</a>
+        <a href="#contracts">Contracts</a>
+        <a href="#safety">Safety</a>
+        <a href="#tasq">Tasq Deviations</a>
+        <a href="#matrix">Validation Matrix</a>
+        <a href="#appendix">Appendix</a>
+      </nav>
+    </aside>
+
+    <main>
+      <header>
+        <div class="eyebrow">Visual explanation material</div>
+        <h1>Symphony Service Specification</h1>
+        <p class="lead">
+          This single-page guide explains the architecture, scheduling loop, state ownership,
+          workspace safety, agent integration, and conformance surface described in
+          <span class="mono">docs/symphony/SPEC.md</span>.
+        </p>
+        <div class="meta">
+          <span class="pill">Source: docs/symphony/SPEC.md</span>
+          <span class="pill">Status: Draft v1</span>
+          <span class="pill">Generated: 2026-05-31</span>
+          <span class="pill">Audience: implementers and reviewers</span>
+        </div>
+      </header>
+
+      <section id="overview" class="section">
+        <h2>Overview</h2>
+        <div class="grid">
+          <div class="item">
+            <strong>Primary job</strong>
+            Poll eligible tracker issues, create isolated workspaces, and run a coding-agent session.
+          </div>
+          <div class="item">
+            <strong>Policy lives in repo</strong>
+            <span class="mono">WORKFLOW.md</span> provides runtime settings and the prompt template.
+          </div>
+          <div class="item">
+            <strong>One scheduler authority</strong>
+            The orchestrator owns in-memory dispatch state, retry state, and live session metadata.
+          </div>
+          <div class="item">
+            <strong>Agent runs are isolated</strong>
+            Each issue maps to a sanitized workspace path under the configured workspace root.
+          </div>
+          <div class="item">
+            <strong>Tracker writes are a boundary</strong>
+            Symphony schedules and reads tracker state; ticket writes are normally agent/tool work.
+          </div>
+          <div class="item">
+            <strong>Recovery is pragmatic</strong>
+            Restart recovery is tracker/filesystem-driven, not durable scheduler-state recovery.
+          </div>
+        </div>
+      </section>
+
+      <section id="architecture" class="section">
+        <h2>Architecture</h2>
+        <p>
+          The spec separates policy, configuration, coordination, execution, integration, and
+          observability. Keeping those layers separate is the portability strategy.
+        </p>
+
+        <div class="diagram">
+          <div class="mermaid">
+flowchart LR
+  Tracker[(Issue Tracker<br>Linear-compatible)]
+  Workflow[WORKFLOW.md<br>front matter + prompt]
+  Loader[Workflow Loader]
+  Config[Config Layer<br>typed getters]
+  Orch[Orchestrator<br>poll, claim, retry, reconcile]
+  Workspace[Workspace Manager<br>safe per-issue dirs]
+  Runner[Agent Runner<br>Codex app-server client]
+  Agent[Codex App Server]
+  Logs[Logs / Status Surface]
+
+  Workflow --> Loader --> Config --> Orch
+  Tracker --> Orch
+  Orch --> Tracker
+  Orch --> Workspace --> Runner --> Agent
+  Agent --> Runner --> Orch
+  Orch --> Logs
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr><th>Layer</th><th>Responsibility</th><th>Do not mix with</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Policy</td><td>Prompt body and team rules in <span class="mono">WORKFLOW.md</span>.</td><td>Scheduler internals.</td></tr>
+            <tr><td>Configuration</td><td>Parse front matter, apply defaults, resolve env-backed fields.</td><td>Tracker transport code.</td></tr>
+            <tr><td>Coordination</td><td>Poll ticks, eligibility, concurrency, retries, reconciliation.</td><td>Agent protocol details.</td></tr>
+            <tr><td>Execution</td><td>Workspace lifecycle and coding-agent subprocess/session handling.</td><td>Tracker business policy.</td></tr>
+            <tr><td>Integration</td><td>Tracker adapter and normalized issue model.</td><td>Workspace path policy.</td></tr>
+            <tr><td>Observability</td><td>Structured logs, metrics, optional dashboard/API.</td><td>Correctness requirements.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="runtime" class="section">
+        <h2>Runtime Flow</h2>
+        <p>
+          A tick always reconciles active runs before dispatch. If configuration is invalid, new
+          dispatch is skipped but the service stays alive where possible.
+        </p>
+
+        <div class="timeline" aria-label="Poll and dispatch timeline">
+          <div class="step"><div class="num">01</div><strong>Startup</strong><p>Configure logging, watch workflow, validate config, clean terminal workspaces.</p></div>
+          <div class="step"><div class="num">02</div><strong>Poll Tick</strong><p>Run reconciliation, validate dispatch config, fetch active candidates.</p></div>
+          <div class="step"><div class="num">03</div><strong>Eligibility</strong><p>Filter claimed/running issues, blockers, active/terminal state, and slot limits.</p></div>
+          <div class="step"><div class="num">04</div><strong>Dispatch</strong><p>Claim issue in memory, create worker, prepare workspace, build prompt.</p></div>
+          <div class="step"><div class="num">05</div><strong>Agent Turns</strong><p>Run first prompt and continuation turns on the same live thread up to max turns.</p></div>
+          <div class="step"><div class="num">06</div><strong>Exit / Retry</strong><p>Release running entry, update metrics, schedule continuation or failure backoff.</p></div>
+        </div>
+
+        <div class="diagram">
+          <div class="mermaid">
+sequenceDiagram
+  participant O as Orchestrator
+  participant T as Tracker
+  participant W as Workspace Manager
+  participant R as Agent Runner
+  participant C as Codex App Server
+
+  O->>O: reconcile_running_issues()
+  O->>O: validate_dispatch_config()
+  O->>T: fetch_candidate_issues()
+  T-->>O: normalized active issues
+  O->>O: sort + check slots + claimed/running
+  O->>W: create_for_issue(identifier)
+  W-->>O: workspace_path
+  O->>R: run_agent_attempt(issue, attempt)
+  R->>C: start app-server session in workspace cwd
+  R->>C: start turn with rendered prompt
+  C-->>R: streaming events + token usage
+  R-->>O: codex_update events
+  R->>T: refresh issue state between turns
+  R-->>O: normal or failure exit
+  O->>O: schedule continuation or backoff retry
+          </div>
+        </div>
+
+        <h3>Dispatch Eligibility</h3>
+        <ul>
+          <li>Issue has required identity fields: <span class="mono">id</span>, <span class="mono">identifier</span>, <span class="mono">title</span>, and <span class="mono">state</span>.</li>
+          <li>Issue state is active and not terminal.</li>
+          <li>Issue is not already running, claimed, or retry-queued.</li>
+          <li>Global and per-state concurrency slots are available.</li>
+          <li>Todo blockers are terminal, otherwise dispatch is held.</li>
+        </ul>
+      </section>
+
+      <section id="state" class="section">
+        <h2>State Model</h2>
+        <p>
+          Tracker state, orchestration claim state, run attempt phases, and live Codex session data
+          are distinct. Confusing these is the main implementation risk.
+        </p>
+
+        <div class="toolbar" role="tablist" aria-label="State views">
+          <button class="tab-button active" data-tab="claim">Claim State</button>
+          <button class="tab-button" data-tab="attempt">Run Attempt</button>
+          <button class="tab-button" data-tab="runtime">Runtime Maps</button>
+        </div>
+
+        <div id="tab-claim" class="tab-panel active">
+          <div class="diagram">
+            <div class="mermaid">
+stateDiagram-v2
+  [*] --> Unclaimed
+  Unclaimed --> Claimed: poll dispatch reserves issue
+  Claimed --> Running: worker starts
+  Running --> RetryQueued: abnormal exit or continuation retry
+  RetryQueued --> Running: retry timer + eligible + slots
+  RetryQueued --> Released: no longer eligible
+  Running --> Released: terminal or non-active reconciliation
+  Released --> [*]
+            </div>
+          </div>
+        </div>
+
+        <div id="tab-attempt" class="tab-panel">
+          <div class="diagram">
+            <div class="mermaid">
+stateDiagram-v2
+  [*] --> PreparingWorkspace
+  PreparingWorkspace --> BuildingPrompt
+  BuildingPrompt --> LaunchingAgentProcess
+  LaunchingAgentProcess --> InitializingSession
+  InitializingSession --> StreamingTurn
+  StreamingTurn --> Finishing
+  Finishing --> Succeeded
+  PreparingWorkspace --> Failed
+  BuildingPrompt --> Failed
+  LaunchingAgentProcess --> Failed
+  InitializingSession --> Failed
+  StreamingTurn --> Failed
+  StreamingTurn --> TimedOut
+  StreamingTurn --> Stalled
+  StreamingTurn --> CanceledByReconciliation
+            </div>
+          </div>
+        </div>
+
+        <div id="tab-runtime" class="tab-panel">
+          <table>
+            <thead>
+              <tr><th>Runtime field</th><th>Purpose</th><th>Owner</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><span class="mono">running</span></td><td>Map of issue id to active worker/session entry.</td><td>Orchestrator</td></tr>
+              <tr><td><span class="mono">claimed</span></td><td>Set preventing duplicate dispatch while running or retrying.</td><td>Orchestrator</td></tr>
+              <tr><td><span class="mono">retry_attempts</span></td><td>Scheduled retry entries with attempt, due time, and error context.</td><td>Orchestrator</td></tr>
+              <tr><td><span class="mono">codex_totals</span></td><td>Aggregate token and runtime counters.</td><td>Orchestrator</td></tr>
+              <tr><td><span class="mono">codex_rate_limits</span></td><td>Latest observed rate-limit payload from agent events.</td><td>Orchestrator</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="contracts" class="section">
+        <h2>Contracts</h2>
+        <div class="grid two">
+          <div class="item">
+            <strong>Workflow contract</strong>
+            <p><span class="mono">WORKFLOW.md</span> has optional YAML front matter and a strict prompt template. Config changes must reload without crashing the service.</p>
+            <pre>tracker:
+  kind: linear
+  api_key: $LINEAR_API_KEY
+  project_slug: example
+polling:
+  interval_ms: 30000
+workspace:
+  root: ~/symphony_workspaces</pre>
+          </div>
+          <div class="item">
+            <strong>Tracker contract</strong>
+            <p>The scheduler requires candidate fetch, state refresh by id, and terminal-state fetch for cleanup. Linear is the spec version's concrete adapter.</p>
+            <pre>fetch_candidate_issues()
+fetch_issues_by_states(state_names)
+fetch_issue_states_by_ids(issue_ids)</pre>
+          </div>
+          <div class="item">
+            <strong>Agent runner contract</strong>
+            <p>Start the Codex app-server in the per-issue workspace, render a strict prompt, stream events, and fail attempts on protocol or timeout errors.</p>
+            <pre>workspace -> prompt -> app-server session
+first turn: rendered issue prompt
+continuation: same thread + short guidance</pre>
+          </div>
+          <div class="item">
+            <strong>Observability contract</strong>
+            <p>Structured logs are required. Runtime snapshot, dashboard, and JSON API are recommended or optional surfaces, not correctness dependencies.</p>
+            <pre>issue_id=... issue_identifier=...
+session_id=...
+action=dispatch outcome=completed</pre>
+          </div>
+        </div>
+
+        <h3>Configuration Resolution Pipeline</h3>
+        <div class="diagram">
+          <div class="mermaid">
+flowchart LR
+  A[Select workflow path] --> B[Parse YAML front matter]
+  B --> C[Apply defaults]
+  C --> D[Resolve explicit $VAR values]
+  D --> E[Coerce and validate typed config]
+  E --> F[Dispatch preflight]
+  F -->|ok| G[Poll and dispatch]
+  F -->|error| H[Skip dispatch, keep reconciliation]
+          </div>
+        </div>
+      </section>
+
+      <section id="safety" class="section">
+        <h2>Safety and Failure Handling</h2>
+        <div class="grid">
+          <div class="item"><span class="tag red">MUST</span><strong>Workspace cwd</strong><p>The coding agent must launch with <span class="mono">cwd == workspace_path</span>.</p></div>
+          <div class="item"><span class="tag red">MUST</span><strong>Root containment</strong><p>Resolved workspace path must remain under resolved workspace root.</p></div>
+          <div class="item"><span class="tag red">MUST</span><strong>Sanitized key</strong><p>Workspace names allow only <span class="mono">[A-Za-z0-9._-]</span>; all else becomes <span class="mono">_</span>.</p></div>
+          <div class="item"><span class="tag orange">SHOULD</span><strong>Secret handling</strong><p>Resolve secrets through env indirection and never print token values.</p></div>
+          <div class="item"><span class="tag orange">SHOULD</span><strong>Hook safety</strong><p>Run hooks with timeouts and truncate noisy output in logs.</p></div>
+          <div class="item"><span class="tag orange">SHOULD</span><strong>Harness hardening</strong><p>Document approval, sandbox, network, and credential posture for the deployment.</p></div>
+        </div>
+
+        <div class="risk">
+          <strong>Key risk:</strong> a permissive deployment can expose repository data, tracker data,
+          credentials, or host filesystem state to an agent. The spec intentionally leaves approval
+          and sandbox posture implementation-defined, so every implementation must document its own
+          safety model.
+        </div>
+
+        <table>
+          <thead>
+            <tr><th>Failure class</th><th>Expected recovery</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Workflow/config</td><td>Skip new dispatch, keep service alive where possible, continue reconciliation.</td></tr>
+            <tr><td>Workspace/hook</td><td>Fail current attempt and let orchestrator schedule retry.</td></tr>
+            <tr><td>Agent session</td><td>Map to normalized error, stop session, schedule backoff retry.</td></tr>
+            <tr><td>Tracker candidate fetch</td><td>Skip dispatch for the tick and retry next tick.</td></tr>
+            <tr><td>Reconciliation refresh</td><td>Keep active workers running and retry refresh later.</td></tr>
+            <tr><td>Dashboard/log sink</td><td>Do not crash orchestrator; surface warning through remaining sink.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="tasq" class="section">
+        <h2>Tasq Deviations</h2>
+        <p>
+          Tasq uses the Symphony specification as direction, but intentionally keeps the local
+          issue-tracker service as the tracker adapter boundary.
+        </p>
+
+        <div class="svg-wrap">
+          <svg viewBox="0 0 960 360" role="img" aria-labelledby="tasq-title tasq-desc">
+            <title id="tasq-title">Tasq tracker adapter deviation</title>
+            <desc id="tasq-desc">Shows upstream Symphony with Linear versus Tasq using the local issue-tracker API boundary.</desc>
+            <defs>
+              <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+                <path d="M0,0 L0,6 L9,3 z" fill="#475467"></path>
+              </marker>
+            </defs>
+            <rect x="28" y="34" width="410" height="286" rx="14" fill="#f8fafc" stroke="#d8dee8"></rect>
+            <rect x="522" y="34" width="410" height="286" rx="14" fill="#f8fafc" stroke="#d8dee8"></rect>
+            <text x="52" y="72" font-size="20" font-weight="700" fill="#182230">Upstream Symphony</text>
+            <text x="546" y="72" font-size="20" font-weight="700" fill="#182230">Tasq Direction</text>
+
+            <rect x="72" y="118" width="130" height="58" rx="10" fill="#eef4ff" stroke="#2463eb"></rect>
+            <text x="96" y="153" font-size="14" fill="#1f2933">Orchestrator</text>
+            <rect x="272" y="118" width="112" height="58" rx="10" fill="#f0fdf4" stroke="#16845f"></rect>
+            <text x="305" y="153" font-size="14" fill="#1f2933">Linear</text>
+            <line x1="204" y1="147" x2="268" y2="147" stroke="#475467" stroke-width="2" marker-end="url(#arrow)"></line>
+            <text x="214" y="132" font-size="12" fill="#667085">GraphQL</text>
+
+            <rect x="566" y="116" width="132" height="62" rx="10" fill="#eef4ff" stroke="#2463eb"></rect>
+            <text x="592" y="152" font-size="14" fill="#1f2933">Orchestrator</text>
+            <rect x="760" y="116" width="128" height="62" rx="10" fill="#fff7ed" stroke="#b86412"></rect>
+            <text x="784" y="145" font-size="14" fill="#1f2933">Issue</text>
+            <text x="779" y="163" font-size="14" fill="#1f2933">Tracker API</text>
+            <line x1="700" y1="147" x2="756" y2="147" stroke="#475467" stroke-width="2" marker-end="url(#arrow)"></line>
+            <text x="704" y="132" font-size="12" fill="#667085">claim + events</text>
+
+            <rect x="566" y="232" width="132" height="46" rx="10" fill="#f0fdf4" stroke="#16845f"></rect>
+            <text x="601" y="261" font-size="14" fill="#1f2933">Runner</text>
+            <line x1="632" y1="180" x2="632" y2="228" stroke="#475467" stroke-width="2" marker-end="url(#arrow)"></line>
+            <rect x="760" y="232" width="128" height="46" rx="10" fill="#fdf2f8" stroke="#ba2f3b"></rect>
+            <text x="795" y="261" font-size="14" fill="#1f2933">SQLite</text>
+            <line x1="824" y1="180" x2="824" y2="228" stroke="#475467" stroke-width="2" marker-end="url(#arrow)"></line>
+          </svg>
+        </div>
+
+        <div class="note">
+          Tasq does not currently implement the Linear tracker client in the spec. It maps the
+          tracker boundary to its local issue-tracker API, preserving issue ownership and lease-backed
+          work-item claims in the existing service boundary.
+        </div>
+      </section>
+
+      <section id="matrix" class="section">
+        <h2>Validation Matrix</h2>
+        <table>
+          <thead>
+            <tr><th>Area</th><th>Important checks</th><th>Why it matters</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Workflow/config parsing</td><td>front matter map, defaults, env indirection, invalid reload</td><td>Dispatch must not run under ambiguous policy.</td></tr>
+            <tr><td>Workspace manager</td><td>sanitization, root containment, hook timeout/failure</td><td>Prevents unsafe filesystem execution.</td></tr>
+            <tr><td>Tracker client</td><td>pagination, normalization, blocker extraction, error categories</td><td>Eligibility and reconciliation depend on stable issue data.</td></tr>
+            <tr><td>Orchestrator</td><td>duplicate dispatch prevention, retry backoff, reconciliation, concurrency</td><td>One issue should not get multiple unintended workers.</td></tr>
+            <tr><td>Agent runner</td><td>workspace cwd, startup timeout, streaming events, continuation turns</td><td>Agent execution must be observable and bounded.</td></tr>
+            <tr><td>Observability</td><td>logs, snapshot totals, rate limits, optional HTTP API</td><td>Operators need enough evidence to debug live runs.</td></tr>
+          </tbody>
+        </table>
+
+        <h3>Definition of Done Themes</h3>
+        <ul>
+          <li>Required: workflow loading, validation, scheduling, workspace safety, tracker reads, agent launch, structured logs, and failure recovery.</li>
+          <li>Recommended: status dashboard/API, real integration profile, stronger harness hardening, and richer observability.</li>
+          <li>Deployment-specific: approval posture, sandbox strictness, workspace population, and external isolation.</li>
+        </ul>
+      </section>
+
+      <section id="appendix" class="section">
+        <h2>Appendix</h2>
+        <h3>Source Files Read</h3>
+        <ul>
+          <li><span class="mono">docs/symphony/SPEC.md</span></li>
+          <li><span class="mono">docs/symphony/README.md</span></li>
+          <li><span class="mono">docs/symphony/DEVIATIONS.md</span></li>
+          <li><span class="mono">docs/symphony/TODO.md</span></li>
+        </ul>
+
+        <h3>CDN Usage</h3>
+        <ul>
+          <li>Google Fonts: Noto Sans JP and JetBrains Mono for readable prose and code paths.</li>
+          <li>Mermaid 11: flowchart, sequence, and state diagrams. If offline, Mermaid diagrams will not render, but the surrounding tables and text remain readable.</li>
+        </ul>
+
+        <h3>Mermaid Sources</h3>
+        <p>Diagram sources are embedded in the HTML so reviewers can inspect and edit them directly.</p>
+      </section>
+
+      <footer>
+        Built as a single static HTML artifact. No analytics, no external images, and no build step.
+      </footer>
+    </main>
+  </div>
+
+  <!-- Allowed CDN: Mermaid for flowchart, sequence, and state diagrams. -->
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({
+      startOnLoad: true,
+      securityLevel: "strict",
+      theme: "base",
+      themeVariables: {
+        fontFamily: "Noto Sans JP, system-ui, sans-serif",
+        primaryColor: "#eef4ff",
+        primaryBorderColor: "#2463eb",
+        primaryTextColor: "#1f2933",
+        lineColor: "#667085",
+        secondaryColor: "#f0fdf4",
+        tertiaryColor: "#fff7ed"
+      }
+    });
+
+    const buttons = document.querySelectorAll(".tab-button");
+    const panels = {
+      claim: document.getElementById("tab-claim"),
+      attempt: document.getElementById("tab-attempt"),
+      runtime: document.getElementById("tab-runtime")
+    };
+
+    buttons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const target = button.dataset.tab;
+        buttons.forEach((candidate) => candidate.classList.toggle("active", candidate === button));
+        Object.entries(panels).forEach(([key, panel]) => {
+          panel.classList.toggle("active", key === target);
+        });
+      });
+    });
+  </script>
+</body>
+</html>
