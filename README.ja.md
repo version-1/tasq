@@ -6,6 +6,7 @@
 
 - Issue Tracker: SQLite backed の Go REST API です。issues、work items、UI summaries を所有します。
 - Orchestrator: SQLite backed の Go worker です。実行可能な work を claim し、run state を記録します。
+- `tq`: agent と workflow tool が issue-tracker API 経由で issue を作成、取得、一覧表示、更新するための Go CLI です。
 - Web UI: issue-tracker API 用の Next.js client です。
 - TUI: 同じ issue-tracker API を使う Go terminal client です。
 
@@ -74,3 +75,35 @@ English counterpart: [README.md](README.md).
 - Compose は Go module/build caches と `web/node_modules` を named Docker volumes に保存します。
 - Orchestrator は Symphony-oriented runtime settings を `WORKFLOW.md` から読みます。
 - Web UI を別 origin から配信する場合は、`NEXT_PUBLIC_ISSUE_TRACKER_URL` で issue-tracker API の origin を指定します。
+- `tq` は `--api-url`、`TQ_API_URL`、または `http://localhost:8080` から issue-tracker API URL を解決します。
+
+## tq CLI
+
+issue を一覧表示します。
+
+```sh
+go run ./cmd/tq --api-url http://localhost:8080 issue list
+```
+
+default の `TQ_API_URL` から issue を取得します。
+
+```sh
+TQ_API_URL=http://localhost:8080 go run ./cmd/tq issue get 1
+```
+
+issue を作成します。
+
+```sh
+go run ./cmd/tq issue create \
+  --api-url http://localhost:8080 \
+  --title "Wire Symphony workflow" \
+  --description "Define the first workflow contract" \
+  --status ready \
+  --priority high
+```
+
+machine-readable output が必要な場合は `--output json` を使います。
+
+```sh
+go run ./cmd/tq --api-url http://localhost:8080 --output json issue list
+```

@@ -7,7 +7,7 @@ Tasq は、issue の管理、実行可能な作業の coding agent への割り�
 ## Goals
 
 - issue state と run state を別概念として保ち、それぞれの owner を分ける。
-- web-ui と tui が同じ user-facing API surface を使えるようにする。
+- web-ui、tui、agent-facing CLI tool が同じ user-facing API surface を使えるようにする。
 - 複数 orchestrator instance が並列に動いても安全に work assignment できるようにする。
 - issue-tracker が一時的に利用できない場合でも run state change を保持する。
 - 実 Codex app-server runner を追加する前に検証できる小さな first implementation slice に保つ。
@@ -44,6 +44,18 @@ Responsibilities:
 - issue-tracker から issue summary を取得する。
 - issue column と latest run state を描画する。
 - one-shot rendering と watch-mode rendering をサポートする。
+- orchestrator へ直接アクセスしない。
+
+### tq
+
+`tq` は、HTTP details を埋め込まずに issue state を変更する必要がある agent と workflow tool のための standalone Go CLI です。
+
+Responsibilities:
+
+- issue-tracker API 経由で issue を作成、取得、一覧表示、更新する。
+- default では human-readable output を使い、tool use 向けに JSON output をサポートする。
+- issue-tracker API URL を `--api-url`、`TQ_API_URL`、または `http://localhost:8080` から解決する。
+- command が失敗した場合、stderr に machine-readable JSON error を出し、non-zero exit code を返す。
 - orchestrator へ直接アクセスしない。
 
 ### issue-tracker
@@ -106,14 +118,14 @@ Responsibilities:
 
 ## Dependency Direction
 
-User-facing client は issue-tracker API のみに依存します。
+User-facing client と agent-facing workflow tool は issue-tracker API のみに依存します。
 
 orchestrator は issue-tracker の work queue と event receiver API に依存します。issue-tracker は orchestrator を poll しません。代わりに、orchestrator push event から latest run snapshot を保存します。
 
 ```text
 web-ui ─┐
-        ├─ issue-tracker ── SQLite: issues, work_items, received_events, run_snapshots
-tui ────┘       ▲
+tui ────┼─ issue-tracker ── SQLite: issues, work_items, received_events, run_snapshots
+tq ─────┘       ▲
                 │ claim work item / push run event
                 │
         orchestrator ───── SQLite: runs, outbox_events
@@ -188,10 +200,12 @@ issue-tracker は run event を idempotent に受け入れます。
 現在の implementation slice には次が含まれます。
 
 - `cmd/issue-tracker`
+- `cmd/tq`
 - `cmd/orchestrator`
 - issue、work item、received orchestrator event、run snapshot のための issue-tracker SQLite table。
 - run、outbox event、runner event、workspace metadata、workspace setup failure のための orchestrator SQLite table。
 - web-ui と tui が利用する issue-tracker summary API。
+- `tq` が利用する issue CRUD API。
 - lease-backed work item claim API。
 - idempotent run event receiver。
 - orchestrator の polling、claim、run creation、lease renewal、retry handling、workspace cleanup、outbox delivery。
@@ -226,6 +240,15 @@ issue-tracker は user-facing API です。
 
 JSON success response は `{ "data": ..., "meta": {} }` を使います。JSON error response は `{ "error": { "code": "...", "message": "..." }, "meta": {} }` を使います。
 
+`tq` CLI は issue CRUD endpoint を次の command で wrap します。
+
+- `tq issue list`
+- `tq issue get <id>`
+- `tq issue create --title <title> [--description ...] [--status ...] [--priority ...] [--assignee ...]`
+- `tq issue update <id> [--title ...] [--description ...] [--status ...] [--priority ...] [--assignee ...]`
+
+`tq` は default では human-readable output を使い、`--output json` が指定された場合は JSON output を使います。
+
 orchestrator は現在 user-facing HTTP API を持ちません。外部依存は issue-tracker API です。
 
 ## Development Environment
@@ -241,6 +264,11 @@ Recommended commands:
 - `make web-up`
 - `make tui-up`
 - `make dev-status`
+
+Host commands:
+
+- `go run ./cmd/tq --api-url http://localhost:8080 issue list`
+- `TQ_API_URL=http://localhost:8080 go run ./cmd/tq issue get 1`
 
 `make web-up` は issue-tracker、orchestrator、web-ui を起動します。Web UI は `/api/v1/...` を Compose network 内の issue-tracker に proxy します。
 
