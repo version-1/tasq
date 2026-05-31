@@ -1,0 +1,679 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tasq Symphony Orchestrator Structure</title>
+  <style>
+    :root {
+      --bg: #f6f7fb;
+      --panel: #ffffff;
+      --ink: #1f2937;
+      --muted: #64748b;
+      --line: #d8dee9;
+      --blue: #2563eb;
+      --green: #0f8b6f;
+      --amber: #b7791f;
+      --red: #c2413d;
+      --purple: #6f42c1;
+      --code: #111827;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font: 14px/1.55 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    a { color: var(--blue); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    nav {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: auto;
+      padding: 24px 18px;
+      border-right: 1px solid var(--line);
+      background: #ffffff;
+    }
+
+    nav h1 {
+      margin: 0 0 4px;
+      font-size: 18px;
+      line-height: 1.25;
+    }
+
+    nav .scope {
+      margin: 0 0 20px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    nav a {
+      display: block;
+      padding: 8px 10px;
+      border-radius: 6px;
+      color: #334155;
+      font-weight: 600;
+    }
+
+    nav a:hover {
+      background: #eef2ff;
+      text-decoration: none;
+    }
+
+    main {
+      min-width: 0;
+      padding: 28px 34px 56px;
+    }
+
+    header {
+      max-width: 1220px;
+      margin: 0 auto 24px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    header h2 {
+      margin: 0 0 8px;
+      font-size: 32px;
+      line-height: 1.15;
+      letter-spacing: 0;
+    }
+
+    header p {
+      max-width: 920px;
+      margin: 0;
+      color: var(--muted);
+    }
+
+    section {
+      max-width: 1220px;
+      margin: 0 auto 28px;
+      padding: 22px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+    }
+
+    section h3 {
+      margin: 0 0 14px;
+      font-size: 21px;
+      line-height: 1.25;
+    }
+
+    section > p {
+      margin: 0 0 16px;
+      color: var(--muted);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .metric, .note, .contract {
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfcff;
+    }
+
+    .metric strong, .note strong, .contract strong {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--code);
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .metric span, .note span, .contract span { color: var(--muted); }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 12px 0 0;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 8px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      color: #475569;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--blue);
+    }
+
+    .dot.green { background: var(--green); }
+    .dot.amber { background: var(--amber); }
+    .dot.red { background: var(--red); }
+    .dot.purple { background: var(--purple); }
+
+    .diagram {
+      overflow-x: auto;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fcfdff;
+    }
+
+    .mermaid {
+      min-width: 720px;
+      text-align: center;
+    }
+
+    .svg-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fcfdff;
+    }
+
+    svg { display: block; width: 100%; min-width: 880px; height: auto; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    th, td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #f1f5f9;
+      color: #334155;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    tr:last-child td { border-bottom: 0; }
+    td code { color: var(--code); }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(320px, 0.65fr);
+      gap: 14px;
+      align-items: start;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    input[type="search"] {
+      width: 340px;
+      max-width: 100%;
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      font: inherit;
+    }
+
+    details {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      overflow: hidden;
+    }
+
+    details + details { margin-top: 8px; }
+
+    summary {
+      cursor: pointer;
+      padding: 10px 12px;
+      background: #f8fafc;
+      font-weight: 700;
+    }
+
+    details ul {
+      margin: 0;
+      padding: 10px 14px 14px 28px;
+      color: var(--muted);
+    }
+
+    .risk {
+      border-left: 4px solid var(--amber);
+    }
+
+    .risk.high {
+      border-left-color: var(--red);
+    }
+
+    footer {
+      max-width: 1220px;
+      margin: 0 auto;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    @media (max-width: 980px) {
+      .layout { grid-template-columns: 1fr; }
+      nav {
+        position: static;
+        height: auto;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+      nav a { display: inline-block; }
+      main { padding: 20px 14px 40px; }
+      .grid, .two-col { grid-template-columns: 1fr; }
+      header h2 { font-size: 26px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <nav aria-label="Page navigation">
+      <h1>Orchestrator Map</h1>
+      <p class="scope">tasq / Symphony / generated 2026-05-31</p>
+      <a href="#overview">Overview</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#structure">Package Structure</a>
+      <a href="#runtime">Runtime Flow</a>
+      <a href="#runner">Runner Protocol</a>
+      <a href="#state">State & Persistence</a>
+      <a href="#contracts">Contracts</a>
+      <a href="#risks">Risks</a>
+      <a href="#appendix">Appendix</a>
+    </nav>
+
+    <main>
+      <header>
+        <h2>Tasq Symphony Orchestrator Structure</h2>
+        <p>
+          A single-page map of the local Symphony orchestrator: composition root, package boundaries,
+          runtime coordination, runner protocol, persistent state, and the operational risks visible in the current implementation.
+        </p>
+      </header>
+
+      <section id="overview">
+        <h3>Overview</h3>
+        <div class="grid">
+          <div class="metric"><strong>Composition root</strong><span><code>cmd/orchestrator</code> wires SQLite store, issue tracker client, workflow config, and Codex runner.</span></div>
+          <div class="metric"><strong>Coordinator</strong><span><code>worker</code> owns polling, claiming, workspace setup, run lifecycle, lease renewal, retry, reconciliation, cleanup, and outbox flush.</span></div>
+          <div class="metric"><strong>Persistence</strong><span><code>runstore</code> stores runs, runner events, workspace metadata, setup failures, and reliable outbox events in SQLite.</span></div>
+          <div class="metric"><strong>External APIs</strong><span><code>tracker</code> speaks to the issue-tracker HTTP API; <code>runner.CodexRunner</code> speaks JSON-RPC to <code>codex app-server</code>.</span></div>
+          <div class="metric"><strong>Workspace boundary</strong><span><code>workspace.Manager</code> sanitizes issue keys, prevents root escape, optionally copies source, and removes terminal workspaces.</span></div>
+          <div class="metric"><strong>Workflow contract</strong><span><code>WORKFLOW.md</code> front matter controls poll interval, workspace paths, concurrency, turns, retry, stall, and Codex timeouts.</span></div>
+        </div>
+      </section>
+
+      <section id="architecture">
+        <h3>Architecture</h3>
+        <p>The orchestrator is intentionally layered: command bootstrapping depends on adapters, while domain types stay dependency-light.</p>
+        <div class="svg-wrap">
+          <svg viewBox="0 0 1180 520" role="img" aria-labelledby="arch-title arch-desc">
+            <title id="arch-title">Symphony orchestrator layered architecture</title>
+            <desc id="arch-desc">Shows command entrypoint, coordinator, adapters, domain model, local SQLite database, issue tracker API, workspaces, and Codex app-server process.</desc>
+            <defs>
+              <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+                <path d="M0,0 L0,6 L9,3 z" fill="#64748b"></path>
+              </marker>
+              <style>
+                .box { fill: #fff; stroke: #cbd5e1; stroke-width: 1.4; rx: 8; }
+                .cmd { fill: #eef2ff; stroke: #818cf8; }
+                .coord { fill: #ecfeff; stroke: #0891b2; }
+                .adapter { fill: #f0fdf4; stroke: #22c55e; }
+                .domain { fill: #fff7ed; stroke: #f59e0b; }
+                .external { fill: #fef2f2; stroke: #ef4444; }
+                .label { font: 700 16px system-ui, sans-serif; fill: #111827; }
+                .small { font: 12px system-ui, sans-serif; fill: #475569; }
+                .edge { stroke: #64748b; stroke-width: 1.6; fill: none; marker-end: url(#arrow); }
+              </style>
+            </defs>
+            <rect class="box cmd" x="470" y="28" width="240" height="74"></rect>
+            <text class="label" x="590" y="58" text-anchor="middle">cmd/orchestrator</text>
+            <text class="small" x="590" y="82" text-anchor="middle">flags, signals, config, wiring</text>
+
+            <rect class="box coord" x="430" y="160" width="320" height="96"></rect>
+            <text class="label" x="590" y="196" text-anchor="middle">worker</text>
+            <text class="small" x="590" y="220" text-anchor="middle">poll, claim, run, renew, retry, cleanup</text>
+
+            <rect class="box adapter" x="70" y="330" width="200" height="96"></rect>
+            <text class="label" x="170" y="366" text-anchor="middle">tracker</text>
+            <text class="small" x="170" y="390" text-anchor="middle">HTTP issue-tracker adapter</text>
+
+            <rect class="box adapter" x="330" y="330" width="200" height="96"></rect>
+            <text class="label" x="430" y="366" text-anchor="middle">runstore</text>
+            <text class="small" x="430" y="390" text-anchor="middle">SQLite persistence + outbox</text>
+
+            <rect class="box domain" x="590" y="330" width="200" height="96"></rect>
+            <text class="label" x="690" y="366" text-anchor="middle">run</text>
+            <text class="small" x="690" y="390" text-anchor="middle">Run, Status, OutboxEvent</text>
+
+            <rect class="box adapter" x="850" y="330" width="200" height="96"></rect>
+            <text class="label" x="950" y="366" text-anchor="middle">runner / workspace</text>
+            <text class="small" x="950" y="390" text-anchor="middle">Codex process + per-issue dirs</text>
+
+            <rect class="box external" x="50" y="466" width="240" height="38"></rect>
+            <text class="small" x="170" y="490" text-anchor="middle">Issue Tracker API</text>
+            <rect class="box external" x="330" y="466" width="200" height="38"></rect>
+            <text class="small" x="430" y="490" text-anchor="middle">SQLite DB</text>
+            <rect class="box external" x="830" y="466" width="240" height="38"></rect>
+            <text class="small" x="950" y="490" text-anchor="middle">codex app-server / filesystem</text>
+
+            <path class="edge" d="M590,102 L590,156"></path>
+            <path class="edge" d="M470,256 C360,282 270,300 190,326"></path>
+            <path class="edge" d="M535,256 C500,286 470,304 442,326"></path>
+            <path class="edge" d="M650,256 C660,286 675,304 685,326"></path>
+            <path class="edge" d="M710,256 C790,285 860,304 928,326"></path>
+            <path class="edge" d="M170,426 L170,462"></path>
+            <path class="edge" d="M430,426 L430,462"></path>
+            <path class="edge" d="M950,426 L950,462"></path>
+          </svg>
+        </div>
+        <div class="legend">
+          <span class="pill"><span class="dot"></span>Composition</span>
+          <span class="pill"><span class="dot green"></span>Adapters</span>
+          <span class="pill"><span class="dot amber"></span>Domain model</span>
+          <span class="pill"><span class="dot red"></span>External boundary</span>
+        </div>
+      </section>
+
+      <section id="structure">
+        <h3>Package Structure</h3>
+        <p>Use the filter to narrow the table by package, responsibility, or file.</p>
+        <div class="toolbar">
+          <input id="packageFilter" type="search" placeholder="Filter packages, e.g. runner, outbox, workspace">
+        </div>
+        <table id="packageTable">
+          <thead>
+            <tr><th>Package</th><th>Primary responsibility</th><th>Key files</th><th>Depends on</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>cmd/orchestrator</code></td><td>CLI flags, signal context, store/client/workflow/runner construction.</td><td><code>cmd/orchestrator/main.go</code>, <code>WORKFLOW.md</code></td><td>worker, runstore, tracker, workflow, runner</td></tr>
+            <tr><td><code>internal/orchestrator/worker</code></td><td>Coordinator for polling, claiming, workspace creation, run status changes, lease renewal, retry, reconciliation, cleanup, outbox flush.</td><td><code>worker.go</code>, tests</td><td>runstore-like store, trackerClient, runner, workspace, workflow config</td></tr>
+            <tr><td><code>internal/orchestrator/runstore</code></td><td>SQLite migrations and persistence for runs, runner events, workspace metadata/failures, and outbox events.</td><td><code>store.go</code>, <code>db/schema/orchestrator.sql</code></td><td>run domain, schema</td></tr>
+            <tr><td><code>internal/orchestrator/run</code></td><td>Stable domain records: run status, run row, outbox event, runner event.</td><td><code>model.go</code></td><td>standard library only</td></tr>
+            <tr><td><code>internal/orchestrator/tracker</code></td><td>HTTP adapter for claiming work items, renewing leases, fetching issues, and sending run events.</td><td><code>client.go</code>, tests</td><td>issue tracker API contracts, run events</td></tr>
+            <tr><td><code>internal/orchestrator/runner</code></td><td>Runner abstraction plus simulated and Codex app-server implementations.</td><td><code>runner.go</code>, tests</td><td>run statuses, workspace, issue entity</td></tr>
+            <tr><td><code>internal/orchestrator/workflow</code></td><td>Load <code>WORKFLOW.md</code>, parse supported front matter, normalize paths, expose prompt template.</td><td><code>workflow.go</code>, tests</td><td>standard library only</td></tr>
+            <tr><td><code>internal/orchestrator/workspace</code></td><td>Create sanitized per-issue directories, optionally populate from source, protect root boundary, cleanup terminal workspaces.</td><td><code>workspace.go</code>, tests</td><td>filesystem</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="runtime">
+        <h3>Runtime Flow</h3>
+        <p>One tick flushes prior outbox events first, then attempts to claim work and run it through the runner with lease renewal.</p>
+        <div class="diagram">
+          <pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant Main as cmd/orchestrator
+  participant Worker as worker
+  participant Store as runstore
+  participant Tracker as issue tracker
+  participant WS as workspace.Manager
+  participant Runner as runner.CodexRunner
+
+  Main->>Store: Open(db) + migrate schema
+  Main->>Worker: NewWithConfig(definition, CodexRunner)
+  Worker->>Tracker: Issues()
+  Worker->>WS: cleanup terminal issue workspaces
+  loop poll interval
+    Worker->>Store: UnsentOutboxEvents(limit=20)
+    Worker->>Tracker: SendRunEvent(event)
+    Worker->>Store: MarkOutboxEventSent(id)
+    Worker->>Tracker: ClaimWorkItem(orchestratorID, leaseSeconds)
+    alt no work item
+      Worker-->>Worker: wait for next tick
+    else claimed item
+      Worker->>WS: CreateForIssue("issue-{id}")
+      Worker->>Store: UpsertWorkspaceMetadata(...)
+      Worker->>Store: CreateRun(status=queued)
+      Worker->>Store: UpdateRunStatus(running)
+      par runner execution
+        Worker->>Runner: Run(ctx, Task)
+        Runner-->>Store: RecordRunnerEvent via callback
+      and lease loop
+        Worker->>Tracker: Issue(id) for reconcile
+        Worker->>Tracker: RenewWorkItemLease(...)
+      end
+      Worker->>Store: UpdateRunStatus(result.status, result.error)
+      Worker->>Store: UnsentOutboxEvents(...)
+      Worker->>Tracker: SendRunEvent(...)
+      opt failed or cancelled
+        Worker->>WS: RemoveForIssue(...)
+        Worker->>Store: MarkWorkspaceCleanup(...)
+      end
+    end
+  end
+          </pre>
+        </div>
+      </section>
+
+      <section id="runner">
+        <h3>Runner Protocol</h3>
+        <div class="two-col">
+          <div class="diagram">
+            <pre class="mermaid">
+flowchart TD
+  A[Validate task: workspace, command, timeouts] --> B[Render prompt template]
+  B --> C[Start bash -lc codex app-server]
+  C --> D[JSON-RPC initialize]
+  D --> E[initialized notification]
+  E --> F[thread/start]
+  F --> G[turn/start first prompt]
+  G --> H{turn/completed?}
+  H -- succeeded --> I{continuation enabled and turns remain?}
+  I -- yes --> J[turn/start continuation guidance]
+  J --> H
+  I -- no --> K[Result succeeded]
+  H -- failed/error --> L[Result failed with error text]
+  C --> M[stderr scanner records runner event]
+            </pre>
+          </div>
+          <div>
+            <div class="contract">
+              <strong>Task contract</strong>
+              <span><code>WorkItem</code>, <code>RunID</code>, <code>Workspace</code>, prompt template, max turns, continuation flag, command, read/turn timeouts, and <code>OnEvent</code>.</span>
+            </div>
+            <div class="contract" style="margin-top:10px">
+              <strong>Result contract</strong>
+              <span><code>Status</code> is mapped back to run status. <code>Error</code> is persisted and sent through the outbox when non-empty.</span>
+            </div>
+            <div class="contract" style="margin-top:10px">
+              <strong>Event contract</strong>
+              <span>Runner events store event type, message, optional payload JSON, run id, and occurrence time for operator visibility.</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="state">
+        <h3>State & Persistence</h3>
+        <p>Runtime state is split between in-memory coordination maps, SQLite tables, filesystem workspaces, and tracker-side leases/statuses.</p>
+        <div class="diagram">
+          <pre class="mermaid">
+stateDiagram-v2
+  [*] --> queued: CreateRun
+  queued --> running: UpdateRunStatus
+  running --> succeeded: runner success
+  running --> failed: runner failure / stalled / retries exhausted
+  running --> cancelled: terminal or non-active issue reconcile
+  failed --> [*]
+  succeeded --> [*]
+  cancelled --> [*]
+          </pre>
+        </div>
+        <table style="margin-top:14px">
+          <thead>
+            <tr><th>Owner</th><th>State</th><th>Updated by</th><th>Purpose</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Worker memory</td><td><code>running</code>, <code>claimed</code></td><td><code>canDispatch</code>, <code>markRunning</code>, <code>release</code></td><td>Prevent duplicate issue execution and enforce configured concurrency in-process.</td></tr>
+            <tr><td>SQLite</td><td><code>runs</code></td><td><code>CreateRun</code>, <code>UpdateRunStatus</code></td><td>Durable run lifecycle and final outcome.</td></tr>
+            <tr><td>SQLite</td><td><code>outbox_events</code></td><td><code>EnqueueRunEvent</code>, <code>MarkOutboxEventSent</code></td><td>Reliable delivery of run state changes to the tracker.</td></tr>
+            <tr><td>SQLite</td><td><code>runner_events</code></td><td><code>RecordRunnerEvent</code></td><td>Process, JSON-RPC, stderr, retry, and diagnostic event timeline.</td></tr>
+            <tr><td>SQLite</td><td><code>workspace_metadata</code>, <code>workspace_setup_failures</code></td><td>Workspace setup and cleanup paths</td><td>Auditable workspace lifecycle and setup failure visibility.</td></tr>
+            <tr><td>Filesystem</td><td>Per-issue workspace directories</td><td><code>workspace.Manager</code></td><td>Isolated execution directory, optionally populated from workflow source.</td></tr>
+            <tr><td>Issue tracker</td><td>Work item lease and issue status</td><td><code>ClaimWorkItem</code>, <code>RenewWorkItemLease</code>, <code>Issue</code></td><td>Cross-process coordination and cancellation source of truth.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="contracts">
+        <h3>Contracts</h3>
+        <div class="grid">
+          <div class="note">
+            <strong>trackerClient</strong>
+            <span><code>ClaimWorkItem</code>, <code>RenewWorkItemLease</code>, <code>SendRunEvent</code>, <code>Issue</code>, and <code>Issues</code> are the worker-facing API surface.</span>
+          </div>
+          <div class="note">
+            <strong>workflow front matter</strong>
+            <span><code>polling.interval_ms</code>, <code>workspace.root/source</code>, <code>agent.max_concurrent_agents</code>, <code>max_turns</code>, <code>continuation_turns_enabled</code>, retry, and Codex timeout keys.</span>
+          </div>
+          <div class="note">
+            <strong>workspace keys</strong>
+            <span>Issue identifiers are sanitized to letters, numbers, dot, underscore, and dash; other characters become underscores.</span>
+          </div>
+        </div>
+        <details style="margin-top:14px" open>
+          <summary>Directory map</summary>
+          <ul class="mono">
+            <li>cmd/orchestrator/main.go</li>
+            <li>internal/orchestrator/README.md</li>
+            <li>internal/orchestrator/worker/worker.go</li>
+            <li>internal/orchestrator/runner/runner.go</li>
+            <li>internal/orchestrator/runstore/store.go</li>
+            <li>internal/orchestrator/workspace/workspace.go</li>
+            <li>internal/orchestrator/workflow/workflow.go</li>
+            <li>internal/orchestrator/run/model.go</li>
+            <li>db/schema/orchestrator.sql</li>
+            <li>docs/symphony/SPEC.md</li>
+          </ul>
+        </details>
+      </section>
+
+      <section id="risks">
+        <h3>Risks / Open Questions</h3>
+        <div class="grid">
+          <div class="note risk high">
+            <strong>Concurrency semantics</strong>
+            <span><code>maxConcurrent</code>, <code>running</code>, and <code>claimed</code> exist, but the current tick path runs one claimed item inline. Verify expected multi-run throughput before relying on configured concurrency.</span>
+          </div>
+          <div class="note risk">
+            <strong>Process restart recovery</strong>
+            <span>Durable runs and outbox exist, but active in-memory <code>running</code>/<code>claimed</code> state is rebuilt only by new claims and tracker state, not by replaying active runs.</span>
+          </div>
+          <div class="note risk">
+            <strong>Prompt rendering</strong>
+            <span>Template substitution is intentionally small and covers issue id/title/description and attempt. More fields require explicit contract changes.</span>
+          </div>
+          <div class="note risk">
+            <strong>Runner observability</strong>
+            <span>Runner events and setup failures are persisted; operator-facing surfacing depends on consumers reading SQLite or future UI/API work.</span>
+          </div>
+          <div class="note risk">
+            <strong>Filesystem cost</strong>
+            <span>Workspace population walks and copies the source tree while skipping <code>.git</code>, <code>.worktrees</code>, and <code>node_modules</code>. Large repos may still be expensive.</span>
+          </div>
+          <div class="note risk">
+            <strong>External process contract</strong>
+            <span><code>CodexRunner</code> depends on JSON-RPC shapes from <code>codex app-server</code>; protocol drift needs focused integration coverage.</span>
+          </div>
+        </div>
+      </section>
+
+      <section id="appendix">
+        <h3>Appendix</h3>
+        <div class="two-col">
+          <div>
+            <details open>
+              <summary>Evidence read for this map</summary>
+              <ul>
+                <li><code>internal/orchestrator/README.md</code> for package responsibilities and dependency graph.</li>
+                <li><code>cmd/orchestrator/main.go</code> for composition root and CLI flags.</li>
+                <li><code>internal/orchestrator/worker/worker.go</code> for orchestration, lease renewal, retry, reconciliation, cleanup, and outbox flushing.</li>
+                <li><code>internal/orchestrator/runner/runner.go</code> for runner contracts and Codex JSON-RPC lifecycle.</li>
+                <li><code>internal/orchestrator/runstore/store.go</code> and <code>db/schema/orchestrator.sql</code> for persistence.</li>
+                <li><code>internal/orchestrator/workflow/workflow.go</code> and <code>workspace/workspace.go</code> for configuration and filesystem behavior.</li>
+              </ul>
+            </details>
+          </div>
+          <div>
+            <details open>
+              <summary>CDN and offline behavior</summary>
+              <ul>
+                <li>Uses Mermaid only: <code>https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs</code>.</li>
+                <li>Inline SVG, tables, and text remain readable offline.</li>
+                <li>Mermaid diagrams require network access unless the browser has cached the CDN script.</li>
+              </ul>
+            </details>
+          </div>
+        </div>
+      </section>
+
+      <footer>
+        Generated as a local architecture aid. This file does not modify project runtime code.
+      </footer>
+    </main>
+  </div>
+
+  <!-- Mermaid is the only CDN dependency used for flow, sequence, and state diagrams. -->
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({
+      startOnLoad: true,
+      securityLevel: "strict",
+      theme: "base",
+      themeVariables: {
+        fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif",
+        primaryColor: "#eef2ff",
+        primaryTextColor: "#111827",
+        primaryBorderColor: "#818cf8",
+        lineColor: "#64748b",
+        secondaryColor: "#ecfeff",
+        tertiaryColor: "#f8fafc"
+      }
+    });
+
+    const input = document.querySelector("#packageFilter");
+    const rows = Array.from(document.querySelectorAll("#packageTable tbody tr"));
+    input.addEventListener("input", () => {
+      const query = input.value.trim().toLowerCase();
+      rows.forEach((row) => {
+        row.style.display = row.textContent.toLowerCase().includes(query) ? "" : "none";
+      });
+    });
+  </script>
+</body>
+</html>
