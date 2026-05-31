@@ -2,9 +2,22 @@ package entity
 
 import (
 	"errors"
+	"os"
+	"path/filepath"
+	"regexp"
 	"time"
 	"unicode/utf8"
 )
+
+const (
+	maxAssigneeLength    = 200
+	maxDescriptionLength = 10000
+	maxIssueTitleLength  = 500
+	maxNameLength        = 200
+	maxPathLength        = 1000
+)
+
+var projectKeyPattern = regexp.MustCompile(`^[A-Z][A-Z0-9_]{0,19}$`)
 
 type Status string
 
@@ -49,6 +62,7 @@ type Project struct {
 	Key         string    `json:"key"`
 	Name        string    `json:"name"`
 	Description string    `json:"description"`
+	Location    string    `json:"location"`
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
 }
@@ -57,12 +71,14 @@ type CreateProjectInput struct {
 	Key         string `json:"key"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
+	Location    string `json:"location"`
 }
 
 type UpdateProjectInput struct {
 	Key         *string `json:"key"`
 	Name        *string `json:"name"`
 	Description *string `json:"description"`
+	Location    *string `json:"location"`
 }
 
 type Workspace struct {
@@ -156,6 +172,15 @@ func NormalizeCreate(input CreateIssueInput) (CreateIssueInput, error) {
 	if input.Title == "" {
 		return input, errors.New("title is required")
 	}
+	if runeCount(input.Title) > maxIssueTitleLength {
+		return input, errors.New("title must be 500 characters or fewer")
+	}
+	if runeCount(input.Description) > maxDescriptionLength {
+		return input, errors.New("description must be 10000 characters or fewer")
+	}
+	if runeCount(input.Assignee) > maxAssigneeLength {
+		return input, errors.New("assignee must be 200 characters or fewer")
+	}
 	if input.Status == "" {
 		input.Status = StatusBacklog
 	}
@@ -175,8 +200,20 @@ func NormalizeCreateProject(input CreateProjectInput) (CreateProjectInput, error
 	if input.Key == "" {
 		return input, errors.New("key is required")
 	}
+	if !projectKeyPattern.MatchString(input.Key) {
+		return input, errors.New("key is invalid")
+	}
 	if input.Name == "" {
 		return input, errors.New("name is required")
+	}
+	if runeCount(input.Name) > maxNameLength {
+		return input, errors.New("name must be 200 characters or fewer")
+	}
+	if runeCount(input.Description) > maxDescriptionLength {
+		return input, errors.New("description must be 10000 characters or fewer")
+	}
+	if err := validateExistingDirectoryPath("location", input.Location); err != nil {
+		return input, err
 	}
 	return input, nil
 }
@@ -188,13 +225,94 @@ func NormalizeCreateWorkspace(input CreateWorkspaceInput) (CreateWorkspaceInput,
 	if input.Name == "" {
 		return input, errors.New("name is required")
 	}
+	if runeCount(input.Name) > maxNameLength {
+		return input, errors.New("name must be 200 characters or fewer")
+	}
 	if input.Path == "" {
 		return input, errors.New("path is required")
+	}
+	if err := validateExistingDirectoryPath("path", input.Path); err != nil {
+		return input, err
 	}
 	if input.Status == "" {
 		input.Status = WorkspaceActive
 	}
 	if !IsValidWorkspaceStatus(input.Status) {
+		return input, errors.New("status is invalid")
+	}
+	return input, nil
+}
+
+func NormalizeUpdateIssue(input UpdateIssueInput) (UpdateIssueInput, error) {
+	if input.Title != nil {
+		if *input.Title == "" {
+			return input, errors.New("title is required")
+		}
+		if runeCount(*input.Title) > maxIssueTitleLength {
+			return input, errors.New("title must be 500 characters or fewer")
+		}
+	}
+	if input.Description != nil && runeCount(*input.Description) > maxDescriptionLength {
+		return input, errors.New("description must be 10000 characters or fewer")
+	}
+	if input.Status != nil && !IsValidStatus(*input.Status) {
+		return input, errors.New("status is invalid")
+	}
+	if input.Priority != nil && !IsValidPriority(*input.Priority) {
+		return input, errors.New("priority is invalid")
+	}
+	if input.Assignee != nil && runeCount(*input.Assignee) > maxAssigneeLength {
+		return input, errors.New("assignee must be 200 characters or fewer")
+	}
+	return input, nil
+}
+
+func NormalizeUpdateProject(input UpdateProjectInput) (UpdateProjectInput, error) {
+	if input.Key != nil {
+		if *input.Key == "" {
+			return input, errors.New("key is required")
+		}
+		if !projectKeyPattern.MatchString(*input.Key) {
+			return input, errors.New("key is invalid")
+		}
+	}
+	if input.Name != nil {
+		if *input.Name == "" {
+			return input, errors.New("name is required")
+		}
+		if runeCount(*input.Name) > maxNameLength {
+			return input, errors.New("name must be 200 characters or fewer")
+		}
+	}
+	if input.Description != nil && runeCount(*input.Description) > maxDescriptionLength {
+		return input, errors.New("description must be 10000 characters or fewer")
+	}
+	if input.Location != nil {
+		if err := validateExistingDirectoryPath("location", *input.Location); err != nil {
+			return input, err
+		}
+	}
+	return input, nil
+}
+
+func NormalizeUpdateWorkspace(input UpdateWorkspaceInput) (UpdateWorkspaceInput, error) {
+	if input.ProjectID != nil && *input.ProjectID <= 0 {
+		return input, errors.New("projectId is required")
+	}
+	if input.Name != nil {
+		if *input.Name == "" {
+			return input, errors.New("name is required")
+		}
+		if runeCount(*input.Name) > maxNameLength {
+			return input, errors.New("name must be 200 characters or fewer")
+		}
+	}
+	if input.Path != nil {
+		if err := validateExistingDirectoryPath("path", *input.Path); err != nil {
+			return input, err
+		}
+	}
+	if input.Status != nil && !IsValidWorkspaceStatus(*input.Status) {
 		return input, errors.New("status is invalid")
 	}
 	return input, nil
@@ -256,6 +374,30 @@ func IsValidWorkspaceStatus(status WorkspaceStatus) bool {
 	default:
 		return false
 	}
+}
+
+func validateExistingDirectoryPath(field string, value string) error {
+	if value == "" {
+		return errors.New(field + " is required")
+	}
+	if runeCount(value) > maxPathLength {
+		return errors.New(field + " must be 1000 characters or fewer")
+	}
+	if !filepath.IsAbs(value) {
+		return errors.New(field + " must be an absolute path")
+	}
+	info, err := os.Stat(value)
+	if err != nil {
+		return errors.New(field + " must exist")
+	}
+	if !info.IsDir() {
+		return errors.New(field + " must be a directory")
+	}
+	return nil
+}
+
+func runeCount(value string) int {
+	return utf8.RuneCountInString(value)
 }
 
 func OrderedStatuses() []Status {

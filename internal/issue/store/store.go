@@ -40,6 +40,9 @@ func (s *Store) migrate(ctx context.Context) error {
 	if _, err := s.db.ExecContext(ctx, schema.IssueTracker); err != nil {
 		return fmt.Errorf("migrate issue tracker sqlite: %w", err)
 	}
+	if err := s.addColumnIfMissing(ctx, "projects", "location", "TEXT NOT NULL DEFAULT ''"); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -50,11 +53,12 @@ func (s *Store) CreateProject(ctx context.Context, input entity.CreateProjectInp
 	}
 	now := nowString()
 	result, err := s.db.ExecContext(ctx, `INSERT INTO projects (
-		key, name, description, created_at, updated_at
-	) VALUES (?, ?, ?, ?, ?)`,
+		key, name, description, location, created_at, updated_at
+	) VALUES (?, ?, ?, ?, ?, ?)`,
 		normalized.Key,
 		normalized.Name,
 		normalized.Description,
+		normalized.Location,
 		now,
 		now,
 	)
@@ -102,31 +106,33 @@ func (s *Store) Project(ctx context.Context, id int64) (entity.Project, error) {
 }
 
 func (s *Store) UpdateProject(ctx context.Context, id int64, input entity.UpdateProjectInput) (entity.Project, error) {
+	normalized, err := entity.NormalizeUpdateProject(input)
+	if err != nil {
+		return entity.Project{}, err
+	}
 	current, err := s.Project(ctx, id)
 	if err != nil {
 		return entity.Project{}, err
 	}
-	if input.Key != nil {
-		if *input.Key == "" {
-			return entity.Project{}, errors.New("key is required")
-		}
-		current.Key = *input.Key
+	if normalized.Key != nil {
+		current.Key = *normalized.Key
 	}
-	if input.Name != nil {
-		if *input.Name == "" {
-			return entity.Project{}, errors.New("name is required")
-		}
-		current.Name = *input.Name
+	if normalized.Name != nil {
+		current.Name = *normalized.Name
 	}
-	if input.Description != nil {
-		current.Description = *input.Description
+	if normalized.Description != nil {
+		current.Description = *normalized.Description
+	}
+	if normalized.Location != nil {
+		current.Location = *normalized.Location
 	}
 	_, err = s.db.ExecContext(ctx, `UPDATE projects SET
-		key = ?, name = ?, description = ?, updated_at = ?
+		key = ?, name = ?, description = ?, location = ?, updated_at = ?
 		WHERE id = ?`,
 		current.Key,
 		current.Name,
 		current.Description,
+		current.Location,
 		nowString(),
 		id,
 	)
@@ -230,36 +236,28 @@ func (s *Store) Workspace(ctx context.Context, id int64) (entity.Workspace, erro
 }
 
 func (s *Store) UpdateWorkspace(ctx context.Context, id int64, input entity.UpdateWorkspaceInput) (entity.Workspace, error) {
+	normalized, err := entity.NormalizeUpdateWorkspace(input)
+	if err != nil {
+		return entity.Workspace{}, err
+	}
 	current, err := s.Workspace(ctx, id)
 	if err != nil {
 		return entity.Workspace{}, err
 	}
-	if input.ProjectID != nil {
-		if *input.ProjectID <= 0 {
-			return entity.Workspace{}, errors.New("projectId is required")
-		}
-		if _, err := s.Project(ctx, *input.ProjectID); err != nil {
+	if normalized.ProjectID != nil {
+		if _, err := s.Project(ctx, *normalized.ProjectID); err != nil {
 			return entity.Workspace{}, err
 		}
-		current.ProjectID = *input.ProjectID
+		current.ProjectID = *normalized.ProjectID
 	}
-	if input.Name != nil {
-		if *input.Name == "" {
-			return entity.Workspace{}, errors.New("name is required")
-		}
-		current.Name = *input.Name
+	if normalized.Name != nil {
+		current.Name = *normalized.Name
 	}
-	if input.Path != nil {
-		if *input.Path == "" {
-			return entity.Workspace{}, errors.New("path is required")
-		}
-		current.Path = *input.Path
+	if normalized.Path != nil {
+		current.Path = *normalized.Path
 	}
-	if input.Status != nil {
-		if !entity.IsValidWorkspaceStatus(*input.Status) {
-			return entity.Workspace{}, errors.New("status is invalid")
-		}
-		current.Status = *input.Status
+	if normalized.Status != nil {
+		current.Status = *normalized.Status
 	}
 	_, err = s.db.ExecContext(ctx, `UPDATE workspaces SET
 		project_id = ?, name = ?, path = ?, status = ?, updated_at = ?
@@ -412,30 +410,28 @@ func (s *Store) Issue(ctx context.Context, id int64) (entity.Issue, error) {
 }
 
 func (s *Store) UpdateIssue(ctx context.Context, id int64, input entity.UpdateIssueInput) (entity.Issue, error) {
+	normalized, err := entity.NormalizeUpdateIssue(input)
+	if err != nil {
+		return entity.Issue{}, err
+	}
 	current, err := s.Issue(ctx, id)
 	if err != nil {
 		return entity.Issue{}, err
 	}
-	if input.Title != nil {
-		current.Title = *input.Title
+	if normalized.Title != nil {
+		current.Title = *normalized.Title
 	}
-	if input.Description != nil {
-		current.Description = *input.Description
+	if normalized.Description != nil {
+		current.Description = *normalized.Description
 	}
-	if input.Status != nil {
-		if !entity.IsValidStatus(*input.Status) {
-			return entity.Issue{}, errors.New("status is invalid")
-		}
-		current.Status = *input.Status
+	if normalized.Status != nil {
+		current.Status = *normalized.Status
 	}
-	if input.Priority != nil {
-		if !entity.IsValidPriority(*input.Priority) {
-			return entity.Issue{}, errors.New("priority is invalid")
-		}
-		current.Priority = *input.Priority
+	if normalized.Priority != nil {
+		current.Priority = *normalized.Priority
 	}
-	if input.Assignee != nil {
-		current.Assignee = *input.Assignee
+	if normalized.Assignee != nil {
+		current.Assignee = *normalized.Assignee
 	}
 	_, err = s.db.ExecContext(ctx, `UPDATE issues SET
 		title = ?, description = ?, status = ?, priority = ?, assignee = ?, updated_at = ?
@@ -556,7 +552,7 @@ func commentColumns() string {
 }
 
 func projectColumns() string {
-	return `id, key, name, description, created_at, updated_at`
+	return `id, key, name, description, location, created_at, updated_at`
 }
 
 func normalizeCommentLimit(limit int) int {
@@ -621,7 +617,7 @@ func scanProject(row rowScanner) (entity.Project, error) {
 	var item entity.Project
 	var createdAt string
 	var updatedAt string
-	err := row.Scan(&item.ID, &item.Key, &item.Name, &item.Description, &createdAt, &updatedAt)
+	err := row.Scan(&item.ID, &item.Key, &item.Name, &item.Description, &item.Location, &createdAt, &updatedAt)
 	if err != nil {
 		return entity.Project{}, err
 	}
@@ -636,6 +632,35 @@ func scanProject(row rowScanner) (entity.Project, error) {
 	item.CreatedAt = parsedCreatedAt
 	item.UpdatedAt = parsedUpdatedAt
 	return item, nil
+}
+
+func (s *Store) addColumnIfMissing(ctx context.Context, table string, column string, definition string) error {
+	rows, err := s.db.QueryContext(ctx, `PRAGMA table_info(`+table+`)`)
+	if err != nil {
+		return fmt.Errorf("inspect %s columns: %w", table, err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var cid int
+		var name string
+		var typ string
+		var notNull int
+		var defaultValue any
+		var pk int
+		if err := rows.Scan(&cid, &name, &typ, &notNull, &defaultValue, &pk); err != nil {
+			return err
+		}
+		if name == column {
+			return nil
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	if _, err := s.db.ExecContext(ctx, `ALTER TABLE `+table+` ADD COLUMN `+column+` `+definition); err != nil {
+		return fmt.Errorf("add %s.%s column: %w", table, column, err)
+	}
+	return nil
 }
 
 func scanWorkspace(row rowScanner) (entity.Workspace, error) {
