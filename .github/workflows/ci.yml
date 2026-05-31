@@ -27,7 +27,7 @@ jobs:
         run: go mod download
 
       - name: Test Go packages
-        run: go test ./...
+        run: go test $(go list ./... | grep -Ev '^github.com/version-1/tasq/(cmd/tq|internal/cli/tq)$')
 
       - name: Build issue-tracker
         run: go build ./cmd/issue-tracker
@@ -37,6 +37,28 @@ jobs:
 
       - name: Build TUI
         run: go build ./cmd/tasq-tui
+
+  tq:
+    name: TQ command
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Download Go modules
+        run: go mod download
+
+      - name: Test TQ command
+        run: go test ./internal/cli/tq
+
+      - name: Build TQ command
+        run: go build ./cmd/tq
 
   web:
     name: Web

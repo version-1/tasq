@@ -1,4 +1,4 @@
-package main
+package tq
 
 import (
 	"bytes"
@@ -298,7 +298,7 @@ func TestAPIURLDefaultsToEnvironment(t *testing.T) {
 	t.Setenv("TQ_API_URL", server.URL)
 	var out bytes.Buffer
 	var errOut bytes.Buffer
-	code := run(context.Background(), []string{"issue", "list"}, &out, &errOut)
+	code := Run(context.Background(), []string{"issue", "list"}, &out, &errOut)
 	stdout := out.String()
 	stderr := errOut.String()
 	if code != 0 {
@@ -317,7 +317,7 @@ func runCLI(t *testing.T, args []string) (string, string, int) {
 	t.Helper()
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := run(context.Background(), args, &stdout, &stderr)
+	code := Run(context.Background(), args, &stdout, &stderr)
 	return stdout.String(), stderr.String(), code
 }
 
