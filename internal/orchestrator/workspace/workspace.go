@@ -3,6 +3,7 @@ package workspace
 import (
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -11,6 +12,7 @@ import (
 type Manager struct {
 	root   string
 	source string
+	hooks  HookConfig
 }
 
 type Workspace struct {
@@ -24,6 +26,10 @@ func NewManager(root string) (*Manager, error) {
 }
 
 func NewManagerWithSource(root string, source string) (*Manager, error) {
+	return NewManagerWithSourceAndHooks(root, source, HookConfig{})
+}
+
+func NewManagerWithSourceAndHooks(root string, source string, hooks HookConfig) (*Manager, error) {
 	if root == "" {
 		return nil, fmt.Errorf("workspace root is required")
 	}
@@ -31,7 +37,7 @@ func NewManagerWithSource(root string, source string) (*Manager, error) {
 	if err != nil {
 		return nil, fmt.Errorf("resolve workspace root: %w", err)
 	}
-	manager := &Manager{root: filepath.Clean(abs)}
+	manager := &Manager{root: filepath.Clean(abs), hooks: hooks}
 	if source != "" {
 		sourceAbs, err := filepath.Abs(source)
 		if err != nil {
@@ -79,6 +85,12 @@ func (m *Manager) CreateForIssue(identifier string) (Workspace, error) {
 			return Workspace{}, err
 		}
 	}
+	if err := RunHook(m.hooks.AfterCreate, path, m.hooks.timeout()); err != nil {
+		if removeErr := os.RemoveAll(path); removeErr != nil {
+			return Workspace{}, fmt.Errorf("after_create hook failed: %w; remove partial workspace: %v", err, removeErr)
+		}
+		return Workspace{}, fmt.Errorf("after_create hook failed: %w", err)
+	}
 	return Workspace{Path: path, WorkspaceKey: key, CreatedNow: createdNow}, nil
 }
 
@@ -90,6 +102,13 @@ func (m *Manager) RemoveForIssue(identifier string) error {
 	path := filepath.Join(m.root, key)
 	if err := m.validatePath(path); err != nil {
 		return err
+	}
+	if _, err := os.Stat(path); err == nil {
+		if hookErr := RunHook(m.hooks.BeforeRemove, path, m.hooks.timeout()); hookErr != nil {
+			log.Printf("before_remove hook failed workspace=%s: %v", path, hookErr)
+		}
+	} else if !os.IsNotExist(err) {
+		return fmt.Errorf("stat workspace path: %w", err)
 	}
 	if err := os.RemoveAll(path); err != nil {
 		return fmt.Errorf("remove workspace: %w", err)

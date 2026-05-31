@@ -17,6 +17,22 @@ Instead, Tasq treats its local issue-tracker API as the tracker adapter boundary
 
 This keeps external tracker integrations out of the orchestrator and preserves the repository's existing service boundary.
 
+## Workspace Key
+
+Symphony derives workspace keys from `issue.identifier`, such as `MT-649`.
+Tasq intentionally uses `issue-<ID>` as its canonical issue identifier for workspace naming, for
+example `issue-42`.
+
+Rationale:
+
+- Tasq's local issue-tracker owns issues with stable numeric IDs.
+- Tasq does not currently model a separate human-readable external tracker identifier.
+- Using `issue-<ID>` keeps workspace paths deterministic without adding Linear-specific fields to
+  the local issue contract.
+
+The same workspace key convention is used for workspace metadata, startup terminal cleanup, and
+active-run reconciliation.
+
 ## Current Implementation Gap
 
 The current orchestrator is moving toward Symphony conformance incrementally. It is not yet a complete Symphony implementation.
@@ -26,6 +42,7 @@ Implemented or in progress:
 - Workflow file loading with a small supported subset of Symphony front matter.
 - `WORKFLOW.md` is loaded at process startup only; runtime reload is intentionally deferred.
 - Workspace root resolution and sanitized per-issue workspace directories.
+- Workspace lifecycle hooks with `hooks.timeout_ms`.
 - A runner interface with both simulated and Codex app-server subprocess implementations.
 - In-memory running and claimed issue tracking inside the worker.
 - Existing issue-tracker work queue polling and durable outbox delivery.
@@ -45,9 +62,9 @@ Not yet implemented:
 - Token/rate-limit accounting.
 - Optional Symphony HTTP status/API surface.
 
-Tasq intentionally keeps workflow front matter parsing to the supported Tasq-specific subset
-documented in [WORKFLOW_CONTRACT.md](WORKFLOW_CONTRACT.md). Full generic YAML compatibility is not a
-current product requirement.
+Tasq supports the workflow front matter fields documented in
+[WORKFLOW_CONTRACT.md](WORKFLOW_CONTRACT.md). Unknown fields are ignored for forward
+compatibility.
 
 ## Compatibility Notes
 

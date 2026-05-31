@@ -31,6 +31,7 @@ type Worker struct {
 	codexCommand      string
 	codexReadTimeout  time.Duration
 	codexTurnTimeout  time.Duration
+	hookConfig        workspace.HookConfig
 	runner            runner.Runner
 	workspaceManager  *workspace.Manager
 	running           map[int64]runningRun
@@ -69,7 +70,14 @@ func NewWithConfig(store *runstore.Store, client trackerClient, orchestratorID s
 	if agentRunner == nil {
 		agentRunner = runner.SimulatedRunner{}
 	}
-	workspaceManager, err := workspace.NewManagerWithSource(config.WorkspaceRoot, config.WorkspaceSource)
+	hookConfig := workspace.HookConfig{
+		AfterCreate:  config.HookAfterCreate,
+		BeforeRun:    config.HookBeforeRun,
+		AfterRun:     config.HookAfterRun,
+		BeforeRemove: config.HookBeforeRemove,
+		Timeout:      config.HookTimeout,
+	}
+	workspaceManager, err := workspace.NewManagerWithSourceAndHooks(config.WorkspaceRoot, config.WorkspaceSource, hookConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -89,6 +97,7 @@ func NewWithConfig(store *runstore.Store, client trackerClient, orchestratorID s
 		codexCommand:      config.CodexCommand,
 		codexReadTimeout:  config.CodexReadTimeout,
 		codexTurnTimeout:  config.CodexTurnTimeout,
+		hookConfig:        hookConfig,
 		runner:            agentRunner,
 		workspaceManager:  workspaceManager,
 		running:           map[int64]runningRun{},
@@ -202,14 +211,20 @@ func (w *Worker) tick(ctx context.Context) {
 	}
 }
 
-func (w *Worker) runWithRetries(ctx context.Context, runID string, item entity.WorkItem, workspace workspace.Workspace) runner.Result {
+func (w *Worker) runWithRetries(ctx context.Context, runID string, item entity.WorkItem, ws workspace.Workspace) runner.Result {
 	maxAttempts := w.maxRetryAttempts
 	if maxAttempts <= 0 {
 		maxAttempts = 1
 	}
 	var result runner.Result
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
-		result = w.runWithLeaseRenewal(ctx, runID, item, workspace)
+		if err := workspace.RunHook(w.hookConfig.BeforeRun, ws.Path, w.hookConfig.Timeout); err != nil {
+			return runner.Result{Status: run.StatusFailed, Error: "before_run hook failed: " + err.Error()}
+		}
+		result = w.runWithLeaseRenewal(ctx, runID, item, ws)
+		if err := workspace.RunHook(w.hookConfig.AfterRun, ws.Path, w.hookConfig.Timeout); err != nil {
+			log.Printf("after_run hook failed issue_id=%d run_id=%s: %v", item.IssueID, runID, err)
+		}
 		if result.Status == run.StatusSucceeded {
 			return result
 		}

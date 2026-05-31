@@ -2,7 +2,10 @@ module github.com/version-1/tasq
 
 go 1.22
 
-require modernc.org/sqlite v1.34.5
+require (
+	gopkg.in/yaml.v3 v3.0.1
+	modernc.org/sqlite v1.34.5
+)
 
 require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
