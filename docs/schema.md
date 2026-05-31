@@ -1,0 +1,143 @@
+# Schema Field Specifications
+
+This document defines the data format, constraints, and validation rules for all entities in the issue-tracker and orchestrator.
+
+Validation is enforced at the **store layer** (Go code) on every create and update operation.
+
+---
+
+## issue-tracker
+
+### Issue
+
+| Field       | Go Type    | Required (Create) | Required (Update) | Default     | Constraints                                                        |
+|-------------|------------|--------------------|--------------------|-------------|--------------------------------------------------------------------|
+| ID          | `int64`    | auto               | path param         | autoincrement | `> 0`                                                            |
+| Title       | `string`   | yes                | optional (`*string`) | —          | min 1, max 500 chars                                              |
+| Description | `string`   | no                 | optional (`*string`) | `""`       | max 10,000 chars                                                  |
+| Status      | `Status`   | no                 | optional (`*Status`) | `backlog`  | enum: `backlog`, `ready`, `in_progress`, `review`, `done`, `blocked`, `failed` |
+| Priority    | `Priority` | no                 | optional (`*Priority`) | `normal` | enum: `low`, `normal`, `high`, `urgent`                           |
+| Assignee    | `string`   | no                 | optional (`*string`) | `""`       | max 200 chars, free text                                          |
+| CreatedAt   | `time.Time`| auto               | —                  | `now()`     | —                                                                  |
+| UpdatedAt   | `time.Time`| auto               | auto               | `now()`     | —                                                                  |
+
+### Project
+
+| Field       | Go Type    | Required (Create) | Required (Update) | Default     | Constraints                                                        |
+|-------------|------------|--------------------|--------------------|-------------|--------------------------------------------------------------------|
+| ID          | `int64`    | auto               | path param         | autoincrement | `> 0`                                                            |
+| Key         | `string`   | yes                | optional (`*string`) | —          | regex: `^[A-Z][A-Z0-9_]{0,19}$` (1-20 chars, uppercase start)    |
+| Name        | `string`   | yes                | optional (`*string`) | —          | min 1, max 200 chars                                              |
+| Description | `string`   | no                 | optional (`*string`) | `""`       | max 10,000 chars                                                  |
+| Location    | `string`   | yes                | optional (`*string`) | —          | absolute path (`/` prefix), max 1,000 chars, `os.Stat` directory existence check on set |
+| CreatedAt   | `time.Time`| auto               | —                  | `now()`     | —                                                                  |
+| UpdatedAt   | `time.Time`| auto               | auto               | `now()`     | —                                                                  |
+
+### Workspace
+
+| Field       | Go Type           | Required (Create) | Required (Update) | Default     | Constraints                                                        |
+|-------------|-------------------|--------------------|--------------------|-------------|--------------------------------------------------------------------|
+| ID          | `int64`           | auto               | path param         | autoincrement | `> 0`                                                            |
+| ProjectID   | `int64`           | yes                | optional (`*int64`)  | —          | `> 0`, referenced project must exist                              |
+| Name        | `string`          | yes                | optional (`*string`) | —          | min 1, max 200 chars                                              |
+| Path        | `string`          | yes                | optional (`*string`) | —          | absolute path (`/` prefix), max 1,000 chars, `os.Stat` directory existence check on set |
+| Status      | `WorkspaceStatus` | no                 | optional (`*WorkspaceStatus`) | `active` | enum: `active`, `inactive`, `archived`                       |
+| CreatedAt   | `time.Time`       | auto               | —                  | `now()`     | —                                                                  |
+| UpdatedAt   | `time.Time`       | auto               | auto               | `now()`     | —                                                                  |
+
+---
+
+## orchestrator
+
+### Run
+
+| Field          | Go Type      | Required (Create) | Required (Update) | Default     | Constraints                                                        |
+|----------------|--------------|--------------------|--------------------|-------------|--------------------------------------------------------------------|
+| ID             | `int64`      | auto               | —                  | autoincrement | `> 0`                                                            |
+| RunID          | `string`     | auto               | —                  | `uuid.NewString()` | generated by store                                          |
+| IssueID        | `int64`      | yes                | —                  | —           | `> 0`                                                              |
+| Status         | `run.Status` | auto               | yes                | `queued`    | enum: `queued`, `running`, `succeeded`, `failed`, `cancelled`      |
+| Workspace      | `string`     | no                 | —                  | `""`        | max 1,000 chars                                                    |
+| Attempt        | `int`        | yes                | —                  | —           | `>= 0`                                                             |
+| Error          | `string`     | no                 | —                  | `""`        | max 10,000 chars                                                   |
+| OrchestratorID | `string`     | yes                | —                  | —           | min 1, max 200 chars                                               |
+| CreatedAt      | `time.Time`  | auto               | —                  | `now()`     | —                                                                  |
+| UpdatedAt      | `time.Time`  | auto               | auto               | `now()`     | —                                                                  |
+
+### RunnerEvent
+
+| Field       | Go Type     | Required | Default   | Constraints                                                        |
+|-------------|-------------|----------|-----------|--------------------------------------------------------------------|
+| ID          | `int64`     | auto     | autoincrement | `> 0`                                                          |
+| RunID       | `string`    | yes      | —         | min 1, max 200 chars                                               |
+| EventType   | `string`    | no       | `"event"` | max 200 chars (falls back to `"event"` if empty)                   |
+| Message     | `string`    | no       | `""`      | max 10,000 chars                                                   |
+| PayloadJSON | `string`    | no       | `""`      | max 50,000 chars; if non-empty, must pass `json.Valid`             |
+| OccurredAt  | `time.Time` | yes      | —         | must not be zero (`time.IsZero()` check)                           |
+
+### WorkspaceMetadata
+
+| Field        | Go Type | Required (Upsert) | Default | Constraints                                                        |
+|--------------|---------|--------------------|---------|--------------------------------------------------------------------|
+| WorkspaceKey | `string`| yes                | —       | min 1, max 200 chars (upsert key)                                  |
+| IssueID      | `int64` | yes                | —       | `> 0`                                                              |
+| Path         | `string`| yes                | —       | absolute path (`/` prefix), max 1,000 chars                        |
+| CreatedNow   | `bool`  | yes                | —       | —                                                                  |
+| SourcePath   | `string`| no                 | `""`    | if non-empty: absolute path (`/` prefix), max 1,000 chars          |
+| CreatedAt    | `time.Time` | auto           | `now()` | —                                                                  |
+| UpdatedAt    | `time.Time` | auto           | `now()` | —                                                                  |
+
+> Additional DB-only columns (`populated_at`, `cleanup_status`, `cleanup_at`, `last_error`) are managed internally by store methods and not exposed via input structs.
+
+### WorkspaceSetupFailure
+
+Recorded via `RecordWorkspaceSetupFailure(ctx, issueID, workspaceKey, path, errText)` — no input struct.
+
+| Field        | Go Type | Required | Default | Constraints                                                        |
+|--------------|---------|----------|---------|--------------------------------------------------------------------|
+| ID           | `int64` | auto     | autoincrement | `> 0`                                                        |
+| IssueID      | `int64` | yes      | —       | `> 0`                                                              |
+| WorkspaceKey | `string`| no       | `""`    | max 200 chars                                                      |
+| Path         | `string`| no       | `""`    | max 1,000 chars                                                    |
+| Error        | `string`| yes      | —       | min 1, max 10,000 chars                                            |
+| OccurredAt   | `time.Time` | auto | `now()` | —                                                                  |
+
+---
+
+## Validation Rules Summary
+
+### String length
+
+| Limit       | Fields                                                                 |
+|-------------|------------------------------------------------------------------------|
+| max 200     | Issue.Assignee, Project.Key, Project.Name, Workspace.Name, Run.OrchestratorID, RunnerEvent.RunID, RunnerEvent.EventType, WorkspaceMetadata.WorkspaceKey, WorkspaceSetupFailure.WorkspaceKey |
+| max 500     | Issue.Title                                                            |
+| max 1,000   | Project.Location, Workspace.Path, Run.Workspace, WorkspaceMetadata.Path, WorkspaceMetadata.SourcePath, WorkspaceSetupFailure.Path |
+| max 10,000  | Issue.Description, Project.Description, Run.Error, RunnerEvent.Message, WorkspaceSetupFailure.Error |
+| max 50,000  | RunnerEvent.PayloadJSON                                                |
+
+### Path fields
+
+All path fields require an absolute path (must start with `/`). Directory existence is checked via `os.Stat` for:
+- Project.Location (create and update)
+- Workspace.Path (create and update)
+
+Directory existence is **not** checked for:
+- WorkspaceMetadata.Path (may not exist at upsert time)
+- WorkspaceMetadata.SourcePath
+- WorkspaceSetupFailure.Path (recorded after failure)
+
+### Enum fields
+
+| Field            | Valid Values                                                          |
+|------------------|-----------------------------------------------------------------------|
+| Issue.Status     | `backlog`, `ready`, `in_progress`, `review`, `done`, `blocked`, `failed` |
+| Issue.Priority   | `low`, `normal`, `high`, `urgent`                                     |
+| Workspace.Status | `active`, `inactive`, `archived`                                      |
+| Run.Status       | `queued`, `running`, `succeeded`, `failed`, `cancelled`               |
+
+### Format constraints
+
+| Field       | Pattern                          | Description                              |
+|-------------|----------------------------------|------------------------------------------|
+| Project.Key | `^[A-Z][A-Z0-9_]{0,19}$`        | 1-20 chars, uppercase letter start, uppercase alphanumeric + underscore |

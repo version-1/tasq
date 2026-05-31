@@ -81,8 +81,9 @@ func TestNoContentResponseStaysEmpty(t *testing.T) {
 
 	server := newTestServer(t)
 	project, err := server.store.CreateProject(context.Background(), entity.CreateProjectInput{
-		Key:  "docs",
-		Name: "Docs",
+		Key:      "DOCS",
+		Name:     "Docs",
+		Location: t.TempDir(),
 	})
 	if err != nil {
 		t.Fatalf("create project: %v", err)

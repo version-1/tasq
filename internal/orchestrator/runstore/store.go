@@ -58,6 +58,9 @@ func (s *Store) migrate(ctx context.Context) error {
 }
 
 func (s *Store) CreateRun(ctx context.Context, input CreateRunInput) (run.Run, error) {
+	if err := ValidateCreateRun(input); err != nil {
+		return run.Run{}, err
+	}
 	runID, err := randomID("run")
 	if err != nil {
 		return run.Run{}, err
@@ -93,6 +96,15 @@ type CreateRunInput struct {
 }
 
 func (s *Store) UpdateRunStatus(ctx context.Context, runID string, status run.Status, errText string) (run.Run, error) {
+	if runID == "" {
+		return run.Run{}, fmt.Errorf("runId is required")
+	}
+	if err := ValidateRunStatus(status); err != nil {
+		return run.Run{}, err
+	}
+	if runeCount(errText) > maxRunErrorLength {
+		return run.Run{}, fmt.Errorf("error must be 10000 characters or fewer")
+	}
 	now := nowString()
 	_, err := s.db.ExecContext(ctx, `UPDATE runs SET status = ?, error = ?, updated_at = ? WHERE run_id = ?`, status, errText, now, runID)
 	if err != nil {
@@ -109,9 +121,13 @@ func (s *Store) RecordRunnerEvent(ctx context.Context, runID string, eventType s
 	if eventType == "" {
 		eventType = "event"
 	}
+	occurredAt := time.Now().UTC()
+	if err := ValidateRunnerEvent(runID, eventType, message, payloadJSON, occurredAt); err != nil {
+		return err
+	}
 	_, err := s.db.ExecContext(ctx, `INSERT INTO runner_events (
 		run_id, event_type, message, payload_json, occurred_at
-	) VALUES (?, ?, ?, ?, ?)`, runID, eventType, message, payloadJSON, nowString())
+	) VALUES (?, ?, ?, ?, ?)`, runID, eventType, message, payloadJSON, formatTime(occurredAt))
 	if err != nil {
 		return fmt.Errorf("record runner event: %w", err)
 	}
@@ -149,6 +165,9 @@ func (s *Store) RunnerEvents(ctx context.Context, runID string, limit int) ([]ru
 }
 
 func (s *Store) UpsertWorkspaceMetadata(ctx context.Context, input WorkspaceMetadataInput) error {
+	if err := ValidateWorkspaceMetadata(input); err != nil {
+		return err
+	}
 	now := nowString()
 	_, err := s.db.ExecContext(ctx, `INSERT INTO workspace_metadata (
 		workspace_key, issue_id, path, created_now, source_path, populated_at, cleanup_status, cleanup_at, last_error, created_at, updated_at
@@ -201,6 +220,9 @@ func (s *Store) MarkWorkspaceCleanup(ctx context.Context, workspaceKey string, s
 }
 
 func (s *Store) RecordWorkspaceSetupFailure(ctx context.Context, issueID int64, workspaceKey string, path string, errText string) error {
+	if err := ValidateWorkspaceSetupFailure(issueID, workspaceKey, path, errText); err != nil {
+		return err
+	}
 	_, err := s.db.ExecContext(ctx, `INSERT INTO workspace_setup_failures (
 		issue_id, workspace_key, path, error, occurred_at
 	) VALUES (?, ?, ?, ?, ?)`, issueID, workspaceKey, path, errText, nowString())

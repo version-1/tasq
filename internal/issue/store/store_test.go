@@ -222,9 +222,10 @@ func TestProjectCRUD(t *testing.T) {
 	defer store.Close()
 
 	created, err := store.CreateProject(ctx, entity.CreateProjectInput{
-		Key:         "product",
+		Key:         "PRODUCT",
 		Name:        "Product Website",
 		Description: "Public marketing and product site",
+		Location:    t.TempDir(),
 	})
 	if err != nil {
 		t.Fatalf("create project: %v", err)
@@ -232,7 +233,7 @@ func TestProjectCRUD(t *testing.T) {
 	if created.ID == 0 {
 		t.Fatal("created project id is zero")
 	}
-	if created.Key != "product" || created.Name != "Product Website" || created.Description != "Public marketing and product site" {
+	if created.Key != "PRODUCT" || created.Name != "Product Website" || created.Description != "Public marketing and product site" || created.Location == "" {
 		t.Fatalf("created project = %+v", created)
 	}
 
@@ -301,14 +302,15 @@ func TestWorkspaceCRUD(t *testing.T) {
 	}
 	defer store.Close()
 
-	project, err := store.CreateProject(ctx, entity.CreateProjectInput{Key: "api", Name: "API Backend"})
+	project, err := store.CreateProject(ctx, entity.CreateProjectInput{Key: "API", Name: "API Backend", Location: t.TempDir()})
 	if err != nil {
 		t.Fatalf("create project: %v", err)
 	}
+	workspacePath := t.TempDir()
 	created, err := store.CreateWorkspace(ctx, entity.CreateWorkspaceInput{
 		ProjectID: project.ID,
 		Name:      "API Main",
-		Path:      ".workspaces/api-main",
+		Path:      workspacePath,
 	})
 	if err != nil {
 		t.Fatalf("create workspace: %v", err)
