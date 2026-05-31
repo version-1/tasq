@@ -42,7 +42,7 @@ Task の開始から handoff までは、この flow を使います。
    git status --short
    ```
 
-9. Task の Pull Request を作成または更新します。
+9. `cmd-create-pr` を使って、Task の Pull Request を作成または更新します。
 10. Pull Request URL、changed files、実行した verification、残っている risks または skipped checks を簡潔にまとめて handoff します。
 
 ## GitHub 操作

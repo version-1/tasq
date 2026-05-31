@@ -42,7 +42,7 @@ Use this flow from the start of a task to handoff.
    git status --short
    ```
 
-9. Create or update a pull request for the task.
+9. Create or update a pull request for the task with `cmd-create-pr`.
 10. Handoff with the pull request URL, a concise summary of changed files, verification performed, and any remaining risks or skipped checks.
 
 ## GitHub Operations
