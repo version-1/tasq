@@ -9,6 +9,7 @@ Ask questions to clarify ambiguous instructions.
 
 - Write documentation in English.
 - See [docs/design.md](docs/design.md) for system architecture.
+- Symphony-related orchestration, workflow, workspace, agent-runner, tracker, and observability changes must comply with [docs/symphony/SPEC.md](docs/symphony/SPEC.md).
 - See [web/docs/design.md](web/docs/design.md) for Web UI structure and styling conventions.
 - All documents linked from AGENTS.md must also be written in English.
 - When a Japanese version of the same content is needed, create it as `*.ja.md` in the same location as the English version.
