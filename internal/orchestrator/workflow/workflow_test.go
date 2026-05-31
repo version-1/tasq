@@ -17,9 +17,12 @@ polling:
   interval_ms: 1200
 workspace:
   root: .workspaces
+  source: .
 agent:
   max_concurrent_agents: 2
   max_turns: 3
+  continuation_turns_enabled: true
+  max_retry_attempts: 4
   max_retry_backoff_ms: 4000
 codex:
   command: codex app-server --debug
@@ -45,11 +48,20 @@ Work on {{ issue.title }}.
 	if workflow.Config.WorkspaceRoot != filepath.Join(dir, ".workspaces") {
 		t.Fatalf("workspace root = %q", workflow.Config.WorkspaceRoot)
 	}
+	if workflow.Config.WorkspaceSource != dir {
+		t.Fatalf("workspace source = %q", workflow.Config.WorkspaceSource)
+	}
 	if workflow.Config.MaxConcurrentRuns != 2 {
 		t.Fatalf("max concurrent = %d", workflow.Config.MaxConcurrentRuns)
 	}
 	if workflow.Config.MaxTurns != 3 {
 		t.Fatalf("max turns = %d", workflow.Config.MaxTurns)
+	}
+	if !workflow.Config.ContinuationTurns {
+		t.Fatal("continuation turns were not enabled")
+	}
+	if workflow.Config.MaxRetryAttempts != 4 {
+		t.Fatalf("max retry attempts = %d", workflow.Config.MaxRetryAttempts)
 	}
 	if workflow.Config.MaxRetryBackoff != 4*time.Second {
 		t.Fatalf("max retry backoff = %s", workflow.Config.MaxRetryBackoff)

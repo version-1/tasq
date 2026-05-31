@@ -67,9 +67,11 @@ Responsibilities:
 
 - Manage the configured workspace root.
 - Create sanitized per-issue workspace directories.
+- Populate newly created workspaces from the configured source.
+- Remove terminal, failed, and cancelled workspaces when cleanup is requested.
 - Prevent workspace paths from escaping the configured root.
 
-The current implementation creates directories and records their paths on runs. Repository population and cleanup policy are tracked as Symphony TODO items.
+Workspace population and cleanup state are persisted through `runstore` metadata.
 
 ### `runner`
 
@@ -95,6 +97,7 @@ Responsibilities:
 - Create a workspace for each claimed item.
 - Create and update run records through `runstore`.
 - Invoke the configured `runner.Runner`.
+- Renew leases, retry failed runs, reconcile issue state, and clean terminal workspaces.
 - Flush outbox events through `tracker`.
 
 This package coordinates components but should avoid owning their internal details. Persistence belongs in `runstore`, tracker API behavior belongs in `tracker`, workspace path safety belongs in `workspace`, and agent execution belongs behind `runner`.
@@ -119,7 +122,3 @@ Rules:
 - `runstore`, `tracker`, `workflow`, `workspace`, and `runner` should not import `worker`.
 - `worker` may coordinate other packages, but should not duplicate their responsibilities.
 - `cmd/orchestrator` should wire packages together instead of hiding construction behind a broad root package.
-
-## Current Gaps
-
-Open Symphony-related implementation work is tracked in [../../docs/symphony/TODO.md](../../docs/symphony/TODO.md).

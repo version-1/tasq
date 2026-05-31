@@ -40,6 +40,20 @@ func (s *Store) migrate(ctx context.Context) error {
 	if _, err := s.db.ExecContext(ctx, schema.Orchestrator); err != nil {
 		return fmt.Errorf("migrate orchestrator sqlite: %w", err)
 	}
+	for _, column := range []struct {
+		name       string
+		definition string
+	}{
+		{name: "source_path", definition: "TEXT NOT NULL DEFAULT ''"},
+		{name: "populated_at", definition: "TEXT NOT NULL DEFAULT ''"},
+		{name: "cleanup_status", definition: "TEXT NOT NULL DEFAULT ''"},
+		{name: "cleanup_at", definition: "TEXT NOT NULL DEFAULT ''"},
+		{name: "last_error", definition: "TEXT NOT NULL DEFAULT ''"},
+	} {
+		if err := s.addColumnIfMissing(ctx, "workspace_metadata", column.name, column.definition); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -147,17 +161,27 @@ func (s *Store) RunnerEvents(ctx context.Context, runID string, limit int) ([]ru
 func (s *Store) UpsertWorkspaceMetadata(ctx context.Context, input WorkspaceMetadataInput) error {
 	now := nowString()
 	_, err := s.db.ExecContext(ctx, `INSERT INTO workspace_metadata (
-		workspace_key, issue_id, path, created_now, created_at, updated_at
-	) VALUES (?, ?, ?, ?, ?, ?)
+		workspace_key, issue_id, path, created_now, source_path, populated_at, cleanup_status, cleanup_at, last_error, created_at, updated_at
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	ON CONFLICT(workspace_key) DO UPDATE SET
 		issue_id = excluded.issue_id,
 		path = excluded.path,
 		created_now = excluded.created_now,
+		source_path = excluded.source_path,
+		populated_at = excluded.populated_at,
+		cleanup_status = '',
+		cleanup_at = '',
+		last_error = '',
 		updated_at = excluded.updated_at`,
 		input.WorkspaceKey,
 		input.IssueID,
 		input.Path,
 		boolInt(input.CreatedNow),
+		input.SourcePath,
+		now,
+		"",
+		"",
+		"",
 		now,
 		now,
 	)
@@ -172,6 +196,44 @@ type WorkspaceMetadataInput struct {
 	IssueID      int64
 	Path         string
 	CreatedNow   bool
+	SourcePath   string
+}
+
+func (s *Store) MarkWorkspaceCleanup(ctx context.Context, workspaceKey string, status string, errText string) error {
+	now := nowString()
+	_, err := s.db.ExecContext(ctx, `UPDATE workspace_metadata
+		SET cleanup_status = ?, cleanup_at = ?, last_error = ?, updated_at = ?
+		WHERE workspace_key = ?`, status, now, errText, now, workspaceKey)
+	if err != nil {
+		return fmt.Errorf("mark workspace cleanup: %w", err)
+	}
+	return nil
+}
+
+func (s *Store) RecordWorkspaceSetupFailure(ctx context.Context, issueID int64, workspaceKey string, path string, errText string) error {
+	_, err := s.db.ExecContext(ctx, `INSERT INTO workspace_setup_failures (
+		issue_id, workspace_key, path, error, occurred_at
+	) VALUES (?, ?, ?, ?, ?)`, issueID, workspaceKey, path, errText, nowString())
+	if err != nil {
+		return fmt.Errorf("record workspace setup failure: %w", err)
+	}
+	return nil
+}
+
+func (s *Store) UnsentOutboxCount(ctx context.Context) (int, error) {
+	var count int
+	if err := s.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM outbox_events WHERE sent_at = ''`).Scan(&count); err != nil {
+		return 0, fmt.Errorf("count unsent outbox events: %w", err)
+	}
+	return count, nil
+}
+
+func (s *Store) WorkspaceSetupFailureCount(ctx context.Context) (int, error) {
+	var count int
+	if err := s.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM workspace_setup_failures`).Scan(&count); err != nil {
+		return 0, fmt.Errorf("count workspace setup failures: %w", err)
+	}
+	return count, nil
 }
 
 func (s *Store) RunByRunID(ctx context.Context, runID string) (run.Run, error) {
@@ -278,6 +340,35 @@ func scanOutboxEvent(row scanner) (run.OutboxEvent, error) {
 		event.SentAt = &parsed
 	}
 	return event, nil
+}
+
+func (s *Store) addColumnIfMissing(ctx context.Context, table string, column string, definition string) error {
+	rows, err := s.db.QueryContext(ctx, `PRAGMA table_info(`+table+`)`)
+	if err != nil {
+		return fmt.Errorf("inspect %s columns: %w", table, err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var cid int
+		var name string
+		var typ string
+		var notNull int
+		var defaultValue any
+		var pk int
+		if err := rows.Scan(&cid, &name, &typ, &notNull, &defaultValue, &pk); err != nil {
+			return err
+		}
+		if name == column {
+			return nil
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	if _, err := s.db.ExecContext(ctx, `ALTER TABLE `+table+` ADD COLUMN `+column+` `+definition); err != nil {
+		return fmt.Errorf("add %s.%s column: %w", table, column, err)
+	}
+	return nil
 }
 
 func randomID(prefix string) (string, error) {

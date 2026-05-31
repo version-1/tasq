@@ -21,6 +21,8 @@ func TestOpenAppliesOrchestratorSchema(t *testing.T) {
 		"runner_events",
 		"runner_events_run_idx",
 		"workspace_metadata",
+		"workspace_setup_failures",
+		"workspace_setup_failures_issue_idx",
 		"outbox_events",
 		"outbox_events_unsent_idx",
 	} {
@@ -56,8 +58,29 @@ func TestStoreRecordsRunnerEventAndWorkspaceMetadata(t *testing.T) {
 		IssueID:      1,
 		Path:         "/tmp/workspaces/ISSUE-1",
 		CreatedNow:   true,
+		SourcePath:   "/tmp/repo",
 	}); err != nil {
 		t.Fatalf("upsert workspace metadata: %v", err)
+	}
+	if err := store.MarkWorkspaceCleanup(ctx, "ISSUE-1", "removed", ""); err != nil {
+		t.Fatalf("mark workspace cleanup: %v", err)
+	}
+	if err := store.RecordWorkspaceSetupFailure(ctx, 2, "ISSUE-2", "/tmp/workspaces/ISSUE-2", "failed"); err != nil {
+		t.Fatalf("record workspace setup failure: %v", err)
+	}
+	count, err := store.WorkspaceSetupFailureCount(ctx)
+	if err != nil {
+		t.Fatalf("count workspace setup failures: %v", err)
+	}
+	if count != 1 {
+		t.Fatalf("workspace setup failure count = %d", count)
+	}
+	outboxCount, err := store.UnsentOutboxCount(ctx)
+	if err != nil {
+		t.Fatalf("count unsent outbox: %v", err)
+	}
+	if outboxCount != 0 {
+		t.Fatalf("unsent outbox count = %d", outboxCount)
 	}
 	if !schemaObjectExists(t, store, "workspace_metadata") {
 		t.Fatal("workspace_metadata does not exist")
