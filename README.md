@@ -102,6 +102,15 @@ go run ./cmd/tq issue create \
   --priority high
 ```
 
+Use issue shortcuts for common status and text updates:
+
+```sh
+go run ./cmd/tq issue ready 1
+go run ./cmd/tq issue close 1
+go run ./cmd/tq issue rename 1 "Clarify workflow contract"
+go run ./cmd/tq issue edit 1 "Updated description"
+```
+
 Use `--output json` for machine-readable output:
 
 ```sh

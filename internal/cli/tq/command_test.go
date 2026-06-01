@@ -72,7 +72,7 @@ func TestIssueCreate(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("code=%d stderr=%s", code, stderr)
 	}
-	if !strings.Contains(stdout, "ID: 10") || !strings.Contains(stdout, "Status: ready") {
+	if !strings.Contains(stdout, "ID: 10") || !strings.Contains(stdout, "ready") {
 		t.Fatalf("unexpected stdout: %s", stdout)
 	}
 }
@@ -104,8 +104,116 @@ func TestIssueUpdateSendsSpecifiedFieldsOnly(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("code=%d stderr=%s", code, stderr)
 	}
-	if !strings.Contains(stdout, "Status: blocked") {
+	if !strings.Contains(stdout, "blocked") {
 		t.Fatalf("unexpected stdout: %s", stdout)
+	}
+}
+
+func TestIssueClose(t *testing.T) {
+	stdout := assertIssueShortcut(t, issueShortcutTest{
+		args:        []string{"issue", "close", "5"},
+		id:          5,
+		wantPatch:   map[string]string{"status": "done"},
+		response:    entity.Issue{ID: 5, Title: "Close issue", Status: entity.StatusDone},
+		wantMessage: ansiGreen + "✓" + ansiReset + " Issue #5 closed",
+	})
+	if !strings.Contains(stdout, string(entity.StatusDone)) {
+		t.Fatalf("unexpected stdout: %s", stdout)
+	}
+}
+
+func TestIssueReady(t *testing.T) {
+	stdout := assertIssueShortcut(t, issueShortcutTest{
+		args:        []string{"issue", "ready", "3"},
+		id:          3,
+		wantPatch:   map[string]string{"status": "ready"},
+		response:    entity.Issue{ID: 3, Title: "Ready issue", Status: entity.StatusReady},
+		wantMessage: ansiGreen + "✓" + ansiReset + " Issue #3 marked as ready",
+	})
+	if !strings.Contains(stdout, string(entity.StatusReady)) {
+		t.Fatalf("unexpected stdout: %s", stdout)
+	}
+}
+
+func TestIssueDraft(t *testing.T) {
+	stdout := assertIssueShortcut(t, issueShortcutTest{
+		args:        []string{"issue", "draft", "8"},
+		id:          8,
+		wantPatch:   map[string]string{"status": "backlog"},
+		response:    entity.Issue{ID: 8, Title: "Draft issue", Status: entity.StatusBacklog},
+		wantMessage: ansiGreen + "✓" + ansiReset + " Issue #8 moved to backlog",
+	})
+	if !strings.Contains(stdout, string(entity.StatusBacklog)) {
+		t.Fatalf("unexpected stdout: %s", stdout)
+	}
+}
+
+func TestIssueRename(t *testing.T) {
+	stdout := assertIssueShortcut(t, issueShortcutTest{
+		args:        []string{"issue", "rename", "6", "Better title"},
+		id:          6,
+		wantPatch:   map[string]string{"title": "Better title"},
+		response:    entity.Issue{ID: 6, Title: "Better title", Status: entity.StatusReady},
+		wantMessage: ansiGreen + "✓" + ansiReset + " Issue #6 renamed",
+	})
+	if !strings.Contains(stdout, "Title: Better title") {
+		t.Fatalf("unexpected stdout: %s", stdout)
+	}
+}
+
+func TestIssueEdit(t *testing.T) {
+	stdout := assertIssueShortcut(t, issueShortcutTest{
+		args:        []string{"issue", "edit", "6", "New description"},
+		id:          6,
+		wantPatch:   map[string]string{"description": "New description"},
+		response:    entity.Issue{ID: 6, Title: "Edit issue", Description: "New description", Status: entity.StatusReady},
+		wantMessage: ansiGreen + "✓" + ansiReset + " Issue #6 description updated",
+	})
+	if !strings.Contains(stdout, "Description: New description") {
+		t.Fatalf("unexpected stdout: %s", stdout)
+	}
+}
+
+func TestIssueShortcutJSONOmitsActionMessage(t *testing.T) {
+	stdout := assertIssueShortcut(t, issueShortcutTest{
+		args:      []string{"--output", "json", "issue", "close", "5"},
+		id:        5,
+		wantPatch: map[string]string{"status": "done"},
+		response:  entity.Issue{ID: 5, Title: "Close issue", Status: entity.StatusDone},
+	})
+	if strings.Contains(stdout, "Issue #5 closed") || strings.Contains(stdout, ansiGreen) {
+		t.Fatalf("unexpected action message or ANSI in JSON stdout: %s", stdout)
+	}
+	if !strings.Contains(stdout, `"status": "done"`) {
+		t.Fatalf("unexpected stdout: %s", stdout)
+	}
+}
+
+func TestIssueShortcutUsageErrors(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+		want string
+	}{
+		{name: "close", args: []string{"issue", "close"}, want: "usage: tq issue close <id>"},
+		{name: "ready", args: []string{"issue", "ready"}, want: "usage: tq issue ready <id>"},
+		{name: "draft", args: []string{"issue", "draft"}, want: "usage: tq issue draft <id>"},
+		{name: "rename", args: []string{"issue", "rename", "6"}, want: "usage: tq issue rename <id> <title>"},
+		{name: "edit", args: []string{"issue", "edit", "6"}, want: "usage: tq issue edit <id> <description>"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			stdout, stderr, code := runCLI(t, append([]string{"--api-url", defaultAPIURL}, test.args...))
+			if code != 2 {
+				t.Fatalf("code=%d stderr=%s", code, stderr)
+			}
+			if stdout != "" {
+				t.Fatalf("expected empty stdout: %s", stdout)
+			}
+			if got := decodeCLIError(t, stderr); got != test.want {
+				t.Fatalf("error=%q, want %q", got, test.want)
+			}
+		})
 	}
 }
 
@@ -392,6 +500,65 @@ func TestAPIURLDefaultsToEnvironment(t *testing.T) {
 
 func stringID(id int64) string {
 	return strconv.FormatInt(id, 10)
+}
+
+type issueShortcutTest struct {
+	args        []string
+	id          int64
+	wantPatch   map[string]string
+	response    entity.Issue
+	wantMessage string
+}
+
+func assertIssueShortcut(t *testing.T, test issueShortcutTest) string {
+	t.Helper()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPatch || r.URL.Path != "/api/v1/issues/"+stringID(test.id) {
+			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
+		var input map[string]string
+		if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+			t.Fatal(err)
+		}
+		if !stringMapEqual(input, test.wantPatch) {
+			t.Fatalf("unexpected input: %+v", input)
+		}
+		writeTestJSON(t, w, apiResponse[entity.Issue]{Data: test.response})
+	}))
+	defer server.Close()
+
+	args := append([]string{"--api-url", server.URL}, test.args...)
+	stdout, stderr, code := runCLI(t, args)
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr)
+	}
+	if test.wantMessage != "" && !strings.Contains(stdout, test.wantMessage) {
+		t.Fatalf("stdout does not contain %q: %s", test.wantMessage, stdout)
+	}
+	return stdout
+}
+
+func stringMapEqual(left map[string]string, right map[string]string) bool {
+	if len(left) != len(right) {
+		return false
+	}
+	for key, leftValue := range left {
+		if right[key] != leftValue {
+			return false
+		}
+	}
+	return true
+}
+
+func decodeCLIError(t *testing.T, stderr string) string {
+	t.Helper()
+	var payload struct {
+		Error string `json:"error"`
+	}
+	if err := json.Unmarshal([]byte(stderr), &payload); err != nil {
+		t.Fatalf("decode stderr: %v: %s", err, stderr)
+	}
+	return payload.Error
 }
 
 func runCLI(t *testing.T, args []string) (string, string, int) {
