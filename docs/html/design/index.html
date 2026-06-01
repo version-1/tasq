@@ -289,25 +289,25 @@
                 <h3>issue-tracker</h3>
                 <p>Source of truth for issue state and display aggregation.</p>
                 <ul>
-                  <li>SQLite: issues, work items, received events, run snapshots</li>
-                  <li>Creates work items when issues become ready</li>
-                  <li>Accepts idempotent orchestrator events</li>
+                  <li>SQLite: issues, comments, projects, workspaces</li>
+                  <li>Owns issue CRUD, status changes, and summaries</li>
+                  <li>Serves issue data to UI, TUI, CLI, and orchestrator clients</li>
                 </ul>
               </article>
               <div class="flow">
                 <div class="arrow"><strong>UI/TUI -> issue-tracker</strong>summary, issue CRUD, status updates</div>
-                <div class="arrow"><strong>orchestrator -> issue-tracker</strong>claim work item, push run event</div>
+                <div class="arrow"><strong>orchestrator -> issue-tracker</strong>fetch issues and issue states</div>
               </div>
             </div>
 
             <div class="stack">
               <article class="service orch">
                 <h3>orchestrator</h3>
-                <p>Source of truth for run state and outbox delivery.</p>
+                <p>Source of truth for run state and runner diagnostics.</p>
                 <ul>
-                  <li>SQLite: runs, outbox events</li>
-                  <li>Polls and claims work items</li>
-                  <li>Pushes run events with retry</li>
+                  <li>SQLite: runs, runner events, workspace metadata, setup failures</li>
+                  <li>Prepares per-issue workspaces</li>
+                  <li>Exposes optional loopback runtime inspection APIs</li>
                 </ul>
               </article>
               <article class="service future">
@@ -339,24 +339,9 @@
                 <td>User-facing source of truth.</td>
               </tr>
               <tr>
-                <td>Work item claim and lease</td>
-                <td><span class="pill issue">issue-tracker</span></td>
-                <td>Prevents duplicate execution across orchestrators.</td>
-              </tr>
-              <tr>
                 <td>Run records and attempts</td>
                 <td><span class="pill orch">orchestrator</span></td>
-                <td>Created after successful claim.</td>
-              </tr>
-              <tr>
-                <td>Outbox delivery</td>
-                <td><span class="pill orch">orchestrator</span></td>
-                <td>Run events are retried until accepted.</td>
-              </tr>
-              <tr>
-                <td>Displayed run snapshot</td>
-                <td><span class="pill issue">issue-tracker</span></td>
-                <td>Derived from accepted orchestrator events.</td>
+                <td>Stored in the orchestrator runstore.</td>
               </tr>
               <tr>
                 <td>Rendered dashboard</td>
@@ -373,26 +358,25 @@
         <div class="sequence">
           <article class="step">
             <b>1. Ready issue</b>
-            <span>User moves an issue to ready. The issue-tracker creates a pending work item.</span>
+            <span>User moves an issue to an active state in the issue-tracker.</span>
           </article>
           <article class="step">
-            <b>2. Claim lease</b>
-            <span>Orchestrator polls the queue and claims one work item with claimed_by, claim_token, and lease_until.</span>
+            <b>2. Fetch issue</b>
+            <span>Orchestrator reads candidate issues and current issue states through the issue-tracker API.</span>
           </article>
           <article class="step">
             <b>3. Run record</b>
-            <span>Orchestrator stores a run in its SQLite database and writes run events to the outbox.</span>
+            <span>Orchestrator stores a run in its SQLite database and records runner events as diagnostics.</span>
           </article>
           <article class="step">
-            <b>4. Event push</b>
-            <span>Outbox events are pushed to the issue-tracker. Duplicate event ids are accepted without double applying.</span>
+            <b>4. Runtime API</b>
+            <span>The optional loopback API reads active runs and recent runner events from the runstore.</span>
           </article>
           <article class="step">
             <b>5. Summary</b>
-            <span>Issue-tracker applies valid claim-token events, updates issue status, and serves summary to web-ui and tui.</span>
+            <span>Issue-tracker continues serving issue summaries to web-ui and tui from its own issue data.</span>
           </article>
         </div>
-        <p class="note">Late events from expired claim tokens are recorded as received events but do not update issue state.</p>
       </section>
     </main>
   </body>

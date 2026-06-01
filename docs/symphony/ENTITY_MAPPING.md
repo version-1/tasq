@@ -26,8 +26,8 @@ The Symphony SPEC does not define a Project entity. The closest concept is `trac
 
 - Managed by the issue-tracker service.
 - `Project.Key` (e.g., `TASQ`) identifies the project in CLI and API contexts.
-- Not referenced by the orchestrator. The orchestrator does not need project scope because it
-  receives work items from the issue-tracker, which already applies project-level filtering.
+- Not referenced by the orchestrator. The orchestrator does not need project scope because it uses
+  issue-tracker issue APIs that already apply the relevant issue filtering.
 
 ### Relationships
 

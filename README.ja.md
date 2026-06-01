@@ -4,8 +4,8 @@
 
 ## Components
 
-- Issue Tracker: SQLite backed の Go REST API です。issues、work items、UI summaries を所有します。
-- Orchestrator: SQLite backed の Go worker です。実行可能な work を claim し、run state を記録します。
+- Issue Tracker: SQLite backed の Go REST API です。issues、comments、projects、workspaces、UI summaries を所有します。
+- Orchestrator: SQLite backed の Go service です。runtime inspection 用に run state と runner events を記録します。
 - `tq`: agent と workflow tool が issue-tracker API 経由で issue を作成、取得、一覧表示、更新するための Go CLI です。
 - Web UI: issue-tracker API 用の Next.js client です。
 - TUI: 同じ issue-tracker API を使う Go terminal client です。

@@ -4,8 +4,8 @@ Local-first issue tracker and task orchestrator for managing executable work, as
 
 ## Components
 
-- Issue Tracker: Go REST API backed by SQLite. It owns issues, work items, and UI summaries.
-- Orchestrator: Go worker backed by SQLite. It claims executable work and records run state.
+- Issue Tracker: Go REST API backed by SQLite. It owns issues, comments, projects, workspaces, and UI summaries.
+- Orchestrator: Go service backed by SQLite. It records run state and runner events for runtime inspection.
 - `tq`: Go CLI for agents and workflow tools to create, read, list, and update issues through the issue-tracker API.
 - Web UI: Next.js client for the issue-tracker API.
 - TUI: Go terminal client for the same issue-tracker API.

@@ -284,8 +284,8 @@
         <h3>概要</h3>
         <div class="grid">
           <div class="metric"><strong>Composition root</strong><span><code>cmd/orchestrator</code> が SQLite store、issue tracker client、workflow config、Codex runner を組み立てます。</span></div>
-          <div class="metric"><strong>Coordinator</strong><span><code>worker</code> が polling、claim、workspace setup、run lifecycle、lease renewal、retry、reconciliation、cleanup、outbox flush を担当します。</span></div>
-          <div class="metric"><strong>Persistence</strong><span><code>runstore</code> が runs、runner events、workspace metadata、setup failures、outbox events を SQLite に保存します。</span></div>
+          <div class="metric"><strong>Coordinator</strong><span><code>workflow</code>、<code>workspace</code>、<code>runner</code> の境界で config、filesystem setup、Codex execution を分離します。</span></div>
+          <div class="metric"><strong>Persistence</strong><span><code>runstore</code> が runs、runner events、workspace metadata、setup failures を SQLite に保存します。</span></div>
           <div class="metric"><strong>External APIs</strong><span><code>tracker</code> は issue-tracker HTTP API、<code>runner.CodexRunner</code> は <code>codex app-server</code> の JSON-RPC と接続します。</span></div>
           <div class="metric"><strong>Workspace boundary</strong><span><code>workspace.Manager</code> が issue key を sanitize し、root escape を防ぎ、必要に応じて source をコピーします。</span></div>
           <div class="metric"><strong>Workflow contract</strong><span><code>WORKFLOW.md</code> の front matter が poll interval、workspace path、concurrency、turn、retry、stall、Codex timeout を制御します。</span></div>
@@ -319,17 +319,17 @@
             <text class="label" x="590" y="58" text-anchor="middle">cmd/orchestrator</text>
             <text class="small" x="590" y="82" text-anchor="middle">flags, signals, config, wiring</text>
             <rect class="box coord" x="430" y="160" width="320" height="96"></rect>
-            <text class="label" x="590" y="196" text-anchor="middle">worker</text>
-            <text class="small" x="590" y="220" text-anchor="middle">poll, claim, run, renew, retry, cleanup</text>
+            <text class="label" x="590" y="196" text-anchor="middle">orchestrator</text>
+            <text class="small" x="590" y="220" text-anchor="middle">workflow, workspace, runner, HTTP state</text>
             <rect class="box adapter" x="70" y="330" width="200" height="96"></rect>
             <text class="label" x="170" y="366" text-anchor="middle">tracker</text>
             <text class="small" x="170" y="390" text-anchor="middle">HTTP issue-tracker adapter</text>
             <rect class="box adapter" x="330" y="330" width="200" height="96"></rect>
             <text class="label" x="430" y="366" text-anchor="middle">runstore</text>
-            <text class="small" x="430" y="390" text-anchor="middle">SQLite persistence + outbox</text>
+            <text class="small" x="430" y="390" text-anchor="middle">SQLite run persistence</text>
             <rect class="box domain" x="590" y="330" width="200" height="96"></rect>
             <text class="label" x="690" y="366" text-anchor="middle">run</text>
-            <text class="small" x="690" y="390" text-anchor="middle">Run, Status, OutboxEvent</text>
+            <text class="small" x="690" y="390" text-anchor="middle">Run, Status, RunnerEvent</text>
             <rect class="box adapter" x="850" y="330" width="200" height="96"></rect>
             <text class="label" x="950" y="366" text-anchor="middle">runner / workspace</text>
             <text class="small" x="950" y="390" text-anchor="middle">Codex process + per-issue dirs</text>
@@ -354,15 +354,14 @@
       <section id="structure">
         <h3>パッケージ構造</h3>
         <p>パッケージ名、責務、ファイル名で絞り込めます。</p>
-        <input id="packageFilter" type="search" placeholder="例: runner, outbox, workspace">
+        <input id="packageFilter" type="search" placeholder="例: runner, runstore, workspace">
         <table id="packageTable">
           <thead><tr><th>Package</th><th>主な責務</th><th>主要ファイル</th><th>依存先</th></tr></thead>
           <tbody>
-            <tr><td><code>cmd/orchestrator</code></td><td>CLI flags、signal context、store/client/workflow/runner の構築。</td><td><code>main.go</code>, <code>WORKFLOW.md</code></td><td>worker, runstore, tracker, workflow, runner</td></tr>
-            <tr><td><code>worker</code></td><td>polling、claim、workspace creation、run status、lease renewal、retry、reconciliation、cleanup、outbox flush。</td><td><code>worker.go</code></td><td>store, trackerClient, runner, workspace, workflow config</td></tr>
-            <tr><td><code>runstore</code></td><td>SQLite migration と runs / runner_events / workspace metadata / outbox events の永続化。</td><td><code>store.go</code>, <code>db/schema/orchestrator.sql</code></td><td>run domain, schema</td></tr>
-            <tr><td><code>run</code></td><td>Run、Status、OutboxEvent、RunnerEvent の安定した domain record。</td><td><code>model.go</code></td><td>標準ライブラリのみ</td></tr>
-            <tr><td><code>tracker</code></td><td>work item claim、lease renewal、issue fetch、run event 送信の HTTP adapter。</td><td><code>client.go</code></td><td>issue tracker API contracts, run events</td></tr>
+            <tr><td><code>cmd/orchestrator</code></td><td>CLI flags、signal context、store/client/workflow/runner の構築。</td><td><code>main.go</code>, <code>WORKFLOW.md</code></td><td>runstore, tracker, workflow, runner</td></tr>
+            <tr><td><code>runstore</code></td><td>SQLite migration と runs / runner_events / workspace metadata / setup failures の永続化。</td><td><code>store.go</code>, <code>db/schema/orchestrator.sql</code></td><td>run domain, schema</td></tr>
+            <tr><td><code>run</code></td><td>Run、Status、RunnerEvent の安定した domain record。</td><td><code>model.go</code></td><td>標準ライブラリのみ</td></tr>
+            <tr><td><code>tracker</code></td><td>issue-tracker API から issue と issue state を取得する HTTP adapter。</td><td><code>client.go</code></td><td>issue tracker API contracts</td></tr>
             <tr><td><code>runner</code></td><td>Runner abstraction、SimulatedRunner、Codex app-server runner。</td><td><code>runner.go</code></td><td>run statuses, workspace, issue entity</td></tr>
             <tr><td><code>workflow</code></td><td><code>WORKFLOW.md</code> の load、front matter parse、path normalize、prompt template 提供。</td><td><code>workflow.go</code></td><td>標準ライブラリのみ</td></tr>
             <tr><td><code>workspace</code></td><td>issue ごとの workspace 作成、source copy、root escape 防止、terminal cleanup。</td><td><code>workspace.go</code></td><td>filesystem</td></tr>
@@ -372,50 +371,28 @@
 
       <section id="runtime">
         <h3>実行フロー</h3>
-        <p>各 tick は未送信 outbox を先に flush し、その後 work item を claim して runner 実行と lease renewal を進めます。</p>
+        <p>orchestrator は issue data を読み、workspace / run metadata を準備し、runner diagnostics を local runstore に記録します。</p>
         <div class="diagram">
           <pre class="mermaid">
 sequenceDiagram
   autonumber
   participant Main as cmd/orchestrator
-  participant Worker as worker
+  participant Orch as orchestrator
   participant Store as runstore
   participant Tracker as issue tracker
   participant WS as workspace.Manager
   participant Runner as runner.CodexRunner
 
   Main->>Store: Open(db) + migrate schema
-  Main->>Worker: NewWithConfig(definition, CodexRunner)
-  Worker->>Tracker: Issues()
-  Worker->>WS: terminal issue workspace cleanup
-  loop poll interval
-    Worker->>Store: UnsentOutboxEvents(limit=20)
-    Worker->>Tracker: SendRunEvent(event)
-    Worker->>Store: MarkOutboxEventSent(id)
-    Worker->>Tracker: ClaimWorkItem(orchestratorID, leaseSeconds)
-    alt work item なし
-      Worker-->>Worker: 次の tick まで待機
-    else claim 成功
-      Worker->>WS: CreateForIssue("issue-{id}")
-      Worker->>Store: UpsertWorkspaceMetadata(...)
-      Worker->>Store: CreateRun(status=queued)
-      Worker->>Store: UpdateRunStatus(running)
-      par runner execution
-        Worker->>Runner: Run(ctx, Task)
-        Runner-->>Store: RecordRunnerEvent via callback
-      and lease loop
-        Worker->>Tracker: Issue(id) for reconcile
-        Worker->>Tracker: RenewWorkItemLease(...)
-      end
-      Worker->>Store: UpdateRunStatus(result.status, result.error)
-      Worker->>Store: UnsentOutboxEvents(...)
-      Worker->>Tracker: SendRunEvent(...)
-      opt failed or cancelled
-        Worker->>WS: RemoveForIssue(...)
-        Worker->>Store: MarkWorkspaceCleanup(...)
-      end
-    end
-  end
+  Main->>Orch: Load workflow config
+  Orch->>Tracker: Issues() / IssueStatesByIDs(...)
+  Orch->>WS: CreateForIssue("issue-{id}")
+  Orch->>Store: UpsertWorkspaceMetadata(...)
+  Orch->>Store: CreateRun(status=queued)
+  Orch->>Store: UpdateRunStatus(running)
+  Orch->>Runner: Run(ctx, Task)
+  Runner-->>Store: RecordRunnerEvent via callback
+  Orch->>Store: UpdateRunStatus(result.status, result.error)
           </pre>
         </div>
       </section>
@@ -442,8 +419,8 @@ flowchart TD
             </pre>
           </div>
           <div>
-            <div class="contract"><strong>Task contract</strong><span><code>WorkItem</code>、<code>RunID</code>、<code>Workspace</code>、prompt template、max turns、continuation flag、command、read/turn timeout、<code>OnEvent</code> を渡します。</span></div>
-            <div class="contract" style="margin-top:10px"><strong>Result contract</strong><span><code>Status</code> は run status に戻されます。<code>Error</code> は永続化され、outbox 経由で tracker に送られます。</span></div>
+            <div class="contract"><strong>Task contract</strong><span><code>Issue</code>、<code>RunID</code>、<code>Workspace</code>、prompt template、max turns、continuation flag、command、read/turn timeout、<code>OnEvent</code> を渡します。</span></div>
+            <div class="contract" style="margin-top:10px"><strong>Result contract</strong><span><code>Status</code> は run status に戻され、<code>Error</code> は run record に永続化されます。</span></div>
             <div class="contract" style="margin-top:10px"><strong>Event contract</strong><span>runner event は event type、message、payload JSON、run id、occurred_at を保存し、運用可視性を確保します。</span></div>
           </div>
         </div>
@@ -451,7 +428,7 @@ flowchart TD
 
       <section id="state">
         <h3>状態と永続化</h3>
-        <p>状態は worker のメモリ、SQLite、filesystem workspace、tracker 側 lease/status に分かれています。</p>
+        <p>状態は SQLite、filesystem workspace、tracker 側 issue status に分かれています。</p>
         <div class="diagram">
           <pre class="mermaid">
 stateDiagram-v2
@@ -468,13 +445,11 @@ stateDiagram-v2
         <table style="margin-top:14px">
           <thead><tr><th>Owner</th><th>State</th><th>更新元</th><th>目的</th></tr></thead>
           <tbody>
-            <tr><td>Worker memory</td><td><code>running</code>, <code>claimed</code></td><td><code>canDispatch</code>, <code>markRunning</code>, <code>release</code></td><td>同一 issue の重複実行を避け、process 内 concurrency を制御します。</td></tr>
             <tr><td>SQLite</td><td><code>runs</code></td><td><code>CreateRun</code>, <code>UpdateRunStatus</code></td><td>run lifecycle と結果を永続化します。</td></tr>
-            <tr><td>SQLite</td><td><code>outbox_events</code></td><td><code>EnqueueRunEvent</code>, <code>MarkOutboxEventSent</code></td><td>run state change を tracker へ確実に届けます。</td></tr>
             <tr><td>SQLite</td><td><code>runner_events</code></td><td><code>RecordRunnerEvent</code></td><td>process、JSON-RPC、stderr、retry、診断イベントの timeline を残します。</td></tr>
             <tr><td>SQLite</td><td><code>workspace_metadata</code>, <code>workspace_setup_failures</code></td><td>workspace setup / cleanup</td><td>workspace lifecycle と setup failure を監査可能にします。</td></tr>
             <tr><td>Filesystem</td><td>per-issue workspace</td><td><code>workspace.Manager</code></td><td>issue ごとの隔離された作業ディレクトリです。</td></tr>
-            <tr><td>Issue tracker</td><td>work item lease / issue status</td><td><code>ClaimWorkItem</code>, <code>RenewWorkItemLease</code>, <code>Issue</code></td><td>複数 orchestrator 間の協調と cancellation の source of truth です。</td></tr>
+            <tr><td>Issue tracker</td><td>issue status</td><td><code>Issue</code>, <code>Issues</code>, <code>IssueStatesByIDs</code></td><td>issue data と cancellation の source of truth です。</td></tr>
           </tbody>
         </table>
       </section>
@@ -482,7 +457,7 @@ stateDiagram-v2
       <section id="contracts">
         <h3>契約</h3>
         <div class="grid">
-          <div class="note"><strong>trackerClient</strong><span><code>ClaimWorkItem</code>、<code>RenewWorkItemLease</code>、<code>SendRunEvent</code>、<code>Issue</code>、<code>Issues</code> が worker から見える API surface です。</span></div>
+          <div class="note"><strong>trackerClient</strong><span><code>Issue</code>、<code>Issues</code>、<code>IssueStatesByIDs</code> が orchestrator から見える API surface です。</span></div>
           <div class="note"><strong>workflow front matter</strong><span><code>polling.interval_ms</code>、<code>workspace.root/source</code>、<code>agent.max_concurrent_agents</code>、<code>max_turns</code>、continuation、retry、Codex timeout を扱います。</span></div>
           <div class="note"><strong>workspace keys</strong><span>issue identifier は英数字、dot、underscore、dash のみを残し、それ以外は underscore に変換します。</span></div>
         </div>
@@ -491,8 +466,8 @@ stateDiagram-v2
       <section id="risks">
         <h3>リスク / 未確認点</h3>
         <div class="grid">
-          <div class="note risk high"><strong>Concurrency semantics</strong><span><code>maxConcurrent</code>、<code>running</code>、<code>claimed</code> はありますが、現在の tick path は claim した item を inline で実行します。設定値どおりの並列 throughput を前提にする前に確認が必要です。</span></div>
-          <div class="note risk"><strong>Process restart recovery</strong><span>runs と outbox は永続化されますが、active な <code>running</code>/<code>claimed</code> メモリ状態を active run から replay して復元する形ではありません。</span></div>
+          <div class="note risk high"><strong>Concurrency semantics</strong><span><code>max_concurrent_agents</code> は workflow config から parse されますが、現在の orchestration は durable な cross-process coordination table を公開していません。設定値どおりの並列 throughput を前提にする前に確認が必要です。</span></div>
+          <div class="note risk"><strong>Process restart recovery</strong><span>runs は永続化されますが、active runtime coordination を過去の run row から replay して復元する形ではありません。</span></div>
           <div class="note risk"><strong>Prompt rendering</strong><span>template substitution は issue id/title/description と attempt に絞られています。追加 field は contract 変更が必要です。</span></div>
           <div class="note risk"><strong>Runner observability</strong><span>runner events と setup failures は保存されますが、運用 UI/API として見せる部分は別途 consumer 側に依存します。</span></div>
           <div class="note risk"><strong>Filesystem cost</strong><span>source tree copy は <code>.git</code>、<code>.worktrees</code>、<code>node_modules</code> を skip しますが、大きい repo ではまだコストが高くなり得ます。</span></div>
@@ -508,7 +483,6 @@ stateDiagram-v2
             <ul>
               <li><code>internal/orchestrator/README.md</code></li>
               <li><code>cmd/orchestrator/main.go</code></li>
-              <li><code>internal/orchestrator/worker/worker.go</code></li>
               <li><code>internal/orchestrator/runner/runner.go</code></li>
               <li><code>internal/orchestrator/runstore/store.go</code></li>
               <li><code>db/schema/orchestrator.sql</code></li>
