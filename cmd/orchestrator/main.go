@@ -8,9 +8,11 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/version-1/tasq/internal/orchestrator/coordinator"
 	"github.com/version-1/tasq/internal/orchestrator/httpserver"
+	"github.com/version-1/tasq/internal/orchestrator/runner"
 	"github.com/version-1/tasq/internal/orchestrator/runstore"
 	"github.com/version-1/tasq/internal/orchestrator/tracker"
 	"github.com/version-1/tasq/internal/orchestrator/workflow"
@@ -42,6 +44,7 @@ func main() {
 		log.Fatalf("load workflow: %v", err)
 	}
 	var refresher httpserver.Refresher
+	var dispatcher *coordinator.Dispatcher
 	if *issueTrackerURL != "" {
 		workspaceManager, err := workspace.NewManagerWithSourceAndHooks(definition.Config.WorkspaceRoot, definition.Config.WorkspaceSource, workspace.HookConfig{
 			AfterCreate:  definition.Config.HookAfterCreate,
@@ -53,10 +56,23 @@ func main() {
 		if err != nil {
 			log.Fatalf("create workspace manager: %v", err)
 		}
+		trackerClient := tracker.NewClient(*issueTrackerURL)
+		dispatcher, err = coordinator.NewDispatcher(coordinator.DispatcherConfig{
+			Tracker:           trackerClient,
+			Store:             store,
+			Runner:            runner.CodexRunner{},
+			WorkflowConfig:    definition.Config,
+			PromptTemplate:    definition.PromptTemplate,
+			MaxConcurrentRuns: definition.Config.MaxConcurrentRuns,
+		})
+		if err != nil {
+			log.Fatalf("create orchestrator dispatcher: %v", err)
+		}
 		poller, err := coordinator.NewPoller(coordinator.PollerConfig{
-			Tracker:        tracker.NewClient(*issueTrackerURL),
+			Tracker:        trackerClient,
 			Store:          store,
 			Workspaces:     workspaceManager,
+			Dispatcher:     dispatcher,
 			Interval:       definition.Config.PollInterval,
 			MaxActiveRuns:  definition.Config.MaxConcurrentRuns,
 			OrchestratorID: "tasq-orchestrator",
@@ -84,4 +100,11 @@ func main() {
 		log.Printf("orchestrator http server disabled; set --port or workflow server.port to enable")
 	}
 	<-ctx.Done()
+	if dispatcher != nil {
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		if err := dispatcher.Shutdown(shutdownCtx); err != nil {
+			log.Printf("shutdown orchestrator dispatcher: %v", err)
+		}
+	}
 }
