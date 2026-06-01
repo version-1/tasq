@@ -92,6 +92,46 @@ func TestDispatcherRecordsFailedRun(t *testing.T) {
 	if updated.Status != run.StatusFailed || updated.Error != "startup failed" {
 		t.Fatalf("updated run = %+v", updated)
 	}
+	if updated.RetryAfter == nil {
+		t.Fatalf("retry after was not set: %+v", updated)
+	}
+	events, err := store.RunnerEvents(ctx, storedRun.RunID, 10)
+	if err != nil {
+		t.Fatalf("runner events: %v", err)
+	}
+	if !containsEvent(events, "retry_scheduled") {
+		t.Fatalf("events = %+v", eventTypes(events))
+	}
+}
+
+func TestDispatcherRecordsRetryExhaustedAtMaxAttempts(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store := openTestStore(t)
+	storedRun := createQueuedRunWithAttempt(t, store, 42, 3)
+	testRunner := &recordingRunner{result: runner.Result{Status: run.StatusFailed, Error: "startup failed"}}
+	dispatcher := newTestDispatcher(t, store, testRunner, []entity.Issue{{ID: 42, Status: entity.StatusReady}})
+
+	if err := dispatcher.Dispatch(ctx, []run.Run{storedRun}); err != nil {
+		t.Fatalf("dispatch: %v", err)
+	}
+	shutdownDispatcher(t, dispatcher)
+
+	updated, err := store.RunByRunID(ctx, storedRun.RunID)
+	if err != nil {
+		t.Fatalf("run by id: %v", err)
+	}
+	if updated.Status != run.StatusFailed || updated.RetryAfter != nil {
+		t.Fatalf("updated run = %+v", updated)
+	}
+	events, err := store.RunnerEvents(ctx, storedRun.RunID, 10)
+	if err != nil {
+		t.Fatalf("runner events: %v", err)
+	}
+	if !containsEvent(events, "retry_exhausted") {
+		t.Fatalf("events = %+v", eventTypes(events))
+	}
 }
 
 func TestDispatcherRecoversPanickingRunner(t *testing.T) {
@@ -152,12 +192,146 @@ func TestDispatcherRespectsConcurrencyLimit(t *testing.T) {
 	}
 }
 
+func TestCalculateBackoff(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		attempt int
+		want    time.Duration
+	}{
+		{attempt: 1, want: 10 * time.Second},
+		{attempt: 2, want: 20 * time.Second},
+		{attempt: 3, want: 40 * time.Second},
+		{attempt: 4, want: 80 * time.Second},
+		{attempt: 5, want: 160 * time.Second},
+	}
+	for _, tt := range tests {
+		if got := calculateBackoff(tt.attempt, 5*time.Minute); got != tt.want {
+			t.Fatalf("attempt %d backoff = %s, want %s", tt.attempt, got, tt.want)
+		}
+	}
+	if got := calculateBackoff(10, 30*time.Second); got != 30*time.Second {
+		t.Fatalf("capped backoff = %s", got)
+	}
+}
+
+func TestDispatcherReconcileCancelsQueuedRunForTerminalIssue(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store := openTestStore(t)
+	storedRun := createQueuedRun(t, store, 42)
+	dispatcher := newTestDispatcher(t, store, &recordingRunner{}, []entity.Issue{{ID: 42, Status: entity.StatusDone}})
+
+	if err := dispatcher.Reconcile(ctx, []run.Run{storedRun}); err != nil {
+		t.Fatalf("reconcile: %v", err)
+	}
+
+	updated, err := store.RunByRunID(ctx, storedRun.RunID)
+	if err != nil {
+		t.Fatalf("run by id: %v", err)
+	}
+	if updated.Status != run.StatusCancelled || updated.Error == "" {
+		t.Fatalf("updated run = %+v", updated)
+	}
+}
+
+func TestDispatcherReconcileCancelsRunningRunForTerminalIssue(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store := openTestStore(t)
+	storedRun := createQueuedRun(t, store, 42)
+	storedRun, err := store.UpdateRunStatus(ctx, storedRun.RunID, run.StatusRunning, "")
+	if err != nil {
+		t.Fatalf("mark running: %v", err)
+	}
+	dispatcher := newTestDispatcher(t, store, &recordingRunner{}, []entity.Issue{{ID: 42, Status: entity.StatusFailed}})
+	cancelled := false
+	dispatcher.registerCancel(storedRun.RunID, func() { cancelled = true })
+
+	if err := dispatcher.Reconcile(ctx, []run.Run{storedRun}); err != nil {
+		t.Fatalf("reconcile: %v", err)
+	}
+
+	if !cancelled {
+		t.Fatal("cancel func was not called")
+	}
+	updated, err := store.RunByRunID(ctx, storedRun.RunID)
+	if err != nil {
+		t.Fatalf("run by id: %v", err)
+	}
+	if updated.Status != run.StatusCancelled {
+		t.Fatalf("updated run = %+v", updated)
+	}
+}
+
+func TestDispatcherDetectStallsFailsSilentRunner(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store := openTestStore(t)
+	storedRun := createQueuedRun(t, store, 42)
+	storedRun, err := store.UpdateRunStatus(ctx, storedRun.RunID, run.StatusRunning, "")
+	if err != nil {
+		t.Fatalf("mark running: %v", err)
+	}
+	dispatcher := newTestDispatcher(t, store, &recordingRunner{}, []entity.Issue{{ID: 42, Status: entity.StatusReady}})
+	dispatcher.workflowConfig.StallTimeout = time.Nanosecond
+
+	if err := dispatcher.DetectStalls(ctx, []run.Run{storedRun}); err != nil {
+		t.Fatalf("detect stalls: %v", err)
+	}
+
+	updated, err := store.RunByRunID(ctx, storedRun.RunID)
+	if err != nil {
+		t.Fatalf("run by id: %v", err)
+	}
+	if updated.Status != run.StatusFailed || !strings.Contains(updated.Error, "stall timeout") {
+		t.Fatalf("updated run = %+v", updated)
+	}
+}
+
+func TestDispatcherDetectStallsLeavesRecentRunnerRunning(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store := openTestStore(t)
+	storedRun := createQueuedRun(t, store, 42)
+	storedRun, err := store.UpdateRunStatus(ctx, storedRun.RunID, run.StatusRunning, "")
+	if err != nil {
+		t.Fatalf("mark running: %v", err)
+	}
+	if err := store.RecordRunnerEvent(ctx, storedRun.RunID, "progress", "working", ""); err != nil {
+		t.Fatalf("record event: %v", err)
+	}
+	dispatcher := newTestDispatcher(t, store, &recordingRunner{}, []entity.Issue{{ID: 42, Status: entity.StatusReady}})
+	dispatcher.workflowConfig.StallTimeout = time.Hour
+
+	if err := dispatcher.DetectStalls(ctx, []run.Run{storedRun}); err != nil {
+		t.Fatalf("detect stalls: %v", err)
+	}
+
+	updated, err := store.RunByRunID(ctx, storedRun.RunID)
+	if err != nil {
+		t.Fatalf("run by id: %v", err)
+	}
+	if updated.Status != run.StatusRunning {
+		t.Fatalf("updated run = %+v", updated)
+	}
+}
+
 func createQueuedRun(t *testing.T, store *runstore.Store, issueID int64) run.Run {
+	t.Helper()
+	return createQueuedRunWithAttempt(t, store, issueID, 1)
+}
+
+func createQueuedRunWithAttempt(t *testing.T, store *runstore.Store, issueID int64, attempt int) run.Run {
 	t.Helper()
 	storedRun, err := store.CreateRun(context.Background(), runstore.CreateRunInput{
 		IssueID:        issueID,
 		Workspace:      filepath.Join(t.TempDir(), issueIdentifier(issueID)),
-		Attempt:        1,
+		Attempt:        attempt,
 		OrchestratorID: "test-orchestrator",
 	})
 	if err != nil {
@@ -177,7 +351,7 @@ func newTestDispatcherWithMax(t *testing.T, store *runstore.Store, testRunner ru
 		Tracker:           fakeTracker{issues: issues},
 		Store:             store,
 		Runner:            testRunner,
-		WorkflowConfig:    workflow.Config{MaxTurns: 2, CodexCommand: "codex app-server", CodexReadTimeout: time.Second, CodexTurnTimeout: time.Second},
+		WorkflowConfig:    workflow.Config{MaxTurns: 2, MaxRetryAttempts: 3, MaxRetryBackoff: 5 * time.Minute, StallTimeout: 5 * time.Minute, CodexCommand: "codex app-server", CodexReadTimeout: time.Second, CodexTurnTimeout: time.Second},
 		PromptTemplate:    "Do the task",
 		MaxConcurrentRuns: maxConcurrentRuns,
 	})
@@ -202,6 +376,15 @@ func eventTypes(events []run.RunnerEvent) []string {
 		output = append(output, event.EventType)
 	}
 	return output
+}
+
+func containsEvent(events []run.RunnerEvent, eventType string) bool {
+	for _, event := range events {
+		if event.EventType == eventType {
+			return true
+		}
+	}
+	return false
 }
 
 type recordingRunner struct {

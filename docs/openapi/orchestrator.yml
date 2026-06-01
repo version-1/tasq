@@ -25,9 +25,9 @@ paths:
       description: |
         Returns active run summaries from the orchestrator runstore.
 
-        `retrying` is currently returned as an empty array, and `codex_totals`
-        and `rate_limits` are currently returned as null because those values are
-        not persisted by the orchestrator yet.
+        `retrying` is currently returned as an empty array. `codex_totals`
+        aggregates token usage from active runs, and `rate_limits` is currently
+        returned as null because rate limit values are not persisted yet.
       responses:
         "200":
           description: Current orchestrator runtime state.
@@ -221,10 +221,7 @@ components:
           items:
             $ref: "#/components/schemas/RetrySummary"
         codex_totals:
-          type:
-            - object
-            - "null"
-          additionalProperties: true
+          $ref: "#/components/schemas/TokenSummary"
         rate_limits:
           type:
             - object

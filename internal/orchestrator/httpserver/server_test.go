@@ -63,6 +63,49 @@ func TestStateReturnsActiveRuns(t *testing.T) {
 	}
 }
 
+func TestStateReturnsTokenSummaries(t *testing.T) {
+	t.Parallel()
+
+	now := time.Date(2026, 5, 31, 10, 0, 0, 0, time.UTC)
+	store := &fakeStore{
+		activeRuns: []run.Run{
+			{RunID: "run-1", IssueID: 7, Status: run.StatusRunning, CreatedAt: now, UpdatedAt: now},
+			{RunID: "run-2", IssueID: 8, Status: run.StatusRunning, CreatedAt: now, UpdatedAt: now},
+		},
+		events: map[string][]run.RunnerEvent{},
+		tokens: map[string]run.TokenSummary{
+			"run-1": {InputTokens: 10, OutputTokens: 5, TotalTokens: 15},
+			"run-2": {InputTokens: 2, OutputTokens: 3, TotalTokens: 5},
+		},
+	}
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/state", nil)
+	rec := httptest.NewRecorder()
+
+	New(store, nil).Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d body = %s", rec.Code, rec.Body.String())
+	}
+	var payload struct {
+		Running []struct {
+			Tokens tokenSummary `json:"tokens"`
+		} `json:"running"`
+		CodexTotals tokenSummary `json:"codex_totals"`
+	}
+	if err := json.NewDecoder(rec.Body).Decode(&payload); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if len(payload.Running) != 2 {
+		t.Fatalf("running = %+v", payload.Running)
+	}
+	if payload.Running[0].Tokens.TotalTokens != 15 || payload.Running[1].Tokens.TotalTokens != 5 {
+		t.Fatalf("running tokens = %+v", payload.Running)
+	}
+	if payload.CodexTotals.InputTokens != 12 || payload.CodexTotals.OutputTokens != 8 || payload.CodexTotals.TotalTokens != 20 {
+		t.Fatalf("codex totals = %+v", payload.CodexTotals)
+	}
+}
+
 func TestIssueDetailHandlesMissingIssue(t *testing.T) {
 	t.Parallel()
 
@@ -111,6 +154,7 @@ type fakeStore struct {
 	runByIssue    run.Run
 	runByIssueErr error
 	events        map[string][]run.RunnerEvent
+	tokens        map[string]run.TokenSummary
 }
 
 func (f *fakeStore) ActiveRuns(ctx context.Context) ([]run.Run, error) {
@@ -126,6 +170,14 @@ func (f *fakeStore) RunByIssueID(ctx context.Context, issueID int64) (run.Run, e
 
 func (f *fakeStore) RunnerEvents(ctx context.Context, runID string, limit int) ([]run.RunnerEvent, error) {
 	return f.events[runID], nil
+}
+
+func (f *fakeStore) TokensByRunIDs(ctx context.Context, runIDs []string) (map[string]run.TokenSummary, error) {
+	output := make(map[string]run.TokenSummary, len(runIDs))
+	for _, runID := range runIDs {
+		output[runID] = f.tokens[runID]
+	}
+	return output, nil
 }
 
 type fakeRefresher struct {

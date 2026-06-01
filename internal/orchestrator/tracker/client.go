@@ -54,10 +54,7 @@ func (c *Client) IssuesByStates(ctx context.Context, states []string) ([]entity.
 	return output, nil
 }
 
-type IssueState struct {
-	ID     int64         `json:"id"`
-	Status entity.Status `json:"status"`
-}
+type IssueState = entity.IssueState
 
 func (c *Client) IssueStatesByIDs(ctx context.Context, ids []int64) ([]IssueState, error) {
 	if len(ids) == 0 {

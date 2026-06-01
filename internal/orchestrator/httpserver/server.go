@@ -19,6 +19,7 @@ type Store interface {
 	ActiveRuns(ctx context.Context) ([]run.Run, error)
 	RunByIssueID(ctx context.Context, issueID int64) (run.Run, error)
 	RunnerEvents(ctx context.Context, runID string, limit int) ([]run.RunnerEvent, error)
+	TokensByRunIDs(ctx context.Context, runIDs []string) (map[string]run.TokenSummary, error)
 }
 
 type Refresher interface {
@@ -98,9 +99,9 @@ type runRow struct {
 }
 
 type tokenSummary struct {
-	InputTokens  int `json:"input_tokens"`
-	OutputTokens int `json:"output_tokens"`
-	TotalTokens  int `json:"total_tokens"`
+	InputTokens  int64 `json:"input_tokens"`
+	OutputTokens int64 `json:"output_tokens"`
+	TotalTokens  int64 `json:"total_tokens"`
 }
 
 type retryRow struct{}
@@ -144,13 +145,27 @@ func (s *Server) state(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "state_query_failed", err.Error())
 		return
 	}
+	runIDs := make([]string, 0, len(runs))
+	for _, storedRun := range runs {
+		runIDs = append(runIDs, storedRun.RunID)
+	}
+	tokensByRunID, err := s.store.TokensByRunIDs(r.Context(), runIDs)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "state_query_failed", err.Error())
+		return
+	}
 	rows := make([]runRow, 0, len(runs))
+	totals := tokenSummary{}
 	for _, storedRun := range runs {
 		row, err := s.runRow(r.Context(), storedRun)
 		if err != nil {
 			writeError(w, http.StatusInternalServerError, "state_query_failed", err.Error())
 			return
 		}
+		row.Tokens = tokenSummaryFromRun(tokensByRunID[storedRun.RunID])
+		totals.InputTokens += row.Tokens.InputTokens
+		totals.OutputTokens += row.Tokens.OutputTokens
+		totals.TotalTokens += row.Tokens.TotalTokens
 		rows = append(rows, row)
 	}
 	response := stateResponse{
@@ -161,7 +176,7 @@ func (s *Server) state(w http.ResponseWriter, r *http.Request) {
 		},
 		Running:     rows,
 		Retrying:    []retryRow{},
-		CodexTotals: nil,
+		CodexTotals: totals,
 		RateLimits:  nil,
 	}
 	writeJSON(w, http.StatusOK, response)
@@ -296,6 +311,14 @@ func parseIssueIdentifier(identifier string) (int64, bool) {
 
 func issueIdentifier(issueID int64) string {
 	return fmt.Sprintf("issue-%d", issueID)
+}
+
+func tokenSummaryFromRun(summary run.TokenSummary) tokenSummary {
+	return tokenSummary{
+		InputTokens:  summary.InputTokens,
+		OutputTokens: summary.OutputTokens,
+		TotalTokens:  summary.TotalTokens,
+	}
 }
 
 func writeJSON(w http.ResponseWriter, status int, value any) {

@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"time"
 
@@ -44,6 +45,7 @@ func (s *Store) migrate(ctx context.Context) error {
 		name       string
 		definition string
 	}{
+		{name: "retry_after", definition: "TEXT NOT NULL DEFAULT ''"},
 		{name: "source_path", definition: "TEXT NOT NULL DEFAULT ''"},
 		{name: "populated_at", definition: "TEXT NOT NULL DEFAULT ''"},
 		{name: "cleanup_status", definition: "TEXT NOT NULL DEFAULT ''"},
@@ -106,7 +108,7 @@ func (s *Store) UpdateRunStatus(ctx context.Context, runID string, status run.St
 		return run.Run{}, fmt.Errorf("error must be 10000 characters or fewer")
 	}
 	now := nowString()
-	_, err := s.db.ExecContext(ctx, `UPDATE runs SET status = ?, error = ?, updated_at = ? WHERE run_id = ?`, status, errText, now, runID)
+	_, err := s.db.ExecContext(ctx, `UPDATE runs SET status = ?, error = ?, retry_after = '', updated_at = ? WHERE run_id = ?`, status, errText, now, runID)
 	if err != nil {
 		return run.Run{}, fmt.Errorf("update run status: %w", err)
 	}
@@ -115,6 +117,97 @@ func (s *Store) UpdateRunStatus(ctx context.Context, runID string, status run.St
 		return run.Run{}, err
 	}
 	return updatedRun, nil
+}
+
+func (s *Store) ScheduleRetry(ctx context.Context, runID string, errText string, retryAfter time.Time) (run.Run, error) {
+	if runID == "" {
+		return run.Run{}, fmt.Errorf("runId is required")
+	}
+	if runeCount(errText) > maxRunErrorLength {
+		return run.Run{}, fmt.Errorf("error must be 10000 characters or fewer")
+	}
+	now := nowString()
+	_, err := s.db.ExecContext(ctx, `UPDATE runs
+		SET status = ?, error = ?, retry_after = ?, updated_at = ?
+		WHERE run_id = ? AND status = ?`, run.StatusFailed, errText, formatTime(retryAfter), now, runID, run.StatusRunning)
+	if err != nil {
+		return run.Run{}, fmt.Errorf("schedule retry: %w", err)
+	}
+	return s.RunByRunID(ctx, runID)
+}
+
+func (s *Store) CompleteRunningRun(ctx context.Context, runID string, status run.Status, errText string) (run.Run, error) {
+	if status == run.StatusQueued || status == run.StatusRunning {
+		return run.Run{}, fmt.Errorf("completion status must be terminal")
+	}
+	if err := ValidateRunStatus(status); err != nil {
+		return run.Run{}, err
+	}
+	if runeCount(errText) > maxRunErrorLength {
+		return run.Run{}, fmt.Errorf("error must be 10000 characters or fewer")
+	}
+	now := nowString()
+	_, err := s.db.ExecContext(ctx, `UPDATE runs
+		SET status = ?, error = ?, retry_after = '', updated_at = ?
+		WHERE run_id = ? AND status = ?`, status, errText, now, runID, run.StatusRunning)
+	if err != nil {
+		return run.Run{}, fmt.Errorf("complete running run: %w", err)
+	}
+	return s.RunByRunID(ctx, runID)
+}
+
+func (s *Store) DueRetries(ctx context.Context, now time.Time) ([]run.Run, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT id, run_id, issue_id, status, workspace, attempt, error, retry_after, orchestrator_id, created_at, updated_at
+		FROM runs
+		WHERE status = ? AND retry_after != '' AND retry_after <= ?
+		ORDER BY retry_after ASC, id ASC`, run.StatusFailed, formatTime(now))
+	if err != nil {
+		return nil, fmt.Errorf("list due retries: %w", err)
+	}
+	defer rows.Close()
+	var runs []run.Run
+	for rows.Next() {
+		storedRun, err := scanRun(rows)
+		if err != nil {
+			return nil, err
+		}
+		runs = append(runs, storedRun)
+	}
+	return runs, rows.Err()
+}
+
+func (s *Store) RetryingRuns(ctx context.Context) ([]run.Run, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT id, run_id, issue_id, status, workspace, attempt, error, retry_after, orchestrator_id, created_at, updated_at
+		FROM runs
+		WHERE status = ? AND retry_after != ''
+		ORDER BY retry_after ASC, id ASC`, run.StatusFailed)
+	if err != nil {
+		return nil, fmt.Errorf("list retrying runs: %w", err)
+	}
+	defer rows.Close()
+	var runs []run.Run
+	for rows.Next() {
+		storedRun, err := scanRun(rows)
+		if err != nil {
+			return nil, err
+		}
+		runs = append(runs, storedRun)
+	}
+	return runs, rows.Err()
+}
+
+func (s *Store) RequeueRetry(ctx context.Context, runID string) (run.Run, error) {
+	if runID == "" {
+		return run.Run{}, fmt.Errorf("runId is required")
+	}
+	now := nowString()
+	_, err := s.db.ExecContext(ctx, `UPDATE runs
+		SET status = ?, attempt = attempt + 1, error = '', retry_after = '', updated_at = ?
+		WHERE run_id = ? AND status = ? AND retry_after != ''`, run.StatusQueued, now, runID, run.StatusFailed)
+	if err != nil {
+		return run.Run{}, fmt.Errorf("requeue retry: %w", err)
+	}
+	return s.RunByRunID(ctx, runID)
 }
 
 func (s *Store) RecordRunnerEvent(ctx context.Context, runID string, eventType string, message string, payloadJSON string) error {
@@ -162,6 +255,79 @@ func (s *Store) RunnerEvents(ctx context.Context, runID string, limit int) ([]ru
 		events = append(events, event)
 	}
 	return events, rows.Err()
+}
+
+func (s *Store) LastEventTimes(ctx context.Context, runIDs []string) (map[string]time.Time, error) {
+	output := make(map[string]time.Time, len(runIDs))
+	for _, runID := range runIDs {
+		if runID == "" {
+			continue
+		}
+		storedRun, err := s.RunByRunID(ctx, runID)
+		if err != nil {
+			return nil, fmt.Errorf("read run %s for event baseline: %w", runID, err)
+		}
+		output[runID] = storedRun.CreatedAt
+		var occurredAt string
+		err = s.db.QueryRowContext(ctx, `SELECT occurred_at
+			FROM runner_events
+			WHERE run_id = ?
+			ORDER BY occurred_at DESC, id DESC
+			LIMIT 1`, runID).Scan(&occurredAt)
+		if errors.Is(err, sql.ErrNoRows) {
+			continue
+		}
+		if err != nil {
+			return nil, fmt.Errorf("read last event time for %s: %w", runID, err)
+		}
+		parsed, err := parseTime(occurredAt)
+		if err != nil {
+			return nil, err
+		}
+		output[runID] = parsed
+	}
+	return output, nil
+}
+
+func (s *Store) TokensByRunIDs(ctx context.Context, runIDs []string) (map[string]run.TokenSummary, error) {
+	output := make(map[string]run.TokenSummary, len(runIDs))
+	for _, runID := range runIDs {
+		if runID != "" {
+			output[runID] = run.TokenSummary{}
+		}
+	}
+	for _, runID := range runIDs {
+		if runID == "" {
+			continue
+		}
+		rows, err := s.db.QueryContext(ctx, `SELECT payload_json
+			FROM runner_events
+			WHERE run_id = ? AND event_type = ?`, runID, "turn_completed")
+		if err != nil {
+			return nil, fmt.Errorf("query token events for %s: %w", runID, err)
+		}
+		summary := output[runID]
+		for rows.Next() {
+			var payloadJSON string
+			if err := rows.Scan(&payloadJSON); err != nil {
+				_ = rows.Close()
+				return nil, err
+			}
+			input, outputTokens, total, err := ExtractTokens(payloadJSON)
+			if err != nil {
+				_ = rows.Close()
+				return nil, err
+			}
+			summary.InputTokens += input
+			summary.OutputTokens += outputTokens
+			summary.TotalTokens += total
+		}
+		if err := rows.Close(); err != nil {
+			return nil, err
+		}
+		output[runID] = summary
+	}
+	return output, nil
 }
 
 func (s *Store) UpsertWorkspaceMetadata(ctx context.Context, input WorkspaceMetadataInput) error {
@@ -241,13 +407,13 @@ func (s *Store) WorkspaceSetupFailureCount(ctx context.Context) (int, error) {
 }
 
 func (s *Store) RunByRunID(ctx context.Context, runID string) (run.Run, error) {
-	row := s.db.QueryRowContext(ctx, `SELECT id, run_id, issue_id, status, workspace, attempt, error, orchestrator_id, created_at, updated_at
+	row := s.db.QueryRowContext(ctx, `SELECT id, run_id, issue_id, status, workspace, attempt, error, retry_after, orchestrator_id, created_at, updated_at
 		FROM runs WHERE run_id = ?`, runID)
 	return scanRun(row)
 }
 
 func (s *Store) ActiveRuns(ctx context.Context) ([]run.Run, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT id, run_id, issue_id, status, workspace, attempt, error, orchestrator_id, created_at, updated_at
+	rows, err := s.db.QueryContext(ctx, `SELECT id, run_id, issue_id, status, workspace, attempt, error, retry_after, orchestrator_id, created_at, updated_at
 		FROM runs
 		WHERE status IN (?, ?)
 		ORDER BY updated_at DESC, id DESC`, run.StatusQueued, run.StatusRunning)
@@ -268,7 +434,7 @@ func (s *Store) ActiveRuns(ctx context.Context) ([]run.Run, error) {
 }
 
 func (s *Store) RunByIssueID(ctx context.Context, issueID int64) (run.Run, error) {
-	row := s.db.QueryRowContext(ctx, `SELECT id, run_id, issue_id, status, workspace, attempt, error, orchestrator_id, created_at, updated_at
+	row := s.db.QueryRowContext(ctx, `SELECT id, run_id, issue_id, status, workspace, attempt, error, retry_after, orchestrator_id, created_at, updated_at
 		FROM runs
 		WHERE issue_id = ?
 		ORDER BY id DESC
@@ -280,10 +446,18 @@ func scanRun(row scanner) (run.Run, error) {
 	var storedRun run.Run
 	var createdAt string
 	var updatedAt string
-	if err := row.Scan(&storedRun.ID, &storedRun.RunID, &storedRun.IssueID, &storedRun.Status, &storedRun.Workspace, &storedRun.Attempt, &storedRun.Error, &storedRun.OrchestratorID, &createdAt, &updatedAt); err != nil {
+	var retryAfter string
+	if err := row.Scan(&storedRun.ID, &storedRun.RunID, &storedRun.IssueID, &storedRun.Status, &storedRun.Workspace, &storedRun.Attempt, &storedRun.Error, &retryAfter, &storedRun.OrchestratorID, &createdAt, &updatedAt); err != nil {
 		return run.Run{}, err
 	}
 	var err error
+	if retryAfter != "" {
+		parsed, err := parseTime(retryAfter)
+		if err != nil {
+			return run.Run{}, err
+		}
+		storedRun.RetryAfter = &parsed
+	}
 	storedRun.CreatedAt, err = parseTime(createdAt)
 	if err != nil {
 		return run.Run{}, err
