@@ -2,7 +2,6 @@ package entity
 
 import (
 	"errors"
-	"os"
 	"path/filepath"
 	"regexp"
 	"time"
@@ -212,7 +211,7 @@ func NormalizeCreateProject(input CreateProjectInput) (CreateProjectInput, error
 	if runeCount(input.Description) > maxDescriptionLength {
 		return input, errors.New("description must be 10000 characters or fewer")
 	}
-	if err := validateExistingDirectoryPath("location", input.Location); err != nil {
+	if err := validateAbsolutePath("location", input.Location); err != nil {
 		return input, err
 	}
 	return input, nil
@@ -231,7 +230,7 @@ func NormalizeCreateWorkspace(input CreateWorkspaceInput) (CreateWorkspaceInput,
 	if input.Path == "" {
 		return input, errors.New("path is required")
 	}
-	if err := validateExistingDirectoryPath("path", input.Path); err != nil {
+	if err := validateAbsolutePath("path", input.Path); err != nil {
 		return input, err
 	}
 	if input.Status == "" {
@@ -288,7 +287,7 @@ func NormalizeUpdateProject(input UpdateProjectInput) (UpdateProjectInput, error
 		return input, errors.New("description must be 10000 characters or fewer")
 	}
 	if input.Location != nil {
-		if err := validateExistingDirectoryPath("location", *input.Location); err != nil {
+		if err := validateAbsolutePath("location", *input.Location); err != nil {
 			return input, err
 		}
 	}
@@ -308,7 +307,7 @@ func NormalizeUpdateWorkspace(input UpdateWorkspaceInput) (UpdateWorkspaceInput,
 		}
 	}
 	if input.Path != nil {
-		if err := validateExistingDirectoryPath("path", *input.Path); err != nil {
+		if err := validateAbsolutePath("path", *input.Path); err != nil {
 			return input, err
 		}
 	}
@@ -376,7 +375,7 @@ func IsValidWorkspaceStatus(status WorkspaceStatus) bool {
 	}
 }
 
-func validateExistingDirectoryPath(field string, value string) error {
+func validateAbsolutePath(field string, value string) error {
 	if value == "" {
 		return errors.New(field + " is required")
 	}
@@ -385,13 +384,6 @@ func validateExistingDirectoryPath(field string, value string) error {
 	}
 	if !filepath.IsAbs(value) {
 		return errors.New(field + " must be an absolute path")
-	}
-	info, err := os.Stat(value)
-	if err != nil {
-		return errors.New(field + " must exist")
-	}
-	if !info.IsDir() {
-		return errors.New(field + " must be a directory")
 	}
 	return nil
 }

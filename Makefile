@@ -149,9 +149,9 @@ tui-up: orchestrator-up ## Run the TUI on the host against the Compose issue-tra
 tq: issue-tracker-up ## Run tq against the Compose issue-tracker API. Example: make tq ARGS="issue list"
 	@api="$(ISSUE_TRACKER_URL)"; \
 	if [ -z "$$api" ]; then \
-		api="http://issue-tracker:8080"; \
+		api="http://localhost:$$($(COMPOSE) port issue-tracker 8080 | sed 's/.*://')"; \
 	fi; \
-	$(COMPOSE) run --rm go-tools go run ./cmd/tq --api-url "$$api" $(ARGS)
+	go run ./cmd/tq --api-url "$$api" $(ARGS)
 
 .PHONY: dev-gui
 dev-gui: web-up ## Alias-style command for web-up.

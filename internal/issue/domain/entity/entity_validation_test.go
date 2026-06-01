@@ -80,7 +80,7 @@ func TestNormalizeCreateProject(t *testing.T) {
 		{name: "name too long", input: CreateProjectInput{Key: "PROJ", Name: strings.Repeat("x", 201), Location: location}, wantErr: true},
 		{name: "description too long", input: CreateProjectInput{Key: "PROJ", Name: "Project", Description: strings.Repeat("x", 10001), Location: location}, wantErr: true},
 		{name: "relative location", input: CreateProjectInput{Key: "PROJ", Name: "Project", Location: "relative"}, wantErr: true},
-		{name: "missing location", input: CreateProjectInput{Key: "PROJ", Name: "Project", Location: filepath.Join(location, "missing")}, wantErr: true},
+		{name: "nonexistent absolute location", input: CreateProjectInput{Key: "PROJ", Name: "Project", Location: filepath.Join(location, "missing")}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -113,7 +113,7 @@ func TestNormalizeUpdateProject(t *testing.T) {
 		{name: "name too long", input: UpdateProjectInput{Name: &longName}, wantErr: true},
 		{name: "description too long", input: UpdateProjectInput{Description: &longDescription}, wantErr: true},
 		{name: "relative location", input: UpdateProjectInput{Location: &relativeLocation}, wantErr: true},
-		{name: "missing location", input: UpdateProjectInput{Location: &missingLocation}, wantErr: true},
+		{name: "nonexistent absolute location", input: UpdateProjectInput{Location: &missingLocation}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -137,7 +137,7 @@ func TestNormalizeCreateWorkspace(t *testing.T) {
 		{name: "empty name", input: CreateWorkspaceInput{ProjectID: 1, Path: path}, wantErr: true},
 		{name: "name too long", input: CreateWorkspaceInput{ProjectID: 1, Name: strings.Repeat("x", 201), Path: path}, wantErr: true},
 		{name: "relative path", input: CreateWorkspaceInput{ProjectID: 1, Name: "Workspace", Path: "relative"}, wantErr: true},
-		{name: "missing path", input: CreateWorkspaceInput{ProjectID: 1, Name: "Workspace", Path: filepath.Join(path, "missing")}, wantErr: true},
+		{name: "nonexistent absolute path", input: CreateWorkspaceInput{ProjectID: 1, Name: "Workspace", Path: filepath.Join(path, "missing")}},
 		{name: "invalid status", input: CreateWorkspaceInput{ProjectID: 1, Name: "Workspace", Path: path, Status: WorkspaceStatus("unknown")}, wantErr: true},
 	}
 	for _, tt := range tests {
@@ -171,7 +171,7 @@ func TestNormalizeUpdateWorkspace(t *testing.T) {
 		{name: "empty name", input: UpdateWorkspaceInput{Name: &emptyName}, wantErr: true},
 		{name: "name too long", input: UpdateWorkspaceInput{Name: &longName}, wantErr: true},
 		{name: "relative path", input: UpdateWorkspaceInput{Path: &relativePath}, wantErr: true},
-		{name: "missing path", input: UpdateWorkspaceInput{Path: &missingPath}, wantErr: true},
+		{name: "nonexistent absolute path", input: UpdateWorkspaceInput{Path: &missingPath}},
 		{name: "invalid status", input: UpdateWorkspaceInput{Status: &invalidStatus}, wantErr: true},
 	}
 	for _, tt := range tests {
