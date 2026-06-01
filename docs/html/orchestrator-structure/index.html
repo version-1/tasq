@@ -327,8 +327,8 @@
         <h3>Overview</h3>
         <div class="grid">
           <div class="metric"><strong>Composition root</strong><span><code>cmd/orchestrator</code> wires SQLite store, issue tracker client, workflow config, and Codex runner.</span></div>
-          <div class="metric"><strong>Coordinator</strong><span><code>worker</code> owns polling, claiming, workspace setup, run lifecycle, lease renewal, retry, reconciliation, cleanup, and outbox flush.</span></div>
-          <div class="metric"><strong>Persistence</strong><span><code>runstore</code> stores runs, runner events, workspace metadata, setup failures, and reliable outbox events in SQLite.</span></div>
+          <div class="metric"><strong>Coordinator</strong><span><code>workflow</code>, <code>workspace</code>, and <code>runner</code> boundaries keep configuration, filesystem setup, and Codex execution separate.</span></div>
+          <div class="metric"><strong>Persistence</strong><span><code>runstore</code> stores runs, runner events, workspace metadata, and setup failures in SQLite.</span></div>
           <div class="metric"><strong>External APIs</strong><span><code>tracker</code> speaks to the issue-tracker HTTP API; <code>runner.CodexRunner</code> speaks JSON-RPC to <code>codex app-server</code>.</span></div>
           <div class="metric"><strong>Workspace boundary</strong><span><code>workspace.Manager</code> sanitizes issue keys, prevents root escape, optionally copies source, and removes terminal workspaces.</span></div>
           <div class="metric"><strong>Workflow contract</strong><span><code>WORKFLOW.md</code> front matter controls poll interval, workspace paths, concurrency, turns, retry, stall, and Codex timeouts.</span></div>
@@ -363,8 +363,8 @@
             <text class="small" x="590" y="82" text-anchor="middle">flags, signals, config, wiring</text>
 
             <rect class="box coord" x="430" y="160" width="320" height="96"></rect>
-            <text class="label" x="590" y="196" text-anchor="middle">worker</text>
-            <text class="small" x="590" y="220" text-anchor="middle">poll, claim, run, renew, retry, cleanup</text>
+            <text class="label" x="590" y="196" text-anchor="middle">orchestrator</text>
+            <text class="small" x="590" y="220" text-anchor="middle">workflow, workspace, runner, HTTP state</text>
 
             <rect class="box adapter" x="70" y="330" width="200" height="96"></rect>
             <text class="label" x="170" y="366" text-anchor="middle">tracker</text>
@@ -372,11 +372,11 @@
 
             <rect class="box adapter" x="330" y="330" width="200" height="96"></rect>
             <text class="label" x="430" y="366" text-anchor="middle">runstore</text>
-            <text class="small" x="430" y="390" text-anchor="middle">SQLite persistence + outbox</text>
+            <text class="small" x="430" y="390" text-anchor="middle">SQLite run persistence</text>
 
             <rect class="box domain" x="590" y="330" width="200" height="96"></rect>
             <text class="label" x="690" y="366" text-anchor="middle">run</text>
-            <text class="small" x="690" y="390" text-anchor="middle">Run, Status, OutboxEvent</text>
+            <text class="small" x="690" y="390" text-anchor="middle">Run, Status, RunnerEvent</text>
 
             <rect class="box adapter" x="850" y="330" width="200" height="96"></rect>
             <text class="label" x="950" y="366" text-anchor="middle">runner / workspace</text>
@@ -411,18 +411,17 @@
         <h3>Package Structure</h3>
         <p>Use the filter to narrow the table by package, responsibility, or file.</p>
         <div class="toolbar">
-          <input id="packageFilter" type="search" placeholder="Filter packages, e.g. runner, outbox, workspace">
+          <input id="packageFilter" type="search" placeholder="Filter packages, e.g. runner, runstore, workspace">
         </div>
         <table id="packageTable">
           <thead>
             <tr><th>Package</th><th>Primary responsibility</th><th>Key files</th><th>Depends on</th></tr>
           </thead>
           <tbody>
-            <tr><td><code>cmd/orchestrator</code></td><td>CLI flags, signal context, store/client/workflow/runner construction.</td><td><code>cmd/orchestrator/main.go</code>, <code>WORKFLOW.md</code></td><td>worker, runstore, tracker, workflow, runner</td></tr>
-            <tr><td><code>internal/orchestrator/worker</code></td><td>Coordinator for polling, claiming, workspace creation, run status changes, lease renewal, retry, reconciliation, cleanup, outbox flush.</td><td><code>worker.go</code>, tests</td><td>runstore-like store, trackerClient, runner, workspace, workflow config</td></tr>
-            <tr><td><code>internal/orchestrator/runstore</code></td><td>SQLite migrations and persistence for runs, runner events, workspace metadata/failures, and outbox events.</td><td><code>store.go</code>, <code>db/schema/orchestrator.sql</code></td><td>run domain, schema</td></tr>
-            <tr><td><code>internal/orchestrator/run</code></td><td>Stable domain records: run status, run row, outbox event, runner event.</td><td><code>model.go</code></td><td>standard library only</td></tr>
-            <tr><td><code>internal/orchestrator/tracker</code></td><td>HTTP adapter for claiming work items, renewing leases, fetching issues, and sending run events.</td><td><code>client.go</code>, tests</td><td>issue tracker API contracts, run events</td></tr>
+            <tr><td><code>cmd/orchestrator</code></td><td>CLI flags, signal context, store/client/workflow/runner construction.</td><td><code>cmd/orchestrator/main.go</code>, <code>WORKFLOW.md</code></td><td>runstore, tracker, workflow, runner</td></tr>
+            <tr><td><code>internal/orchestrator/runstore</code></td><td>SQLite migrations and persistence for runs, runner events, workspace metadata, and setup failures.</td><td><code>store.go</code>, <code>db/schema/orchestrator.sql</code></td><td>run domain, schema</td></tr>
+            <tr><td><code>internal/orchestrator/run</code></td><td>Stable domain records: run status, run row, and runner event.</td><td><code>model.go</code></td><td>standard library only</td></tr>
+            <tr><td><code>internal/orchestrator/tracker</code></td><td>HTTP adapter for fetching issues and issue states from the issue-tracker API.</td><td><code>client.go</code>, tests</td><td>issue tracker API contracts</td></tr>
             <tr><td><code>internal/orchestrator/runner</code></td><td>Runner abstraction plus simulated and Codex app-server implementations.</td><td><code>runner.go</code>, tests</td><td>run statuses, workspace, issue entity</td></tr>
             <tr><td><code>internal/orchestrator/workflow</code></td><td>Load <code>WORKFLOW.md</code>, parse supported front matter, normalize paths, expose prompt template.</td><td><code>workflow.go</code>, tests</td><td>standard library only</td></tr>
             <tr><td><code>internal/orchestrator/workspace</code></td><td>Create sanitized per-issue directories, optionally populate from source, protect root boundary, cleanup terminal workspaces.</td><td><code>workspace.go</code>, tests</td><td>filesystem</td></tr>
@@ -432,50 +431,28 @@
 
       <section id="runtime">
         <h3>Runtime Flow</h3>
-        <p>One tick flushes prior outbox events first, then attempts to claim work and run it through the runner with lease renewal.</p>
+        <p>The orchestrator reads issue data, prepares workspace/run metadata, and records runner diagnostics in its local runstore.</p>
         <div class="diagram">
           <pre class="mermaid">
 sequenceDiagram
   autonumber
   participant Main as cmd/orchestrator
-  participant Worker as worker
+  participant Orch as orchestrator
   participant Store as runstore
   participant Tracker as issue tracker
   participant WS as workspace.Manager
   participant Runner as runner.CodexRunner
 
   Main->>Store: Open(db) + migrate schema
-  Main->>Worker: NewWithConfig(definition, CodexRunner)
-  Worker->>Tracker: Issues()
-  Worker->>WS: cleanup terminal issue workspaces
-  loop poll interval
-    Worker->>Store: UnsentOutboxEvents(limit=20)
-    Worker->>Tracker: SendRunEvent(event)
-    Worker->>Store: MarkOutboxEventSent(id)
-    Worker->>Tracker: ClaimWorkItem(orchestratorID, leaseSeconds)
-    alt no work item
-      Worker-->>Worker: wait for next tick
-    else claimed item
-      Worker->>WS: CreateForIssue("issue-{id}")
-      Worker->>Store: UpsertWorkspaceMetadata(...)
-      Worker->>Store: CreateRun(status=queued)
-      Worker->>Store: UpdateRunStatus(running)
-      par runner execution
-        Worker->>Runner: Run(ctx, Task)
-        Runner-->>Store: RecordRunnerEvent via callback
-      and lease loop
-        Worker->>Tracker: Issue(id) for reconcile
-        Worker->>Tracker: RenewWorkItemLease(...)
-      end
-      Worker->>Store: UpdateRunStatus(result.status, result.error)
-      Worker->>Store: UnsentOutboxEvents(...)
-      Worker->>Tracker: SendRunEvent(...)
-      opt failed or cancelled
-        Worker->>WS: RemoveForIssue(...)
-        Worker->>Store: MarkWorkspaceCleanup(...)
-      end
-    end
-  end
+  Main->>Orch: Load workflow config
+  Orch->>Tracker: Issues() / IssueStatesByIDs(...)
+  Orch->>WS: CreateForIssue("issue-{id}")
+  Orch->>Store: UpsertWorkspaceMetadata(...)
+  Orch->>Store: CreateRun(status=queued)
+  Orch->>Store: UpdateRunStatus(running)
+  Orch->>Runner: Run(ctx, Task)
+  Runner-->>Store: RecordRunnerEvent via callback
+  Orch->>Store: UpdateRunStatus(result.status, result.error)
           </pre>
         </div>
       </section>
@@ -504,11 +481,11 @@ flowchart TD
           <div>
             <div class="contract">
               <strong>Task contract</strong>
-              <span><code>WorkItem</code>, <code>RunID</code>, <code>Workspace</code>, prompt template, max turns, continuation flag, command, read/turn timeouts, and <code>OnEvent</code>.</span>
+              <span><code>Issue</code>, <code>RunID</code>, <code>Workspace</code>, prompt template, max turns, continuation flag, command, read/turn timeouts, and <code>OnEvent</code>.</span>
             </div>
             <div class="contract" style="margin-top:10px">
               <strong>Result contract</strong>
-              <span><code>Status</code> is mapped back to run status. <code>Error</code> is persisted and sent through the outbox when non-empty.</span>
+              <span><code>Status</code> is mapped back to run status. <code>Error</code> is persisted on the run record when non-empty.</span>
             </div>
             <div class="contract" style="margin-top:10px">
               <strong>Event contract</strong>
@@ -520,7 +497,7 @@ flowchart TD
 
       <section id="state">
         <h3>State & Persistence</h3>
-        <p>Runtime state is split between in-memory coordination maps, SQLite tables, filesystem workspaces, and tracker-side leases/statuses.</p>
+        <p>Runtime state is split between SQLite tables, filesystem workspaces, and tracker-side issue statuses.</p>
         <div class="diagram">
           <pre class="mermaid">
 stateDiagram-v2
@@ -539,13 +516,11 @@ stateDiagram-v2
             <tr><th>Owner</th><th>State</th><th>Updated by</th><th>Purpose</th></tr>
           </thead>
           <tbody>
-            <tr><td>Worker memory</td><td><code>running</code>, <code>claimed</code></td><td><code>canDispatch</code>, <code>markRunning</code>, <code>release</code></td><td>Prevent duplicate issue execution and enforce configured concurrency in-process.</td></tr>
             <tr><td>SQLite</td><td><code>runs</code></td><td><code>CreateRun</code>, <code>UpdateRunStatus</code></td><td>Durable run lifecycle and final outcome.</td></tr>
-            <tr><td>SQLite</td><td><code>outbox_events</code></td><td><code>EnqueueRunEvent</code>, <code>MarkOutboxEventSent</code></td><td>Reliable delivery of run state changes to the tracker.</td></tr>
             <tr><td>SQLite</td><td><code>runner_events</code></td><td><code>RecordRunnerEvent</code></td><td>Process, JSON-RPC, stderr, retry, and diagnostic event timeline.</td></tr>
             <tr><td>SQLite</td><td><code>workspace_metadata</code>, <code>workspace_setup_failures</code></td><td>Workspace setup and cleanup paths</td><td>Auditable workspace lifecycle and setup failure visibility.</td></tr>
             <tr><td>Filesystem</td><td>Per-issue workspace directories</td><td><code>workspace.Manager</code></td><td>Isolated execution directory, optionally populated from workflow source.</td></tr>
-            <tr><td>Issue tracker</td><td>Work item lease and issue status</td><td><code>ClaimWorkItem</code>, <code>RenewWorkItemLease</code>, <code>Issue</code></td><td>Cross-process coordination and cancellation source of truth.</td></tr>
+            <tr><td>Issue tracker</td><td>Issue status</td><td><code>Issue</code>, <code>Issues</code>, <code>IssueStatesByIDs</code></td><td>Issue data and cancellation source of truth.</td></tr>
           </tbody>
         </table>
       </section>
@@ -555,7 +530,7 @@ stateDiagram-v2
         <div class="grid">
           <div class="note">
             <strong>trackerClient</strong>
-            <span><code>ClaimWorkItem</code>, <code>RenewWorkItemLease</code>, <code>SendRunEvent</code>, <code>Issue</code>, and <code>Issues</code> are the worker-facing API surface.</span>
+            <span><code>Issue</code>, <code>Issues</code>, and <code>IssueStatesByIDs</code> are the orchestrator-facing API surface.</span>
           </div>
           <div class="note">
             <strong>workflow front matter</strong>
@@ -571,7 +546,6 @@ stateDiagram-v2
           <ul class="mono">
             <li>cmd/orchestrator/main.go</li>
             <li>internal/orchestrator/README.md</li>
-            <li>internal/orchestrator/worker/worker.go</li>
             <li>internal/orchestrator/runner/runner.go</li>
             <li>internal/orchestrator/runstore/store.go</li>
             <li>internal/orchestrator/workspace/workspace.go</li>
@@ -588,11 +562,11 @@ stateDiagram-v2
         <div class="grid">
           <div class="note risk high">
             <strong>Concurrency semantics</strong>
-            <span><code>maxConcurrent</code>, <code>running</code>, and <code>claimed</code> exist, but the current tick path runs one claimed item inline. Verify expected multi-run throughput before relying on configured concurrency.</span>
+            <span><code>max_concurrent_agents</code> is parsed from workflow config, but current orchestration does not expose a durable cross-process coordination table. Verify expected multi-run throughput before relying on configured concurrency.</span>
           </div>
           <div class="note risk">
             <strong>Process restart recovery</strong>
-            <span>Durable runs and outbox exist, but active in-memory <code>running</code>/<code>claimed</code> state is rebuilt only by new claims and tracker state, not by replaying active runs.</span>
+            <span>Durable runs exist, but active runtime coordination is not restored by replaying prior run rows.</span>
           </div>
           <div class="note risk">
             <strong>Prompt rendering</strong>
@@ -622,7 +596,6 @@ stateDiagram-v2
               <ul>
                 <li><code>internal/orchestrator/README.md</code> for package responsibilities and dependency graph.</li>
                 <li><code>cmd/orchestrator/main.go</code> for composition root and CLI flags.</li>
-                <li><code>internal/orchestrator/worker/worker.go</code> for orchestration, lease renewal, retry, reconciliation, cleanup, and outbox flushing.</li>
                 <li><code>internal/orchestrator/runner/runner.go</code> for runner contracts and Codex JSON-RPC lifecycle.</li>
                 <li><code>internal/orchestrator/runstore/store.go</code> and <code>db/schema/orchestrator.sql</code> for persistence.</li>
                 <li><code>internal/orchestrator/workflow/workflow.go</code> and <code>workspace/workspace.go</code> for configuration and filesystem behavior.</li>

@@ -23,7 +23,7 @@ Symphony SPEC は Project エンティティを定義していません。最も
 
 - issue-tracker service によって管理されます。
 - `Project.Key`（例: `TASQ`）は CLI と API のコンテキストで project を識別します。
-- orchestrator からは参照されません。orchestrator は issue-tracker から work item を受け取り、issue-tracker がすでに project-level filtering を適用しているため、project scope を必要としません。
+- orchestrator からは参照されません。orchestrator は関連する issue filtering が適用された issue-tracker の issue API を使うため、project scope を必要としません。
 
 ### 関係
 
