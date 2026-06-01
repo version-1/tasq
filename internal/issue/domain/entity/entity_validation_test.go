@@ -71,8 +71,9 @@ func TestNormalizeCreateProject(t *testing.T) {
 		wantErr bool
 	}{
 		{name: "valid", input: CreateProjectInput{Key: "PROJ_1", Name: "Project", Location: location}},
+		{name: "valid lowercase kebab", input: CreateProjectInput{Key: "project-api", Name: "Project", Location: location}},
 		{name: "empty key", input: CreateProjectInput{Name: "Project", Location: location}, wantErr: true},
-		{name: "invalid key lowercase", input: CreateProjectInput{Key: "proj", Name: "Project", Location: location}, wantErr: true},
+		{name: "invalid key uppercase hyphen", input: CreateProjectInput{Key: "PROJ-API", Name: "Project", Location: location}, wantErr: true},
 		{name: "invalid key starts with number", input: CreateProjectInput{Key: "1PROJ", Name: "Project", Location: location}, wantErr: true},
 		{name: "key too long", input: CreateProjectInput{Key: "PROJECT_KEY_TOO_LONG_1", Name: "Project", Location: location}, wantErr: true},
 		{name: "empty name", input: CreateProjectInput{Key: "PROJ", Location: location}, wantErr: true},
@@ -93,8 +94,8 @@ func TestNormalizeUpdateProject(t *testing.T) {
 	t.Parallel()
 
 	location := t.TempDir()
-	key := "PROJ"
-	invalidKey := "proj"
+	key := "project-api"
+	invalidKey := "Project-API"
 	name := "Project"
 	emptyName := ""
 	longName := strings.Repeat("x", 201)

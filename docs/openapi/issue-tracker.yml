@@ -128,6 +128,31 @@ paths:
           $ref: "#/components/responses/Error"
         "404":
           $ref: "#/components/responses/Error"
+  /api/v1/projects/{id}/check:
+    parameters:
+      - $ref: "#/components/parameters/ProjectID"
+    post:
+      tags:
+        - Projects
+      summary: Check whether a project workflow documents tq command usage.
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema:
+              type: string
+              description: Raw WORKFLOW.md content.
+      responses:
+        "200":
+          description: Workflow check result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectCheckResponse"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
   /api/v1/workspaces:
     get:
       tags:
@@ -499,6 +524,7 @@ components:
         - key
         - name
         - description
+        - location
         - createdAt
         - updatedAt
       properties:
@@ -507,9 +533,12 @@ components:
           format: int64
         key:
           type: string
+          pattern: "^([A-Z][A-Z0-9_]{0,19}|[a-z][a-z0-9-]{0,63})$"
         name:
           type: string
         description:
+          type: string
+        location:
           type: string
         createdAt:
           type: string
@@ -522,22 +551,39 @@ components:
       required:
         - key
         - name
+        - location
       properties:
         key:
           type: string
+          pattern: "^([A-Z][A-Z0-9_]{0,19}|[a-z][a-z0-9-]{0,63})$"
         name:
           type: string
         description:
           type: string
           default: ""
+        location:
+          type: string
     UpdateProjectInput:
       type: object
       properties:
         key:
           type: string
+          pattern: "^([A-Z][A-Z0-9_]{0,19}|[a-z][a-z0-9-]{0,63})$"
         name:
           type: string
         description:
+          type: string
+        location:
+          type: string
+    ProjectCheckResult:
+      type: object
+      required:
+        - passed
+        - reason
+      properties:
+        passed:
+          type: boolean
+        reason:
           type: string
     Workspace:
       type: object
@@ -781,6 +827,16 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Project"
+        meta:
+          $ref: "#/components/schemas/ApiMeta"
+    ProjectCheckResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          $ref: "#/components/schemas/ProjectCheckResult"
         meta:
           $ref: "#/components/schemas/ApiMeta"
     WorkspaceResponse:

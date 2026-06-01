@@ -179,6 +179,7 @@ Current issue-tracker endpoints:
 - `GET /api/v1/projects/{id}`
 - `PATCH /api/v1/projects/{id}`
 - `DELETE /api/v1/projects/{id}`
+- `POST /api/v1/projects/{id}/check`
 - `GET /api/v1/workspaces`
 - `POST /api/v1/workspaces`
 - `GET /api/v1/workspaces/{id}`

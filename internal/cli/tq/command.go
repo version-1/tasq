@@ -61,8 +61,30 @@ func (a app) route(ctx context.Context, args []string, cfg config) error {
 		return a.routeIssue(ctx, args[1:], cfg)
 	case "comment":
 		return a.routeComment(ctx, args[1:], cfg)
+	case "project":
+		return a.routeProject(ctx, args[1:], cfg)
 	default:
 		return usageError("unknown resource %q", resource)
+	}
+}
+
+func (a app) routeProject(ctx context.Context, args []string, cfg config) error {
+	if len(args) == 0 || args[0] == "help" || args[0] == "-help" || args[0] == "--help" {
+		printProjectHelp(a.stdout)
+		return nil
+	}
+	action := args[0]
+	switch action {
+	case "add":
+		return a.projectAdd(ctx, args[1:], cfg)
+	case "remove":
+		return a.projectRemove(ctx, args[1:], cfg)
+	case "check":
+		return a.projectCheck(ctx, args[1:], cfg)
+	case "list":
+		return a.projectList(ctx, args[1:], cfg)
+	default:
+		return usageError("unknown project action %q", action)
 	}
 }
 
@@ -331,6 +353,7 @@ func printRootHelp(w io.Writer) {
 	fmt.Fprintln(w, "Resources:")
 	fmt.Fprintln(w, "  issue    create, get, list, and update issues")
 	fmt.Fprintln(w, "  comment  add and list issue comments")
+	fmt.Fprintln(w, "  project  add, remove, check, and list projects")
 }
 
 func printIssueHelp(w io.Writer) {
@@ -349,4 +372,14 @@ func printCommentHelp(w io.Writer) {
 	fmt.Fprintln(w, "Actions:")
 	fmt.Fprintln(w, "  add      Add a comment to an issue")
 	fmt.Fprintln(w, "  list     List comments for an issue")
+}
+
+func printProjectHelp(w io.Writer) {
+	fmt.Fprintln(w, "Usage: tq project <action> [flags]")
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, "Actions:")
+	fmt.Fprintln(w, "  add      Add a project and workspace for a repository")
+	fmt.Fprintln(w, "  remove   Remove a project by key")
+	fmt.Fprintln(w, "  check    Check local project workflow files")
+	fmt.Fprintln(w, "  list     List projects")
 }

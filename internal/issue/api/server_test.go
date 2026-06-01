@@ -101,6 +101,42 @@ func TestNoContentResponseStaysEmpty(t *testing.T) {
 	}
 }
 
+func TestProjectCheckReportsTQUsage(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer(t)
+	project, err := server.store.CreateProject(context.Background(), entity.CreateProjectInput{
+		Key:      "project-api",
+		Name:     "Project API",
+		Location: t.TempDir(),
+	})
+	if err != nil {
+		t.Fatalf("create project: %v", err)
+	}
+	body := bytes.NewBufferString("Use `tq issue update {{ issue.id }} --status review` when work is complete.")
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/projects/"+stringID(project.ID)+"/check", body)
+	req.Header.Set("Content-Type", "text/plain")
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d body=%s", rec.Code, rec.Body.String())
+	}
+	var payload struct {
+		Data struct {
+			Passed bool   `json:"passed"`
+			Reason string `json:"reason"`
+		} `json:"data"`
+	}
+	if err := json.NewDecoder(rec.Body).Decode(&payload); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if !payload.Data.Passed {
+		t.Fatalf("expected check to pass: %+v", payload.Data)
+	}
+}
+
 func TestOptionsResponseStaysEmpty(t *testing.T) {
 	t.Parallel()
 
