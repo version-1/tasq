@@ -50,6 +50,17 @@ dev-restart: dev-check ## Restart all Compose development services.
 	$(COMPOSE) down
 	$(MAKE) dev-up
 
+.PHONY: dev-rebuild-schema
+dev-rebuild-schema: dev-check ## Recreate local SQLite schemas. Usage: make dev-rebuild-schema CONFIRM=1
+	@if [ "$(CONFIRM)" != "1" ]; then \
+		echo 'This removes local SQLite data under .data/.'; \
+		echo 'Run: make dev-rebuild-schema CONFIRM=1'; \
+		exit 1; \
+	fi
+	$(COMPOSE) down
+	rm -f .data/tasq-issues.sqlite .data/tasq-orchestrator.sqlite
+	$(MAKE) dev-up
+
 .PHONY: dev-ps
 dev-ps: dev-check ## Show Compose service status.
 	$(COMPOSE) ps
