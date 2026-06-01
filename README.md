@@ -11,6 +11,7 @@ Local-first issue tracker and task orchestrator for managing executable work, as
 - TUI: Go terminal client for the same issue-tracker API.
 
 For the full architecture, see [docs/design.md](docs/design.md).
+For local configuration, see [docs/configuration.md](docs/configuration.md).
 
 ## Quick Start
 

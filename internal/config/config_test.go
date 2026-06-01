@@ -1,0 +1,88 @@
+package config
+
+import (
+	"os"
+	"path/filepath"
+	"testing"
+)
+
+func TestHomeUsesTQHome(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv(EnvHome, filepath.Join(dir, "relative"))
+	home, err := Home()
+	if err != nil {
+		t.Fatalf("home: %v", err)
+	}
+	if !filepath.IsAbs(home) {
+		t.Fatalf("home is not absolute: %s", home)
+	}
+	if home != filepath.Join(dir, "relative") {
+		t.Fatalf("home=%q", home)
+	}
+}
+
+func TestEnsureHomeCreatesLayout(t *testing.T) {
+	home := filepath.Join(t.TempDir(), ".tasq")
+	t.Setenv(EnvHome, home)
+	resolved, err := EnsureHome()
+	if err != nil {
+		t.Fatalf("ensure home: %v", err)
+	}
+	if resolved != home {
+		t.Fatalf("resolved=%q, want %q", resolved, home)
+	}
+	for _, path := range []string{ConfigDir(home), SystemDir(home), DataDir(home)} {
+		info, err := os.Stat(path)
+		if err != nil {
+			t.Fatalf("stat %s: %v", path, err)
+		}
+		if !info.IsDir() {
+			t.Fatalf("%s is not dir", path)
+		}
+	}
+}
+
+func TestLoadReturnsDefaultsWhenConfigMissing(t *testing.T) {
+	t.Setenv(EnvHome, t.TempDir())
+	t.Setenv("USER", "agent")
+	config, err := Load()
+	if err != nil {
+		t.Fatalf("load: %v", err)
+	}
+	if config.Author != "agent" {
+		t.Fatalf("author=%q", config.Author)
+	}
+	if config.MaxConcurrentAgents != 10 {
+		t.Fatalf("max=%d", config.MaxConcurrentAgents)
+	}
+}
+
+func TestLoadReadsConfigYAML(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv(EnvHome, home)
+	if err := os.MkdirAll(ConfigDir(home), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(ConfigPath(home), []byte("author: jiro\nmax_concurrent_agents: 3\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	config, err := Load()
+	if err != nil {
+		t.Fatalf("load: %v", err)
+	}
+	if config.Author != "jiro" || config.MaxConcurrentAgents != 3 {
+		t.Fatalf("config=%+v", config)
+	}
+}
+
+func TestConfigResolveAppliesOverrides(t *testing.T) {
+	author := "override"
+	max := 2
+	config := Config{Author: "file", MaxConcurrentAgents: 3}.Resolve(Overrides{
+		Author:              &author,
+		MaxConcurrentAgents: &max,
+	})
+	if config.Author != "override" || config.MaxConcurrentAgents != 2 {
+		t.Fatalf("config=%+v", config)
+	}
+}
