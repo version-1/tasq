@@ -2,12 +2,14 @@ package coordinator
 
 import (
 	"context"
+	"database/sql"
 	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/version-1/tasq/internal/issue/domain/entity"
 	"github.com/version-1/tasq/internal/orchestrator/run"
+	"github.com/version-1/tasq/internal/orchestrator/runner"
 	"github.com/version-1/tasq/internal/orchestrator/runstore"
 	"github.com/version-1/tasq/internal/orchestrator/workspace"
 )
@@ -111,8 +113,56 @@ func TestPollRespectsMaxActiveRuns(t *testing.T) {
 	}
 }
 
+func TestPollQueuesAndDispatchesInSameCycle(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store := openTestStore(t)
+	manager := newTestWorkspaceManager(t)
+	testRunner := &recordingRunner{result: runner.Result{Status: run.StatusSucceeded}}
+	issues := []entity.Issue{{ID: 42, Status: entity.StatusReady, Title: "Build dispatch"}}
+	dispatcher := newTestDispatcher(t, store, testRunner, issues)
+	poller, err := NewPoller(PollerConfig{
+		Tracker:        fakeTracker{issues: issues},
+		Store:          store,
+		Workspaces:     manager,
+		Dispatcher:     dispatcher,
+		Interval:       time.Minute,
+		MaxActiveRuns:  2,
+		OrchestratorID: "test-orchestrator",
+	})
+	if err != nil {
+		t.Fatalf("new poller: %v", err)
+	}
+
+	if err := poller.Poll(ctx); err != nil {
+		t.Fatalf("poll: %v", err)
+	}
+	shutdownDispatcher(t, dispatcher)
+
+	storedRun, err := store.RunByIssueID(ctx, 42)
+	if err != nil {
+		t.Fatalf("run by issue id: %v", err)
+	}
+	if storedRun.Status != run.StatusSucceeded {
+		t.Fatalf("run status = %s", storedRun.Status)
+	}
+	if got := testRunner.runCount(); got != 1 {
+		t.Fatalf("run count = %d", got)
+	}
+}
+
 type fakeTracker struct {
 	issues []entity.Issue
+}
+
+func (t fakeTracker) Issue(ctx context.Context, id int64) (entity.Issue, error) {
+	for _, issue := range t.issues {
+		if issue.ID == id {
+			return issue, nil
+		}
+	}
+	return entity.Issue{}, sql.ErrNoRows
 }
 
 func (t fakeTracker) IssuesByStates(ctx context.Context, states []string) ([]entity.Issue, error) {

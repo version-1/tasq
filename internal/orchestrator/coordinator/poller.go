@@ -15,6 +15,7 @@ import (
 )
 
 type Tracker interface {
+	Issue(ctx context.Context, id int64) (entity.Issue, error)
 	IssuesByStates(ctx context.Context, states []string) ([]entity.Issue, error)
 }
 
@@ -36,16 +37,22 @@ type Poller struct {
 	tracker        Tracker
 	store          Store
 	workspaces     WorkspaceManager
+	dispatcher     PollDispatcher
 	interval       time.Duration
 	maxActiveRuns  int
 	orchestratorID string
 	refreshCh      chan struct{}
 }
 
+type PollDispatcher interface {
+	Dispatch(ctx context.Context, activeRuns []run.Run) error
+}
+
 type PollerConfig struct {
 	Tracker        Tracker
 	Store          Store
 	Workspaces     WorkspaceManager
+	Dispatcher     PollDispatcher
 	Interval       time.Duration
 	MaxActiveRuns  int
 	OrchestratorID string
@@ -74,6 +81,7 @@ func NewPoller(config PollerConfig) (*Poller, error) {
 		tracker:        config.Tracker,
 		store:          config.Store,
 		workspaces:     config.Workspaces,
+		dispatcher:     config.Dispatcher,
 		interval:       config.Interval,
 		maxActiveRuns:  config.MaxActiveRuns,
 		orchestratorID: config.OrchestratorID,
@@ -108,23 +116,30 @@ func (p *Poller) Poll(ctx context.Context) error {
 
 	created := 0
 	availableSlots := p.maxActiveRuns - len(activeRuns)
-	if availableSlots <= 0 {
-		log.Printf("orchestrator poll complete ready=%d queued=0 active=%d max_active=%d", len(issues), len(activeRuns), p.maxActiveRuns)
-		return nil
+	if availableSlots > 0 {
+		for _, issue := range issues {
+			if _, ok := activeIssueIDs[issue.ID]; ok {
+				continue
+			}
+			if created >= availableSlots {
+				break
+			}
+			if _, err := p.queueIssue(ctx, issue); err != nil {
+				return err
+			}
+			created++
+		}
 	}
-	for _, issue := range issues {
-		if _, ok := activeIssueIDs[issue.ID]; ok {
-			continue
+	if p.dispatcher != nil {
+		activeRuns, err = p.store.ActiveRuns(ctx)
+		if err != nil {
+			return fmt.Errorf("list active runs for dispatch: %w", err)
 		}
-		if created >= availableSlots {
-			break
+		if err := p.dispatcher.Dispatch(ctx, activeRuns); err != nil {
+			return fmt.Errorf("dispatch active runs: %w", err)
 		}
-		if _, err := p.queueIssue(ctx, issue); err != nil {
-			return err
-		}
-		created++
 	}
-	log.Printf("orchestrator poll complete ready=%d queued=%d", len(issues), created)
+	log.Printf("orchestrator poll complete ready=%d queued=%d active=%d max_active=%d", len(issues), created, len(activeRuns), p.maxActiveRuns)
 	return nil
 }
 
