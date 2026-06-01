@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS runs (
 	workspace TEXT NOT NULL DEFAULT '',
 	attempt INTEGER NOT NULL DEFAULT 0,
 	error TEXT NOT NULL DEFAULT '',
+	retry_after TEXT NOT NULL DEFAULT '',
 	orchestrator_id TEXT NOT NULL,
 	created_at TEXT NOT NULL,
 	updated_at TEXT NOT NULL

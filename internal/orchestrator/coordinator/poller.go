@@ -17,10 +17,14 @@ import (
 type Tracker interface {
 	Issue(ctx context.Context, id int64) (entity.Issue, error)
 	IssuesByStates(ctx context.Context, states []string) ([]entity.Issue, error)
+	IssueStatesByIDs(ctx context.Context, ids []int64) ([]entity.IssueState, error)
 }
 
 type Store interface {
 	ActiveRuns(ctx context.Context) ([]run.Run, error)
+	DueRetries(ctx context.Context, now time.Time) ([]run.Run, error)
+	RetryingRuns(ctx context.Context) ([]run.Run, error)
+	RequeueRetry(ctx context.Context, runID string) (run.Run, error)
 	RunByIssueID(ctx context.Context, issueID int64) (run.Run, error)
 	CreateRun(ctx context.Context, input runstore.CreateRunInput) (run.Run, error)
 	RecordRunnerEvent(ctx context.Context, runID string, eventType string, message string, payloadJSON string) error
@@ -45,6 +49,8 @@ type Poller struct {
 }
 
 type PollDispatcher interface {
+	Reconcile(ctx context.Context, activeRuns []run.Run) error
+	DetectStalls(ctx context.Context, runningRuns []run.Run) error
 	Dispatch(ctx context.Context, activeRuns []run.Run) error
 }
 
@@ -101,17 +107,52 @@ func (p *Poller) RequestRefresh() {
 }
 
 func (p *Poller) Poll(ctx context.Context) error {
-	issues, err := p.tracker.IssuesByStates(ctx, []string{string(entity.StatusReady)})
-	if err != nil {
-		return fmt.Errorf("poll issue tracker: %w", err)
-	}
 	activeRuns, err := p.store.ActiveRuns(ctx)
 	if err != nil {
 		return fmt.Errorf("list active runs: %w", err)
 	}
+	if p.dispatcher != nil {
+		if err := p.dispatcher.Reconcile(ctx, activeRuns); err != nil {
+			return fmt.Errorf("reconcile active runs: %w", err)
+		}
+		activeRuns, err = p.store.ActiveRuns(ctx)
+		if err != nil {
+			return fmt.Errorf("list active runs after reconcile: %w", err)
+		}
+		if err := p.dispatcher.DetectStalls(ctx, runningRuns(activeRuns)); err != nil {
+			return fmt.Errorf("detect stalled runs: %w", err)
+		}
+	}
+	dueRetries, err := p.store.DueRetries(ctx, time.Now().UTC())
+	if err != nil {
+		return fmt.Errorf("list due retries: %w", err)
+	}
+	for _, dueRetry := range dueRetries {
+		if _, err := p.store.RequeueRetry(ctx, dueRetry.RunID); err != nil {
+			return fmt.Errorf("requeue retry %s: %w", dueRetry.RunID, err)
+		}
+		if err := p.store.RecordRunnerEvent(ctx, dueRetry.RunID, "retry_queued", "retry queued after backoff", ""); err != nil {
+			return fmt.Errorf("record retry queued event %s: %w", dueRetry.RunID, err)
+		}
+	}
+	activeRuns, err = p.store.ActiveRuns(ctx)
+	if err != nil {
+		return fmt.Errorf("list active runs after retries: %w", err)
+	}
+	retryingRuns, err := p.store.RetryingRuns(ctx)
+	if err != nil {
+		return fmt.Errorf("list retrying runs: %w", err)
+	}
+	issues, err := p.tracker.IssuesByStates(ctx, []string{string(entity.StatusReady)})
+	if err != nil {
+		return fmt.Errorf("poll issue tracker: %w", err)
+	}
 	activeIssueIDs := make(map[int64]struct{}, len(activeRuns))
 	for _, storedRun := range activeRuns {
 		activeIssueIDs[storedRun.IssueID] = struct{}{}
+	}
+	for _, retryingRun := range retryingRuns {
+		activeIssueIDs[retryingRun.IssueID] = struct{}{}
 	}
 
 	created := 0
@@ -213,4 +254,14 @@ func (p *Poller) nextAttempt(ctx context.Context, issueID int64) (int, error) {
 
 func issueIdentifier(issueID int64) string {
 	return fmt.Sprintf("issue-%d", issueID)
+}
+
+func runningRuns(activeRuns []run.Run) []run.Run {
+	output := make([]run.Run, 0, len(activeRuns))
+	for _, activeRun := range activeRuns {
+		if activeRun.Status == run.StatusRunning {
+			output = append(output, activeRun)
+		}
+	}
+	return output
 }

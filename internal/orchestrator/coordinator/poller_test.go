@@ -152,6 +152,116 @@ func TestPollQueuesAndDispatchesInSameCycle(t *testing.T) {
 	}
 }
 
+func TestPollDispatchesRetryableRun(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store := openTestStore(t)
+	manager := newTestWorkspaceManager(t)
+	storedRun, err := store.CreateRun(ctx, runstore.CreateRunInput{
+		IssueID:        42,
+		Workspace:      filepath.Join(manager.Root(), "issue-42"),
+		Attempt:        1,
+		OrchestratorID: "test-orchestrator",
+	})
+	if err != nil {
+		t.Fatalf("create run: %v", err)
+	}
+	storedRun, err = store.UpdateRunStatus(ctx, storedRun.RunID, run.StatusRunning, "")
+	if err != nil {
+		t.Fatalf("mark running: %v", err)
+	}
+	if _, err := store.ScheduleRetry(ctx, storedRun.RunID, "failed", time.Now().UTC().Add(-time.Minute)); err != nil {
+		t.Fatalf("schedule retry: %v", err)
+	}
+	testRunner := &recordingRunner{result: runner.Result{Status: run.StatusSucceeded}}
+	issues := []entity.Issue{{ID: 42, Status: entity.StatusReady, Title: "Retry dispatch"}}
+	dispatcher := newTestDispatcher(t, store, testRunner, issues)
+	poller, err := NewPoller(PollerConfig{
+		Tracker:        fakeTracker{issues: issues},
+		Store:          store,
+		Workspaces:     manager,
+		Dispatcher:     dispatcher,
+		Interval:       time.Minute,
+		MaxActiveRuns:  2,
+		OrchestratorID: "test-orchestrator",
+	})
+	if err != nil {
+		t.Fatalf("new poller: %v", err)
+	}
+
+	if err := poller.Poll(ctx); err != nil {
+		t.Fatalf("poll: %v", err)
+	}
+	shutdownDispatcher(t, dispatcher)
+
+	updated, err := store.RunByRunID(ctx, storedRun.RunID)
+	if err != nil {
+		t.Fatalf("run by id: %v", err)
+	}
+	if updated.Status != run.StatusSucceeded || updated.Attempt != 2 {
+		t.Fatalf("updated run = %+v", updated)
+	}
+	if got := testRunner.runCount(); got != 1 {
+		t.Fatalf("run count = %d", got)
+	}
+}
+
+func TestPollDoesNotDispatchFutureRetry(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store := openTestStore(t)
+	manager := newTestWorkspaceManager(t)
+	storedRun, err := store.CreateRun(ctx, runstore.CreateRunInput{
+		IssueID:        42,
+		Workspace:      filepath.Join(manager.Root(), "issue-42"),
+		Attempt:        1,
+		OrchestratorID: "test-orchestrator",
+	})
+	if err != nil {
+		t.Fatalf("create run: %v", err)
+	}
+	storedRun, err = store.UpdateRunStatus(ctx, storedRun.RunID, run.StatusRunning, "")
+	if err != nil {
+		t.Fatalf("mark running: %v", err)
+	}
+	if _, err := store.ScheduleRetry(ctx, storedRun.RunID, "failed", time.Now().UTC().Add(time.Hour)); err != nil {
+		t.Fatalf("schedule retry: %v", err)
+	}
+	testRunner := &recordingRunner{result: runner.Result{Status: run.StatusSucceeded}}
+	issues := []entity.Issue{{ID: 42, Status: entity.StatusReady, Title: "Future retry"}}
+	dispatcher := newTestDispatcher(t, store, testRunner, issues)
+	poller, err := NewPoller(PollerConfig{
+		Tracker:        fakeTracker{issues: issues},
+		Store:          store,
+		Workspaces:     manager,
+		Dispatcher:     dispatcher,
+		Interval:       time.Minute,
+		MaxActiveRuns:  2,
+		OrchestratorID: "test-orchestrator",
+	})
+	if err != nil {
+		t.Fatalf("new poller: %v", err)
+	}
+
+	if err := poller.Poll(ctx); err != nil {
+		t.Fatalf("poll: %v", err)
+	}
+	shutdownDispatcher(t, dispatcher)
+
+	updated, err := store.RunByRunID(ctx, storedRun.RunID)
+	if err != nil {
+		t.Fatalf("run by id: %v", err)
+	}
+	if updated.Status != run.StatusFailed || updated.Attempt != 1 || updated.RetryAfter == nil {
+		t.Fatalf("updated run = %+v", updated)
+	}
+	if got := testRunner.runCount(); got != 0 {
+		t.Fatalf("run count = %d", got)
+	}
+}
+
 type fakeTracker struct {
 	issues []entity.Issue
 }
@@ -167,6 +277,19 @@ func (t fakeTracker) Issue(ctx context.Context, id int64) (entity.Issue, error) 
 
 func (t fakeTracker) IssuesByStates(ctx context.Context, states []string) ([]entity.Issue, error) {
 	return t.issues, nil
+}
+
+func (t fakeTracker) IssueStatesByIDs(ctx context.Context, ids []int64) ([]entity.IssueState, error) {
+	states := make([]entity.IssueState, 0, len(ids))
+	for _, id := range ids {
+		for _, issue := range t.issues {
+			if issue.ID == id {
+				states = append(states, entity.IssueState{ID: issue.ID, Status: issue.Status})
+				break
+			}
+		}
+	}
+	return states, nil
 }
 
 func openTestStore(t *testing.T) *runstore.Store {
