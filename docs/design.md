@@ -199,6 +199,11 @@ The `tq` CLI wraps issue CRUD endpoints with these commands:
 - `tq issue get <id>`
 - `tq issue create --title <title> [--description ...] [--status ...] [--priority ...] [--assignee ...]`
 - `tq issue update <id> [--title ...] [--description ...] [--status ...] [--priority ...] [--assignee ...]`
+- `tq issue close <id>`
+- `tq issue ready <id>`
+- `tq issue draft <id>`
+- `tq issue rename <id> <title>`
+- `tq issue edit <id> <description>`
 
 `tq` uses human-readable output by default and JSON output when `--output json` is set.
 

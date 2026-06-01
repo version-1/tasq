@@ -199,6 +199,11 @@ JSON success response は `{ "data": ..., "meta": {} }` を使います。JSON e
 - `tq issue get <id>`
 - `tq issue create --title <title> [--description ...] [--status ...] [--priority ...] [--assignee ...]`
 - `tq issue update <id> [--title ...] [--description ...] [--status ...] [--priority ...] [--assignee ...]`
+- `tq issue close <id>`
+- `tq issue ready <id>`
+- `tq issue draft <id>`
+- `tq issue rename <id> <title>`
+- `tq issue edit <id> <description>`
 
 `tq` は default では human-readable output を使い、`--output json` が指定された場合は JSON output を使います。
 

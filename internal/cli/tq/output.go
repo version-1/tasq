@@ -13,10 +13,14 @@ import (
 )
 
 const (
-	ansiBold  = "\x1b[1m"
-	ansiCyan  = "\x1b[36m"
-	ansiFaint = "\x1b[2m"
-	ansiReset = "\x1b[0m"
+	ansiBold    = "\x1b[1m"
+	ansiGreen   = "\x1b[32m"
+	ansiYellow  = "\x1b[33m"
+	ansiRed     = "\x1b[31m"
+	ansiMagenta = "\x1b[35m"
+	ansiCyan    = "\x1b[36m"
+	ansiFaint   = "\x1b[2m"
+	ansiReset   = "\x1b[0m"
 )
 
 func writeIssues(w io.Writer, format string, issues []entity.Issue) error {
@@ -36,12 +40,61 @@ func writeIssue(w io.Writer, format string, issue entity.Issue) error {
 	fmt.Fprintf(w, "ID: %d\n", issue.ID)
 	fmt.Fprintf(w, "Title: %s\n", issue.Title)
 	fmt.Fprintf(w, "Description: %s\n", issue.Description)
-	fmt.Fprintf(w, "Status: %s\n", issue.Status)
-	fmt.Fprintf(w, "Priority: %s\n", issue.Priority)
+	fmt.Fprintf(w, "Status: %s\n", colorValue(string(issue.Status), statusColor(issue.Status)))
+	fmt.Fprintf(w, "Priority: %s\n", colorValue(string(issue.Priority), priorityColor(issue.Priority)))
 	fmt.Fprintf(w, "Assignee: %s\n", valueOrDefault(issue.Assignee, "unassigned"))
 	fmt.Fprintf(w, "Created: %s\n", formatTime(issue.CreatedAt))
 	fmt.Fprintf(w, "Updated: %s\n", formatTime(issue.UpdatedAt))
 	return nil
+}
+
+func writeIssueAction(w io.Writer, format string, issue entity.Issue, message string) error {
+	if format == "json" {
+		return writeIssue(w, format, issue)
+	}
+	if _, err := fmt.Fprintf(w, "%s✓%s %s\n", ansiGreen, ansiReset, message); err != nil {
+		return err
+	}
+	return writeIssue(w, format, issue)
+}
+
+func colorValue(value string, color string) string {
+	if color == "" {
+		return value
+	}
+	return color + value + ansiReset
+}
+
+func statusColor(status entity.Status) string {
+	switch status {
+	case entity.StatusBacklog:
+		return ansiFaint
+	case entity.StatusReady:
+		return ansiCyan
+	case entity.StatusInProgress:
+		return ansiYellow
+	case entity.StatusReview:
+		return ansiMagenta
+	case entity.StatusBlocked, entity.StatusFailed:
+		return ansiRed
+	case entity.StatusDone:
+		return ansiGreen
+	default:
+		return ""
+	}
+}
+
+func priorityColor(priority entity.Priority) string {
+	switch priority {
+	case entity.PriorityLow:
+		return ansiFaint
+	case entity.PriorityHigh:
+		return ansiYellow
+	case entity.PriorityUrgent:
+		return ansiRed
+	default:
+		return ""
+	}
 }
 
 func writeProjects(w io.Writer, format string, projects []entity.Project) error {

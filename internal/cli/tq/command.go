@@ -103,6 +103,16 @@ func (a app) routeIssue(ctx context.Context, args []string, cfg config) error {
 		return a.issueCreate(ctx, args[1:], cfg)
 	case "update":
 		return a.issueUpdate(ctx, args[1:], cfg)
+	case "close":
+		return a.issueSetStatus(ctx, args[1:], cfg, entity.StatusDone, "closed", "usage: tq issue close <id>")
+	case "ready":
+		return a.issueSetStatus(ctx, args[1:], cfg, entity.StatusReady, "marked as ready", "usage: tq issue ready <id>")
+	case "draft":
+		return a.issueSetStatus(ctx, args[1:], cfg, entity.StatusBacklog, "moved to backlog", "usage: tq issue draft <id>")
+	case "rename":
+		return a.issueRename(ctx, args[1:], cfg)
+	case "edit":
+		return a.issueEdit(ctx, args[1:], cfg)
 	default:
 		return usageError("unknown issue action %q", action)
 	}
@@ -280,6 +290,51 @@ func (a app) issueUpdate(ctx context.Context, args []string, cfg config) error {
 	return writeIssue(a.stdout, cfg.output, issue)
 }
 
+func (a app) issueSetStatus(ctx context.Context, args []string, cfg config, status entity.Status, action string, usage string) error {
+	if len(args) != 1 {
+		return usageError(usage)
+	}
+	id, err := parseID(args[0])
+	if err != nil {
+		return err
+	}
+	issue, err := a.client.updateIssue(ctx, id, map[string]string{"status": string(status)})
+	if err != nil {
+		return err
+	}
+	return writeIssueAction(a.stdout, cfg.output, issue, fmt.Sprintf("Issue #%d %s", id, action))
+}
+
+func (a app) issueRename(ctx context.Context, args []string, cfg config) error {
+	if len(args) != 2 {
+		return usageError("usage: tq issue rename <id> <title>")
+	}
+	id, err := parseID(args[0])
+	if err != nil {
+		return err
+	}
+	issue, err := a.client.updateIssue(ctx, id, map[string]string{"title": args[1]})
+	if err != nil {
+		return err
+	}
+	return writeIssueAction(a.stdout, cfg.output, issue, fmt.Sprintf("Issue #%d renamed", id))
+}
+
+func (a app) issueEdit(ctx context.Context, args []string, cfg config) error {
+	if len(args) != 2 {
+		return usageError("usage: tq issue edit <id> <description>")
+	}
+	id, err := parseID(args[0])
+	if err != nil {
+		return err
+	}
+	issue, err := a.client.updateIssue(ctx, id, map[string]string{"description": args[1]})
+	if err != nil {
+		return err
+	}
+	return writeIssueAction(a.stdout, cfg.output, issue, fmt.Sprintf("Issue #%d description updated", id))
+}
+
 func parseCommon(args []string) (config, []string, error) {
 	cfg := config{
 		apiURL: strings.TrimSpace(os.Getenv("TQ_API_URL")),
@@ -351,7 +406,7 @@ func printRootHelp(w io.Writer) {
 	fmt.Fprintln(w, "Usage: tq [--api-url URL] [--output text|json] <resource> <action> [flags]")
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "Resources:")
-	fmt.Fprintln(w, "  issue    create, get, list, and update issues")
+	fmt.Fprintln(w, "  issue    create, get, list, update, and shortcut issue actions")
 	fmt.Fprintln(w, "  comment  add and list issue comments")
 	fmt.Fprintln(w, "  project  add, remove, check, and list projects")
 }
@@ -364,6 +419,11 @@ func printIssueHelp(w io.Writer) {
 	fmt.Fprintln(w, "  get      Get an issue by ID")
 	fmt.Fprintln(w, "  list     List issues")
 	fmt.Fprintln(w, "  update   Update an issue")
+	fmt.Fprintln(w, "  close    Mark an issue as done")
+	fmt.Fprintln(w, "  ready    Mark an issue as ready")
+	fmt.Fprintln(w, "  draft    Move an issue to backlog")
+	fmt.Fprintln(w, "  rename   Rename an issue")
+	fmt.Fprintln(w, "  edit     Update an issue description")
 }
 
 func printCommentHelp(w io.Writer) {

@@ -102,6 +102,15 @@ go run ./cmd/tq issue create \
   --priority high
 ```
 
+よく使う status / text update には issue shortcut を使えます。
+
+```sh
+go run ./cmd/tq issue ready 1
+go run ./cmd/tq issue close 1
+go run ./cmd/tq issue rename 1 "Clarify workflow contract"
+go run ./cmd/tq issue edit 1 "Updated description"
+```
+
 machine-readable output が必要な場合は `--output json` を使います。
 
 ```sh
