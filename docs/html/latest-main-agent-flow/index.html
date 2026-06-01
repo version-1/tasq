@@ -1,0 +1,829 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Latest Main Agent Dispatch Flow</title>
+  <style>
+    :root {
+      --bg: #f7f8fb;
+      --panel: #ffffff;
+      --ink: #1f2937;
+      --muted: #64748b;
+      --line: #d8dee9;
+      --blue: #2563eb;
+      --green: #0f8b6f;
+      --amber: #b7791f;
+      --red: #c2413d;
+      --violet: #6f42c1;
+      --cyan: #0e7490;
+      --code: #111827;
+      --soft-blue: #eef4ff;
+      --soft-green: #edf9f4;
+      --soft-amber: #fff7e6;
+      --soft-red: #fff1f2;
+      --shadow: 0 10px 26px rgba(15, 23, 42, 0.07);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font: 14px/1.58 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    code, .mono, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+    a { color: var(--blue); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    aside {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: auto;
+      padding: 24px 18px;
+      border-right: 1px solid var(--line);
+      background: #fff;
+    }
+
+    aside h1 {
+      margin: 0 0 8px;
+      font-size: 18px;
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
+
+    aside p {
+      margin: 0 0 18px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    nav a {
+      display: block;
+      padding: 8px 10px;
+      border-radius: 7px;
+      color: #334155;
+      font-weight: 650;
+    }
+
+    nav a:hover {
+      background: var(--soft-blue);
+      text-decoration: none;
+    }
+
+    main {
+      min-width: 0;
+      padding: 32px 40px 72px;
+    }
+
+    header, section {
+      max-width: 1240px;
+      margin: 0 auto;
+    }
+
+    header {
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    header .eyebrow {
+      margin-bottom: 8px;
+      color: var(--blue);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h2 {
+      margin: 34px 0 14px;
+      font-size: 24px;
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
+
+    header h2 {
+      margin: 0 0 10px;
+      font-size: 36px;
+      line-height: 1.12;
+    }
+
+    h3 {
+      margin: 22px 0 10px;
+      font-size: 18px;
+      line-height: 1.3;
+      letter-spacing: 0;
+    }
+
+    p { margin: 0 0 13px; }
+    .lead { max-width: 930px; color: #3b4654; font-size: 16px; }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 18px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      max-width: 100%;
+      padding: 5px 9px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      color: #475569;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .section {
+      margin-top: 22px;
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+    .item {
+      min-width: 0;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfcff;
+    }
+
+    .item strong {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--code);
+      font-size: 13px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .item span { color: var(--muted); }
+
+    .diagram {
+      overflow: auto;
+      margin: 16px 0;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fcfdff;
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      min-width: 1020px;
+      height: auto;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin: 12px 0;
+    }
+
+    button {
+      border: 1px solid #b9c6d8;
+      border-radius: 7px;
+      background: #fff;
+      color: #243244;
+      padding: 7px 11px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button:hover { background: #f1f5f9; }
+    button[aria-pressed="true"] { border-color: var(--blue); background: var(--soft-blue); color: #174ea6; }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+      margin-top: 10px;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: var(--blue);
+    }
+
+    .dot.green { background: var(--green); }
+    .dot.amber { background: var(--amber); }
+    .dot.red { background: var(--red); }
+    .dot.violet { background: var(--violet); }
+    .dot.cyan { background: var(--cyan); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    th, td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #f1f5f9;
+      color: #334155;
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    tr:last-child td { border-bottom: 0; }
+
+    pre {
+      overflow: auto;
+      margin: 12px 0 0;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #0f172a;
+      color: #e5e7eb;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .callout {
+      border-left: 4px solid var(--amber);
+      background: var(--soft-amber);
+      padding: 12px 14px;
+      border-radius: 8px;
+      color: #4a3210;
+    }
+
+    .swimlane {
+      display: grid;
+      grid-template-columns: 160px minmax(0, 1fr);
+      gap: 0;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .lane-label {
+      padding: 14px;
+      border-bottom: 1px solid var(--line);
+      background: #f8fafc;
+      color: #334155;
+      font-weight: 800;
+    }
+
+    .lane-body {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 12px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .lane-label:last-of-type,
+    .lane-body:last-of-type { border-bottom: 0; }
+
+    .step {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px 10px;
+      background: #fbfcff;
+      color: #334155;
+      min-width: 150px;
+    }
+
+    .step.active {
+      border-color: var(--blue);
+      background: var(--soft-blue);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.13);
+    }
+
+    .status-queued { fill: var(--amber); }
+    .status-running { fill: var(--blue); }
+    .status-success { fill: var(--green); }
+    .status-failed { fill: var(--red); }
+
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      aside {
+        position: static;
+        height: auto;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+      nav { display: flex; flex-wrap: wrap; gap: 4px; }
+      main { padding: 24px 18px 48px; }
+      .grid, .grid.two { grid-template-columns: 1fr; }
+      .swimlane { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside>
+      <h1>Latest Main Agent Flow</h1>
+      <p>origin/main commit <span class="mono">36437c9</span><br>Generated 2026-06-01</p>
+      <nav aria-label="Page sections">
+        <a href="#overview">Overview</a>
+        <a href="#architecture">Architecture</a>
+        <a href="#flow">End-to-End Flow</a>
+        <a href="#animation">Interactive Timeline</a>
+        <a href="#states">Run State</a>
+        <a href="#contracts">Contracts</a>
+        <a href="#gaps">Gaps and Notes</a>
+        <a href="#appendix">Appendix</a>
+      </nav>
+    </aside>
+
+    <main>
+      <header>
+        <div class="eyebrow">Tasq / Symphony Orchestrator</div>
+        <h2>Launching agents from latest main, assigning work, and reaching completion</h2>
+        <p class="lead">
+          This diagram describes the implementation visible on the latest fetched <span class="mono">origin/main</span>.
+          The orchestrator polls the issue tracker for ready work, prepares a per-issue workspace from the configured source, queues a run, dispatches it to <span class="mono">CodexRunner</span>, streams runner events into SQLite, and marks the run terminal when the agent returns.
+        </p>
+        <div class="meta">
+          <span class="pill">Scope: <span class="mono">cmd/orchestrator</span></span>
+          <span class="pill">Runtime: <span class="mono">internal/orchestrator/coordinator</span></span>
+          <span class="pill">Agent: <span class="mono">codex app-server</span></span>
+          <span class="pill">Store: <span class="mono">runs</span> + <span class="mono">runner_events</span></span>
+        </div>
+      </header>
+
+      <section id="overview" class="section">
+        <h2>Overview</h2>
+        <div class="grid">
+          <div class="item">
+            <strong>Source of work</strong>
+            <span><span class="mono">Poller.Poll</span> reads issues in <span class="mono">ready</span> state from the issue-tracker API.</span>
+          </div>
+          <div class="item">
+            <strong>Workspace basis</strong>
+            <span><span class="mono">workspace.source</span> defaults to the directory containing <span class="mono">WORKFLOW.md</span>. To run from latest main, point the orchestrator at a latest-main checkout as this source.</span>
+          </div>
+          <div class="item">
+            <strong>Assignment unit</strong>
+            <span>The queue record is a <span class="mono">run</span> row with <span class="mono">issue_id</span>, workspace path, attempt, and orchestrator ID.</span>
+          </div>
+          <div class="item">
+            <strong>Dispatch gate</strong>
+            <span><span class="mono">Dispatcher.Dispatch</span> starts queued runs while <span class="mono">running + claimed</span> stays below the configured maximum.</span>
+          </div>
+          <div class="item">
+            <strong>Agent protocol</strong>
+            <span><span class="mono">CodexRunner</span> launches <span class="mono">bash -lc codex app-server</span> in the workspace and uses JSON-RPC over stdio.</span>
+          </div>
+          <div class="item">
+            <strong>Completion signal</strong>
+            <span>A matching <span class="mono">turn/completed</span> notification allows the runner to return <span class="mono">succeeded</span>; errors and cancellations become terminal run statuses.</span>
+          </div>
+        </div>
+      </section>
+
+      <section id="architecture" class="section">
+        <h2>Architecture</h2>
+        <p>The main process wires the workflow config, issue tracker client, workspace manager, dispatcher, poller, and optional HTTP status surface. The runtime boundary is explicit: tracker state is read through the API, run state is local SQLite, and agent execution is isolated to a per-issue workspace.</p>
+        <div class="diagram">
+          <svg viewBox="0 0 1180 520" role="img" aria-labelledby="arch-title arch-desc">
+            <title id="arch-title">Orchestrator architecture on origin/main</title>
+            <desc id="arch-desc">Layered diagram showing issue tracker, orchestrator components, SQLite store, workspace manager, and Codex app-server process.</desc>
+            <defs>
+              <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+                <path d="M0,0 L0,6 L9,3 z" fill="#64748b"></path>
+              </marker>
+              <style>
+                .box { fill: #fff; stroke: #cbd5e1; stroke-width: 1.4; rx: 10; }
+                .box-blue { fill: #eef4ff; stroke: #2563eb; }
+                .box-green { fill: #edf9f4; stroke: #0f8b6f; }
+                .box-amber { fill: #fff7e6; stroke: #b7791f; }
+                .box-red { fill: #fff1f2; stroke: #c2413d; }
+                .label { fill: #1f2937; font: 700 15px system-ui, sans-serif; }
+                .small { fill: #475569; font: 12px system-ui, sans-serif; }
+                .monoText { fill: #334155; font: 12px ui-monospace, monospace; }
+                .edge { stroke: #64748b; stroke-width: 1.6; fill: none; marker-end: url(#arrow); }
+                .dash { stroke-dasharray: 6 5; }
+              </style>
+            </defs>
+
+            <rect x="28" y="52" width="190" height="96" class="box box-green"></rect>
+            <text x="48" y="86" class="label">Issue Tracker API</text>
+            <text x="48" y="110" class="small">ready issues</text>
+            <text x="48" y="130" class="monoText">IssuesByStates</text>
+
+            <rect x="282" y="34" width="660" height="220" class="box"></rect>
+            <text x="306" y="66" class="label">Orchestrator Process</text>
+            <text x="306" y="88" class="small">created by <tspan class="monoText">cmd/orchestrator/main.go</tspan></text>
+
+            <rect x="318" y="116" width="160" height="74" class="box box-blue"></rect>
+            <text x="338" y="145" class="label">Poller</text>
+            <text x="338" y="167" class="monoText">Poll / queueIssue</text>
+
+            <rect x="522" y="116" width="170" height="74" class="box box-blue"></rect>
+            <text x="542" y="145" class="label">Dispatcher</text>
+            <text x="542" y="167" class="monoText">claim / startRun</text>
+
+            <rect x="736" y="116" width="160" height="74" class="box box-amber"></rect>
+            <text x="756" y="145" class="label">CodexRunner</text>
+            <text x="756" y="167" class="monoText">Run(task)</text>
+
+            <rect x="292" y="302" width="220" height="108" class="box box-green"></rect>
+            <text x="314" y="334" class="label">Workspace Manager</text>
+            <text x="314" y="358" class="small">create/reuse per-issue dir</text>
+            <text x="314" y="380" class="monoText">source -> workspace</text>
+
+            <rect x="560" y="302" width="200" height="108" class="box box-amber"></rect>
+            <text x="582" y="334" class="label">SQLite Run Store</text>
+            <text x="582" y="358" class="monoText">runs</text>
+            <text x="582" y="380" class="monoText">runner_events</text>
+
+            <rect x="812" y="302" width="290" height="108" class="box box-red"></rect>
+            <text x="834" y="334" class="label">Per-Issue Workspace</text>
+            <text x="834" y="358" class="small">agent cwd and file mutation boundary</text>
+            <text x="834" y="380" class="monoText">&lt;workspace.root&gt;/issue-&lt;id&gt;</text>
+
+            <rect x="960" y="116" width="180" height="74" class="box box-red"></rect>
+            <text x="980" y="145" class="label">Codex App Server</text>
+            <text x="980" y="167" class="monoText">JSON-RPC stdio</text>
+
+            <path d="M218 100 H318" class="edge"></path>
+            <path d="M478 153 H522" class="edge"></path>
+            <path d="M692 153 H736" class="edge"></path>
+            <path d="M896 153 H960" class="edge"></path>
+            <path d="M398 190 V302" class="edge"></path>
+            <path d="M620 190 V302" class="edge"></path>
+            <path d="M816 190 C816 242 930 244 957 302" class="edge"></path>
+            <path d="M512 356 H560" class="edge dash"></path>
+            <path d="M760 356 H812" class="edge dash"></path>
+            <path d="M1050 190 V300" class="edge dash"></path>
+          </svg>
+        </div>
+        <div class="legend">
+          <span class="pill"><span class="dot green"></span>External state or filesystem</span>
+          <span class="pill"><span class="dot"></span>Coordinator runtime</span>
+          <span class="pill"><span class="dot amber"></span>Persistent run state</span>
+          <span class="pill"><span class="dot red"></span>Agent execution boundary</span>
+        </div>
+      </section>
+
+      <section id="flow" class="section">
+        <h2>End-to-End Flow</h2>
+        <p>The implemented path on <span class="mono">origin/main</span> has two phases: queueing work during a poll, then dispatching queued runs to a Codex app-server process.</p>
+        <div class="diagram">
+          <svg viewBox="0 0 1180 700" role="img" aria-labelledby="flow-title flow-desc">
+            <title id="flow-title">Agent dispatch sequence</title>
+            <desc id="flow-desc">Sequence-style SVG from startup through poll, workspace creation, queued run creation, dispatch, Codex app-server turn, and terminal run update.</desc>
+            <defs>
+              <marker id="seqArrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+                <path d="M0,0 L0,6 L9,3 z" fill="#475569"></path>
+              </marker>
+              <style>
+                .actor { fill: #f8fafc; stroke: #cbd5e1; stroke-width: 1.2; rx: 8; }
+                .actorText { fill: #1f2937; font: 700 13px system-ui, sans-serif; }
+                .life { stroke: #cbd5e1; stroke-width: 1.2; stroke-dasharray: 5 6; }
+                .msg { stroke: #475569; stroke-width: 1.5; fill: none; marker-end: url(#seqArrow); }
+                .msg2 { stroke: #0f8b6f; stroke-width: 1.5; fill: none; marker-end: url(#seqArrow); }
+                .msg3 { stroke: #b7791f; stroke-width: 1.5; fill: none; marker-end: url(#seqArrow); }
+                .txt { fill: #334155; font: 12px system-ui, sans-serif; }
+                .num { fill: #fff; font: 700 11px system-ui, sans-serif; }
+                .circle { fill: #2563eb; }
+              </style>
+            </defs>
+
+            <g>
+              <rect x="38" y="32" width="120" height="42" class="actor"></rect>
+              <text x="68" y="58" class="actorText">Operator</text>
+              <line x1="98" y1="74" x2="98" y2="650" class="life"></line>
+            </g>
+            <g>
+              <rect x="214" y="32" width="120" height="42" class="actor"></rect>
+              <text x="252" y="58" class="actorText">main</text>
+              <line x1="274" y1="74" x2="274" y2="650" class="life"></line>
+            </g>
+            <g>
+              <rect x="390" y="32" width="120" height="42" class="actor"></rect>
+              <text x="426" y="58" class="actorText">Poller</text>
+              <line x1="450" y1="74" x2="450" y2="650" class="life"></line>
+            </g>
+            <g>
+              <rect x="566" y="32" width="120" height="42" class="actor"></rect>
+              <text x="586" y="58" class="actorText">Run Store</text>
+              <line x1="626" y1="74" x2="626" y2="650" class="life"></line>
+            </g>
+            <g>
+              <rect x="742" y="32" width="132" height="42" class="actor"></rect>
+              <text x="769" y="58" class="actorText">Dispatcher</text>
+              <line x1="808" y1="74" x2="808" y2="650" class="life"></line>
+            </g>
+            <g>
+              <rect x="930" y="32" width="142" height="42" class="actor"></rect>
+              <text x="958" y="58" class="actorText">CodexRunner</text>
+              <line x1="1001" y1="74" x2="1001" y2="650" class="life"></line>
+            </g>
+
+            <g data-step="1">
+              <circle cx="98" cy="116" r="12" class="circle"></circle><text x="95" y="120" class="num">1</text>
+              <path d="M110 116 H260" class="msg"></path>
+              <text x="126" y="106" class="txt">start orchestrator with workflow + issue-tracker URL</text>
+            </g>
+            <g data-step="2">
+              <circle cx="274" cy="168" r="12" class="circle"></circle><text x="271" y="172" class="num">2</text>
+              <path d="M286 168 H438" class="msg"></path>
+              <text x="300" y="158" class="txt">load workflow, create store, workspace manager, dispatcher, poller</text>
+            </g>
+            <g data-step="3">
+              <circle cx="450" cy="220" r="12" class="circle"></circle><text x="447" y="224" class="num">3</text>
+              <path d="M462 220 H612" class="msg3"></path>
+              <text x="480" y="210" class="txt">ActiveRuns()</text>
+            </g>
+            <g data-step="4">
+              <circle cx="450" cy="272" r="12" class="circle"></circle><text x="447" y="276" class="num">4</text>
+              <path d="M462 272 H612" class="msg3"></path>
+              <text x="480" y="262" class="txt">CreateRun(status=queued) + queued event</text>
+            </g>
+            <g data-step="5">
+              <circle cx="450" cy="324" r="12" class="circle"></circle><text x="447" y="328" class="num">5</text>
+              <path d="M462 324 H796" class="msg"></path>
+              <text x="500" y="314" class="txt">Dispatch(active queued/running runs)</text>
+            </g>
+            <g data-step="6">
+              <circle cx="808" cy="376" r="12" class="circle"></circle><text x="805" y="380" class="num">6</text>
+              <path d="M820 376 H988" class="msg"></path>
+              <text x="832" y="366" class="txt">startRun goroutine with runner.Task</text>
+            </g>
+            <g data-step="7">
+              <circle cx="1001" cy="428" r="12" class="circle"></circle><text x="998" y="432" class="num">7</text>
+              <path d="M989 428 H638" class="msg3"></path>
+              <text x="664" y="418" class="txt">UpdateRunStatus(running), runner events</text>
+            </g>
+            <g data-step="8">
+              <circle cx="1001" cy="480" r="12" class="circle"></circle><text x="998" y="484" class="num">8</text>
+              <path d="M1001 492 C1001 548 1001 548 1001 600" class="msg2"></path>
+              <text x="1018" y="516" class="txt">initialize, thread/start, turn/start, wait turn/completed</text>
+            </g>
+            <g data-step="9">
+              <circle cx="1001" cy="612" r="12" class="circle"></circle><text x="998" y="616" class="num">9</text>
+              <path d="M989 612 H638" class="msg3"></path>
+              <text x="664" y="602" class="txt">UpdateRunStatus(succeeded|failed|cancelled)</text>
+            </g>
+          </svg>
+        </div>
+      </section>
+
+      <section id="animation" class="section">
+        <h2>Interactive Timeline</h2>
+        <p>Use the controls to step through the runtime ownership changes. This is a compact 2D substitute for watching logs: the highlighted cells show where the current responsibility sits.</p>
+        <div class="controls">
+          <button id="play" type="button">Play</button>
+          <button id="pause" type="button">Pause</button>
+          <button id="reset" type="button">Reset</button>
+          <span class="pill">Current step: <span id="stepLabel" class="mono">0 / 9</span></span>
+        </div>
+        <div class="swimlane" id="timeline" aria-live="polite">
+          <div class="lane-label">Startup</div>
+          <div class="lane-body">
+            <div class="step" data-timeline-step="1">CLI flags: db, workflow, issue-tracker, port</div>
+            <div class="step" data-timeline-step="2">Load workflow and wire components</div>
+          </div>
+          <div class="lane-label">Queueing</div>
+          <div class="lane-body">
+            <div class="step" data-timeline-step="3">Fetch ready issues and active runs</div>
+            <div class="step" data-timeline-step="4">Create/reuse workspace</div>
+            <div class="step" data-timeline-step="5">Insert queued run and runner event</div>
+          </div>
+          <div class="lane-label">Dispatch</div>
+          <div class="lane-body">
+            <div class="step" data-timeline-step="6">Sort queued runs, claim slots</div>
+            <div class="step" data-timeline-step="7">Fetch issue and build runner task</div>
+          </div>
+          <div class="lane-label">Agent</div>
+          <div class="lane-body">
+            <div class="step" data-timeline-step="8">Start Codex app-server in workspace</div>
+            <div class="step" data-timeline-step="9">Wait for turn completion and write terminal status</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="states" class="section">
+        <h2>Run State</h2>
+        <p>Run status is local orchestrator state. The issue status remains owned by the issue tracker and by whatever tool/workflow the agent uses for handoff.</p>
+        <div class="diagram">
+          <svg viewBox="0 0 1000 230" role="img" aria-labelledby="state-title state-desc">
+            <title id="state-title">Run status transitions</title>
+            <desc id="state-desc">Queued transitions to running, then to succeeded, failed, or cancelled.</desc>
+            <defs>
+              <marker id="stateArrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+                <path d="M0,0 L0,6 L9,3 z" fill="#475569"></path>
+              </marker>
+              <style>
+                .state { stroke: #cbd5e1; stroke-width: 1.4; rx: 12; }
+                .stateText { fill: #fff; font: 700 16px system-ui, sans-serif; }
+                .stateSmall { fill: #334155; font: 12px system-ui, sans-serif; }
+                .stateEdge { stroke: #475569; stroke-width: 1.6; marker-end: url(#stateArrow); fill: none; }
+              </style>
+            </defs>
+            <rect x="68" y="82" width="160" height="64" class="state status-queued"></rect>
+            <text x="118" y="120" class="stateText">queued</text>
+            <rect x="360" y="82" width="160" height="64" class="state status-running"></rect>
+            <text x="408" y="120" class="stateText">running</text>
+            <rect x="696" y="30" width="180" height="54" class="state status-success"></rect>
+            <text x="743" y="64" class="stateText">succeeded</text>
+            <rect x="696" y="106" width="180" height="54" class="state status-failed"></rect>
+            <text x="762" y="140" class="stateText">failed</text>
+            <rect x="696" y="182" width="180" height="34" class="state status-failed"></rect>
+            <text x="754" y="204" class="stateText" style="font-size:13px">cancelled</text>
+            <path d="M228 114 H360" class="stateEdge"></path>
+            <path d="M520 114 C600 114 610 57 696 57" class="stateEdge"></path>
+            <path d="M520 114 H696" class="stateEdge"></path>
+            <path d="M520 114 C600 114 610 199 696 199" class="stateEdge"></path>
+            <text x="250" y="100" class="stateSmall">Dispatcher.startRun</text>
+            <text x="548" y="46" class="stateSmall">turn completed</text>
+            <text x="548" y="102" class="stateSmall">startup / turn / panic error</text>
+            <text x="548" y="190" class="stateSmall">context cancelled</text>
+          </svg>
+        </div>
+        <table>
+          <thead>
+            <tr><th>Status</th><th>Writer</th><th>Trigger</th><th>Persistence</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><span class="mono">queued</span></td><td><span class="mono">Poller.queueIssue</span></td><td>Ready issue found and slot available for queueing</td><td><span class="mono">runs.status</span>, <span class="mono">runner_events.event_type=queued</span></td></tr>
+            <tr><td><span class="mono">running</span></td><td><span class="mono">Dispatcher.startRun</span></td><td>Queued run is claimed and goroutine starts</td><td><span class="mono">runs.status</span>, <span class="mono">runner_events.event_type=running</span></td></tr>
+            <tr><td><span class="mono">succeeded</span></td><td><span class="mono">CodexRunner.Run</span> via dispatcher</td><td>All configured turns finish with matching <span class="mono">turn/completed</span></td><td><span class="mono">runs.status</span>, terminal runner event</td></tr>
+            <tr><td><span class="mono">failed</span></td><td><span class="mono">CodexRunner.Run</span> or panic guard</td><td>Startup, JSON-RPC, prompt, turn, timeout, or panic failure</td><td><span class="mono">runs.error</span>, terminal runner event</td></tr>
+            <tr><td><span class="mono">cancelled</span></td><td><span class="mono">Runner</span></td><td>Dispatcher context cancellation during shutdown</td><td><span class="mono">runs.error</span>, terminal runner event</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="contracts" class="section">
+        <h2>Contracts</h2>
+        <div class="grid two">
+          <div class="item">
+            <strong>Workflow config used for dispatch</strong>
+            <pre>polling.interval_ms
+workspace.root
+workspace.source
+agent.max_concurrent_agents
+agent.max_turns
+agent.continuation_turns_enabled
+codex.command
+codex.read_timeout_ms
+codex.turn_timeout_ms
+hooks.after_create / before_run / after_run / before_remove</pre>
+          </div>
+          <div class="item">
+            <strong>Runner task fields</strong>
+            <pre>Issue
+Attempt
+RunID
+Workspace.Path
+PromptTemplate
+MaxTurns
+ContinueTurns
+Command
+ReadTimeout
+TurnTimeout
+OnEvent</pre>
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr><th>Boundary</th><th>Input</th><th>Output</th><th>Failure behavior</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Issue tracker client</td><td>Ready state filter and issue IDs</td><td>Issue models used for prompt rendering</td><td>Poll or dispatch returns an error; no run starts for failed fetch</td></tr>
+            <tr><td>Workspace manager</td><td>Synthetic identifier <span class="mono">issue-&lt;id&gt;</span></td><td>Absolute workspace path and metadata</td><td>Records workspace setup failure and aborts queueing</td></tr>
+            <tr><td>Run store</td><td>Run status and runner events</td><td>Active run list and historical events</td><td>Poll or dispatch returns/logs an error depending on call site</td></tr>
+            <tr><td>Codex app-server</td><td>Prompt, cwd, thread and turn requests</td><td>Protocol notifications and terminal turn completion</td><td>Runner returns <span class="mono">failed</span> with the error string</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="gaps" class="section">
+        <h2>Gaps and Notes</h2>
+        <div class="callout">
+          Latest-main workspace freshness is indirect in the implementation. <span class="mono">workspace.source</span> is copied into the per-issue workspace, excluding <span class="mono">.git</span>, <span class="mono">.worktrees</span>, and <span class="mono">node_modules</span>. If that source directory is a checkout at latest <span class="mono">main</span>, the agent starts from latest main content; the orchestrator itself does not run <span class="mono">git fetch</span> or <span class="mono">git checkout main</span> for each workspace.
+        </div>
+        <table>
+          <thead>
+            <tr><th>Topic</th><th>origin/main behavior</th><th>Spec context</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Issue states</td><td>Poller fetches <span class="mono">entity.StatusReady</span>.</td><td>Symphony spec describes configurable active and terminal states.</td></tr>
+            <tr><td>Retries / continuation</td><td>After a terminal run, a later poll can queue another attempt if the issue remains ready because active runs only include queued/running rows.</td><td>Spec describes explicit retry queue and continuation retry handling.</td></tr>
+            <tr><td>Handoff</td><td>Orchestrator does not update issue state or comments on completion.</td><td>Spec keeps tracker writes in the workflow prompt and agent tooling.</td></tr>
+            <tr><td>Reconciliation</td><td>Queue and dispatch are implemented; the richer spec reconciliation is not fully represented by the inspected files.</td><td>Spec describes stopping non-active or terminal running sessions and cleanup.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="appendix" class="section">
+        <h2>Appendix</h2>
+        <h3>Files inspected</h3>
+        <table>
+          <thead>
+            <tr><th>Path or ref</th><th>Why it matters</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><span class="mono">origin/main:cmd/orchestrator/main.go</span></td><td>Startup wiring for tracker, workspace manager, dispatcher, poller, and HTTP surface.</td></tr>
+            <tr><td><span class="mono">origin/main:internal/orchestrator/coordinator/poller.go</span></td><td>Poll loop, ready issue queueing, workspace creation, run creation.</td></tr>
+            <tr><td><span class="mono">origin/main:internal/orchestrator/coordinator/dispatcher.go</span></td><td>Queued run claiming, concurrency slots, goroutine lifecycle, terminal status writing.</td></tr>
+            <tr><td><span class="mono">origin/main:internal/orchestrator/runner/runner.go</span></td><td>Codex app-server startup, JSON-RPC protocol calls, turn completion handling.</td></tr>
+            <tr><td><span class="mono">origin/main:internal/orchestrator/workspace/workspace.go</span></td><td>Workspace path sanitization, source population, hook behavior, cleanup.</td></tr>
+            <tr><td><span class="mono">origin/main:internal/orchestrator/workflow/workflow.go</span></td><td>Workflow front matter defaults and runtime config parsing.</td></tr>
+            <tr><td><span class="mono">origin/main:db/schema/orchestrator.sql</span></td><td>Persistent run, event, workspace metadata, and setup failure tables.</td></tr>
+            <tr><td><span class="mono">docs/symphony/SPEC.md</span></td><td>Reference algorithm and design intent for full Symphony behavior.</td></tr>
+          </tbody>
+        </table>
+        <h3>External dependencies</h3>
+        <p>This page uses no JavaScript or CSS CDN libraries. All diagrams are inline SVG and the timeline uses inline JavaScript. It remains readable when opened directly from the filesystem.</p>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const steps = Array.from(document.querySelectorAll("[data-timeline-step]"));
+    const label = document.getElementById("stepLabel");
+    const play = document.getElementById("play");
+    const pause = document.getElementById("pause");
+    const reset = document.getElementById("reset");
+    let current = 0;
+    let timer = null;
+
+    function setStep(step) {
+      current = step;
+      for (const node of steps) {
+        node.classList.toggle("active", Number(node.dataset.timelineStep) === current);
+      }
+      label.textContent = current + " / 9";
+      play.setAttribute("aria-pressed", timer ? "true" : "false");
+    }
+
+    function stop() {
+      if (timer) {
+        clearInterval(timer);
+        timer = null;
+      }
+      play.setAttribute("aria-pressed", "false");
+    }
+
+    play.addEventListener("click", () => {
+      stop();
+      timer = setInterval(() => {
+        setStep(current >= 9 ? 1 : current + 1);
+      }, 950);
+      play.setAttribute("aria-pressed", "true");
+    });
+
+    pause.addEventListener("click", stop);
+
+    reset.addEventListener("click", () => {
+      stop();
+      setStep(0);
+    });
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setStep(0);
+    } else {
+      setStep(1);
+    }
+  </script>
+</body>
+</html>
