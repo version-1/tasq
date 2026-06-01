@@ -118,11 +118,13 @@ Recorded via `RecordWorkspaceSetupFailure(ctx, issueID, workspaceKey, path, errT
 
 ### Path fields
 
-All path fields require an absolute path (must start with `/`). Directory existence is checked via `os.Stat` for:
-- Project.Location (create and update)
-- Workspace.Path (create and update)
+All path fields require an absolute path (must start with `/`). API validation does not check directory existence because project paths are recorded from the client host perspective and may not be visible from the API server runtime.
 
-Directory existence is **not** checked for:
+Directory existence is checked by clients before creating records when they can access the target filesystem. For example, `tq project add <path>` resolves the path to a host absolute path and checks that it exists locally before sending it to the issue-tracker API.
+
+Directory existence is not checked by the API for:
+- Project.Location
+- Workspace.Path
 - WorkspaceMetadata.Path (may not exist at upsert time)
 - WorkspaceMetadata.SourcePath
 - WorkspaceSetupFailure.Path (recorded after failure)

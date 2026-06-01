@@ -1,12 +1,22 @@
 package tq
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
+	"strings"
+	"text/tabwriter"
 	"time"
 
 	"github.com/version-1/tasq/internal/issue/domain/entity"
+)
+
+const (
+	ansiBold  = "\x1b[1m"
+	ansiCyan  = "\x1b[36m"
+	ansiFaint = "\x1b[2m"
+	ansiReset = "\x1b[0m"
 )
 
 func writeIssues(w io.Writer, format string, issues []entity.Issue) error {
@@ -38,10 +48,41 @@ func writeProjects(w io.Writer, format string, projects []entity.Project) error 
 	if format == "json" {
 		return writeJSON(w, projects)
 	}
-	for _, project := range projects {
-		fmt.Fprintf(w, "#%d\t%s\t%s\t%s\n", project.ID, project.Key, project.Name, project.Location)
+	if len(projects) == 0 {
+		_, err := fmt.Fprintf(w, "%sNo projects found.%s\n", ansiFaint, ansiReset)
+		return err
 	}
-	return nil
+
+	var buf bytes.Buffer
+	tw := tabwriter.NewWriter(&buf, 0, 0, 2, ' ', 0)
+	fmt.Fprintln(tw, "ID\tKEY\tNAME\tLOCATION\tUPDATED")
+	for _, project := range projects {
+		fmt.Fprintf(tw, "#%d\t%s\t%s\t%s\t%s\n", project.ID, project.Key, project.Name, project.Location, formatTime(project.UpdatedAt))
+	}
+	if err := tw.Flush(); err != nil {
+		return err
+	}
+	_, err := io.WriteString(w, colorProjectTable(buf.String()))
+	return err
+}
+
+func colorProjectTable(table string) string {
+	lines := strings.Split(table, "\n")
+	for i, line := range lines {
+		if line == "" {
+			continue
+		}
+		if i == 0 {
+			lines[i] = ansiBold + line + ansiReset
+			continue
+		}
+		fields := strings.Fields(line)
+		if len(fields) < 2 {
+			continue
+		}
+		lines[i] = strings.Replace(line, fields[1], ansiCyan+fields[1]+ansiReset, 1)
+	}
+	return strings.Join(lines, "\n")
 }
 
 func writeProjectAddResult(w io.Writer, format string, result projectAddResult) error {

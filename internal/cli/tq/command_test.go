@@ -279,6 +279,16 @@ func TestProjectAddCheckRemoveAgainstIssueTrackerAPI(t *testing.T) {
 		t.Fatalf("unexpected check stdout: %s", stdout)
 	}
 
+	stdout, stderr, code = runCLI(t, []string{"--api-url", server.URL, "project", "list"})
+	if code != 0 {
+		t.Fatalf("list code=%d stderr=%s", code, stderr)
+	}
+	if !strings.Contains(stdout, ansiBold+"ID") ||
+		!strings.Contains(stdout, ansiCyan+"demo-project"+ansiReset) ||
+		!strings.Contains(stdout, projectRoot) {
+		t.Fatalf("unexpected text list stdout: %s", stdout)
+	}
+
 	stdout, stderr, code = runCLI(t, []string{"--api-url", server.URL, "--output", "json", "project", "list"})
 	if code != 0 {
 		t.Fatalf("list code=%d stderr=%s", code, stderr)
