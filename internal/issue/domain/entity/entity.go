@@ -17,7 +17,7 @@ const (
 	maxPathLength        = 1000
 )
 
-var projectKeyPattern = regexp.MustCompile(`^[A-Z][A-Z0-9_]{0,19}$`)
+var projectKeyPattern = regexp.MustCompile(`^([A-Z][A-Z0-9_]{0,19}|[a-z][a-z0-9-]{0,63})$`)
 
 type Status string
 

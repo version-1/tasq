@@ -34,6 +34,40 @@ func writeIssue(w io.Writer, format string, issue entity.Issue) error {
 	return nil
 }
 
+func writeProjects(w io.Writer, format string, projects []entity.Project) error {
+	if format == "json" {
+		return writeJSON(w, projects)
+	}
+	for _, project := range projects {
+		fmt.Fprintf(w, "#%d\t%s\t%s\t%s\n", project.ID, project.Key, project.Name, project.Location)
+	}
+	return nil
+}
+
+func writeProjectAddResult(w io.Writer, format string, result projectAddResult) error {
+	if format == "json" {
+		return writeJSON(w, result)
+	}
+	fmt.Fprintf(w, "Project: %s (%d)\n", result.Project.Key, result.Project.ID)
+	fmt.Fprintf(w, "Workspace: %s (%d)\n", result.Workspace.Name, result.Workspace.ID)
+	fmt.Fprintf(w, "Path: %s\n", result.Workspace.Path)
+	return nil
+}
+
+func writeProjectCheckItems(w io.Writer, format string, items []projectCheckItem) error {
+	if format == "json" {
+		return writeJSON(w, items)
+	}
+	for _, item := range items {
+		status := "PASS"
+		if !item.Passed {
+			status = "FAIL"
+		}
+		fmt.Fprintf(w, "%s\t%s\t%s\n", status, item.Name, item.Reason)
+	}
+	return nil
+}
+
 func writeComments(w io.Writer, format string, comments []entity.Comment) error {
 	if format == "json" {
 		return writeJSON(w, comments)

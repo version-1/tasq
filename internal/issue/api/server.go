@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
@@ -30,6 +31,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/v1/projects/{id}", s.project)
 	mux.HandleFunc("PATCH /api/v1/projects/{id}", s.updateProject)
 	mux.HandleFunc("DELETE /api/v1/projects/{id}", s.deleteProject)
+	mux.HandleFunc("POST /api/v1/projects/{id}/check", s.checkProject)
 	mux.HandleFunc("GET /api/v1/workspaces", s.workspaces)
 	mux.HandleFunc("POST /api/v1/workspaces", s.createWorkspace)
 	mux.HandleFunc("GET /api/v1/workspaces/{id}", s.workspace)
@@ -122,6 +124,39 @@ func (s *Server) deleteProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+type projectCheckResult struct {
+	Passed bool   `json:"passed"`
+	Reason string `json:"reason"`
+}
+
+func (s *Server) checkProject(w http.ResponseWriter, r *http.Request) {
+	id, ok := pathID(w, r, "project", "projects.check")
+	if !ok {
+		return
+	}
+	if _, err := s.store.Project(r.Context(), id); err != nil {
+		writeStoreError(w, err, "projects.check", "project")
+		return
+	}
+	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "projects.check.invalid_request", err)
+		return
+	}
+	result := checkWorkflowTQUsage(string(body))
+	writeJSON(w, http.StatusOK, result)
+}
+
+func checkWorkflowTQUsage(content string) projectCheckResult {
+	normalized := strings.ToLower(content)
+	for _, token := range []string{"tq issue ", "tq comment ", "tq project ", "`tq ", "\ntq "} {
+		if strings.Contains(normalized, token) {
+			return projectCheckResult{Passed: true, Reason: "WORKFLOW.md documents tq command usage"}
+		}
+	}
+	return projectCheckResult{Passed: false, Reason: "WORKFLOW.md does not document tq command usage"}
 }
 
 func (s *Server) workspaces(w http.ResponseWriter, r *http.Request) {

@@ -140,4 +140,4 @@ Directory existence is **not** checked for:
 
 | Field       | Pattern                          | Description                              |
 |-------------|----------------------------------|------------------------------------------|
-| Project.Key | `^[A-Z][A-Z0-9_]{0,19}$`        | 1-20 chars, uppercase letter start, uppercase alphanumeric + underscore |
+| Project.Key | `^([A-Z][A-Z0-9_]{0,19}\|[a-z][a-z0-9-]{0,63})$` | 1-20 chars uppercase legacy key (`A-Z`, `0-9`, `_`) or 1-64 chars lowercase kebab-case key |

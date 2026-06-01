@@ -83,23 +83,34 @@ export const WorkspaceStatus = {
 
 export interface Project {
   id: number;
+  /** @pattern ^([A-Z][A-Z0-9_]{0,19}|[a-z][a-z0-9-]{0,63})$ */
   key: string;
   name: string;
   description: string;
+  location: string;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface CreateProjectInput {
+  /** @pattern ^([A-Z][A-Z0-9_]{0,19}|[a-z][a-z0-9-]{0,63})$ */
   key: string;
   name: string;
   description?: string;
+  location: string;
 }
 
 export interface UpdateProjectInput {
+  /** @pattern ^([A-Z][A-Z0-9_]{0,19}|[a-z][a-z0-9-]{0,63})$ */
   key?: string;
   name?: string;
   description?: string;
+  location?: string;
+}
+
+export interface ProjectCheckResult {
+  passed: boolean;
+  reason: string;
 }
 
 export interface Workspace {
@@ -209,6 +220,11 @@ export interface ProjectResponse {
 
 export interface ProjectListResponse {
   data: Project[];
+  meta: ApiMeta;
+}
+
+export interface ProjectCheckResponse {
+  data: ProjectCheckResult;
   meta: ApiMeta;
 }
 
@@ -626,6 +642,62 @@ export const deleteApiV1ProjectsId = async (id: number, options?: RequestInit): 
   
   const data: deleteApiV1ProjectsIdResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as deleteApiV1ProjectsIdResponse
+}
+
+
+
+/**
+ * @summary Check whether a project workflow documents tq command usage.
+ */
+export type postApiV1ProjectsIdCheckResponse200 = {
+  data: ProjectCheckResponse
+  status: 200
+}
+
+export type postApiV1ProjectsIdCheckResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type postApiV1ProjectsIdCheckResponse404 = {
+  data: ErrorResponse
+  status: 404
+}
+
+export type postApiV1ProjectsIdCheckResponseSuccess = (postApiV1ProjectsIdCheckResponse200) & {
+  headers: Headers;
+};
+export type postApiV1ProjectsIdCheckResponseError = (postApiV1ProjectsIdCheckResponse400 | postApiV1ProjectsIdCheckResponse404) & {
+  headers: Headers;
+};
+
+export type postApiV1ProjectsIdCheckResponse = (postApiV1ProjectsIdCheckResponseSuccess | postApiV1ProjectsIdCheckResponseError)
+
+export const getPostApiV1ProjectsIdCheckUrl = (id: number,) => {
+
+
+
+
+  return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/projects/${id}/check`
+}
+
+export const postApiV1ProjectsIdCheck = async (id: number,
+    postApiV1ProjectsIdCheckBody: string, options?: RequestInit): Promise<postApiV1ProjectsIdCheckResponse> => {
+
+  const res = await fetch(getPostApiV1ProjectsIdCheckUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain', ...options?.headers },
+    body:
+      postApiV1ProjectsIdCheckBody,
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: postApiV1ProjectsIdCheckResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as postApiV1ProjectsIdCheckResponse
 }
 
 

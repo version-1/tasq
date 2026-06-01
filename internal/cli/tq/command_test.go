@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -239,6 +240,76 @@ func TestCommentCommandsAgainstIssueTrackerAPI(t *testing.T) {
 	}
 }
 
+func TestProjectAddCheckRemoveAgainstIssueTrackerAPI(t *testing.T) {
+	ctx := context.Background()
+	issueStore, err := store.Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer issueStore.Close()
+	server := httptest.NewServer(api.NewServer(issueStore).Handler())
+	defer server.Close()
+
+	projectRoot := t.TempDir()
+	if err := os.WriteFile(filepath.Join(projectRoot, "AGENTS.md"), []byte("See WORKFLOW.md for runtime instructions.\n"), 0o644); err != nil {
+		t.Fatalf("write AGENTS.md: %v", err)
+	}
+
+	stdout, stderr, code := runCLI(t, []string{
+		"--api-url", server.URL,
+		"project", "add",
+		"--key", "demo-project",
+		"--workspace-name", "demo",
+		projectRoot,
+	})
+	if code != 0 {
+		t.Fatalf("add code=%d stderr=%s", code, stderr)
+	}
+	if !strings.Contains(stdout, "Project: demo-project") {
+		t.Fatalf("unexpected add stdout: %s", stdout)
+	}
+	assertFileContains(t, filepath.Join(projectRoot, "WORKFLOW.md"), "tq issue update")
+	assertFileContains(t, filepath.Join(projectRoot, ".gitignore"), ".worktrees")
+
+	stdout, stderr, code = runCLI(t, []string{"--api-url", server.URL, "project", "check", "demo-project"})
+	if code != 0 {
+		t.Fatalf("check code=%d stderr=%s stdout=%s", code, stderr, stdout)
+	}
+	if !strings.Contains(stdout, "PASS\tapi.tq_usage") {
+		t.Fatalf("unexpected check stdout: %s", stdout)
+	}
+
+	stdout, stderr, code = runCLI(t, []string{"--api-url", server.URL, "--output", "json", "project", "list"})
+	if code != 0 {
+		t.Fatalf("list code=%d stderr=%s", code, stderr)
+	}
+	if !strings.Contains(stdout, `"key": "demo-project"`) {
+		t.Fatalf("unexpected list stdout: %s", stdout)
+	}
+
+	stdout, stderr, code = runCLI(t, []string{"--api-url", server.URL, "project", "remove", "demo-project"})
+	if code != 0 {
+		t.Fatalf("remove code=%d stderr=%s", code, stderr)
+	}
+	if !strings.Contains(stdout, "Removed project demo-project") {
+		t.Fatalf("unexpected remove stdout: %s", stdout)
+	}
+	projects, err := issueStore.Projects(ctx)
+	if err != nil {
+		t.Fatalf("list projects: %v", err)
+	}
+	if len(projects) != 0 {
+		t.Fatalf("projects after remove = %+v", projects)
+	}
+	workspaces, err := issueStore.Workspaces(ctx)
+	if err != nil {
+		t.Fatalf("list workspaces: %v", err)
+	}
+	if len(workspaces) != 0 {
+		t.Fatalf("workspaces after remove = %+v", workspaces)
+	}
+}
+
 func TestIssueGetAPIError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
@@ -326,5 +397,16 @@ func writeTestJSON(t *testing.T, w http.ResponseWriter, value any) {
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(value); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func assertFileContains(t *testing.T, path string, want string) {
+	t.Helper()
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read %s: %v", path, err)
+	}
+	if !strings.Contains(string(content), want) {
+		t.Fatalf("%s does not contain %q: %s", path, want, string(content))
 	}
 }
