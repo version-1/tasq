@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	tqconfig "github.com/version-1/tasq/internal/config"
 	"github.com/version-1/tasq/internal/issue/domain/entity"
 )
 
@@ -337,11 +338,7 @@ func (a app) issueEdit(ctx context.Context, args []string, cfg config) error {
 
 func parseCommon(args []string) (config, []string, error) {
 	cfg := config{
-		apiURL: strings.TrimSpace(os.Getenv("TQ_API_URL")),
 		output: "text",
-	}
-	if cfg.apiURL == "" {
-		cfg.apiURL = defaultAPIURL
 	}
 
 	var remaining []string
@@ -372,6 +369,21 @@ func parseCommon(args []string) (config, []string, error) {
 			remaining = append(remaining, arg)
 		}
 	}
+	if cfg.apiURL == "" {
+		cfg.apiURL = strings.TrimSpace(os.Getenv("TQ_API_URL"))
+	}
+	if cfg.apiURL == "" {
+		apiURL, ok, err := tqconfig.IssueTrackerURLFromState()
+		if err != nil {
+			return cfg, nil, err
+		}
+		if ok {
+			cfg.apiURL = apiURL
+		}
+	}
+	if cfg.apiURL == "" {
+		cfg.apiURL = defaultAPIURL
+	}
 	if cfg.output == "text" {
 		return cfg, remaining, nil
 	}
@@ -398,6 +410,9 @@ func newFlagSet(name string) *flag.FlagSet {
 func defaultCommentAuthor() string {
 	if value := strings.TrimSpace(os.Getenv("TQ_AUTHOR")); value != "" {
 		return value
+	}
+	if config, err := tqconfig.Load(); err == nil && strings.TrimSpace(config.Author) != "" {
+		return strings.TrimSpace(config.Author)
 	}
 	return strings.TrimSpace(os.Getenv("USER"))
 }

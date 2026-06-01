@@ -4,23 +4,33 @@ import (
 	"context"
 	"flag"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
+	tqconfig "github.com/version-1/tasq/internal/config"
 	"github.com/version-1/tasq/internal/issue/api"
 	"github.com/version-1/tasq/internal/issue/store"
 )
 
 func main() {
 	addr := flag.String("addr", ":8080", "HTTP listen address")
-	dbPath := flag.String("db", "tasq-issues.sqlite", "SQLite database path")
+	dbPath := flag.String("db", "", "SQLite database path")
 	flag.Parse()
 
 	ctx := context.Background()
-	issueStore, err := store.Open(ctx, *dbPath)
+	home, err := tqconfig.EnsureHome()
+	if err != nil {
+		log.Fatalf("ensure TQ_HOME: %v", err)
+	}
+	resolvedDBPath := *dbPath
+	if resolvedDBPath == "" {
+		resolvedDBPath = tqconfig.IssueTrackerDBPath(home)
+	}
+	issueStore, err := store.Open(ctx, resolvedDBPath)
 	if err != nil {
 		log.Fatalf("open issue store: %v", err)
 	}
@@ -31,14 +41,37 @@ func main() {
 	}()
 
 	server := &http.Server{
-		Addr:              *addr,
 		Handler:           api.NewServer(issueStore).Handler(),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
+	listener, err := net.Listen("tcp", *addr)
+	if err != nil {
+		log.Fatalf("listen: %v", err)
+	}
+	serviceAddr := clientAddr(listener.Addr().String())
+	if err := tqconfig.UpdateState(func(state *tqconfig.State) error {
+		state.IssueTracker = &tqconfig.ServiceState{
+			PID:       os.Getpid(),
+			Addr:      serviceAddr,
+			DB:        resolvedDBPath,
+			StartedAt: time.Now().UTC(),
+		}
+		return nil
+	}); err != nil {
+		log.Fatalf("write issue-tracker state: %v", err)
+	}
+	defer func() {
+		if err := tqconfig.UpdateState(func(state *tqconfig.State) error {
+			state.IssueTracker = nil
+			return nil
+		}); err != nil {
+			log.Printf("clear issue-tracker state: %v", err)
+		}
+	}()
 
 	go func() {
-		log.Printf("issue-tracker listening on %s", *addr)
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		log.Printf("issue-tracker listening on %s db=%s", serviceAddr, resolvedDBPath)
+		if err := server.Serve(listener); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("listen: %v", err)
 		}
 	}()
@@ -52,4 +85,15 @@ func main() {
 	if err := server.Shutdown(shutdownCtx); err != nil {
 		log.Fatalf("shutdown server: %v", err)
 	}
+}
+
+func clientAddr(addr string) string {
+	host, port, err := net.SplitHostPort(addr)
+	if err != nil {
+		return addr
+	}
+	if host == "" || host == "::" || host == "[::]" || host == "0.0.0.0" {
+		host = "127.0.0.1"
+	}
+	return net.JoinHostPort(host, port)
 }

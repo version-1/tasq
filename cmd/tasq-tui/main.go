@@ -11,11 +11,12 @@ import (
 	"strings"
 	"time"
 
+	tqconfig "github.com/version-1/tasq/internal/config"
 	"github.com/version-1/tasq/internal/issue/domain/entity"
 )
 
 func main() {
-	apiURL := flag.String("api", "http://localhost:8080", "issue-tracker API base URL")
+	apiURL := flag.String("api", "", "issue-tracker API base URL")
 	watch := flag.Bool("watch", false, "refresh until interrupted")
 	interval := flag.Duration("interval", 3*time.Second, "refresh interval when watch is enabled")
 	flag.Parse()
@@ -23,8 +24,20 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 
+	resolvedAPIURL := *apiURL
+	if resolvedAPIURL == "" {
+		if stateURL, ok, err := tqconfig.IssueTrackerURLFromState(); err != nil {
+			fmt.Fprintf(os.Stderr, "tasq-tui: %v\n", err)
+			os.Exit(1)
+		} else if ok {
+			resolvedAPIURL = stateURL
+		}
+	}
+	if resolvedAPIURL == "" {
+		resolvedAPIURL = "http://localhost:8080"
+	}
 	for {
-		if err := render(ctx, *apiURL); err != nil {
+		if err := render(ctx, resolvedAPIURL); err != nil {
 			fmt.Fprintf(os.Stderr, "tasq-tui: %v\n", err)
 			os.Exit(1)
 		}

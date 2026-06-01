@@ -11,6 +11,7 @@
 - TUI: 同じ issue-tracker API を使う Go terminal client です。
 
 Architecture 全体は [docs/design.md](docs/design.md) を参照してください。
+Local configuration は [docs/configuration.ja.md](docs/configuration.ja.md) を参照してください。
 
 ## Quick Start
 

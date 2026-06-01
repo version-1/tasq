@@ -1,0 +1,82 @@
+package config
+
+import (
+	"os"
+	"path/filepath"
+	"testing"
+	"time"
+)
+
+func TestReadStateMissingReturnsEmpty(t *testing.T) {
+	t.Setenv(EnvHome, t.TempDir())
+	state, err := ReadState()
+	if err != nil {
+		t.Fatalf("read state: %v", err)
+	}
+	if state.IssueTracker != nil || state.Orchestrator != nil {
+		t.Fatalf("state=%+v", state)
+	}
+}
+
+func TestUpdateStateWritesAtomically(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv(EnvHome, home)
+	startedAt := time.Date(2026, 6, 1, 10, 0, 0, 0, time.UTC)
+	if err := UpdateState(func(state *State) error {
+		state.IssueTracker = &ServiceState{
+			PID:       123,
+			Addr:      "127.0.0.1:51234",
+			DB:        "system/data/issues.sqlite",
+			StartedAt: startedAt,
+		}
+		return nil
+	}); err != nil {
+		t.Fatalf("update state: %v", err)
+	}
+	state, err := ReadState()
+	if err != nil {
+		t.Fatalf("read state: %v", err)
+	}
+	if state.IssueTracker == nil || state.IssueTracker.PID != 123 || !state.IssueTracker.StartedAt.Equal(startedAt) {
+		t.Fatalf("state=%+v", state)
+	}
+	if _, err := os.Stat(StateLockPath(home)); err != nil {
+		t.Fatalf("lock missing: %v", err)
+	}
+}
+
+func TestIssueTrackerURLFromState(t *testing.T) {
+	t.Setenv(EnvHome, t.TempDir())
+	if err := UpdateState(func(state *State) error {
+		state.IssueTracker = &ServiceState{Addr: "127.0.0.1:51234"}
+		return nil
+	}); err != nil {
+		t.Fatalf("update state: %v", err)
+	}
+	apiURL, ok, err := IssueTrackerURLFromState()
+	if err != nil {
+		t.Fatalf("url from state: %v", err)
+	}
+	if !ok || apiURL != "http://127.0.0.1:51234" {
+		t.Fatalf("apiURL=%q ok=%v", apiURL, ok)
+	}
+}
+
+func TestReadStateParsesExistingFile(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv(EnvHome, home)
+	if err := os.MkdirAll(SystemDir(home), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	raw := `{"orchestrator":{"pid":7,"addr":"http://127.0.0.1:8081","started_at":"2026-06-01T10:00:00Z"}}`
+	if err := os.WriteFile(filepath.Join(SystemDir(home), "state.json"), []byte(raw), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	state, err := ReadState()
+	if err != nil {
+		t.Fatalf("read state: %v", err)
+	}
+	if state.Orchestrator == nil || state.Orchestrator.PID != 7 {
+		t.Fatalf("state=%+v", state)
+	}
+}

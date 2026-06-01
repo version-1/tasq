@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	tqconfig "github.com/version-1/tasq/internal/config"
 	"github.com/version-1/tasq/internal/issue/api"
 	"github.com/version-1/tasq/internal/issue/domain/entity"
 	"github.com/version-1/tasq/internal/issue/store"
@@ -494,6 +495,74 @@ func TestAPIURLDefaultsToEnvironment(t *testing.T) {
 		t.Fatalf("code=%d stderr=%s", code, stderr)
 	}
 	if stdout != "" {
+		t.Fatalf("unexpected stdout: %s", stdout)
+	}
+}
+
+func TestAPIURLDefaultsToState(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet || r.URL.Path != "/api/v1/issues" {
+			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
+		writeTestJSON(t, w, apiResponse[[]entity.Issue]{Data: []entity.Issue{}})
+	}))
+	defer server.Close()
+	t.Setenv("TQ_API_URL", "")
+	t.Setenv(tqconfig.EnvHome, t.TempDir())
+	if err := tqconfig.UpdateState(func(state *tqconfig.State) error {
+		state.IssueTracker = &tqconfig.ServiceState{Addr: server.URL}
+		return nil
+	}); err != nil {
+		t.Fatalf("write state: %v", err)
+	}
+
+	stdout, stderr, code := runCLI(t, []string{"issue", "list"})
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr)
+	}
+	if stdout != "" {
+		t.Fatalf("unexpected stdout: %s", stdout)
+	}
+}
+
+func TestCommentAddDefaultsAuthorFromConfig(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv(tqconfig.EnvHome, home)
+	t.Setenv("TQ_AUTHOR", "")
+	if err := os.MkdirAll(tqconfig.ConfigDir(home), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(tqconfig.ConfigPath(home), []byte("author: config-author\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var input entity.CreateCommentInput
+		if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+			t.Fatal(err)
+		}
+		if input.Author != "config-author" {
+			t.Fatalf("author=%q", input.Author)
+		}
+		w.WriteHeader(http.StatusCreated)
+		writeTestJSON(t, w, apiResponse[entity.Comment]{Data: entity.Comment{
+			ID:      8,
+			IssueID: 42,
+			Author:  input.Author,
+			Type:    entity.CommentGeneral,
+			Body:    input.Body,
+		}})
+	}))
+	defer server.Close()
+
+	stdout, stderr, code := runCLI(t, []string{
+		"--api-url", server.URL,
+		"comment", "add", "42",
+		"--body", "Progress",
+	})
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr)
+	}
+	if !strings.Contains(stdout, "Author: config-author") {
 		t.Fatalf("unexpected stdout: %s", stdout)
 	}
 }
