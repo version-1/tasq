@@ -380,11 +380,6 @@ Fields:
   - `~` is expanded.
   - Relative paths are resolved relative to the directory containing `WORKFLOW.md`.
   - The effective workspace root is normalized to an absolute path before use.
-- `source` (path string or `$VAR`)
-  - Default: directory containing `WORKFLOW.md`.
-  - `~` is expanded.
-  - Relative paths are resolved relative to the directory containing `WORKFLOW.md`.
-  - The effective workspace source is normalized to an absolute path before use.
 
 #### 5.3.4 `hooks` (object)
 
@@ -421,12 +416,6 @@ Fields:
   - Default: `20`
   - Limits the number of coding-agent turns within one worker session.
   - Invalid values fail configuration validation.
-- `continuation_turns_enabled` (boolean)
-  - Default: `false`
-  - When enabled, the worker may continue on the same live thread up to `max_turns`.
-- `max_retry_attempts` (positive integer)
-  - Default: `3`
-  - Caps failure-driven retry attempts before the run remains failed.
 - `max_retry_backoff_ms` (integer)
   - Default: `300000` (5 minutes)
   - Changes SHOULD be re-applied at runtime and affect future retry scheduling.
@@ -589,7 +578,6 @@ not require recognizing or validating extension fields unless that extension is 
 - `tracker.terminal_states`: list of strings, default `["Closed", "Cancelled", "Canceled", "Duplicate", "Done"]`
 - `polling.interval_ms`: integer, default `30000`
 - `workspace.root`: path resolved to absolute, default `<system-temp>/symphony_workspaces`
-- `workspace.source`: path resolved to absolute, default directory containing `WORKFLOW.md`
 - `hooks.after_create`: shell script or null
 - `hooks.before_run`: shell script or null
 - `hooks.after_run`: shell script or null
@@ -597,8 +585,6 @@ not require recognizing or validating extension fields unless that extension is 
 - `hooks.timeout_ms`: integer, default `60000`
 - `agent.max_concurrent_agents`: integer, default `10`
 - `agent.max_turns`: integer, default `20`
-- `agent.continuation_turns_enabled`: boolean, default `false`
-- `agent.max_retry_attempts`: integer, default `3`
 - `agent.max_retry_backoff_ms`: integer, default `300000` (5m)
 - `agent.max_concurrent_agents_by_state`: map of positive integers, default `{}`
 - `codex.command`: shell command string, default `codex app-server`
