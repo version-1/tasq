@@ -10,6 +10,7 @@ Ask questions to clarify ambiguous instructions.
 - Write documentation in English.
 - See [docs/design.md](docs/design.md) for system architecture.
 - Symphony-related orchestration, workflow, workspace, agent-runner, tracker, and observability changes must comply with [docs/symphony/SPEC.md](docs/symphony/SPEC.md).
+- Do not change [docs/symphony/SPEC.md](docs/symphony/SPEC.md) to match Tasq-specific implementation differences. Record any intentional Tasq-vs-Symphony differences in [docs/symphony/DEVIATIONS.md](docs/symphony/DEVIATIONS.md) instead.
 - See [docs/schema.md](docs/schema.md) for entity field specifications and validation rules.
 - See [web/docs/design.md](web/docs/design.md) for Web UI structure and styling conventions.
 - All documents linked from AGENTS.md must also be written in English.

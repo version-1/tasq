@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -81,7 +82,10 @@ func (r CodexRunner) Run(ctx context.Context, task Task) Result {
 	if task.Workspace.Path == "" {
 		return Result{Status: run.StatusFailed, Error: "workspace path is required"}
 	}
-	prompt := renderPrompt(task)
+	prompt, err := renderPrompt(task)
+	if err != nil {
+		return Result{Status: run.StatusFailed, Error: err.Error()}
+	}
 	session, err := startSession(ctx, task)
 	if err != nil {
 		emit(task, "startup_failed", err.Error(), "")
@@ -390,21 +394,68 @@ func notificationMatches(raw json.RawMessage, threadID string, turnID string) bo
 	return payload.Turn.ID == turnID
 }
 
-func renderPrompt(task Task) string {
+var templateVariablePattern = regexp.MustCompile(`{{\s*([^{}]+?)\s*}}`)
+var templateNamePattern = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*$`)
+
+func renderPrompt(task Task) (string, error) {
 	prompt := task.PromptTemplate
 	if prompt == "" {
 		prompt = "Work on issue {{ issue.id }}: {{ issue.title }}\n\n{{ issue.description }}"
 	}
-	replacements := map[string]string{
-		"{{ issue.id }}":          strconv.FormatInt(task.Issue.ID, 10),
-		"{{ issue.title }}":       task.Issue.Title,
-		"{{ issue.description }}": task.Issue.Description,
-		"{{ attempt }}":           strconv.Itoa(task.Attempt),
+	if strings.Count(prompt, "{{") != strings.Count(prompt, "}}") {
+		return "", errors.New("template_parse_error: unbalanced template delimiters")
 	}
-	for key, value := range replacements {
-		prompt = strings.ReplaceAll(prompt, key, value)
+	var renderErr error
+	vars := templateVariables(task)
+	rendered := templateVariablePattern.ReplaceAllStringFunc(prompt, func(match string) string {
+		if renderErr != nil {
+			return match
+		}
+		parts := templateVariablePattern.FindStringSubmatch(match)
+		if len(parts) != 2 {
+			renderErr = fmt.Errorf("template_parse_error: malformed template expression %q", match)
+			return match
+		}
+		expression := strings.TrimSpace(parts[1])
+		if strings.Contains(expression, "|") {
+			name, _, _ := strings.Cut(expression, "|")
+			if templateNamePattern.MatchString(strings.TrimSpace(name)) {
+				renderErr = fmt.Errorf("template_render_error: unknown filter in %q", expression)
+			}
+			return match
+		}
+		if !templateNamePattern.MatchString(expression) {
+			return match
+		}
+		value, ok := vars[expression]
+		if !ok {
+			renderErr = fmt.Errorf("template_render_error: unknown variable %q", expression)
+			return match
+		}
+		return value
+	})
+	if renderErr != nil {
+		return "", renderErr
 	}
-	return prompt
+	return rendered, nil
+}
+
+func templateVariables(task Task) map[string]string {
+	attempt := 0
+	if task.Attempt > 1 {
+		attempt = task.Attempt
+	}
+	return map[string]string{
+		"issue.id":          strconv.FormatInt(task.Issue.ID, 10),
+		"issue.title":       task.Issue.Title,
+		"issue.description": task.Issue.Description,
+		"issue.status":      string(task.Issue.Status),
+		"issue.priority":    string(task.Issue.Priority),
+		"issue.assignee":    task.Issue.Assignee,
+		"issue.created_at":  task.Issue.CreatedAt.Format(time.RFC3339),
+		"issue.updated_at":  task.Issue.UpdatedAt.Format(time.RFC3339),
+		"attempt":           strconv.Itoa(attempt),
+	}
 }
 
 func emit(task Task, eventType string, message string, payloadJSON string) {
