@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 
@@ -120,10 +121,10 @@ func TestPollQueuesAndDispatchesInSameCycle(t *testing.T) {
 	store := openTestStore(t)
 	manager := newTestWorkspaceManager(t)
 	testRunner := &recordingRunner{result: runner.Result{Status: run.StatusSucceeded}}
-	issues := []entity.Issue{{ID: 42, Status: entity.StatusReady, Title: "Build dispatch"}}
-	dispatcher := newTestDispatcher(t, store, testRunner, issues)
+	tracker := newFakeTracker([]entity.Issue{{ID: 42, Status: entity.StatusReady, Title: "Build dispatch"}})
+	dispatcher := newTestDispatcherWithTracker(t, store, testRunner, tracker, 2)
 	poller, err := NewPoller(PollerConfig{
-		Tracker:        fakeTracker{issues: issues},
+		Tracker:        tracker,
 		Store:          store,
 		Workspaces:     manager,
 		Dispatcher:     dispatcher,
@@ -152,21 +153,146 @@ func TestPollQueuesAndDispatchesInSameCycle(t *testing.T) {
 	}
 }
 
-type fakeTracker struct {
-	issues []entity.Issue
+func TestPollFailedDispatchBlocksIssueAndSkipsNextPoll(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store := openTestStore(t)
+	manager := newTestWorkspaceManager(t)
+	testRunner := &recordingRunner{result: runner.Result{Status: run.StatusFailed, Error: "codex command not found"}}
+	tracker := newFakeTracker([]entity.Issue{{ID: 42, Status: entity.StatusReady, Title: "Build dispatch"}})
+	dispatcher := newTestDispatcherWithTracker(t, store, testRunner, tracker, 2)
+	poller, err := NewPoller(PollerConfig{
+		Tracker:        tracker,
+		Store:          store,
+		Workspaces:     manager,
+		Dispatcher:     dispatcher,
+		Interval:       time.Minute,
+		MaxActiveRuns:  2,
+		OrchestratorID: "test-orchestrator",
+	})
+	if err != nil {
+		t.Fatalf("new poller: %v", err)
+	}
+
+	if err := poller.Poll(ctx); err != nil {
+		t.Fatalf("poll: %v", err)
+	}
+	shutdownDispatcher(t, dispatcher)
+	if err := poller.Poll(ctx); err != nil {
+		t.Fatalf("poll again: %v", err)
+	}
+
+	if issue := tracker.issue(t, 42); issue.Status != entity.StatusBlocked {
+		t.Fatalf("issue status = %s", issue.Status)
+	}
+	storedRun, err := store.RunByIssueID(ctx, 42)
+	if err != nil {
+		t.Fatalf("run by issue id: %v", err)
+	}
+	if storedRun.Status != run.StatusFailed {
+		t.Fatalf("run status = %s", storedRun.Status)
+	}
+	if got := testRunner.runCount(); got != 1 {
+		t.Fatalf("run count = %d", got)
+	}
 }
 
-func (t fakeTracker) Issue(ctx context.Context, id int64) (entity.Issue, error) {
-	for _, issue := range t.issues {
-		if issue.ID == id {
-			return issue, nil
-		}
+type fakeTracker struct {
+	mu       sync.Mutex
+	issues   map[int64]entity.Issue
+	comments map[int64][]entity.Comment
+}
+
+func newFakeTracker(issues []entity.Issue) *fakeTracker {
+	tracker := &fakeTracker{
+		issues:   make(map[int64]entity.Issue, len(issues)),
+		comments: make(map[int64][]entity.Comment),
+	}
+	for _, issue := range issues {
+		tracker.issues[issue.ID] = issue
+	}
+	return tracker
+}
+
+func (t *fakeTracker) Issue(ctx context.Context, id int64) (entity.Issue, error) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	issue, ok := t.issues[id]
+	if ok {
+		return issue, nil
 	}
 	return entity.Issue{}, sql.ErrNoRows
 }
 
-func (t fakeTracker) IssuesByStates(ctx context.Context, states []string) ([]entity.Issue, error) {
-	return t.issues, nil
+func (t *fakeTracker) IssuesByStates(ctx context.Context, states []string) ([]entity.Issue, error) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	stateSet := make(map[entity.Status]struct{}, len(states))
+	for _, state := range states {
+		stateSet[entity.Status(state)] = struct{}{}
+	}
+	output := make([]entity.Issue, 0, len(t.issues))
+	for _, issue := range t.issues {
+		if len(stateSet) == 0 {
+			output = append(output, issue)
+			continue
+		}
+		if _, ok := stateSet[issue.Status]; ok {
+			output = append(output, issue)
+		}
+	}
+	return output, nil
+}
+
+func (t *fakeTracker) UpdateIssue(ctx context.Context, id int64, input entity.UpdateIssueInput) (entity.Issue, error) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	issue, ok := t.issues[id]
+	if !ok {
+		return entity.Issue{}, sql.ErrNoRows
+	}
+	if input.Status != nil {
+		issue.Status = *input.Status
+	}
+	if input.Assignee != nil {
+		issue.Assignee = *input.Assignee
+	}
+	t.issues[id] = issue
+	return issue, nil
+}
+
+func (t *fakeTracker) CreateComment(ctx context.Context, issueID int64, input entity.CreateCommentInput) (entity.Comment, error) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if _, ok := t.issues[issueID]; !ok {
+		return entity.Comment{}, sql.ErrNoRows
+	}
+	comment := entity.Comment{
+		ID:      int64(len(t.comments[issueID]) + 1),
+		IssueID: issueID,
+		Author:  input.Author,
+		Type:    input.Type,
+		Body:    input.Body,
+	}
+	t.comments[issueID] = append(t.comments[issueID], comment)
+	return comment, nil
+}
+
+func (t *fakeTracker) issue(tb testing.TB, id int64) entity.Issue {
+	tb.Helper()
+	issue, err := t.Issue(context.Background(), id)
+	if err != nil {
+		tb.Fatalf("issue %d: %v", id, err)
+	}
+	return issue
+}
+
+func (t *fakeTracker) commentsForIssue(tb testing.TB, id int64) []entity.Comment {
+	tb.Helper()
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	return append([]entity.Comment(nil), t.comments[id]...)
 }
 
 func openTestStore(t *testing.T) *runstore.Store {
@@ -195,7 +321,7 @@ func newTestWorkspaceManager(t *testing.T) *workspace.Manager {
 func newTestPoller(t *testing.T, store *runstore.Store, manager *workspace.Manager, issues []entity.Issue) *Poller {
 	t.Helper()
 	poller, err := NewPoller(PollerConfig{
-		Tracker:        fakeTracker{issues: issues},
+		Tracker:        newFakeTracker(issues),
 		Store:          store,
 		Workspaces:     manager,
 		Interval:       time.Minute,

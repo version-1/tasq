@@ -78,7 +78,8 @@ func TestDispatcherRecordsFailedRun(t *testing.T) {
 	store := openTestStore(t)
 	storedRun := createQueuedRun(t, store, 42)
 	testRunner := &recordingRunner{result: runner.Result{Status: run.StatusFailed, Error: "startup failed"}}
-	dispatcher := newTestDispatcher(t, store, testRunner, []entity.Issue{{ID: 42, Status: entity.StatusReady}})
+	tracker := newFakeTracker([]entity.Issue{{ID: 42, Status: entity.StatusReady}})
+	dispatcher := newTestDispatcherWithTracker(t, store, testRunner, tracker, 2)
 
 	if err := dispatcher.Dispatch(ctx, []run.Run{storedRun}); err != nil {
 		t.Fatalf("dispatch: %v", err)
@@ -92,6 +93,38 @@ func TestDispatcherRecordsFailedRun(t *testing.T) {
 	if updated.Status != run.StatusFailed || updated.Error != "startup failed" {
 		t.Fatalf("updated run = %+v", updated)
 	}
+	issue := tracker.issue(t, 42)
+	if issue.Status != entity.StatusBlocked {
+		t.Fatalf("issue status = %s", issue.Status)
+	}
+	comments := tracker.commentsForIssue(t, 42)
+	if len(comments) != 1 || comments[0].Type != entity.CommentBlocker || !strings.Contains(comments[0].Body, "startup failed") {
+		t.Fatalf("comments = %+v", comments)
+	}
+}
+
+func TestDispatcherLeavesNonReadyIssueWhenRunFails(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store := openTestStore(t)
+	storedRun := createQueuedRun(t, store, 42)
+	testRunner := &recordingRunner{result: runner.Result{Status: run.StatusFailed, Error: "startup failed"}}
+	tracker := newFakeTracker([]entity.Issue{{ID: 42, Status: entity.StatusReview}})
+	dispatcher := newTestDispatcherWithTracker(t, store, testRunner, tracker, 2)
+
+	if err := dispatcher.Dispatch(ctx, []run.Run{storedRun}); err != nil {
+		t.Fatalf("dispatch: %v", err)
+	}
+	shutdownDispatcher(t, dispatcher)
+
+	issue := tracker.issue(t, 42)
+	if issue.Status != entity.StatusReview {
+		t.Fatalf("issue status = %s", issue.Status)
+	}
+	if comments := tracker.commentsForIssue(t, 42); len(comments) != 0 {
+		t.Fatalf("comments = %+v", comments)
+	}
 }
 
 func TestDispatcherRecoversPanickingRunner(t *testing.T) {
@@ -101,7 +134,8 @@ func TestDispatcherRecoversPanickingRunner(t *testing.T) {
 	store := openTestStore(t)
 	storedRun := createQueuedRun(t, store, 42)
 	testRunner := &recordingRunner{panicValue: "boom"}
-	dispatcher := newTestDispatcher(t, store, testRunner, []entity.Issue{{ID: 42, Status: entity.StatusReady}})
+	tracker := newFakeTracker([]entity.Issue{{ID: 42, Status: entity.StatusReady}})
+	dispatcher := newTestDispatcherWithTracker(t, store, testRunner, tracker, 2)
 
 	if err := dispatcher.Dispatch(ctx, []run.Run{storedRun}); err != nil {
 		t.Fatalf("dispatch: %v", err)
@@ -114,6 +148,10 @@ func TestDispatcherRecoversPanickingRunner(t *testing.T) {
 	}
 	if updated.Status != run.StatusFailed || !strings.Contains(updated.Error, "runner panic: boom") {
 		t.Fatalf("updated run = %+v", updated)
+	}
+	issue := tracker.issue(t, 42)
+	if issue.Status != entity.StatusBlocked {
+		t.Fatalf("issue status = %s", issue.Status)
 	}
 }
 
@@ -173,8 +211,13 @@ func newTestDispatcher(t *testing.T, store *runstore.Store, testRunner runner.Ru
 
 func newTestDispatcherWithMax(t *testing.T, store *runstore.Store, testRunner runner.Runner, issues []entity.Issue, maxConcurrentRuns int) *Dispatcher {
 	t.Helper()
+	return newTestDispatcherWithTracker(t, store, testRunner, newFakeTracker(issues), maxConcurrentRuns)
+}
+
+func newTestDispatcherWithTracker(t *testing.T, store *runstore.Store, testRunner runner.Runner, tracker *fakeTracker, maxConcurrentRuns int) *Dispatcher {
+	t.Helper()
 	dispatcher, err := NewDispatcher(DispatcherConfig{
-		Tracker:           fakeTracker{issues: issues},
+		Tracker:           tracker,
 		Store:             store,
 		Runner:            testRunner,
 		WorkflowConfig:    workflow.Config{MaxTurns: 2, CodexCommand: "codex app-server", CodexReadTimeout: time.Second, CodexTurnTimeout: time.Second},

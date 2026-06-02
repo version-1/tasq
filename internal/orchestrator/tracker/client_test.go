@@ -105,6 +105,65 @@ func TestIssueStatesByIDsSkipsRequestForEmptyIDs(t *testing.T) {
 	}
 }
 
+func TestUpdateIssuePatchesIssue(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPatch || r.URL.Path != "/api/v1/issues/42" {
+			t.Fatalf("unexpected request %s %s", r.Method, r.URL.Path)
+		}
+		var payload entity.UpdateIssueInput
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			t.Fatalf("decode request: %v", err)
+		}
+		if payload.Status == nil || *payload.Status != entity.StatusBlocked {
+			t.Fatalf("status = %+v", payload.Status)
+		}
+		writeTestData(t, w, entity.Issue{ID: 42, Status: entity.StatusBlocked})
+	}))
+	defer server.Close()
+
+	blocked := entity.StatusBlocked
+	issue, err := NewClient(server.URL).UpdateIssue(context.Background(), 42, entity.UpdateIssueInput{Status: &blocked})
+	if err != nil {
+		t.Fatalf("update issue: %v", err)
+	}
+	if issue.ID != 42 || issue.Status != entity.StatusBlocked {
+		t.Fatalf("issue = %+v", issue)
+	}
+}
+
+func TestCreateCommentPostsComment(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost || r.URL.Path != "/api/v1/issues/42/comments" {
+			t.Fatalf("unexpected request %s %s", r.Method, r.URL.Path)
+		}
+		var payload entity.CreateCommentInput
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			t.Fatalf("decode request: %v", err)
+		}
+		if payload.Author != "tasq-orchestrator" || payload.Type != entity.CommentBlocker || payload.Body != "runner failed" {
+			t.Fatalf("payload = %+v", payload)
+		}
+		writeTestData(t, w, entity.Comment{ID: 7, IssueID: 42, Author: payload.Author, Type: payload.Type, Body: payload.Body})
+	}))
+	defer server.Close()
+
+	comment, err := NewClient(server.URL).CreateComment(context.Background(), 42, entity.CreateCommentInput{
+		Author: "tasq-orchestrator",
+		Type:   entity.CommentBlocker,
+		Body:   "runner failed",
+	})
+	if err != nil {
+		t.Fatalf("create comment: %v", err)
+	}
+	if comment.ID != 7 || comment.IssueID != 42 || comment.Type != entity.CommentBlocker {
+		t.Fatalf("comment = %+v", comment)
+	}
+}
+
 func writeTestData(t *testing.T, w http.ResponseWriter, data any) {
 	t.Helper()
 	w.Header().Set("Content-Type", "application/json")
