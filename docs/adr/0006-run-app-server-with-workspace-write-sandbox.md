@@ -32,7 +32,7 @@ This makes the app-server use the workspace-write sandbox posture by default for
 
 Tasq still keeps the approval workflow from ADR-0005. If Codex requests command-execution or
 file-change approval, Tasq cancels the request, fails the run with `approval_required`, and blocks a
-still-ready issue with the request details.
+still-runnable issue with the request details.
 
 The dev container remains the primary local-development isolation boundary. The project does not make
 the dev container privileged by default just to make Bubblewrap namespace creation work. The dev

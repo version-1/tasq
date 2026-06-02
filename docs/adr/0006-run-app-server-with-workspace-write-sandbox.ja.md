@@ -25,7 +25,7 @@ codex --sandbox workspace-write app-server
 
 これにより、Tasq run では app-server が default で workspace-write sandbox posture を使う。
 
-Tasq は ADR-0005 の approval workflow を維持する。Codex が command-execution または file-change approval を request した場合、Tasq は request を cancel し、run を `approval_required` で failed にし、最新 state が still-ready の issue を request details 付きで blocked にする。
+Tasq は ADR-0005 の approval workflow を維持する。Codex が command-execution または file-change approval を request した場合、Tasq は request を cancel し、run を `approval_required` で failed にし、最新 state が still-runnable の issue を request details 付きで blocked にする。
 
 Dev container は local development の primary isolation boundary として扱う。Project は Bubblewrap namespace creation を動かすためだけに dev container を default で privileged にしない。Dev image には distribution-provided な `bubblewrap` package を入れ、Codex が bundled fallback helper に依存しないようにする。Dev service は container 内で Bubblewrap が user namespace を作成できるように、Docker default seccomp profile を `security_opt: ["seccomp=unconfined"]` で無効化する。
 

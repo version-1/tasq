@@ -29,8 +29,9 @@ input.
 Command-execution and file-change approval requests are known approval requests. Tasq immediately
 responds with `{"decision":"cancel"}` and fails the run with an `approval_required` error that
 includes the approval method and raw request payload. The dispatcher then marks a still-ready issue
-as `blocked` and writes those details to the blocker comment so an operator can decide whether a
-future retry should allow the requested action. Approval, sandbox, and user-input behavior should be
+or still-in-progress issue as `blocked` and writes those details to the blocker comment so an
+operator can decide whether a future retry should allow the requested action. Approval, sandbox, and
+user-input behavior should be
 revisited before enabling wider production usage.
 
 Runner progress is persisted to SQLite in `runner_events`. The current implementation does not write
