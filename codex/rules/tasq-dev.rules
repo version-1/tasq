@@ -137,6 +137,30 @@ prefix_rule(
 )
 
 prefix_rule(
+    pattern = ["git", "push", "--force"],
+    decision = "forbidden",
+    justification = "Force-pushing rewrites remote history and must not be performed by unattended agents."
+)
+
+prefix_rule(
+    pattern = ["git", "push", "-f"],
+    decision = "forbidden",
+    justification = "Force-pushing rewrites remote history and must not be performed by unattended agents."
+)
+
+prefix_rule(
+    pattern = ["git", "push", "--force-with-lease"],
+    decision = "forbidden",
+    justification = "Force-pushing rewrites remote history and must not be performed by unattended agents."
+)
+
+prefix_rule(
+    pattern = ["git", "push"],
+    decision = "allow",
+    justification = "Pushing normal task branches is expected for Tasq agent pull request workflows."
+)
+
+prefix_rule(
     pattern = ["git", "branch", "-d"],
     decision = "allow",
     justification = "Deleting merged local branches is normally safe in the Tasq dev container."
