@@ -10,6 +10,15 @@ default では `TQ_HOME` は `~/.tasq` に解決されます。development で�
 TQ_HOME=./.tasq
 ```
 
+Default の Compose development workflow は、tool を `dev` container 内で実行し、
+`TQ_HOME=/workspace/.tasq` を使います。`tq`、TUI、issue-tracker、orchestrator は同じ
+container 内の runtime state を読みます。
+
+Codex credential は `TQ_HOME` とは分離します。dev container では
+`CODEX_HOME=/home/codex/.codex` を使い、`codex-home` named volume に保存します。
+Container 内で一度 `make codex-login` を実行して認証します。`codex-home` volume を削除すると
+login state も削除されます。
+
 ## Directory Layout
 
 ```text

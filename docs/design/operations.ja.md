@@ -4,7 +4,7 @@
 
 ## Development Environment
 
-Docker Compose は issue-tracker を container port `8080`、web-ui を container port `3000`、orchestrator service を optional runtime inspection 用に実行します。
+Docker Compose は local development を長時間起動する `dev` container と standalone OpenAPI UI container に集約します。`dev` container 内では issue-tracker が container port `8080`、orchestrator が container port `8081`、web-ui が container port `3000` で待ち受けます。
 
 Recommended commands:
 
@@ -14,14 +14,15 @@ Recommended commands:
 - `make dev-up-forward`
 - `make web-up`
 - `make tui-up`
-- `make dev-status`
+- `make dev-ports`
+- `make codex-login`
 
-Host commands:
+CLI commands:
 
-- `go run ./cmd/tq --api-url http://localhost:8080 issue list`
-- `TQ_API_URL=http://localhost:8080 go run ./cmd/tq issue get 1`
+- `make tq ARGS="issue list"`
+- `make tq ARGS="issue get 1"`
 
-`make web-up` は issue-tracker、orchestrator、web-ui を起動します。Web UI は `/api/v1/...` を Compose network 内の issue-tracker に proxy します。
+`make dev-up` は OpenAPI UI を起動し、`dev` container 内で issue-tracker、orchestrator、web-ui を起動します。Runtime state は `$TQ_HOME` 配下に保存され、container 内の default は `/workspace/.tasq` です。`make codex-login` は Codex authentication を `codex-home` Docker volume に永続化します。
 
 ## Verification
 
@@ -39,10 +40,10 @@ npm run build
 
 Manual verification:
 
-1. issue-tracker と Web UI を起動する。
+1. `make dev-up` で dev environment を起動する。
 2. UI または `tq` で issue を作成・更新する。
 3. issue-tracker summary が issue status change を反映することを確認する。
-4. runtime inspection が必要な場合は `--port` 付きで orchestrator を起動する。
+4. 表示された orchestrator URL で runtime inspection を確認する。
 
 ## Open Decisions
 

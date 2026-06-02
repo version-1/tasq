@@ -52,6 +52,6 @@ container 内で実行される runtime component には、明示的な path map
 
 ## Notes
 
-`make tq` は host 上で `tq` を実行し、Compose issue-tracker には割り当てられた localhost port 経由で接続します。これにより、path resolution はユーザーの filesystem と揃いながら、Compose API service も利用できます。
+ADR-0002 では default development topology を変更し、`make tq` は dev container 内で実行されます。これにより endpoint consistency は改善しますが、project path を永続化する command では、この ADR の host-local durable path model を維持する必要があります。
 
 この validation boundary は `docs/schema.md` にも記載します。

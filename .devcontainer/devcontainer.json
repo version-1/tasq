@@ -1,0 +1,15 @@
+{
+  "name": "Tasq Dev",
+  "dockerComposeFile": "../compose.yml",
+  "service": "dev",
+  "workspaceFolder": "/workspace",
+  "remoteUser": "codex",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "golang.go",
+        "ms-vscode.vscode-typescript-next"
+      ]
+    }
+  }
+}

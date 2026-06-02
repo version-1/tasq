@@ -15,14 +15,14 @@ See [../../docs/design.md](../../docs/design.md) for the architecture boundary.
 
 ## Local Run
 
-Prefer the repository-level Compose flow when testing service interactions:
+Prefer the repository-level dev container flow when testing service interactions:
 
 ```sh
 make issue-tracker-up
 make dev-ports
 ```
 
-For host-only development:
+For host-only development, use a repository-local `TQ_HOME`:
 
 ```sh
 TQ_HOME=./.tasq go run ./cmd/issue-tracker -addr :8080
