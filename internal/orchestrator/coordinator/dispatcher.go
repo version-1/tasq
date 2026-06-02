@@ -197,7 +197,7 @@ func (d *Dispatcher) startRun(storedRun run.Run, task runner.Task) {
 	}
 	d.recordEvent(storedRun.RunID, string(result.Status), result.Error, "")
 	if result.Status == run.StatusFailed {
-		d.blockReadyIssue(context.Background(), storedRun, result.Error)
+		d.blockRunnableIssue(context.Background(), storedRun, result.Error)
 	}
 }
 
@@ -222,16 +222,16 @@ func (d *Dispatcher) failRun(storedRun run.Run, message string) {
 		return
 	}
 	d.recordEvent(storedRun.RunID, string(run.StatusFailed), message, "")
-	d.blockReadyIssue(context.Background(), storedRun, message)
+	d.blockRunnableIssue(context.Background(), storedRun, message)
 }
 
-func (d *Dispatcher) blockReadyIssue(ctx context.Context, storedRun run.Run, errText string) {
+func (d *Dispatcher) blockRunnableIssue(ctx context.Context, storedRun run.Run, errText string) {
 	issue, err := d.tracker.Issue(ctx, storedRun.IssueID)
 	if err != nil {
 		log.Printf("orchestrator dispatch fetch issue failed run=%s issue=%d: %v", storedRun.RunID, storedRun.IssueID, err)
 		return
 	}
-	if issue.Status != entity.StatusReady {
+	if !shouldBlockFailedRunIssue(issue.Status) {
 		return
 	}
 	blocked := entity.StatusBlocked
@@ -247,6 +247,10 @@ func (d *Dispatcher) blockReadyIssue(ctx context.Context, storedRun run.Run, err
 	}); err != nil {
 		log.Printf("orchestrator dispatch comment issue failure failed run=%s issue=%d: %v", storedRun.RunID, storedRun.IssueID, err)
 	}
+}
+
+func shouldBlockFailedRunIssue(status entity.Status) bool {
+	return status == entity.StatusReady || status == entity.StatusInProgress
 }
 
 func failureCommentBody(runID string, errText string) string {

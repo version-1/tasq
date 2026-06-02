@@ -137,7 +137,32 @@ payload: {"command":"make test","approvalId":"approval-1","reason":"needs comman
 	}
 }
 
-func TestDispatcherLeavesNonReadyIssueWhenRunFails(t *testing.T) {
+func TestDispatcherBlocksInProgressIssueWhenRunFails(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store := openTestStore(t)
+	storedRun := createQueuedRun(t, store, 42)
+	testRunner := &recordingRunner{result: runner.Result{Status: run.StatusFailed, Error: "approval required"}}
+	tracker := newFakeTracker([]entity.Issue{{ID: 42, Status: entity.StatusInProgress}})
+	dispatcher := newTestDispatcherWithTracker(t, store, testRunner, tracker, 2)
+
+	if err := dispatcher.Dispatch(ctx, []run.Run{storedRun}); err != nil {
+		t.Fatalf("dispatch: %v", err)
+	}
+	shutdownDispatcher(t, dispatcher)
+
+	issue := tracker.issue(t, 42)
+	if issue.Status != entity.StatusBlocked {
+		t.Fatalf("issue status = %s", issue.Status)
+	}
+	comments := tracker.commentsForIssue(t, 42)
+	if len(comments) != 1 || comments[0].Type != entity.CommentBlocker || !strings.Contains(comments[0].Body, "approval required") {
+		t.Fatalf("comments = %+v", comments)
+	}
+}
+
+func TestDispatcherLeavesReviewIssueWhenRunFails(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
