@@ -17,7 +17,7 @@ bwrap: No permissions to create a new namespace
 Repository workflow は Codex app-server を次の command で起動する。
 
 ```sh
-codex app-server --sandbox workspace-write
+codex --sandbox workspace-write app-server
 ```
 
 これにより、Tasq run では app-server が default で workspace-write sandbox posture を使う。

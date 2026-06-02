@@ -2,7 +2,7 @@
 
 Tasq launches Codex app-server as a local subprocess through `bash -lc <codex.command>` with the
 per-issue workspace as the process working directory. The repository workflow sets
-`codex.command` to `codex app-server --sandbox workspace-write` so the app-server starts with a
+`codex.command` to `codex --sandbox workspace-write app-server` so the app-server starts with a
 workspace-write sandbox posture inside the development container.
 
 The installed Codex CLI schema is the protocol source of truth. The runner's message shape is based

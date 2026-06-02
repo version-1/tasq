@@ -22,7 +22,7 @@ use.
 The repository workflow starts Codex app-server with:
 
 ```sh
-codex app-server --sandbox workspace-write
+codex --sandbox workspace-write app-server
 ```
 
 This makes the app-server use the workspace-write sandbox posture by default for Tasq runs.
