@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useTranslation } from "react-i18next";
 import type { IssueStatus, IssueSummary, Summary } from "@/lib/types";
 import { issueStatuses } from "@/lib/types";
@@ -182,6 +183,9 @@ function IssueDetail({
           content={issue.description}
           emptyText={t("issues.noDescription")}
         />
+        <Link className={styles.detailLink} href={`/issues/detail?id=${issue.id}`}>
+          {t("issues.detail.openDetail")}
+        </Link>
         <dl className={styles.detailList}>
           <div><dt>{t("issues.detail.project")}</dt><dd>{issue.projectKey}</dd></div>
           <div><dt>{t("issues.detail.issueStatus")}</dt><dd>{t(`statuses.${issue.status}`)}</dd></div>

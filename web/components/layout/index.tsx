@@ -62,6 +62,7 @@ export function Layout({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
   const pathname = usePathname();
   const activePage = activePageFromPathname(pathname);
+  const isIssueDetailPage = pathname === "/issues/detail";
   const [loadState, setLoadState] = useState<LoadState>({ kind: "loading" });
   const [selectedIssueID, setSelectedIssueID] = useState<number | null>(null);
   const [notice, setNotice] = useState("");
@@ -174,6 +175,7 @@ export function Layout({ children }: { children: ReactNode }) {
           projectName={activeProject?.name ?? null}
           issueCount={summary ? issues.length : null}
           onAddTask={() => setAddIssueState({ kind: "open", initialStatus: "backlog" })}
+          showViewNavigation={!isIssueDetailPage}
         />
 
         <AddIssueDialog

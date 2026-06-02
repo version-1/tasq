@@ -9,6 +9,7 @@ type HeaderProps = {
   projectName: string | null;
   issueCount: number | null;
   onAddTask: () => void;
+  showViewNavigation?: boolean;
 };
 
 const pages = [
@@ -23,6 +24,7 @@ export function Header({
   projectName,
   issueCount,
   onAddTask,
+  showViewNavigation = true,
 }: HeaderProps) {
   const { t } = useTranslation();
   const displayedProjectName = projectName ?? t("header.projectName");
@@ -71,25 +73,27 @@ export function Header({
         </div>
       </div>
 
-      <div className={styles.viewRow}>
-        <nav className={styles.tabs} aria-label={t("header.views")}>
-          {pages.map((page) => (
-            <Link
-              key={page.key}
-              className={activePage === page.key ? `${styles.tab} ${styles.active}` : styles.tab}
-              href={page.href}
-            >
-              {t(page.titleKey)}
-            </Link>
-          ))}
-        </nav>
+      {showViewNavigation ? (
+        <div className={styles.viewRow}>
+          <nav className={styles.tabs} aria-label={t("header.views")}>
+            {pages.map((page) => (
+              <Link
+                key={page.key}
+                className={activePage === page.key ? `${styles.tab} ${styles.active}` : styles.tab}
+                href={page.href}
+              >
+                {t(page.titleKey)}
+              </Link>
+            ))}
+          </nav>
 
-        <div className={styles.viewActions}>
-          <button type="button">{t("header.filter")}</button>
-          <button type="button">{t("header.sort")}</button>
-          <button type="button">{t("header.view")}</button>
+          <div className={styles.viewActions}>
+            <button type="button">{t("header.filter")}</button>
+            <button type="button">{t("header.sort")}</button>
+            <button type="button">{t("header.view")}</button>
+          </div>
         </div>
-      </div>
+      ) : null}
     </header>
   );
 }
