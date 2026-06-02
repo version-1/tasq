@@ -50,3 +50,9 @@ Default の `make tq` は dev container 内で実行される。endpoint consist
 Process lifecycle は Makefile が所有する。二重起動対策は狭い process pattern に依存し、background log は `.tmp/dev-logs/` に保存される。
 
 旧 Compose service name に依存していた script や開発習慣は、dev-container target へ移行する必要がある。
+
+## ADR-0001 との関係
+
+ADR-0001 は project と workspace path の durable product model を記録している。つまり、それらは container runtime path ではなく host-local absolute path である。この ADR は default local development topology を変更するが、その durable model は置き換えない。
+
+そのため、新しい dev-container workflow で project-path persistence command を default の `make tq` flow に含める前に、host-aware な path strategy が必要である。それまでは、project-path command は `/workspace` をそのまま永続化するのではなく、host-aware workflow として扱う。

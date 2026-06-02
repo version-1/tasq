@@ -52,6 +52,6 @@ API consumers that bypass `tq` can create records for non-existent paths if they
 
 ## Notes
 
-ADR-0002 changes the default development topology so `make tq` runs inside the dev container. That improves endpoint consistency, but commands that persist project paths still need to preserve this ADR's host-local durable path model.
+`make tq` should run `tq` on the host and connect to the Compose issue-tracker through the assigned localhost port. This keeps path resolution aligned with the user's filesystem while still supporting the Compose API service.
 
 The schema reference documents this validation boundary in `docs/schema.md`.
