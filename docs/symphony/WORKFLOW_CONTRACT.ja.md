@@ -106,6 +106,9 @@ agent がタスク完了を判断できるように、期待する成果物を�
 - 実装メモを issue の description やコメントに残す。
 
 成功時と失敗時に agent が issue をどのステータスに遷移させるべきか、明示的に記述してください。
+agent が blocker comment を書く場合は、同じ handoff で issue を `blocked` に遷移させるべきです。
+これは、実装が local では完了していても、push、pull request 作成、verification、その他の
+handoff step が失敗した場合にも適用します。
 
 #### 含めるべきでないもの
 

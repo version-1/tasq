@@ -108,6 +108,9 @@ Define the expected deliverables so the agent knows when the task is done. Commo
 - Leave implementation notes in the issue description or a comment.
 
 Be explicit about which status the agent should transition the issue to on success and on failure.
+If the agent writes a blocker comment, it should also transition the issue to `blocked` in the same
+handoff. This applies even when the implementation is locally complete but push, pull request
+creation, verification, or another handoff step failed.
 
 #### What Not to Include
 

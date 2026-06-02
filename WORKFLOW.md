@@ -45,6 +45,10 @@ Read the component workflow document for the area you change before editing.
 5. Commit the change and create or update a pull request.
 6. Leave a progress or handoff comment on the issue.
 7. Move the issue to `review` when the pull request is ready for human review.
+8. If work is blocked after the issue has been moved to `in_progress`, add a
+   `blocker` comment and update the issue status to `blocked` before ending the
+   run. Do this even when the local implementation or commit is complete but
+   push, pull request creation, verification, or another handoff step failed.
 
 Use `tq` to keep the issue tracker synchronized:
 
@@ -52,6 +56,8 @@ Use `tq` to keep the issue tracker synchronized:
 tq issue update {{ issue.id }} --status in_progress
 tq comment add {{ issue.id }} --type progress --body "Started work."
 tq issue update {{ issue.id }} --status review
+tq comment add {{ issue.id }} --type blocker --body "Blocked because <reason>."
+tq issue update {{ issue.id }} --status blocked
 ```
 
 Run the installed `tq` binary from `PATH`. Do not use `go run ./cmd/tq` for
