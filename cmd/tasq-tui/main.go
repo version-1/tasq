@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"regexp"
 	"strings"
 	"time"
 
@@ -76,10 +77,25 @@ func render(ctx context.Context, apiURL string) error {
 			}
 			fmt.Printf("  #%d [%s] %s\n", item.ID, item.Priority, item.Title)
 			fmt.Printf("      issue=%s assignee=%s updated=%s\n", item.Status, assignee, item.UpdatedAt.Local().Format("01-02 15:04"))
+			if description := terminalMarkdown(item.Description); description != "" {
+				fmt.Printf("      %s\n", description)
+			}
 		}
 		fmt.Println()
 	}
 	return nil
+}
+
+var (
+	markdownImagePattern = regexp.MustCompile(`!\[([^\]]*)\]\([^)]+\)`)
+	markdownLinkPattern  = regexp.MustCompile(`\[([^\]]+)\]\([^)]+\)`)
+)
+
+func terminalMarkdown(content string) string {
+	content = markdownImagePattern.ReplaceAllString(content, "[image: $1]")
+	content = markdownLinkPattern.ReplaceAllString(content, "$1")
+	content = strings.ReplaceAll(content, "\n", " ")
+	return strings.Join(strings.Fields(content), " ")
 }
 
 func fetchSummary(ctx context.Context, apiURL string) (entity.Summary, error) {

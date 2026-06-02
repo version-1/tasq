@@ -52,6 +52,7 @@ Responsibilities:
 Responsibilities:
 
 - issue-tracker API 経由で issue を作成、取得、一覧表示、更新する。
+- issue description と comment 用の image attachment を upload する。
 - default では human-readable output を使い、tool use 向けに JSON output をサポートする。
 - issue-tracker API URL を `--api-url`、`TQ_API_URL`、または `http://localhost:8080` から解決する。
 - command が失敗した場合、stderr に machine-readable JSON error を出し、non-zero exit code を返す。
@@ -65,10 +66,11 @@ Responsibilities:
 
 - issue を SQLite に保存する。
 - issue を作成、編集、一覧表示する。
+- attachment metadata を SQLite に保存し、attachment bytes を `$TQ_HOME` 配下に保存する。
 - orchestrator や tool の reconciliation 向けに issue state を返す。
 - UI/TUI summary API を提供する。
 
-issue-tracker は issue status、priority、title、description、assignee、project、workspace の source of truth です。
+issue-tracker は issue status、priority、title、description、assignee、comment、attachment、project、workspace の source of truth です。
 
 ### orchestrator
 
@@ -116,8 +118,10 @@ orchestrator は issue-tracker の work queue や event receiver endpoint を使
 
 ```text
 web-ui ─┐
-tui ────┼─ issue-tracker ── SQLite: issues, projects, workspaces
+tui ────┼─ issue-tracker ── SQLite: issues, comments, attachments, projects, workspaces
 tq ─────┘
+                 │
+                 └─ $TQ_HOME/system/data/attachments
 
         orchestrator ───── SQLite: runs, runner_events, workspace metadata
                 │
@@ -159,9 +163,11 @@ orchestrator は issue status を直接変更しません。issue status の変�
 - `cmd/tq`
 - `cmd/orchestrator`
 - issue、project、workspace のための issue-tracker SQLite table。
+- issue-tracker attachment metadata in SQLite and image bytes under `$TQ_HOME`。
 - run、runner event、workspace metadata、workspace setup failure のための orchestrator SQLite table。
 - web-ui と tui が利用する issue-tracker summary API。
 - `tq` が利用する issue CRUD API。
+- `attachment://<id>` image reference を含む Markdown issue description と comment body。
 - Codex runner lifecycle: app-server startup、live-thread turn、enabled 時の continuation turn、terminal run status reporting。
 
 simulated runner は narrow test 用に残しますが、production wiring は Codex app-server runner を使います。
@@ -190,6 +196,15 @@ issue-tracker は user-facing API です。
 - `POST /api/v1/issues/states`
 - `GET /api/v1/issues/{id}`
 - `PATCH /api/v1/issues/{id}`
+- `GET /api/v1/issues/{issueId}/comments`
+- `POST /api/v1/issues/{issueId}/comments`
+- `PATCH /api/v1/comments/{id}`
+- `GET /api/v1/attachments`
+- `POST /api/v1/attachments`
+- `GET /api/v1/attachments/{id}/content`
+- `DELETE /api/v1/attachments/{id}`
+
+Attachment upload は `entity_type`、`entity_id`、`file` を持つ multipart form data を受け取ります。最初の実装では PNG、JPEG、GIF、WebP image file を 5 MiB までサポートします。Attachment bytes は `$TQ_HOME/system/data/attachments` 配下に保存し、SQLite には metadata と relative path を保存します。Issue と comment text は `![screenshot](attachment://att_...)` のような Markdown image link で attachment を参照します。
 
 JSON success response は `{ "data": ..., "meta": {} }` を使います。JSON error response は `{ "error": { "code": "...", "message": "..." }, "meta": {} }` を使います。
 
@@ -199,11 +214,15 @@ JSON success response は `{ "data": ..., "meta": {} }` を使います。JSON e
 - `tq issue get <id>`
 - `tq issue create --title <title> [--description ...] [--status ...] [--priority ...] [--assignee ...]`
 - `tq issue update <id> [--title ...] [--description ...] [--status ...] [--priority ...] [--assignee ...]`
+- `tq issue create ... --attach <image-path>`
+- `tq issue update <id> ... --attach <image-path>`
 - `tq issue close <id>`
 - `tq issue ready <id>`
 - `tq issue draft <id>`
 - `tq issue rename <id> <title>`
 - `tq issue edit <id> <description>`
+- `tq comment add <issue-id> --body <body> [--attach <image-path>]`
+- `tq comment list <issue-id>`
 
 `tq` は default では human-readable output を使い、`--output json` が指定された場合は JSON output を使います。
 

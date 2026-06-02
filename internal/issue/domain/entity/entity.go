@@ -152,6 +152,10 @@ type CreateCommentInput struct {
 	Body    string      `json:"body"`
 }
 
+type UpdateCommentInput struct {
+	Body *string `json:"body"`
+}
+
 type IssueSummary struct {
 	Issue
 }
@@ -335,6 +339,18 @@ func NormalizeCreateComment(input CreateCommentInput) (CreateCommentInput, error
 	}
 	if utf8.RuneCountInString(input.Body) > 10000 {
 		return input, errors.New("body must be 10000 characters or fewer")
+	}
+	return input, nil
+}
+
+func NormalizeUpdateComment(input UpdateCommentInput) (UpdateCommentInput, error) {
+	if input.Body != nil {
+		if *input.Body == "" {
+			return input, errors.New("body is required")
+		}
+		if runeCount(*input.Body) > maxDescriptionLength {
+			return input, errors.New("body must be 10000 characters or fewer")
+		}
 	}
 	return input, nil
 }

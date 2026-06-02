@@ -78,6 +78,7 @@ Flags:
 | `--status STATUS` | no | Issue status. Defaults to `backlog` when omitted. |
 | `--priority PRIORITY` | no | Issue priority. Defaults to `normal` when omitted. |
 | `--assignee NAME` | no | Assignee name. |
+| `--attach PATH` | no | Upload a PNG, JPEG, GIF, or WebP image and append a Markdown image reference to the description. |
 
 Example:
 
@@ -104,6 +105,9 @@ Flags:
 | `--status STATUS` | Replace the issue status. |
 | `--priority PRIORITY` | Replace the issue priority. |
 | `--assignee NAME` | Replace the issue assignee. |
+| `--attach PATH` | Upload a PNG, JPEG, GIF, or WebP image and append a Markdown image reference to the description. |
+
+Attachment references use `![filename](attachment://<id>)`. The issue-tracker serves those images through the attachment content API, and the Web UI renders them from Markdown.
 
 ## Comments
 
@@ -122,6 +126,7 @@ Flags:
 | `--body TEXT` | yes | Comment body. |
 | `--author NAME` | no | Comment author. Defaults to `TQ_AUTHOR`, then `USER`. |
 | `--type TYPE` | no | Comment type. Defaults to `general`. |
+| `--attach PATH` | no | Upload a PNG, JPEG, GIF, or WebP image and append a Markdown image reference to the comment body. |
 
 ### `comment list`
 

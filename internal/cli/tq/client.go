@@ -7,8 +7,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -29,6 +32,12 @@ type apiErrorResponse struct {
 		Code    string `json:"code"`
 		Message string `json:"message"`
 	} `json:"error"`
+}
+
+type attachmentUploadInput struct {
+	EntityType string
+	EntityID   string
+	Path       string
 }
 
 func newAPIClient(baseURL string) (*apiClient, error) {
@@ -133,12 +142,82 @@ func (c *apiClient) createComment(ctx context.Context, issueID int64, input enti
 	return comment, nil
 }
 
+func (c *apiClient) updateComment(ctx context.Context, id int64, input entity.UpdateCommentInput) (entity.Comment, error) {
+	var comment entity.Comment
+	if err := c.do(ctx, http.MethodPatch, fmt.Sprintf("/api/v1/comments/%d", id), input, &comment); err != nil {
+		return entity.Comment{}, err
+	}
+	return comment, nil
+}
+
 func (c *apiClient) listComments(ctx context.Context, issueID int64) ([]entity.Comment, error) {
 	var comments []entity.Comment
 	if err := c.do(ctx, http.MethodGet, fmt.Sprintf("/api/v1/issues/%d/comments", issueID), nil, &comments); err != nil {
 		return nil, err
 	}
 	return comments, nil
+}
+
+func (c *apiClient) uploadAttachment(ctx context.Context, input attachmentUploadInput) (entity.Attachment, error) {
+	file, err := os.Open(input.Path)
+	if err != nil {
+		return entity.Attachment{}, err
+	}
+	defer file.Close()
+
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+	for name, value := range map[string]string{
+		"entity_type": input.EntityType,
+		"entity_id":   input.EntityID,
+	} {
+		field, err := writer.CreateFormField(name)
+		if err != nil {
+			return entity.Attachment{}, err
+		}
+		if _, err := io.WriteString(field, value); err != nil {
+			return entity.Attachment{}, err
+		}
+	}
+	part, err := writer.CreateFormFile("file", filepath.Base(input.Path))
+	if err != nil {
+		return entity.Attachment{}, err
+	}
+	if _, err := io.Copy(part, file); err != nil {
+		return entity.Attachment{}, err
+	}
+	if err := writer.Close(); err != nil {
+		return entity.Attachment{}, err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+"/api/v1/attachments", &body)
+	if err != nil {
+		return entity.Attachment{}, err
+	}
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return entity.Attachment{}, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return entity.Attachment{}, readAPIError(resp)
+	}
+	var payload apiResponse[json.RawMessage]
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+		return entity.Attachment{}, fmt.Errorf("decode response: %w", err)
+	}
+	var attachment entity.Attachment
+	if err := json.Unmarshal(payload.Data, &attachment); err != nil {
+		return entity.Attachment{}, fmt.Errorf("decode response: %w", err)
+	}
+	return attachment, nil
+}
+
+func (c *apiClient) deleteAttachment(ctx context.Context, id string) error {
+	return c.doNoContent(ctx, http.MethodDelete, fmt.Sprintf("/api/v1/attachments/%s", id))
 }
 
 func (c *apiClient) doNoContent(ctx context.Context, method, path string) error {

@@ -71,6 +71,15 @@ export const CommentType = {
   general: 'general',
 } as const;
 
+export type AttachmentEntityType = typeof AttachmentEntityType[keyof typeof AttachmentEntityType];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AttachmentEntityType = {
+  issue: 'issue',
+  comment: 'comment',
+} as const;
+
 export type WorkspaceStatus = typeof WorkspaceStatus[keyof typeof WorkspaceStatus];
 
 
@@ -164,6 +173,28 @@ export interface Comment {
   createdAt: string;
 }
 
+export type AttachmentContentType = typeof AttachmentContentType[keyof typeof AttachmentContentType];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AttachmentContentType = {
+  'image/png': 'image/png',
+  'image/jpeg': 'image/jpeg',
+  'image/gif': 'image/gif',
+  'image/webp': 'image/webp',
+} as const;
+
+export interface Attachment {
+  id: string;
+  entityType: AttachmentEntityType;
+  entityId: string;
+  filename: string;
+  contentType: AttachmentContentType;
+  /** @maximum 5242880 */
+  size: number;
+  createdAt: string;
+}
+
 export interface CreateCommentInput {
   /** @minLength 1 */
   author: string;
@@ -173,6 +204,14 @@ export interface CreateCommentInput {
    * @maxLength 10000
    */
   body: string;
+}
+
+export interface UpdateCommentInput {
+  /**
+   * @minLength 1
+   * @maxLength 10000
+   */
+  body?: string;
 }
 
 export interface CreateIssueInput {
@@ -271,6 +310,16 @@ export interface CommentListResponse {
   meta: CommentListMeta;
 }
 
+export interface AttachmentResponse {
+  data: Attachment;
+  meta: ApiMeta;
+}
+
+export interface AttachmentListResponse {
+  data: Attachment[];
+  meta: ApiMeta;
+}
+
 export type GetApiV1IssuesParams = {
 /**
  * Comma-separated issue statuses. Omit this parameter or pass an empty value to list all issues.
@@ -292,6 +341,18 @@ cursor?: number;
 limit?: number;
 };
 
+export type GetApiV1AttachmentsParams = {
+entity_type: AttachmentEntityType;
+entity_id: string;
+};
+
+export type PostApiV1AttachmentsBody = {
+  entity_type: AttachmentEntityType;
+  entity_id: string;
+  /** PNG, JPEG, GIF, or WebP image up to 5 MiB. */
+  file: Blob;
+};
+
 /**
  * @summary Check API health.
  */
@@ -299,7 +360,7 @@ export type getApiV1HealthResponse200 = {
   data: HealthResponse
   status: 200
 }
-    
+
 export type getApiV1HealthResponseSuccess = (getApiV1HealthResponse200) & {
   headers: Headers;
 };
@@ -310,24 +371,24 @@ export type getApiV1HealthResponse = (getApiV1HealthResponseSuccess)
 export const getGetApiV1HealthUrl = () => {
 
 
-  
+
 
   return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/health`
 }
 
 export const getApiV1Health = async ( options?: RequestInit): Promise<getApiV1HealthResponse> => {
-  
+
   const res = await fetch(getGetApiV1HealthUrl(),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: getApiV1HealthResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as getApiV1HealthResponse
 }
@@ -346,7 +407,7 @@ export type getApiV1SummaryResponse500 = {
   data: ErrorResponse
   status: 500
 }
-    
+
 export type getApiV1SummaryResponseSuccess = (getApiV1SummaryResponse200) & {
   headers: Headers;
 };
@@ -359,24 +420,24 @@ export type getApiV1SummaryResponse = (getApiV1SummaryResponseSuccess | getApiV1
 export const getGetApiV1SummaryUrl = () => {
 
 
-  
+
 
   return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/summary`
 }
 
 export const getApiV1Summary = async ( options?: RequestInit): Promise<getApiV1SummaryResponse> => {
-  
+
   const res = await fetch(getGetApiV1SummaryUrl(),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: getApiV1SummaryResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as getApiV1SummaryResponse
 }
@@ -395,7 +456,7 @@ export type getApiV1ProjectsResponse500 = {
   data: ErrorResponse
   status: 500
 }
-    
+
 export type getApiV1ProjectsResponseSuccess = (getApiV1ProjectsResponse200) & {
   headers: Headers;
 };
@@ -408,24 +469,24 @@ export type getApiV1ProjectsResponse = (getApiV1ProjectsResponseSuccess | getApi
 export const getGetApiV1ProjectsUrl = () => {
 
 
-  
+
 
   return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/projects`
 }
 
 export const getApiV1Projects = async ( options?: RequestInit): Promise<getApiV1ProjectsResponse> => {
-  
+
   const res = await fetch(getGetApiV1ProjectsUrl(),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: getApiV1ProjectsResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as getApiV1ProjectsResponse
 }
@@ -444,7 +505,7 @@ export type postApiV1ProjectsResponse400 = {
   data: ErrorResponse
   status: 400
 }
-    
+
 export type postApiV1ProjectsResponseSuccess = (postApiV1ProjectsResponse201) & {
   headers: Headers;
 };
@@ -457,15 +518,15 @@ export type postApiV1ProjectsResponse = (postApiV1ProjectsResponseSuccess | post
 export const getPostApiV1ProjectsUrl = () => {
 
 
-  
+
 
   return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/projects`
 }
 
 export const postApiV1Projects = async (createProjectInput: CreateProjectInput, options?: RequestInit): Promise<postApiV1ProjectsResponse> => {
-  
+
   const res = await fetch(getPostApiV1ProjectsUrl(),
-  {      
+  {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -475,7 +536,7 @@ export const postApiV1Projects = async (createProjectInput: CreateProjectInput, 
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: postApiV1ProjectsResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as postApiV1ProjectsResponse
 }
@@ -499,7 +560,7 @@ export type getApiV1ProjectsIdResponse404 = {
   data: ErrorResponse
   status: 404
 }
-    
+
 export type getApiV1ProjectsIdResponseSuccess = (getApiV1ProjectsIdResponse200) & {
   headers: Headers;
 };
@@ -512,24 +573,24 @@ export type getApiV1ProjectsIdResponse = (getApiV1ProjectsIdResponseSuccess | ge
 export const getGetApiV1ProjectsIdUrl = (id: number,) => {
 
 
-  
+
 
   return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/projects/${id}`
 }
 
 export const getApiV1ProjectsId = async (id: number, options?: RequestInit): Promise<getApiV1ProjectsIdResponse> => {
-  
+
   const res = await fetch(getGetApiV1ProjectsIdUrl(id),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: getApiV1ProjectsIdResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as getApiV1ProjectsIdResponse
 }
@@ -553,7 +614,7 @@ export type patchApiV1ProjectsIdResponse404 = {
   data: ErrorResponse
   status: 404
 }
-    
+
 export type patchApiV1ProjectsIdResponseSuccess = (patchApiV1ProjectsIdResponse200) & {
   headers: Headers;
 };
@@ -566,16 +627,16 @@ export type patchApiV1ProjectsIdResponse = (patchApiV1ProjectsIdResponseSuccess 
 export const getPatchApiV1ProjectsIdUrl = (id: number,) => {
 
 
-  
+
 
   return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/projects/${id}`
 }
 
 export const patchApiV1ProjectsId = async (id: number,
     updateProjectInput: UpdateProjectInput, options?: RequestInit): Promise<patchApiV1ProjectsIdResponse> => {
-  
+
   const res = await fetch(getPatchApiV1ProjectsIdUrl(id),
-  {      
+  {
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -585,7 +646,7 @@ export const patchApiV1ProjectsId = async (id: number,
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: patchApiV1ProjectsIdResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as patchApiV1ProjectsIdResponse
 }
@@ -609,7 +670,7 @@ export type deleteApiV1ProjectsIdResponse404 = {
   data: ErrorResponse
   status: 404
 }
-    
+
 export type deleteApiV1ProjectsIdResponseSuccess = (deleteApiV1ProjectsIdResponse204) & {
   headers: Headers;
 };
@@ -622,24 +683,24 @@ export type deleteApiV1ProjectsIdResponse = (deleteApiV1ProjectsIdResponseSucces
 export const getDeleteApiV1ProjectsIdUrl = (id: number,) => {
 
 
-  
+
 
   return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/projects/${id}`
 }
 
 export const deleteApiV1ProjectsId = async (id: number, options?: RequestInit): Promise<deleteApiV1ProjectsIdResponse> => {
-  
+
   const res = await fetch(getDeleteApiV1ProjectsIdUrl(id),
-  {      
+  {
     ...options,
     method: 'DELETE'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: deleteApiV1ProjectsIdResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as deleteApiV1ProjectsIdResponse
 }
@@ -714,7 +775,7 @@ export type getApiV1WorkspacesResponse500 = {
   data: ErrorResponse
   status: 500
 }
-    
+
 export type getApiV1WorkspacesResponseSuccess = (getApiV1WorkspacesResponse200) & {
   headers: Headers;
 };
@@ -727,24 +788,24 @@ export type getApiV1WorkspacesResponse = (getApiV1WorkspacesResponseSuccess | ge
 export const getGetApiV1WorkspacesUrl = () => {
 
 
-  
+
 
   return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/workspaces`
 }
 
 export const getApiV1Workspaces = async ( options?: RequestInit): Promise<getApiV1WorkspacesResponse> => {
-  
+
   const res = await fetch(getGetApiV1WorkspacesUrl(),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: getApiV1WorkspacesResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as getApiV1WorkspacesResponse
 }
@@ -768,7 +829,7 @@ export type postApiV1WorkspacesResponse404 = {
   data: ErrorResponse
   status: 404
 }
-    
+
 export type postApiV1WorkspacesResponseSuccess = (postApiV1WorkspacesResponse201) & {
   headers: Headers;
 };
@@ -781,15 +842,15 @@ export type postApiV1WorkspacesResponse = (postApiV1WorkspacesResponseSuccess | 
 export const getPostApiV1WorkspacesUrl = () => {
 
 
-  
+
 
   return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/workspaces`
 }
 
 export const postApiV1Workspaces = async (createWorkspaceInput: CreateWorkspaceInput, options?: RequestInit): Promise<postApiV1WorkspacesResponse> => {
-  
+
   const res = await fetch(getPostApiV1WorkspacesUrl(),
-  {      
+  {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -799,7 +860,7 @@ export const postApiV1Workspaces = async (createWorkspaceInput: CreateWorkspaceI
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: postApiV1WorkspacesResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as postApiV1WorkspacesResponse
 }
@@ -823,7 +884,7 @@ export type getApiV1WorkspacesIdResponse404 = {
   data: ErrorResponse
   status: 404
 }
-    
+
 export type getApiV1WorkspacesIdResponseSuccess = (getApiV1WorkspacesIdResponse200) & {
   headers: Headers;
 };
@@ -836,24 +897,24 @@ export type getApiV1WorkspacesIdResponse = (getApiV1WorkspacesIdResponseSuccess 
 export const getGetApiV1WorkspacesIdUrl = (id: number,) => {
 
 
-  
+
 
   return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/workspaces/${id}`
 }
 
 export const getApiV1WorkspacesId = async (id: number, options?: RequestInit): Promise<getApiV1WorkspacesIdResponse> => {
-  
+
   const res = await fetch(getGetApiV1WorkspacesIdUrl(id),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: getApiV1WorkspacesIdResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as getApiV1WorkspacesIdResponse
 }
@@ -877,7 +938,7 @@ export type patchApiV1WorkspacesIdResponse404 = {
   data: ErrorResponse
   status: 404
 }
-    
+
 export type patchApiV1WorkspacesIdResponseSuccess = (patchApiV1WorkspacesIdResponse200) & {
   headers: Headers;
 };
@@ -890,16 +951,16 @@ export type patchApiV1WorkspacesIdResponse = (patchApiV1WorkspacesIdResponseSucc
 export const getPatchApiV1WorkspacesIdUrl = (id: number,) => {
 
 
-  
+
 
   return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/workspaces/${id}`
 }
 
 export const patchApiV1WorkspacesId = async (id: number,
     updateWorkspaceInput: UpdateWorkspaceInput, options?: RequestInit): Promise<patchApiV1WorkspacesIdResponse> => {
-  
+
   const res = await fetch(getPatchApiV1WorkspacesIdUrl(id),
-  {      
+  {
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -909,7 +970,7 @@ export const patchApiV1WorkspacesId = async (id: number,
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: patchApiV1WorkspacesIdResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as patchApiV1WorkspacesIdResponse
 }
@@ -933,7 +994,7 @@ export type deleteApiV1WorkspacesIdResponse404 = {
   data: ErrorResponse
   status: 404
 }
-    
+
 export type deleteApiV1WorkspacesIdResponseSuccess = (deleteApiV1WorkspacesIdResponse204) & {
   headers: Headers;
 };
@@ -946,24 +1007,24 @@ export type deleteApiV1WorkspacesIdResponse = (deleteApiV1WorkspacesIdResponseSu
 export const getDeleteApiV1WorkspacesIdUrl = (id: number,) => {
 
 
-  
+
 
   return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/workspaces/${id}`
 }
 
 export const deleteApiV1WorkspacesId = async (id: number, options?: RequestInit): Promise<deleteApiV1WorkspacesIdResponse> => {
-  
+
   const res = await fetch(getDeleteApiV1WorkspacesIdUrl(id),
-  {      
+  {
     ...options,
     method: 'DELETE'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: deleteApiV1WorkspacesIdResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as deleteApiV1WorkspacesIdResponse
 }
@@ -987,7 +1048,7 @@ export type getApiV1IssuesResponse500 = {
   data: ErrorResponse
   status: 500
 }
-    
+
 export type getApiV1IssuesResponseSuccess = (getApiV1IssuesResponse200) & {
   headers: Headers;
 };
@@ -1001,7 +1062,7 @@ export const getGetApiV1IssuesUrl = (params?: GetApiV1IssuesParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
-    
+
     if (value !== undefined) {
       normalizedParams.append(key, value === null ? 'null' : value.toString())
     }
@@ -1013,18 +1074,18 @@ export const getGetApiV1IssuesUrl = (params?: GetApiV1IssuesParams,) => {
 }
 
 export const getApiV1Issues = async (params?: GetApiV1IssuesParams, options?: RequestInit): Promise<getApiV1IssuesResponse> => {
-  
+
   const res = await fetch(getGetApiV1IssuesUrl(params),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: getApiV1IssuesResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as getApiV1IssuesResponse
 }
@@ -1043,7 +1104,7 @@ export type postApiV1IssuesResponse400 = {
   data: ErrorResponse
   status: 400
 }
-    
+
 export type postApiV1IssuesResponseSuccess = (postApiV1IssuesResponse201) & {
   headers: Headers;
 };
@@ -1056,15 +1117,15 @@ export type postApiV1IssuesResponse = (postApiV1IssuesResponseSuccess | postApiV
 export const getPostApiV1IssuesUrl = () => {
 
 
-  
+
 
   return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/issues`
 }
 
 export const postApiV1Issues = async (createIssueInput: CreateIssueInput, options?: RequestInit): Promise<postApiV1IssuesResponse> => {
-  
+
   const res = await fetch(getPostApiV1IssuesUrl(),
-  {      
+  {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -1074,7 +1135,7 @@ export const postApiV1Issues = async (createIssueInput: CreateIssueInput, option
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: postApiV1IssuesResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as postApiV1IssuesResponse
 }
@@ -1098,7 +1159,7 @@ export type postApiV1IssuesStatesResponse500 = {
   data: ErrorResponse
   status: 500
 }
-    
+
 export type postApiV1IssuesStatesResponseSuccess = (postApiV1IssuesStatesResponse200) & {
   headers: Headers;
 };
@@ -1111,15 +1172,15 @@ export type postApiV1IssuesStatesResponse = (postApiV1IssuesStatesResponseSucces
 export const getPostApiV1IssuesStatesUrl = () => {
 
 
-  
+
 
   return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/issues/states`
 }
 
 export const postApiV1IssuesStates = async (issueStatesInput: IssueStatesInput, options?: RequestInit): Promise<postApiV1IssuesStatesResponse> => {
-  
+
   const res = await fetch(getPostApiV1IssuesStatesUrl(),
-  {      
+  {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -1129,7 +1190,7 @@ export const postApiV1IssuesStates = async (issueStatesInput: IssueStatesInput, 
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: postApiV1IssuesStatesResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as postApiV1IssuesStatesResponse
 }
@@ -1153,7 +1214,7 @@ export type getApiV1IssuesIdResponse404 = {
   data: ErrorResponse
   status: 404
 }
-    
+
 export type getApiV1IssuesIdResponseSuccess = (getApiV1IssuesIdResponse200) & {
   headers: Headers;
 };
@@ -1166,24 +1227,24 @@ export type getApiV1IssuesIdResponse = (getApiV1IssuesIdResponseSuccess | getApi
 export const getGetApiV1IssuesIdUrl = (id: number,) => {
 
 
-  
+
 
   return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/issues/${id}`
 }
 
 export const getApiV1IssuesId = async (id: number, options?: RequestInit): Promise<getApiV1IssuesIdResponse> => {
-  
+
   const res = await fetch(getGetApiV1IssuesIdUrl(id),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: getApiV1IssuesIdResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as getApiV1IssuesIdResponse
 }
@@ -1207,7 +1268,7 @@ export type patchApiV1IssuesIdResponse404 = {
   data: ErrorResponse
   status: 404
 }
-    
+
 export type patchApiV1IssuesIdResponseSuccess = (patchApiV1IssuesIdResponse200) & {
   headers: Headers;
 };
@@ -1220,16 +1281,16 @@ export type patchApiV1IssuesIdResponse = (patchApiV1IssuesIdResponseSuccess | pa
 export const getPatchApiV1IssuesIdUrl = (id: number,) => {
 
 
-  
+
 
   return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/issues/${id}`
 }
 
 export const patchApiV1IssuesId = async (id: number,
     updateIssueInput: UpdateIssueInput, options?: RequestInit): Promise<patchApiV1IssuesIdResponse> => {
-  
+
   const res = await fetch(getPatchApiV1IssuesIdUrl(id),
-  {      
+  {
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -1239,7 +1300,7 @@ export const patchApiV1IssuesId = async (id: number,
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: patchApiV1IssuesIdResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as patchApiV1IssuesIdResponse
 }
@@ -1263,7 +1324,7 @@ export type getApiV1IssuesIssueIdCommentsResponse404 = {
   data: ErrorResponse
   status: 404
 }
-    
+
 export type getApiV1IssuesIssueIdCommentsResponseSuccess = (getApiV1IssuesIssueIdCommentsResponse200) & {
   headers: Headers;
 };
@@ -1278,7 +1339,7 @@ export const getGetApiV1IssuesIssueIdCommentsUrl = (issueId: number,
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
-    
+
     if (value !== undefined) {
       normalizedParams.append(key, value === null ? 'null' : value.toString())
     }
@@ -1291,18 +1352,18 @@ export const getGetApiV1IssuesIssueIdCommentsUrl = (issueId: number,
 
 export const getApiV1IssuesIssueIdComments = async (issueId: number,
     params?: GetApiV1IssuesIssueIdCommentsParams, options?: RequestInit): Promise<getApiV1IssuesIssueIdCommentsResponse> => {
-  
+
   const res = await fetch(getGetApiV1IssuesIssueIdCommentsUrl(issueId,params),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: getApiV1IssuesIssueIdCommentsResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as getApiV1IssuesIssueIdCommentsResponse
 }
@@ -1326,7 +1387,7 @@ export type postApiV1IssuesIssueIdCommentsResponse404 = {
   data: ErrorResponse
   status: 404
 }
-    
+
 export type postApiV1IssuesIssueIdCommentsResponseSuccess = (postApiV1IssuesIssueIdCommentsResponse201) & {
   headers: Headers;
 };
@@ -1339,16 +1400,16 @@ export type postApiV1IssuesIssueIdCommentsResponse = (postApiV1IssuesIssueIdComm
 export const getPostApiV1IssuesIssueIdCommentsUrl = (issueId: number,) => {
 
 
-  
+
 
   return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/issues/${issueId}/comments`
 }
 
 export const postApiV1IssuesIssueIdComments = async (issueId: number,
     createCommentInput: CreateCommentInput, options?: RequestInit): Promise<postApiV1IssuesIssueIdCommentsResponse> => {
-  
+
   const res = await fetch(getPostApiV1IssuesIssueIdCommentsUrl(issueId),
-  {      
+  {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -1358,7 +1419,281 @@ export const postApiV1IssuesIssueIdComments = async (issueId: number,
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: postApiV1IssuesIssueIdCommentsResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as postApiV1IssuesIssueIdCommentsResponse
+}
+
+
+
+/**
+ * @summary Update a comment body.
+ */
+export type patchApiV1CommentsIdResponse200 = {
+  data: CommentResponse
+  status: 200
+}
+
+export type patchApiV1CommentsIdResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type patchApiV1CommentsIdResponse404 = {
+  data: ErrorResponse
+  status: 404
+}
+
+export type patchApiV1CommentsIdResponseSuccess = (patchApiV1CommentsIdResponse200) & {
+  headers: Headers;
+};
+export type patchApiV1CommentsIdResponseError = (patchApiV1CommentsIdResponse400 | patchApiV1CommentsIdResponse404) & {
+  headers: Headers;
+};
+
+export type patchApiV1CommentsIdResponse = (patchApiV1CommentsIdResponseSuccess | patchApiV1CommentsIdResponseError)
+
+export const getPatchApiV1CommentsIdUrl = (id: number,) => {
+
+
+
+
+  return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/comments/${id}`
+}
+
+export const patchApiV1CommentsId = async (id: number,
+    updateCommentInput: UpdateCommentInput, options?: RequestInit): Promise<patchApiV1CommentsIdResponse> => {
+
+  const res = await fetch(getPatchApiV1CommentsIdUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateCommentInput,)
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: patchApiV1CommentsIdResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as patchApiV1CommentsIdResponse
+}
+
+
+
+/**
+ * @summary List attachments for an issue or comment.
+ */
+export type getApiV1AttachmentsResponse200 = {
+  data: AttachmentListResponse
+  status: 200
+}
+
+export type getApiV1AttachmentsResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type getApiV1AttachmentsResponseSuccess = (getApiV1AttachmentsResponse200) & {
+  headers: Headers;
+};
+export type getApiV1AttachmentsResponseError = (getApiV1AttachmentsResponse400) & {
+  headers: Headers;
+};
+
+export type getApiV1AttachmentsResponse = (getApiV1AttachmentsResponseSuccess | getApiV1AttachmentsResponseError)
+
+export const getGetApiV1AttachmentsUrl = (params: GetApiV1AttachmentsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/attachments?${stringifiedParams}` : `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/attachments`
+}
+
+export const getApiV1Attachments = async (params: GetApiV1AttachmentsParams, options?: RequestInit): Promise<getApiV1AttachmentsResponse> => {
+
+  const res = await fetch(getGetApiV1AttachmentsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getApiV1AttachmentsResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getApiV1AttachmentsResponse
+}
+
+
+
+/**
+ * @summary Upload an image attachment.
+ */
+export type postApiV1AttachmentsResponse201 = {
+  data: AttachmentResponse
+  status: 201
+}
+
+export type postApiV1AttachmentsResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type postApiV1AttachmentsResponse404 = {
+  data: ErrorResponse
+  status: 404
+}
+
+export type postApiV1AttachmentsResponseSuccess = (postApiV1AttachmentsResponse201) & {
+  headers: Headers;
+};
+export type postApiV1AttachmentsResponseError = (postApiV1AttachmentsResponse400 | postApiV1AttachmentsResponse404) & {
+  headers: Headers;
+};
+
+export type postApiV1AttachmentsResponse = (postApiV1AttachmentsResponseSuccess | postApiV1AttachmentsResponseError)
+
+export const getPostApiV1AttachmentsUrl = () => {
+
+
+
+
+  return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/attachments`
+}
+
+export const postApiV1Attachments = async (postApiV1AttachmentsBody: PostApiV1AttachmentsBody, options?: RequestInit): Promise<postApiV1AttachmentsResponse> => {
+    const formData = new FormData();
+formData.append(`entity_type`, postApiV1AttachmentsBody.entity_type)
+formData.append(`entity_id`, postApiV1AttachmentsBody.entity_id)
+formData.append(`file`, postApiV1AttachmentsBody.file)
+
+  const res = await fetch(getPostApiV1AttachmentsUrl(),
+  {
+    ...options,
+    method: 'POST'
+    ,
+    body:
+      formData,
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: postApiV1AttachmentsResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as postApiV1AttachmentsResponse
+}
+
+
+
+/**
+ * @summary Download attachment content.
+ */
+export type getApiV1AttachmentsIdContentResponse200 = {
+  data: Blob
+  status: 200
+}
+
+export type getApiV1AttachmentsIdContentResponse404 = {
+  data: ErrorResponse
+  status: 404
+}
+
+export type getApiV1AttachmentsIdContentResponseSuccess = (getApiV1AttachmentsIdContentResponse200) & {
+  headers: Headers;
+};
+export type getApiV1AttachmentsIdContentResponseError = (getApiV1AttachmentsIdContentResponse404) & {
+  headers: Headers;
+};
+
+export type getApiV1AttachmentsIdContentResponse = (getApiV1AttachmentsIdContentResponseSuccess | getApiV1AttachmentsIdContentResponseError)
+
+export const getGetApiV1AttachmentsIdContentUrl = (id: string,) => {
+
+
+
+
+  return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/attachments/${id}/content`
+}
+
+export const getApiV1AttachmentsIdContent = async (id: string, options?: RequestInit): Promise<getApiV1AttachmentsIdContentResponse> => {
+
+  const res = await fetch(getGetApiV1AttachmentsIdContentUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getApiV1AttachmentsIdContentResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getApiV1AttachmentsIdContentResponse
+}
+
+
+
+/**
+ * @summary Delete attachment metadata and bytes.
+ */
+export type deleteApiV1AttachmentsIdResponse204 = {
+  data: void
+  status: 204
+}
+
+export type deleteApiV1AttachmentsIdResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type deleteApiV1AttachmentsIdResponse404 = {
+  data: ErrorResponse
+  status: 404
+}
+
+export type deleteApiV1AttachmentsIdResponseSuccess = (deleteApiV1AttachmentsIdResponse204) & {
+  headers: Headers;
+};
+export type deleteApiV1AttachmentsIdResponseError = (deleteApiV1AttachmentsIdResponse400 | deleteApiV1AttachmentsIdResponse404) & {
+  headers: Headers;
+};
+
+export type deleteApiV1AttachmentsIdResponse = (deleteApiV1AttachmentsIdResponseSuccess | deleteApiV1AttachmentsIdResponseError)
+
+export const getDeleteApiV1AttachmentsIdUrl = (id: string,) => {
+
+
+
+
+  return `${process.env.NEXT_PUBLIC_ISSUE_TRACKER_URL ?? ""}/api/v1/attachments/${id}`
+}
+
+export const deleteApiV1AttachmentsId = async (id: string, options?: RequestInit): Promise<deleteApiV1AttachmentsIdResponse> => {
+
+  const res = await fetch(getDeleteApiV1AttachmentsIdUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: deleteApiV1AttachmentsIdResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as deleteApiV1AttachmentsIdResponse
 }

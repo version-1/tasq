@@ -147,6 +147,7 @@ func (a app) commentAdd(ctx context.Context, args []string, cfg config) error {
 	author := fs.String("author", defaultCommentAuthor(), "comment author")
 	commentType := fs.String("type", string(entity.CommentGeneral), "comment type")
 	body := fs.String("body", "", "comment body")
+	attach := fs.String("attach", "", "image attachment path")
 	if err := fs.Parse(args[1:]); err != nil {
 		return usageError(err.Error())
 	}
@@ -167,6 +168,22 @@ func (a app) commentAdd(ctx context.Context, args []string, cfg config) error {
 	comment, err := a.client.createComment(ctx, issueID, input)
 	if err != nil {
 		return err
+	}
+	if *attach != "" {
+		attachment, err := a.client.uploadAttachment(ctx, attachmentUploadInput{
+			EntityType: entity.AttachmentEntityComment,
+			EntityID:   strconv.FormatInt(comment.ID, 10),
+			Path:       *attach,
+		})
+		if err != nil {
+			return err
+		}
+		body := appendAttachmentMarkdown(comment.Body, attachment)
+		comment, err = a.client.updateComment(ctx, comment.ID, entity.UpdateCommentInput{Body: &body})
+		if err != nil {
+			_ = a.client.deleteAttachment(ctx, attachment.ID)
+			return err
+		}
 	}
 	return writeComment(a.stdout, cfg.output, comment)
 }
@@ -219,6 +236,7 @@ func (a app) issueCreate(ctx context.Context, args []string, cfg config) error {
 	status := fs.String("status", "", "issue status")
 	priority := fs.String("priority", "", "issue priority")
 	assignee := fs.String("assignee", "", "issue assignee")
+	attach := fs.String("attach", "", "image attachment path")
 	if err := fs.Parse(args); err != nil {
 		return usageError(err.Error())
 	}
@@ -240,6 +258,22 @@ func (a app) issueCreate(ctx context.Context, args []string, cfg config) error {
 	if err != nil {
 		return err
 	}
+	if *attach != "" {
+		attachment, err := a.client.uploadAttachment(ctx, attachmentUploadInput{
+			EntityType: entity.AttachmentEntityIssue,
+			EntityID:   strconv.FormatInt(issue.ID, 10),
+			Path:       *attach,
+		})
+		if err != nil {
+			return err
+		}
+		description := appendAttachmentMarkdown(issue.Description, attachment)
+		issue, err = a.client.updateIssue(ctx, issue.ID, map[string]string{"description": description})
+		if err != nil {
+			_ = a.client.deleteAttachment(ctx, attachment.ID)
+			return err
+		}
+	}
 	return writeIssue(a.stdout, cfg.output, issue)
 }
 
@@ -258,6 +292,7 @@ func (a app) issueUpdate(ctx context.Context, args []string, cfg config) error {
 	status := fs.String("status", "", "issue status")
 	priority := fs.String("priority", "", "issue priority")
 	assignee := fs.String("assignee", "", "issue assignee")
+	attach := fs.String("attach", "", "image attachment path")
 	if err := fs.Parse(args[1:]); err != nil {
 		return usageError(err.Error())
 	}
@@ -278,14 +313,42 @@ func (a app) issueUpdate(ctx context.Context, args []string, cfg config) error {
 			patch["priority"] = *priority
 		case "assignee":
 			patch["assignee"] = *assignee
+		case "attach":
 		}
 	})
-	if len(patch) == 0 {
+	if len(patch) == 0 && *attach == "" {
 		return usageError("at least one update field is required")
+	}
+	var uploadedAttachmentID string
+	if *attach != "" {
+		attachment, err := a.client.uploadAttachment(ctx, attachmentUploadInput{
+			EntityType: entity.AttachmentEntityIssue,
+			EntityID:   strconv.FormatInt(id, 10),
+			Path:       *attach,
+		})
+		if err != nil {
+			return err
+		}
+		uploadedAttachmentID = attachment.ID
+		description, ok := patch["description"]
+		if !ok {
+			current, err := a.client.getIssue(ctx, id)
+			if err != nil {
+				_ = a.client.deleteAttachment(ctx, uploadedAttachmentID)
+				return err
+			}
+			description = current.Description
+		}
+		patch["description"] = appendAttachmentMarkdown(description, attachment)
 	}
 
 	issue, err := a.client.updateIssue(ctx, id, patch)
 	if err != nil {
+		if uploadedAttachmentID != "" {
+			// The issue update is the step that links the uploaded file from Markdown.
+			// Delete the uploaded file on failure so the API does not keep an orphan.
+			_ = a.client.deleteAttachment(ctx, uploadedAttachmentID)
+		}
 		return err
 	}
 	return writeIssue(a.stdout, cfg.output, issue)
@@ -415,6 +478,22 @@ func defaultCommentAuthor() string {
 		return strings.TrimSpace(config.Author)
 	}
 	return strings.TrimSpace(os.Getenv("USER"))
+}
+
+func appendAttachmentMarkdown(content string, attachment entity.Attachment) string {
+	markdown := fmt.Sprintf("![%s](attachment://%s)", markdownAltText(attachment.Filename), attachment.ID)
+	content = strings.TrimRight(content, "\n")
+	if content == "" {
+		return markdown
+	}
+	return content + "\n\n" + markdown
+}
+
+func markdownAltText(value string) string {
+	value = strings.ReplaceAll(value, "[", "")
+	value = strings.ReplaceAll(value, "]", "")
+	value = strings.ReplaceAll(value, "\n", " ")
+	return strings.TrimSpace(value)
 }
 
 func printRootHelp(w io.Writer) {

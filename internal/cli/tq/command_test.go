@@ -349,6 +349,86 @@ func TestCommentCommandsAgainstIssueTrackerAPI(t *testing.T) {
 	}
 }
 
+func TestIssueCreateWithAttachmentAgainstIssueTrackerAPI(t *testing.T) {
+	ctx := context.Background()
+	issueStore, err := store.Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer issueStore.Close()
+	server := httptest.NewServer(api.NewServerWithAttachmentStorage(issueStore, store.NewAttachmentStorage(t.TempDir())).Handler())
+	defer server.Close()
+
+	attachmentPath := filepath.Join(t.TempDir(), "screenshot.png")
+	if err := os.WriteFile(attachmentPath, []byte{0x89, 'P', 'N', 'G', '\r', '\n', 0x1a, '\n'}, 0o644); err != nil {
+		t.Fatalf("write attachment: %v", err)
+	}
+
+	stdout, stderr, code := runCLI(t, []string{
+		"--api-url", server.URL,
+		"issue", "create",
+		"--title", "Issue with attachment",
+		"--description", "Before image",
+		"--attach", attachmentPath,
+	})
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr)
+	}
+	if !strings.Contains(stdout, "Before image") || !strings.Contains(stdout, "attachment://att_") {
+		t.Fatalf("unexpected stdout: %s", stdout)
+	}
+
+	issues, err := issueStore.Issues(ctx)
+	if err != nil {
+		t.Fatalf("list issues: %v", err)
+	}
+	if len(issues) != 1 || !strings.Contains(issues[0].Description, "![screenshot.png](attachment://att_") {
+		t.Fatalf("issues = %+v", issues)
+	}
+}
+
+func TestCommentAddWithAttachmentAgainstIssueTrackerAPI(t *testing.T) {
+	ctx := context.Background()
+	issueStore, err := store.Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer issueStore.Close()
+
+	issue, err := issueStore.CreateIssue(ctx, entity.CreateIssueInput{Title: "Comment attachment"})
+	if err != nil {
+		t.Fatalf("create issue: %v", err)
+	}
+	server := httptest.NewServer(api.NewServerWithAttachmentStorage(issueStore, store.NewAttachmentStorage(t.TempDir())).Handler())
+	defer server.Close()
+
+	attachmentPath := filepath.Join(t.TempDir(), "comment.png")
+	if err := os.WriteFile(attachmentPath, []byte{0x89, 'P', 'N', 'G', '\r', '\n', 0x1a, '\n'}, 0o644); err != nil {
+		t.Fatalf("write attachment: %v", err)
+	}
+
+	stdout, stderr, code := runCLI(t, []string{
+		"--api-url", server.URL,
+		"comment", "add", stringID(issue.ID),
+		"--author", "codex",
+		"--body", "See image",
+		"--attach", attachmentPath,
+	})
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr)
+	}
+	if !strings.Contains(stdout, "See image") || !strings.Contains(stdout, "attachment://att_") {
+		t.Fatalf("unexpected stdout: %s", stdout)
+	}
+	comments, err := issueStore.CommentsByIssueID(ctx, issue.ID, 0, 50)
+	if err != nil {
+		t.Fatalf("list comments: %v", err)
+	}
+	if len(comments) != 1 || !strings.Contains(comments[0].Body, "![comment.png](attachment://att_") {
+		t.Fatalf("comments = %+v", comments)
+	}
+}
+
 func TestProjectAddCheckRemoveAgainstIssueTrackerAPI(t *testing.T) {
 	ctx := context.Background()
 	issueStore, err := store.Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))

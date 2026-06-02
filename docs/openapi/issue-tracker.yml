@@ -17,6 +17,7 @@ tags:
   - name: Workspaces
   - name: Issues
   - name: Comments
+  - name: Attachments
   - name: Summary
 paths:
   /api/v1/health:
@@ -400,6 +401,132 @@ paths:
           $ref: "#/components/responses/Error"
         "404":
           $ref: "#/components/responses/Error"
+  /api/v1/comments/{id}:
+    parameters:
+      - $ref: "#/components/parameters/CommentID"
+    patch:
+      tags:
+        - Comments
+      summary: Update a comment body.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCommentInput"
+      responses:
+        "200":
+          description: Updated comment.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommentResponse"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+  /api/v1/attachments:
+    get:
+      tags:
+        - Attachments
+      summary: List attachments for an issue or comment.
+      parameters:
+        - name: entity_type
+          in: query
+          required: true
+          schema:
+            $ref: "#/components/schemas/AttachmentEntityType"
+        - name: entity_id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Attachment list.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttachmentListResponse"
+        "400":
+          $ref: "#/components/responses/Error"
+    post:
+      tags:
+        - Attachments
+      summary: Upload an image attachment.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - entity_type
+                - entity_id
+                - file
+              properties:
+                entity_type:
+                  $ref: "#/components/schemas/AttachmentEntityType"
+                entity_id:
+                  type: string
+                file:
+                  type: string
+                  format: binary
+                  description: PNG, JPEG, GIF, or WebP image up to 5 MiB.
+      responses:
+        "201":
+          description: Created attachment.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttachmentResponse"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+  /api/v1/attachments/{id}/content:
+    parameters:
+      - $ref: "#/components/parameters/AttachmentID"
+    get:
+      tags:
+        - Attachments
+      summary: Download attachment content.
+      responses:
+        "200":
+          description: Attachment bytes.
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/gif:
+              schema:
+                type: string
+                format: binary
+            image/webp:
+              schema:
+                type: string
+                format: binary
+        "404":
+          $ref: "#/components/responses/Error"
+  /api/v1/attachments/{id}:
+    parameters:
+      - $ref: "#/components/parameters/AttachmentID"
+    delete:
+      tags:
+        - Attachments
+      summary: Delete attachment metadata and bytes.
+      responses:
+        "204":
+          description: Attachment deleted.
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
 components:
   parameters:
     ProjectID:
@@ -434,6 +561,20 @@ components:
         type: integer
         format: int64
         minimum: 1
+    CommentID:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+    AttachmentID:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
   responses:
     Error:
       description: Error response.
@@ -511,6 +652,11 @@ components:
         - blocker
         - handoff
         - general
+    AttachmentEntityType:
+      type: string
+      enum:
+        - issue
+        - comment
     WorkspaceStatus:
       type: string
       enum:
@@ -711,6 +857,39 @@ components:
         createdAt:
           type: string
           format: date-time
+    Attachment:
+      type: object
+      required:
+        - id
+        - entityType
+        - entityId
+        - filename
+        - contentType
+        - size
+        - createdAt
+      properties:
+        id:
+          type: string
+        entityType:
+          $ref: "#/components/schemas/AttachmentEntityType"
+        entityId:
+          type: string
+        filename:
+          type: string
+        contentType:
+          type: string
+          enum:
+            - image/png
+            - image/jpeg
+            - image/gif
+            - image/webp
+        size:
+          type: integer
+          format: int64
+          maximum: 5242880
+        createdAt:
+          type: string
+          format: date-time
     CreateCommentInput:
       type: object
       required:
@@ -723,6 +902,13 @@ components:
         type:
           $ref: "#/components/schemas/CommentType"
           default: general
+        body:
+          type: string
+          minLength: 1
+          maxLength: 10000
+    UpdateCommentInput:
+      type: object
+      properties:
         body:
           type: string
           minLength: 1
@@ -934,3 +1120,25 @@ components:
             $ref: "#/components/schemas/Comment"
         meta:
           $ref: "#/components/schemas/CommentListMeta"
+    AttachmentResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          $ref: "#/components/schemas/Attachment"
+        meta:
+          $ref: "#/components/schemas/ApiMeta"
+    AttachmentListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Attachment"
+        meta:
+          $ref: "#/components/schemas/ApiMeta"

@@ -31,10 +31,91 @@ func TestOpenAppliesIssueTrackerSchema(t *testing.T) {
 		"workspaces",
 		"workspaces_project_id_idx",
 		"workspaces_status_idx",
+		"attachments",
+		"attachments_entity_idx",
 	} {
 		if !schemaObjectExists(t, store, name) {
 			t.Fatalf("schema object %q does not exist", name)
 		}
+	}
+}
+
+func TestAttachmentStoreCRUD(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store, err := Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer store.Close()
+
+	created, err := store.CreateAttachment(ctx, entity.CreateAttachmentInput{
+		ID:          "att_test",
+		EntityType:  entity.AttachmentEntityIssue,
+		EntityID:    "42",
+		Filename:    "screenshot.png",
+		Path:        "system/data/attachments/issue/42/att_test.png",
+		ContentType: "image/png",
+		Size:        8,
+	})
+	if err != nil {
+		t.Fatalf("create attachment: %v", err)
+	}
+	if created.ID != "att_test" || created.Path == "" || created.CreatedAt.IsZero() {
+		t.Fatalf("attachment = %+v", created)
+	}
+
+	attachments, err := store.AttachmentsByEntity(ctx, entity.AttachmentEntityIssue, "42")
+	if err != nil {
+		t.Fatalf("list attachments: %v", err)
+	}
+	if len(attachments) != 1 || attachments[0].ID != created.ID {
+		t.Fatalf("attachments = %+v", attachments)
+	}
+
+	deleted, err := store.DeleteAttachment(ctx, created.ID)
+	if err != nil {
+		t.Fatalf("delete attachment: %v", err)
+	}
+	if deleted.ID != created.ID {
+		t.Fatalf("deleted = %+v", deleted)
+	}
+	if _, err := store.Attachment(ctx, created.ID); !errors.Is(err, sql.ErrNoRows) {
+		t.Fatalf("err = %v, want sql.ErrNoRows", err)
+	}
+}
+
+func TestAttachmentStorageSaveResolveAndDelete(t *testing.T) {
+	t.Parallel()
+
+	storage := NewAttachmentStorage(t.TempDir())
+	input, err := storage.Save(entity.AttachmentEntityIssue, "7", "screenshot.png", "image/png", []byte("png-data"))
+	if err != nil {
+		t.Fatalf("save attachment: %v", err)
+	}
+	if input.ID == "" || input.Size != int64(len("png-data")) {
+		t.Fatalf("input = %+v", input)
+	}
+	file, err := storage.Open(input.Path)
+	if err != nil {
+		t.Fatalf("open attachment: %v", err)
+	}
+	file.Close()
+	if err := storage.Delete(input.Path); err != nil {
+		t.Fatalf("delete attachment: %v", err)
+	}
+	if _, err := storage.Resolve("../escape.png"); err == nil {
+		t.Fatal("expected escape path error")
+	}
+}
+
+func TestReadAttachmentBytesRejectsTooLargeFile(t *testing.T) {
+	t.Parallel()
+
+	_, err := ReadAttachmentBytes(strings.NewReader("abcdef"), 5)
+	if err == nil {
+		t.Fatal("expected size error")
 	}
 }
 

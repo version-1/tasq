@@ -4,8 +4,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"io"
+	"mime"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"net/textproto"
 	"path/filepath"
 	"strconv"
 	"testing"
@@ -395,19 +399,84 @@ func TestCommentsRejectsInvalidQuery(t *testing.T) {
 	assertErrorCode(t, rec, "comments.list.invalid_input")
 }
 
+func TestAttachmentUploadListContentAndDelete(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer(t)
+	issue := createIssue(t, server, "Issue with image", entity.StatusBacklog)
+	req := newAttachmentUploadRequest(t, entity.AttachmentEntityIssue, stringID(issue.ID), "screenshot.png", "image/png", []byte{
+		0x89, 'P', 'N', 'G', '\r', '\n', 0x1a, '\n',
+	})
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	attachment := decodeData[entity.Attachment](t, rec)
+	if attachment.ID == "" || attachment.EntityType != entity.AttachmentEntityIssue || attachment.EntityID != stringID(issue.ID) || attachment.Filename != "screenshot.png" {
+		t.Fatalf("attachment = %+v", attachment)
+	}
+
+	listReq := httptest.NewRequest(http.MethodGet, "/api/v1/attachments?entity_type=issue&entity_id="+stringID(issue.ID), nil)
+	listRec := httptest.NewRecorder()
+	server.Handler().ServeHTTP(listRec, listReq)
+	if listRec.Code != http.StatusOK {
+		t.Fatalf("list status = %d, body = %s", listRec.Code, listRec.Body.String())
+	}
+	attachments := decodeData[[]entity.Attachment](t, listRec)
+	if len(attachments) != 1 || attachments[0].ID != attachment.ID {
+		t.Fatalf("attachments = %+v", attachments)
+	}
+
+	contentReq := httptest.NewRequest(http.MethodGet, "/api/v1/attachments/"+attachment.ID+"/content", nil)
+	contentRec := httptest.NewRecorder()
+	server.Handler().ServeHTTP(contentRec, contentReq)
+	if contentRec.Code != http.StatusOK {
+		t.Fatalf("content status = %d, body = %s", contentRec.Code, contentRec.Body.String())
+	}
+	if contentRec.Header().Get("Content-Type") != "image/png" || !bytes.HasPrefix(contentRec.Body.Bytes(), []byte{0x89, 'P', 'N', 'G'}) {
+		t.Fatalf("content headers=%v body=%x", contentRec.Header(), contentRec.Body.Bytes())
+	}
+
+	deleteReq := httptest.NewRequest(http.MethodDelete, "/api/v1/attachments/"+attachment.ID, nil)
+	deleteRec := httptest.NewRecorder()
+	server.Handler().ServeHTTP(deleteRec, deleteReq)
+	if deleteRec.Code != http.StatusNoContent {
+		t.Fatalf("delete status = %d, body = %s", deleteRec.Code, deleteRec.Body.String())
+	}
+}
+
+func TestAttachmentUploadRejectsInvalidType(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer(t)
+	issue := createIssue(t, server, "Issue with invalid image", entity.StatusBacklog)
+	req := newAttachmentUploadRequest(t, entity.AttachmentEntityIssue, stringID(issue.ID), "note.txt", "text/plain", []byte("hello"))
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	assertErrorCode(t, rec, "attachments.create.invalid_file_type")
+}
+
 func newTestServer(t *testing.T) *Server {
 	t.Helper()
 
-	store, err := store.Open(context.Background(), filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	issueStore, err := store.Open(context.Background(), filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := store.Close(); err != nil {
+		if err := issueStore.Close(); err != nil {
 			t.Fatalf("close store: %v", err)
 		}
 	})
-	return NewServer(store)
+	return NewServerWithAttachmentStorage(issueStore, store.NewAttachmentStorage(t.TempDir()))
 }
 
 func stringID(id int64) string {
@@ -452,6 +521,44 @@ func decodeData[T any](t *testing.T, rec *httptest.ResponseRecorder) T {
 		t.Fatalf("decode response: %v", err)
 	}
 	return payload.Data
+}
+
+func newAttachmentUploadRequest(t *testing.T, entityType string, entityID string, filename string, contentType string, content []byte) *http.Request {
+	t.Helper()
+
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+	for name, value := range map[string]string{
+		"entity_type": entityType,
+		"entity_id":   entityID,
+	} {
+		field, err := writer.CreateFormField(name)
+		if err != nil {
+			t.Fatalf("create field %s: %v", name, err)
+		}
+		if _, err := io.WriteString(field, value); err != nil {
+			t.Fatalf("write field %s: %v", name, err)
+		}
+	}
+	partHeader := make(textproto.MIMEHeader)
+	partHeader.Set("Content-Disposition", mime.FormatMediaType("form-data", map[string]string{
+		"name":     "file",
+		"filename": filename,
+	}))
+	partHeader.Set("Content-Type", contentType)
+	part, err := writer.CreatePart(partHeader)
+	if err != nil {
+		t.Fatalf("create file part: %v", err)
+	}
+	if _, err := part.Write(content); err != nil {
+		t.Fatalf("write file part: %v", err)
+	}
+	if err := writer.Close(); err != nil {
+		t.Fatalf("close multipart writer: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/attachments", &body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	return req
 }
 
 func assertErrorCode(t *testing.T, rec *httptest.ResponseRecorder, want string) {
