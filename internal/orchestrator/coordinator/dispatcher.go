@@ -22,13 +22,23 @@ type IssueReader interface {
 	Issue(ctx context.Context, id int64) (entity.Issue, error)
 }
 
+type IssueUpdater interface {
+	UpdateIssue(ctx context.Context, id int64, input entity.UpdateIssueInput) (entity.Issue, error)
+	CreateComment(ctx context.Context, issueID int64, input entity.CreateCommentInput) (entity.Comment, error)
+}
+
+type IssueTracker interface {
+	IssueReader
+	IssueUpdater
+}
+
 type DispatchStore interface {
 	UpdateRunStatus(ctx context.Context, runID string, status run.Status, errText string) (run.Run, error)
 	RecordRunnerEvent(ctx context.Context, runID string, eventType string, message string, payloadJSON string) error
 }
 
 type Dispatcher struct {
-	tracker           IssueReader
+	tracker           IssueTracker
 	store             DispatchStore
 	runner            runner.Runner
 	workflowConfig    workflow.Config
@@ -43,7 +53,7 @@ type Dispatcher struct {
 }
 
 type DispatcherConfig struct {
-	Tracker           IssueReader
+	Tracker           IssueTracker
 	Store             DispatchStore
 	Runner            runner.Runner
 	WorkflowConfig    workflow.Config
@@ -158,7 +168,7 @@ func (d *Dispatcher) startRun(storedRun run.Run, task runner.Task) {
 	defer func() {
 		if value := recover(); value != nil {
 			message := fmt.Sprintf("runner panic: %v", value)
-			d.failRun(storedRun.RunID, message)
+			d.failRun(storedRun, message)
 		}
 	}()
 
@@ -183,6 +193,9 @@ func (d *Dispatcher) startRun(storedRun run.Run, task runner.Task) {
 		return
 	}
 	d.recordEvent(storedRun.RunID, string(result.Status), result.Error, "")
+	if result.Status == run.StatusFailed {
+		d.blockReadyIssue(context.Background(), storedRun, result.Error)
+	}
 }
 
 func (d *Dispatcher) taskForRun(storedRun run.Run, issue entity.Issue) runner.Task {
@@ -200,12 +213,48 @@ func (d *Dispatcher) taskForRun(storedRun run.Run, issue entity.Issue) runner.Ta
 	}
 }
 
-func (d *Dispatcher) failRun(runID string, message string) {
-	if _, err := d.store.UpdateRunStatus(context.Background(), runID, run.StatusFailed, message); err != nil {
-		log.Printf("orchestrator dispatch update panic failed run=%s: %v", runID, err)
+func (d *Dispatcher) failRun(storedRun run.Run, message string) {
+	if _, err := d.store.UpdateRunStatus(context.Background(), storedRun.RunID, run.StatusFailed, message); err != nil {
+		log.Printf("orchestrator dispatch update panic failed run=%s: %v", storedRun.RunID, err)
 		return
 	}
-	d.recordEvent(runID, string(run.StatusFailed), message, "")
+	d.recordEvent(storedRun.RunID, string(run.StatusFailed), message, "")
+	d.blockReadyIssue(context.Background(), storedRun, message)
+}
+
+func (d *Dispatcher) blockReadyIssue(ctx context.Context, storedRun run.Run, errText string) {
+	issue, err := d.tracker.Issue(ctx, storedRun.IssueID)
+	if err != nil {
+		log.Printf("orchestrator dispatch fetch issue failed run=%s issue=%d: %v", storedRun.RunID, storedRun.IssueID, err)
+		return
+	}
+	if issue.Status != entity.StatusReady {
+		return
+	}
+	blocked := entity.StatusBlocked
+	if _, err := d.tracker.UpdateIssue(ctx, storedRun.IssueID, entity.UpdateIssueInput{Status: &blocked}); err != nil {
+		log.Printf("orchestrator dispatch block issue failed run=%s issue=%d: %v", storedRun.RunID, storedRun.IssueID, err)
+		return
+	}
+	body := failureCommentBody(storedRun.RunID, errText)
+	if _, err := d.tracker.CreateComment(ctx, storedRun.IssueID, entity.CreateCommentInput{
+		Author: "tasq-orchestrator",
+		Type:   entity.CommentBlocker,
+		Body:   body,
+	}); err != nil {
+		log.Printf("orchestrator dispatch comment issue failure failed run=%s issue=%d: %v", storedRun.RunID, storedRun.IssueID, err)
+	}
+}
+
+func failureCommentBody(runID string, errText string) string {
+	if errText == "" {
+		errText = "runner failed without an error message"
+	}
+	const maxErrorLength = 4000
+	if len(errText) > maxErrorLength {
+		errText = errText[:maxErrorLength] + "... truncated"
+	}
+	return fmt.Sprintf("Orchestrator marked this issue blocked because runner run %s failed.\n\nError: %s", runID, errText)
 }
 
 func (d *Dispatcher) recordEvent(runID string, eventType string, message string, payloadJSON string) {
