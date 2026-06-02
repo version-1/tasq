@@ -10,7 +10,7 @@ Use the Makefile target during local dev-container development:
 make run-tq ARGS="issue list"
 ```
 
-The target runs `go run ./cmd/tq` inside the already-running dev container without starting, stopping, or restarting service processes. In the default workflow, `tq` resolves the issue-tracker API from `$TQ_HOME/system/state.json`.
+The target runs the installed `tq` binary inside the already-running dev container without starting, stopping, or restarting service processes. In the default workflow, `tq` resolves the issue-tracker API from `$TQ_HOME/system/state.json`.
 
 You can also run `tq` directly in host-only workflows:
 

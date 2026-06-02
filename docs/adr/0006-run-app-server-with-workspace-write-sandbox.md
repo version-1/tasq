@@ -17,6 +17,9 @@ Tasq then blocks the issue through the approval workflow. Blocking is correct fo
 requests, but repeatedly blocking on basic workspace inspection makes local orchestration hard to
 use.
 
+Codex's Linux sandbox is most reliable when the distribution-provided `bubblewrap` package is
+available in the runtime image.
+
 ## Decision
 
 The repository workflow starts Codex app-server with:
@@ -32,7 +35,9 @@ file-change approval, Tasq cancels the request, fails the run with `approval_req
 still-ready issue with the request details.
 
 The dev container remains the primary local-development isolation boundary. The project does not make
-the dev container privileged by default just to make Bubblewrap namespace creation work.
+the dev container privileged by default just to make Bubblewrap namespace creation work. The dev
+image installs the distribution-provided `bubblewrap` package so Codex does not rely on its bundled
+fallback helper.
 
 Repository-managed Codex rules live in `codex/rules/` and are mounted read-only into
 `/home/codex/.codex/rules` inside the dev container. The rest of `CODEX_HOME` remains backed by the
@@ -51,6 +56,12 @@ Tasq behavior harder to reproduce across hosts and containers.
 This may allow Bubblewrap to create namespaces, but it weakens the container boundary. Since the
 container is the primary local isolation layer, making it privileged by default is the wrong tradeoff
 for routine development.
+
+### Rely on Codex's Bundled Bubblewrap Helper
+
+This avoids one package in the dev image, but the bundled helper still depends on host/container
+support for unprivileged user namespaces. Installing the distribution package keeps the runtime setup
+closer to the expected Linux sandbox path.
 
 ### Disable Codex Sandbox Completely
 
@@ -78,6 +89,10 @@ approval requests still become blocked issue work.
 
 The project continues to avoid privileged containers by default. If a developer needs a different
 sandbox posture, it should be introduced as an explicit opt-in workflow or profile.
+
+The dev image now includes the distribution-provided `bubblewrap` package. If namespace creation is
+still denied by the host or Docker runtime, that remains an environment capability issue rather than
+a missing tool in the image.
 
 Shared baseline command rules are reviewable in the repository. Because the rules mount is
 read-only, Codex cannot persist new approval rules there at runtime. Future generated approval

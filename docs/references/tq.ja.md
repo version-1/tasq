@@ -10,7 +10,7 @@
 make run-tq ARGS="issue list"
 ```
 
-この target は service process を起動、停止、再起動せず、起動済み dev container 内で `go run ./cmd/tq` を実行します。Default workflow では、`tq` は `$TQ_HOME/system/state.json` から issue-tracker API を解決します。
+この target は service process を起動、停止、再起動せず、起動済み dev container 内で installed `tq` binary を実行します。Default workflow では、`tq` は `$TQ_HOME/system/state.json` から issue-tracker API を解決します。
 
 Host-only workflow では直接 `tq` を実行することもできます。
 

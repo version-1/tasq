@@ -4,6 +4,7 @@ ARG NODE_MAJOR=22
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
+      bubblewrap \
       ca-certificates \
       curl \
       git \

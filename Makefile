@@ -242,7 +242,7 @@ run-tui: run-ensure-issue-tracker ## Run the TUI interactively inside the runnin
 
 .PHONY: run-tq
 run-tq: dev-check ## Run tq inside the running dev container. Example: make run-tq ARGS="issue list"
-	$(DEV_EXEC) sh -c 'go run ./cmd/tq $(ARGS)'
+	$(DEV_EXEC) sh -c 'tq $(ARGS)'
 
 .PHONY: run-ps
 run-ps: dev-check ## Show dev processes running inside the dev container.
