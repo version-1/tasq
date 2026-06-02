@@ -3,6 +3,7 @@
 import { useTranslation } from "react-i18next";
 import type { IssueStatus, IssueSummary, Summary } from "@/lib/types";
 import { issueStatuses } from "@/lib/types";
+import { Markdown } from "../markdown";
 import styles from "./index.module.css";
 
 type StatusChangeHandler = (id: number, status: IssueStatus) => Promise<void>;
@@ -136,7 +137,11 @@ function IssueCard({
       <button type="button" className={styles.taskTitle} onClick={onSelect}>
         #{issue.id} {issue.title}
       </button>
-      <p>{issue.description || t("issues.noDescription")}</p>
+      <Markdown
+        className={styles.cardMarkdown}
+        content={issue.description}
+        emptyText={t("issues.noDescription")}
+      />
       <div className={styles.metaRow}>
         <span className={priorityClassName(issue.priority)}>{t(`priorities.${issue.priority}`)}</span>
         <span>{t(`statuses.${issue.status}`)}</span>
@@ -171,7 +176,11 @@ function IssueDetail({
     <section className={styles.detailLayout}>
       <article className={styles.widePanel}>
         <h2>#{issue.id} {issue.title}</h2>
-        <p className={styles.description}>{issue.description || t("issues.noDescription")}</p>
+        <Markdown
+          className={styles.description}
+          content={issue.description}
+          emptyText={t("issues.noDescription")}
+        />
         <dl className={styles.detailList}>
           <div><dt>{t("issues.detail.issueStatus")}</dt><dd>{t(`statuses.${issue.status}`)}</dd></div>
           <div><dt>{t("issues.detail.priority")}</dt><dd>{t(`priorities.${issue.priority}`)}</dd></div>

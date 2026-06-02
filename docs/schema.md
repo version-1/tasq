@@ -21,6 +21,34 @@ Validation is enforced at the **store layer** (Go code) on every create and upda
 | CreatedAt   | `time.Time`| auto               | —                  | `now()`     | —                                                                  |
 | UpdatedAt   | `time.Time`| auto               | auto               | `now()`     | —                                                                  |
 
+Issue descriptions may contain Markdown. Image attachments are referenced as `![alt](attachment://<attachment-id>)`.
+
+### Comment
+
+| Field       | Go Type       | Required (Create) | Required (Update) | Default     | Constraints                                                        |
+|-------------|---------------|--------------------|--------------------|-------------|--------------------------------------------------------------------|
+| ID          | `int64`       | auto               | path param         | autoincrement | `> 0`                                                            |
+| IssueID     | `int64`       | yes                | —                  | —           | `> 0`, referenced issue must exist                                 |
+| Author      | `string`      | yes                | —                  | —           | min 1                                                              |
+| Type        | `CommentType` | no                 | —                  | `general`   | enum: `progress`, `blocker`, `handoff`, `general`                  |
+| Body        | `string`      | yes                | optional (`*string`) | —         | min 1, max 10,000 chars; may contain Markdown attachment refs      |
+| CreatedAt   | `time.Time`   | auto               | —                  | `now()`     | —                                                                  |
+
+### Attachment
+
+| Field       | Go Type    | Required (Create) | Required (Update) | Default | Constraints                                                        |
+|-------------|------------|--------------------|--------------------|---------|--------------------------------------------------------------------|
+| ID          | `string`   | generated          | path param         | —       | min 1, max 80 chars                                                |
+| EntityType  | `string`   | yes                | —                  | —       | enum: `issue`, `comment`                                           |
+| EntityID    | `string`   | yes                | —                  | —       | min 1, max 80 chars; referenced entity must exist on upload        |
+| Filename    | `string`   | yes                | —                  | —       | basename only, min 1, max 255 chars                                |
+| Path        | `string`   | generated          | —                  | —       | relative path under `$TQ_HOME`, max 1,000 chars                    |
+| ContentType | `string`   | yes                | —                  | —       | `image/png`, `image/jpeg`, `image/gif`, or `image/webp`            |
+| Size        | `int64`    | yes                | —                  | —       | `> 0`, max 5 MiB                                                   |
+| CreatedAt   | `time.Time`| auto               | —                  | `now()` | —                                                                  |
+
+Attachment records live in SQLite, while file bytes are stored under `$TQ_HOME/system/data/attachments/{entity_type}/{entity_id}/{attachment_id}.{ext}`. The API stores only the relative path so `$TQ_HOME` can move without rewriting rows.
+
 ### Project
 
 | Field       | Go Type    | Required (Create) | Required (Update) | Default     | Constraints                                                        |
@@ -112,8 +140,8 @@ Recorded via `RecordWorkspaceSetupFailure(ctx, issueID, workspaceKey, path, errT
 |-------------|------------------------------------------------------------------------|
 | max 200     | Issue.Assignee, Project.Key, Project.Name, Workspace.Name, Run.OrchestratorID, RunnerEvent.RunID, RunnerEvent.EventType, WorkspaceMetadata.WorkspaceKey, WorkspaceSetupFailure.WorkspaceKey |
 | max 500     | Issue.Title                                                            |
-| max 1,000   | Project.Location, Workspace.Path, Run.Workspace, WorkspaceMetadata.Path, WorkspaceMetadata.SourcePath, WorkspaceSetupFailure.Path |
-| max 10,000  | Issue.Description, Project.Description, Run.Error, RunnerEvent.Message, WorkspaceSetupFailure.Error |
+| max 1,000   | Attachment.Path, Project.Location, Workspace.Path, Run.Workspace, WorkspaceMetadata.Path, WorkspaceMetadata.SourcePath, WorkspaceSetupFailure.Path |
+| max 10,000  | Issue.Description, Comment.Body, Project.Description, Run.Error, RunnerEvent.Message, WorkspaceSetupFailure.Error |
 | max 50,000  | RunnerEvent.PayloadJSON                                                |
 
 ### Path fields
@@ -135,6 +163,9 @@ Directory existence is not checked by the API for:
 |------------------|-----------------------------------------------------------------------|
 | Issue.Status     | `backlog`, `ready`, `in_progress`, `review`, `done`, `blocked`, `failed` |
 | Issue.Priority   | `low`, `normal`, `high`, `urgent`                                     |
+| Comment.Type     | `progress`, `blocker`, `handoff`, `general`                           |
+| Attachment.EntityType | `issue`, `comment`                                                |
+| Attachment.ContentType | `image/png`, `image/jpeg`, `image/gif`, `image/webp`             |
 | Workspace.Status | `active`, `inactive`, `archived`                                      |
 | Run.Status       | `queued`, `running`, `succeeded`, `failed`, `cancelled`               |
 

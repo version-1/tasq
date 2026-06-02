@@ -524,6 +524,25 @@ func (s *Store) Comment(ctx context.Context, id int64) (entity.Comment, error) {
 	return item, nil
 }
 
+func (s *Store) UpdateComment(ctx context.Context, id int64, input entity.UpdateCommentInput) (entity.Comment, error) {
+	normalized, err := entity.NormalizeUpdateComment(input)
+	if err != nil {
+		return entity.Comment{}, err
+	}
+	current, err := s.Comment(ctx, id)
+	if err != nil {
+		return entity.Comment{}, err
+	}
+	if normalized.Body != nil {
+		current.Body = *normalized.Body
+	}
+	_, err = s.db.ExecContext(ctx, `UPDATE comments SET body = ? WHERE id = ?`, current.Body, id)
+	if err != nil {
+		return entity.Comment{}, fmt.Errorf("update comment: %w", err)
+	}
+	return s.Comment(ctx, id)
+}
+
 func (s *Store) Summary(ctx context.Context) (entity.Summary, error) {
 	issues, err := s.Issues(ctx)
 	if err != nil {

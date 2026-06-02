@@ -78,6 +78,7 @@ Flags:
 | `--status STATUS` | no | Issue status。省略時は `backlog` です。 |
 | `--priority PRIORITY` | no | Issue priority。省略時は `normal` です。 |
 | `--assignee NAME` | no | Assignee name。 |
+| `--attach PATH` | no | PNG、JPEG、GIF、WebP image を upload し、description に Markdown image reference を追記します。 |
 
 Example:
 
@@ -104,6 +105,9 @@ Flags:
 | `--status STATUS` | Issue status を置き換えます。 |
 | `--priority PRIORITY` | Issue priority を置き換えます。 |
 | `--assignee NAME` | Issue assignee を置き換えます。 |
+| `--attach PATH` | PNG、JPEG、GIF、WebP image を upload し、description に Markdown image reference を追記します。 |
+
+Attachment reference は `![filename](attachment://<id>)` を使います。issue-tracker は attachment content API で画像を配信し、Web UI は Markdown から画像を表示します。
 
 ## Comments
 
@@ -122,6 +126,7 @@ Flags:
 | `--body TEXT` | yes | Comment body。 |
 | `--author NAME` | no | Comment author。省略時は `TQ_AUTHOR`、その後 `USER` を使います。 |
 | `--type TYPE` | no | Comment type。省略時は `general` です。 |
+| `--attach PATH` | no | PNG、JPEG、GIF、WebP image を upload し、comment body に Markdown image reference を追記します。 |
 
 ### `comment list`
 

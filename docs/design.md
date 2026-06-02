@@ -52,6 +52,7 @@ Responsibilities:
 Responsibilities:
 
 - Create, read, list, and update issues through the issue-tracker API.
+- Upload image attachments for issue descriptions and comments.
 - Support human-readable output by default and JSON output for tool use.
 - Resolve the issue-tracker API URL from `--api-url`, `TQ_API_URL`, or `http://localhost:8080`.
 - Return machine-readable JSON errors on stderr and a non-zero exit code when a command fails.
@@ -65,10 +66,11 @@ Responsibilities:
 
 - Store issues in SQLite.
 - Create, edit, and list issues.
+- Store attachment metadata in SQLite and attachment bytes under `$TQ_HOME`.
 - Return issue states for orchestrator or tool reconciliation.
 - Serve the UI/TUI summary API.
 
-The issue-tracker is the source of truth for issue status, priority, title, description, assignee, projects, and workspaces.
+The issue-tracker is the source of truth for issue status, priority, title, description, assignee, comments, attachments, projects, and workspaces.
 
 ### orchestrator
 
@@ -116,8 +118,10 @@ The orchestrator no longer uses issue-tracker work queue or event receiver endpo
 
 ```text
 web-ui ─┐
-tui ────┼─ issue-tracker ── SQLite: issues, projects, workspaces
+tui ────┼─ issue-tracker ── SQLite: issues, comments, attachments, projects, workspaces
 tq ─────┘
+                 │
+                 └─ $TQ_HOME/system/data/attachments
 
         orchestrator ───── SQLite: runs, runner_events, workspace metadata
                 │
@@ -159,9 +163,11 @@ The current implementation slice includes:
 - `cmd/tq`
 - `cmd/orchestrator`
 - issue-tracker SQLite tables for issues, projects, and workspaces.
+- issue-tracker attachment metadata in SQLite and image bytes under `$TQ_HOME`.
 - orchestrator SQLite tables for runs, runner events, workspace metadata, and workspace setup failures.
 - issue-tracker summary API consumed by web-ui and tui.
 - issue CRUD API consumed by `tq`.
+- Markdown issue descriptions and comment bodies with `attachment://<id>` image references.
 - Codex runner lifecycle: app-server startup, live-thread turns, continuation turns when enabled, and terminal run status reporting.
 
 The simulated runner remains available for narrow tests, but production wiring uses the Codex app-server runner.
@@ -190,6 +196,15 @@ Current issue-tracker endpoints:
 - `POST /api/v1/issues/states`
 - `GET /api/v1/issues/{id}`
 - `PATCH /api/v1/issues/{id}`
+- `GET /api/v1/issues/{issueId}/comments`
+- `POST /api/v1/issues/{issueId}/comments`
+- `PATCH /api/v1/comments/{id}`
+- `GET /api/v1/attachments`
+- `POST /api/v1/attachments`
+- `GET /api/v1/attachments/{id}/content`
+- `DELETE /api/v1/attachments/{id}`
+
+Attachment uploads accept multipart form data with `entity_type`, `entity_id`, and `file`. The first implementation supports PNG, JPEG, GIF, and WebP image files up to 5 MiB. Attachment bytes are stored below `$TQ_HOME/system/data/attachments`, while SQLite stores metadata and relative paths. Issue and comment text references attachments with Markdown image links such as `![screenshot](attachment://att_...)`.
 
 JSON success responses use `{ "data": ..., "meta": {} }`. JSON error responses use `{ "error": { "code": "...", "message": "..." }, "meta": {} }`.
 
@@ -199,11 +214,15 @@ The `tq` CLI wraps issue CRUD endpoints with these commands:
 - `tq issue get <id>`
 - `tq issue create --title <title> [--description ...] [--status ...] [--priority ...] [--assignee ...]`
 - `tq issue update <id> [--title ...] [--description ...] [--status ...] [--priority ...] [--assignee ...]`
+- `tq issue create ... --attach <image-path>`
+- `tq issue update <id> ... --attach <image-path>`
 - `tq issue close <id>`
 - `tq issue ready <id>`
 - `tq issue draft <id>`
 - `tq issue rename <id> <title>`
 - `tq issue edit <id> <description>`
+- `tq comment add <issue-id> --body <body> [--attach <image-path>]`
+- `tq comment list <issue-id>`
 
 `tq` uses human-readable output by default and JSON output when `--output json` is set.
 

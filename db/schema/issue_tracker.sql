@@ -48,3 +48,16 @@ CREATE TABLE IF NOT EXISTS workspaces (
 
 CREATE INDEX IF NOT EXISTS workspaces_project_id_idx ON workspaces(project_id);
 CREATE INDEX IF NOT EXISTS workspaces_status_idx ON workspaces(status);
+
+CREATE TABLE IF NOT EXISTS attachments (
+	id TEXT PRIMARY KEY,
+	entity_type TEXT NOT NULL,
+	entity_id TEXT NOT NULL,
+	filename TEXT NOT NULL,
+	path TEXT NOT NULL,
+	content_type TEXT NOT NULL,
+	size INTEGER NOT NULL,
+	created_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS attachments_entity_idx ON attachments(entity_type, entity_id);
