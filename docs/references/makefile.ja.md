@@ -99,7 +99,7 @@ make run-logs
 |---|---|
 | `make dev-codex-login` | dev container 内で `codex login --device-auth` を実行し、credential を `codex-home` Docker volume に永続化します。 |
 | `make dev-codex-status` | dev container 内で Codex authentication status を表示します。 |
-| `make dev-gh-login` | dev container 内で `gh auth login` を実行し、credential を `gh-config` Docker volume に永続化します。 |
+| `make dev-gh-login` | dev container 内で `gh auth login` と `gh auth setup-git` を実行し、credential を `gh-config` Docker volume に永続化します。 |
 | `make dev-gh-status` | dev container 内で GitHub CLI authentication status を表示します。 |
 
 Container login では、browser redirect が container 内の localhost callback に戻り host browser から

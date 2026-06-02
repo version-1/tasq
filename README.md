@@ -88,7 +88,7 @@ Japanese counterpart: [README.ja.md](README.ja.md).
 - The Web UI calls the issue-tracker API through `NEXT_PUBLIC_ISSUE_TRACKER_URL` when served from a different origin.
 - `tq` resolves the issue-tracker API URL from `$TQ_HOME/system/state.json` when run through `make run-tq`.
 - Run `make dev-codex-login` once to authenticate Codex with device auth and persist credentials in the `codex-home` Docker volume.
-- Run `make dev-gh-login` once to authenticate GitHub CLI and persist credentials in the `gh-config` Docker volume. Use an HTTPS Git remote for pushes from the dev container.
+- Run `make dev-gh-login` once to authenticate GitHub CLI, configure Git to use `gh` as its HTTPS credential helper, and persist credentials in the `gh-config` Docker volume. Use an HTTPS Git remote for pushes from the dev container.
 - Use `make dev-codex-status` and `make dev-gh-status` to confirm the dev container is authenticated before running agent workflows that need Codex or GitHub access.
 
 ## tq CLI

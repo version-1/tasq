@@ -99,7 +99,7 @@ make run-logs
 |---|---|
 | `make dev-codex-login` | Run `codex login --device-auth` inside the dev container and persist credentials in the `codex-home` Docker volume. |
 | `make dev-codex-status` | Show Codex authentication status inside the dev container. |
-| `make dev-gh-login` | Run `gh auth login` inside the dev container and persist credentials in the `gh-config` Docker volume. |
+| `make dev-gh-login` | Run `gh auth login` and `gh auth setup-git` inside the dev container, then persist credentials in the `gh-config` Docker volume. |
 | `make dev-gh-status` | Show GitHub CLI authentication status inside the dev container. |
 
 Use device auth for container logins when a browser redirect points to a localhost callback inside

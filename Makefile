@@ -142,7 +142,7 @@ dev-codex-status: dev-check ## Check Codex authentication status inside the dev 
 
 .PHONY: dev-gh-login
 dev-gh-login: dev-check ## Log in to GitHub CLI inside the dev container.
-	$(DEV_EXEC) sh -c 'gh auth login'
+	$(DEV_EXEC) sh -c 'gh auth login && gh auth setup-git'
 
 .PHONY: dev-gh-status
 dev-gh-status: dev-check ## Check GitHub CLI authentication inside the dev container.
