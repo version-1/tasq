@@ -1,11 +1,11 @@
 COMPOSE ?= docker compose
 BROWSER_OPEN ?= open
 TQ_HOME ?= ./.tasq
-ISSUE_TRACKER_PORT ?= 8080
-ORCHESTRATOR_PORT ?= 8081
-OPENAPI_PORT ?= 8082
-WEB_PORT ?= 3000
-WEB_ISSUE_TRACKER_URL ?= http://127.0.0.1:$(ISSUE_TRACKER_PORT)
+ISSUE_TRACKER_PORT ?=
+ORCHESTRATOR_PORT ?=
+OPENAPI_PORT ?=
+WEB_PORT ?=
+WEB_ISSUE_TRACKER_URL ?=
 
 export TQ_HOME
 
@@ -64,7 +64,12 @@ dev-start-processes: dev-check ## Start issue-tracker, orchestrator, and web ins
 	$(MAKE) dev-stop-processes
 	$(DEV_EXEC_DETACHED) sh -c 'go mod download >>$(DEV_LOG_DIR)/go-mod-download.log 2>&1; exec go run github.com/air-verse/air@$(AIR_VERSION) -c .air.issue-tracker.toml >>$(DEV_LOG_DIR)/issue-tracker.log 2>&1'
 	$(DEV_EXEC_DETACHED) sh -c 'sleep 1; exec go run github.com/air-verse/air@$(AIR_VERSION) -c .air.orchestrator.toml >>$(DEV_LOG_DIR)/orchestrator.log 2>&1'
-	$(DEV_EXEC_DETACHED) sh -c 'cd web && npm install >>../$(DEV_LOG_DIR)/web-install.log 2>&1 && exec env NEXT_PUBLIC_ISSUE_TRACKER_URL="$(WEB_ISSUE_TRACKER_URL)" npm run dev -- --hostname 0.0.0.0 --port 3000 >>../$(DEV_LOG_DIR)/web.log 2>&1'
+	@web_issue_url="$(WEB_ISSUE_TRACKER_URL)"; \
+	if [ -z "$$web_issue_url" ]; then \
+		issue_port="$$($(COMPOSE) port dev 8080 | sed 's/.*://')"; \
+		web_issue_url="http://127.0.0.1:$$issue_port"; \
+	fi; \
+	$(DEV_EXEC_DETACHED) sh -c 'cd web && npm install >>../$(DEV_LOG_DIR)/web-install.log 2>&1 && exec env NEXT_PUBLIC_ISSUE_TRACKER_URL="'"$$web_issue_url"'" npm run dev -- --hostname 0.0.0.0 --port 3000 >>../$(DEV_LOG_DIR)/web.log 2>&1'
 
 .PHONY: dev-ready
 dev-ready: dev-check ## Wait until the dev container volumes are writable by the codex user.
@@ -208,7 +213,12 @@ openapi-up: dev-check ## Start the OpenAPI UI with Docker Compose in the backgro
 .PHONY: web-up
 web-up: issue-tracker-up ## Start the Next.js web UI inside the dev container.
 	$(DEV_EXEC) sh -c 'mkdir -p $(DEV_LOG_DIR); pkill -f "next dev.*--hostname 0.0.0.0.*--port 3000" 2>/dev/null || true'
-	$(DEV_EXEC_DETACHED) sh -c 'cd web && npm install >>../$(DEV_LOG_DIR)/web-install.log 2>&1 && exec env NEXT_PUBLIC_ISSUE_TRACKER_URL="$(WEB_ISSUE_TRACKER_URL)" npm run dev -- --hostname 0.0.0.0 --port 3000 >>../$(DEV_LOG_DIR)/web.log 2>&1'
+	@web_issue_url="$(WEB_ISSUE_TRACKER_URL)"; \
+	if [ -z "$$web_issue_url" ]; then \
+		issue_port="$$($(COMPOSE) port dev 8080 | sed 's/.*://')"; \
+		web_issue_url="http://127.0.0.1:$$issue_port"; \
+	fi; \
+	$(DEV_EXEC_DETACHED) sh -c 'cd web && npm install >>../$(DEV_LOG_DIR)/web-install.log 2>&1 && exec env NEXT_PUBLIC_ISSUE_TRACKER_URL="'"$$web_issue_url"'" npm run dev -- --hostname 0.0.0.0 --port 3000 >>../$(DEV_LOG_DIR)/web.log 2>&1'
 
 .PHONY: tui-up
 tui-up: issue-tracker-up ## Run the TUI interactively inside the dev container.
