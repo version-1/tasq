@@ -1,9 +1,12 @@
 COMPOSE ?= docker compose
 BROWSER_OPEN ?= open
+TQ_HOME ?= ./.tasq
 ISSUE_TRACKER_PORT ?=
 OPENAPI_PORT ?=
 WEB_PORT ?=
 ISSUE_TRACKER_URL ?=
+
+export TQ_HOME
 
 .PHONY: help
 help: ## Show available targets.
@@ -53,12 +56,12 @@ dev-restart: dev-check ## Restart all Compose development services.
 .PHONY: dev-rebuild-schema
 dev-rebuild-schema: dev-check ## Recreate local SQLite schemas. Usage: make dev-rebuild-schema CONFIRM=1
 	@if [ "$(CONFIRM)" != "1" ]; then \
-		echo 'This removes local SQLite data under .data/.'; \
+		echo 'This removes local SQLite data under .tasq/system/data/.'; \
 		echo 'Run: make dev-rebuild-schema CONFIRM=1'; \
 		exit 1; \
 	fi
 	$(COMPOSE) down
-	rm -f .data/tasq-issues.sqlite .data/tasq-orchestrator.sqlite
+	rm -f .tasq/system/data/issues.sqlite .tasq/system/data/orchestrator.sqlite
 	$(MAKE) dev-up
 
 .PHONY: dev-ps

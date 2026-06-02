@@ -146,7 +146,6 @@ vite.config.ts.timestamp-*
 .vite/
 
 .worktrees
-.data/
 .tasq/
 .tmp/
 *.sqlite

@@ -25,8 +25,8 @@ make dev-ports
 For host-only development, start the issue-tracker first, then run:
 
 ```sh
+TQ_HOME=./.tasq \
 go run ./cmd/orchestrator \
-  -db tasq-orchestrator.sqlite \
   -issue-tracker http://localhost:8080 \
   -port 8081
 ```

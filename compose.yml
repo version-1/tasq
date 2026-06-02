@@ -3,9 +3,11 @@ services:
     image: golang:1.22-bookworm
     working_dir: /workspace
     command: >
-      sh -c "mkdir -p /workspace/.data /workspace/.tmp &&
+      sh -c "mkdir -p /workspace/.tmp &&
       go mod download &&
       go run github.com/air-verse/air@${AIR_VERSION:-v1.52.3} -c .air.issue-tracker.toml"
+    environment:
+      TQ_HOME: /workspace/.tasq
     ports:
       - "127.0.0.1:${ISSUE_TRACKER_PORT:-}:8080"
     volumes:
@@ -18,9 +20,11 @@ services:
     image: golang:1.22-bookworm
     working_dir: /workspace
     command: >
-      sh -c "mkdir -p /workspace/.data /workspace/.tmp &&
+      sh -c "mkdir -p /workspace/.tmp &&
       go mod download &&
       go run github.com/air-verse/air@${AIR_VERSION:-v1.52.3} -c .air.orchestrator.toml"
+    environment:
+      TQ_HOME: /workspace/.tasq
     depends_on:
       - issue-tracker
     volumes:
