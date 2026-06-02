@@ -13,7 +13,6 @@ polling:
   interval_ms: 30000
 workspace:
   root: .workspaces
-  source: .
 agent:
   max_concurrent_agents: 10
   max_turns: 20
@@ -39,8 +38,8 @@ hooks:
   timeout_ms: 60000
 ```
 
-Relative `workspace.root` and `workspace.source` values resolve relative to the selected workflow
-file. Environment variable indirection and `~` expansion are supported for path fields.
+Relative `workspace.root` values resolve relative to the selected workflow file. Environment
+variable indirection and `~` expansion are supported for path fields.
 
 Continuation turns are disabled by default even when `agent.max_turns` is greater than one. Enable
 `agent.continuation_turns_enabled` when the workflow is prepared for multiple turns on the same live

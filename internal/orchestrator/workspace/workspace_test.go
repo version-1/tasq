@@ -2,6 +2,7 @@ package workspace
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -11,7 +12,7 @@ import (
 func TestManagerCreatesSanitizedWorkspaceUnderRoot(t *testing.T) {
 	t.Parallel()
 
-	root := t.TempDir()
+	_, root := initTestRepo(t)
 	manager, err := NewManager(root)
 	if err != nil {
 		t.Fatalf("create workspace manager: %v", err)
@@ -39,8 +40,8 @@ func TestManagerCreatesSanitizedWorkspaceUnderRoot(t *testing.T) {
 func TestManagerRunsAfterCreateHookForNewWorkspace(t *testing.T) {
 	t.Parallel()
 
-	root := t.TempDir()
-	manager, err := NewManagerWithSourceAndHooks(root, "", HookConfig{
+	_, root := initTestRepo(t)
+	manager, err := NewManagerWithHooks(root, HookConfig{
 		AfterCreate: `echo created > after-create.out`,
 		Timeout:     time.Second,
 	})
@@ -65,8 +66,8 @@ func TestManagerRunsAfterCreateHookForNewWorkspace(t *testing.T) {
 func TestManagerSkipsAfterCreateHookForExistingWorkspace(t *testing.T) {
 	t.Parallel()
 
-	root := t.TempDir()
-	manager, err := NewManagerWithSourceAndHooks(root, "", HookConfig{
+	_, root := initTestRepo(t)
+	manager, err := NewManagerWithHooks(root, HookConfig{
 		AfterCreate: `echo created >> after-create.out`,
 		Timeout:     time.Second,
 	})
@@ -93,8 +94,8 @@ func TestManagerSkipsAfterCreateHookForExistingWorkspace(t *testing.T) {
 func TestManagerAfterCreateHookFailureRemovesPartialWorkspace(t *testing.T) {
 	t.Parallel()
 
-	root := t.TempDir()
-	manager, err := NewManagerWithSourceAndHooks(root, "", HookConfig{
+	_, root := initTestRepo(t)
+	manager, err := NewManagerWithHooks(root, HookConfig{
 		AfterCreate: `exit 9`,
 		Timeout:     time.Second,
 	})
@@ -113,8 +114,8 @@ func TestManagerAfterCreateHookFailureRemovesPartialWorkspace(t *testing.T) {
 func TestManagerRunsBeforeRemoveAndContinuesOnFailure(t *testing.T) {
 	t.Parallel()
 
-	root := t.TempDir()
-	manager, err := NewManagerWithSourceAndHooks(root, "", HookConfig{
+	_, root := initTestRepo(t)
+	manager, err := NewManagerWithHooks(root, HookConfig{
 		BeforeRemove: `echo removing > ../before-remove.out; exit 8`,
 		Timeout:      time.Second,
 	})
@@ -145,7 +146,7 @@ func TestManagerRunsBeforeRemoveAndContinuesOnFailure(t *testing.T) {
 func TestManagerRejectsExistingFile(t *testing.T) {
 	t.Parallel()
 
-	root := t.TempDir()
+	_, root := initTestRepo(t)
 	manager, err := NewManager(root)
 	if err != nil {
 		t.Fatalf("create workspace manager: %v", err)
@@ -159,24 +160,16 @@ func TestManagerRejectsExistingFile(t *testing.T) {
 	}
 }
 
-func TestManagerPopulatesWorkspaceFromSource(t *testing.T) {
+func TestManagerCreatesWorktreeWithCorrectBranch(t *testing.T) {
 	t.Parallel()
 
-	root := filepath.Join(t.TempDir(), "workspaces")
-	source := filepath.Join(t.TempDir(), "repo")
-	if err := os.MkdirAll(filepath.Join(source, "docs"), 0o755); err != nil {
-		t.Fatalf("create source: %v", err)
+	repoRoot, root := initTestRepo(t)
+	if err := os.WriteFile(filepath.Join(repoRoot, "docs.md"), []byte("hello"), 0o644); err != nil {
+		t.Fatalf("write tracked file: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(source, "docs", "README.md"), []byte("hello"), 0o644); err != nil {
-		t.Fatalf("write source file: %v", err)
-	}
-	if err := os.MkdirAll(filepath.Join(source, ".git"), 0o755); err != nil {
-		t.Fatalf("create git dir: %v", err)
-	}
-	if err := os.WriteFile(filepath.Join(source, ".git", "config"), []byte("secret"), 0o644); err != nil {
-		t.Fatalf("write git file: %v", err)
-	}
-	manager, err := NewManagerWithSource(root, source)
+	gitCommand(t, repoRoot, "add", "docs.md")
+	gitCommand(t, repoRoot, "commit", "-m", "add docs")
+	manager, err := NewManager(root)
 	if err != nil {
 		t.Fatalf("create workspace manager: %v", err)
 	}
@@ -186,11 +179,15 @@ func TestManagerPopulatesWorkspaceFromSource(t *testing.T) {
 		t.Fatalf("create workspace: %v", err)
 	}
 
-	if _, err := os.Stat(filepath.Join(workspace.Path, "docs", "README.md")); err != nil {
-		t.Fatalf("workspace was not populated: %v", err)
+	if _, err := os.Stat(filepath.Join(workspace.Path, ".git")); err != nil {
+		t.Fatalf("worktree git file missing: %v", err)
 	}
-	if _, err := os.Stat(filepath.Join(workspace.Path, ".git", "config")); !os.IsNotExist(err) {
-		t.Fatalf(".git should not be copied, err=%v", err)
+	if _, err := os.Stat(filepath.Join(workspace.Path, "docs.md")); err != nil {
+		t.Fatalf("tracked file missing from worktree: %v", err)
+	}
+	branch := strings.TrimSpace(gitCommand(t, workspace.Path, "branch", "--show-current"))
+	if branch != "agent/TASK-2" {
+		t.Fatalf("branch = %q", branch)
 	}
 	if err := manager.RemoveForIssue("TASK-2"); err != nil {
 		t.Fatalf("remove workspace: %v", err)
@@ -198,4 +195,79 @@ func TestManagerPopulatesWorkspaceFromSource(t *testing.T) {
 	if _, err := os.Stat(workspace.Path); !os.IsNotExist(err) {
 		t.Fatalf("workspace should be removed, err=%v", err)
 	}
+}
+
+func TestManagerReusesExistingBranchOnRetry(t *testing.T) {
+	t.Parallel()
+
+	repoRoot, root := initTestRepo(t)
+	gitCommand(t, repoRoot, "branch", "agent/TASK-3")
+	manager, err := NewManager(root)
+	if err != nil {
+		t.Fatalf("create workspace manager: %v", err)
+	}
+
+	workspace, err := manager.CreateForIssue("TASK-3")
+	if err != nil {
+		t.Fatalf("create workspace: %v", err)
+	}
+
+	branch := strings.TrimSpace(gitCommand(t, workspace.Path, "branch", "--show-current"))
+	if branch != "agent/TASK-3" {
+		t.Fatalf("branch = %q", branch)
+	}
+}
+
+func TestManagerPrunesCleansStaleMetadata(t *testing.T) {
+	t.Parallel()
+
+	repoRoot, root := initTestRepo(t)
+	manager, err := NewManager(root)
+	if err != nil {
+		t.Fatalf("create workspace manager: %v", err)
+	}
+	workspace, err := manager.CreateForIssue("TASK-4")
+	if err != nil {
+		t.Fatalf("create workspace: %v", err)
+	}
+	if err := os.RemoveAll(workspace.Path); err != nil {
+		t.Fatalf("remove workspace directory manually: %v", err)
+	}
+
+	if err := manager.Prune(); err != nil {
+		t.Fatalf("prune worktrees: %v", err)
+	}
+
+	list := gitCommand(t, repoRoot, "worktree", "list", "--porcelain")
+	if strings.Contains(list, workspace.Path) {
+		t.Fatalf("stale worktree remains in list:\n%s", list)
+	}
+}
+
+func initTestRepo(t *testing.T) (string, string) {
+	t.Helper()
+	repoRoot := t.TempDir()
+	gitCommand(t, repoRoot, "init")
+	gitCommand(t, repoRoot, "config", "user.email", "test@example.com")
+	gitCommand(t, repoRoot, "config", "user.name", "Test User")
+	if err := os.WriteFile(filepath.Join(repoRoot, "README.md"), []byte("test repo\n"), 0o644); err != nil {
+		t.Fatalf("write readme: %v", err)
+	}
+	gitCommand(t, repoRoot, "add", "README.md")
+	gitCommand(t, repoRoot, "commit", "-m", "initial commit")
+	workspaceRoot := filepath.Join(repoRoot, ".worktrees")
+	if err := os.MkdirAll(workspaceRoot, 0o755); err != nil {
+		t.Fatalf("create workspace root: %v", err)
+	}
+	return repoRoot, workspaceRoot
+}
+
+func gitCommand(t *testing.T, dir string, args ...string) string {
+	t.Helper()
+	cmd := exec.Command("git", append([]string{"-C", dir}, args...)...)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("git %s: %v\n%s", strings.Join(args, " "), err, output)
+	}
+	return string(output)
 }

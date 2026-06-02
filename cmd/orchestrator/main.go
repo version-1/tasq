@@ -68,7 +68,7 @@ func main() {
 	var refresher httpserver.Refresher
 	var dispatcher *coordinator.Dispatcher
 	if resolvedIssueTrackerURL != "" {
-		workspaceManager, err := workspace.NewManagerWithSourceAndHooks(definition.Config.WorkspaceRoot, definition.Config.WorkspaceSource, workspace.HookConfig{
+		workspaceManager, err := workspace.NewManagerWithHooks(definition.Config.WorkspaceRoot, workspace.HookConfig{
 			AfterCreate:  definition.Config.HookAfterCreate,
 			BeforeRun:    definition.Config.HookBeforeRun,
 			AfterRun:     definition.Config.HookAfterRun,
@@ -77,6 +77,9 @@ func main() {
 		})
 		if err != nil {
 			log.Fatalf("create workspace manager: %v", err)
+		}
+		if err := workspaceManager.Prune(); err != nil {
+			log.Fatalf("prune workspace manager: %v", err)
 		}
 		trackerClient := tracker.NewClient(resolvedIssueTrackerURL)
 		dispatcher, err = coordinator.NewDispatcher(coordinator.DispatcherConfig{

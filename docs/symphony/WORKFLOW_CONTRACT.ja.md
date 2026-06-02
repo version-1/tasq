@@ -13,7 +13,6 @@ polling:
   interval_ms: 30000
 workspace:
   root: .workspaces
-  source: .
 agent:
   max_concurrent_agents: 10
   max_turns: 20
@@ -39,8 +38,8 @@ hooks:
   timeout_ms: 60000
 ```
 
-`workspace.root` と `workspace.source` の相対パスは、選択された workflow ファイルからの相対パスとして
-解決されます。path フィールドでは環境変数の間接参照と `~` 展開がサポートされています。
+`workspace.root` の相対パスは、選択された workflow ファイルからの相対パスとして解決されます。
+path フィールドでは環境変数の間接参照と `~` 展開がサポートされています。
 
 `agent.max_turns` が 1 より大きい場合でも、continuation turns はデフォルトで無効です。同じ Codex
 thread 上で複数ターンを実行する準備ができている場合に `agent.continuation_turns_enabled` を有効化

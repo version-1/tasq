@@ -30,7 +30,6 @@ type Store interface {
 
 type WorkspaceManager interface {
 	CreateForIssue(identifier string) (workspace.Workspace, error)
-	Source() string
 }
 
 type Poller struct {
@@ -177,7 +176,7 @@ func (p *Poller) queueIssue(ctx context.Context, issue entity.Issue) (run.Run, e
 		IssueID:      issue.ID,
 		Path:         workspaceInfo.Path,
 		CreatedNow:   workspaceInfo.CreatedNow,
-		SourcePath:   p.workspaces.Source(),
+		SourcePath:   "",
 	}); err != nil {
 		return run.Run{}, fmt.Errorf("record workspace metadata for %s: %w", identifier, err)
 	}
