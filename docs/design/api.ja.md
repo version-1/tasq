@@ -36,13 +36,15 @@ issue-tracker は user-facing API です。
 
 Attachment upload は `entity_type`、`entity_id`、`file` を持つ multipart form data を受け取ります。最初の実装では PNG、JPEG、GIF、WebP image file を 5 MiB までサポートします。Attachment bytes は `$TQ_HOME/system/data/attachments` 配下に保存し、SQLite には metadata と relative path を保存します。Issue と comment text は `![screenshot](attachment://att_...)` のような Markdown image link で attachment を参照します。
 
+Issue は必ず 1 つの project に属します。`POST /api/v1/issues` は `projectId` を必須とし、issue response は `projectId` と `projectKey` の両方を返します。`GET /api/v1/issues` は optional query parameter として `states` と `project_id` を受け取ります。`project_id` を省略した場合は全 project の issue を一覧表示します。
+
 JSON success response は `{ "data": ..., "meta": {} }` を使います。JSON error response は `{ "error": { "code": "...", "message": "..." }, "meta": {} }` を使います。
 
 `tq` CLI は issue CRUD endpoint を次の command で wrap します。
 
-- `tq issue list`
+- `tq issue list [--project <project-key>]`
 - `tq issue get <id>`
-- `tq issue create --title <title> [--description ...] [--status ...] [--priority ...] [--assignee ...]`
+- `tq issue create --project <project-key> --title <title> [--description ...] [--status ...] [--priority ...] [--assignee ...]`
 - `tq issue update <id> [--title ...] [--description ...] [--status ...] [--priority ...] [--assignee ...]`
 - `tq issue create ... --attach <image-path>`
 - `tq issue update <id> ... --attach <image-path>`

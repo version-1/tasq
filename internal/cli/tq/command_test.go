@@ -41,6 +41,12 @@ func TestIssueListJSON(t *testing.T) {
 
 func TestIssueCreate(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet && r.URL.Path == "/api/v1/projects" {
+			writeTestJSON(t, w, apiResponse[[]entity.Project]{
+				Data: []entity.Project{{ID: 2, Key: "CLI", Name: "CLI"}},
+			})
+			return
+		}
 		if r.Method != http.MethodPost || r.URL.Path != "/api/v1/issues" {
 			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
 		}
@@ -48,17 +54,19 @@ func TestIssueCreate(t *testing.T) {
 		if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 			t.Fatal(err)
 		}
-		if input.Title != "Add CLI" || input.Status != entity.StatusReady || input.Priority != entity.PriorityHigh {
+		if input.ProjectID != 2 || input.Title != "Add CLI" || input.Status != entity.StatusReady || input.Priority != entity.PriorityHigh {
 			t.Fatalf("unexpected input: %+v", input)
 		}
 		w.WriteHeader(http.StatusCreated)
 		writeTestJSON(t, w, apiResponse[entity.Issue]{Data: entity.Issue{
-			ID:        10,
-			Title:     input.Title,
-			Status:    input.Status,
-			Priority:  input.Priority,
-			CreatedAt: time.Date(2026, 5, 31, 0, 0, 0, 0, time.UTC),
-			UpdatedAt: time.Date(2026, 5, 31, 0, 0, 0, 0, time.UTC),
+			ID:         10,
+			ProjectID:  2,
+			ProjectKey: "CLI",
+			Title:      input.Title,
+			Status:     input.Status,
+			Priority:   input.Priority,
+			CreatedAt:  time.Date(2026, 5, 31, 0, 0, 0, 0, time.UTC),
+			UpdatedAt:  time.Date(2026, 5, 31, 0, 0, 0, 0, time.UTC),
 		}})
 	}))
 	defer server.Close()
@@ -67,14 +75,32 @@ func TestIssueCreate(t *testing.T) {
 		"issue", "create",
 		"--api-url", server.URL,
 		"--title", "Add CLI",
+		"--project", "CLI",
 		"--status", "ready",
 		"--priority", "high",
 	})
 	if code != 0 {
 		t.Fatalf("code=%d stderr=%s", code, stderr)
 	}
-	if !strings.Contains(stdout, "ID: 10") || !strings.Contains(stdout, "ready") {
+	if !strings.Contains(stdout, "ID: 10") || !strings.Contains(stdout, "Project: CLI") || !strings.Contains(stdout, "ready") {
 		t.Fatalf("unexpected stdout: %s", stdout)
+	}
+}
+
+func TestIssueCreateRequiresProject(t *testing.T) {
+	stdout, stderr, code := runCLI(t, []string{
+		"--api-url", defaultAPIURL,
+		"issue", "create",
+		"--title", "Missing project",
+	})
+	if code != 2 {
+		t.Fatalf("code=%d stderr=%s", code, stderr)
+	}
+	if stdout != "" {
+		t.Fatalf("expected empty stdout: %s", stdout)
+	}
+	if got := decodeCLIError(t, stderr); got != "project is required" {
+		t.Fatalf("error=%q", got)
 	}
 }
 
@@ -319,7 +345,11 @@ func TestCommentCommandsAgainstIssueTrackerAPI(t *testing.T) {
 	}
 	defer issueStore.Close()
 
-	issue, err := issueStore.CreateIssue(ctx, entity.CreateIssueInput{Title: "Comment through CLI"})
+	project, err := issueStore.CreateProject(ctx, entity.CreateProjectInput{Key: "COMMENTS", Name: "Comments", Location: t.TempDir()})
+	if err != nil {
+		t.Fatalf("create project: %v", err)
+	}
+	issue, err := issueStore.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Comment through CLI"})
 	if err != nil {
 		t.Fatalf("create issue: %v", err)
 	}
@@ -356,6 +386,10 @@ func TestIssueCreateWithAttachmentAgainstIssueTrackerAPI(t *testing.T) {
 		t.Fatalf("open store: %v", err)
 	}
 	defer issueStore.Close()
+	_, err = issueStore.CreateProject(ctx, entity.CreateProjectInput{Key: "ATTACH", Name: "Attach", Location: t.TempDir()})
+	if err != nil {
+		t.Fatalf("create project: %v", err)
+	}
 	server := httptest.NewServer(api.NewServerWithAttachmentStorage(issueStore, store.NewAttachmentStorage(t.TempDir())).Handler())
 	defer server.Close()
 
@@ -367,6 +401,7 @@ func TestIssueCreateWithAttachmentAgainstIssueTrackerAPI(t *testing.T) {
 	stdout, stderr, code := runCLI(t, []string{
 		"--api-url", server.URL,
 		"issue", "create",
+		"--project", "ATTACH",
 		"--title", "Issue with attachment",
 		"--description", "Before image",
 		"--attach", attachmentPath,
@@ -395,7 +430,11 @@ func TestCommentAddWithAttachmentAgainstIssueTrackerAPI(t *testing.T) {
 	}
 	defer issueStore.Close()
 
-	issue, err := issueStore.CreateIssue(ctx, entity.CreateIssueInput{Title: "Comment attachment"})
+	project, err := issueStore.CreateProject(ctx, entity.CreateProjectInput{Key: "COMATTACH", Name: "Comment Attach", Location: t.TempDir()})
+	if err != nil {
+		t.Fatalf("create project: %v", err)
+	}
+	issue, err := issueStore.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Comment attachment"})
 	if err != nil {
 		t.Fatalf("create issue: %v", err)
 	}

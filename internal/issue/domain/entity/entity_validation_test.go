@@ -14,13 +14,14 @@ func TestNormalizeCreate(t *testing.T) {
 		input   CreateIssueInput
 		wantErr bool
 	}{
-		{name: "valid minimal", input: CreateIssueInput{Title: "Issue"}},
+		{name: "valid minimal", input: CreateIssueInput{ProjectID: 1, Title: "Issue"}},
+		{name: "missing project", input: CreateIssueInput{Title: "Issue"}, wantErr: true},
 		{name: "empty title", input: CreateIssueInput{}, wantErr: true},
-		{name: "title too long", input: CreateIssueInput{Title: strings.Repeat("x", 501)}, wantErr: true},
-		{name: "description too long", input: CreateIssueInput{Title: "Issue", Description: strings.Repeat("x", 10001)}, wantErr: true},
-		{name: "assignee too long", input: CreateIssueInput{Title: "Issue", Assignee: strings.Repeat("x", 201)}, wantErr: true},
-		{name: "invalid status", input: CreateIssueInput{Title: "Issue", Status: Status("unknown")}, wantErr: true},
-		{name: "invalid priority", input: CreateIssueInput{Title: "Issue", Priority: Priority("unknown")}, wantErr: true},
+		{name: "title too long", input: CreateIssueInput{ProjectID: 1, Title: strings.Repeat("x", 501)}, wantErr: true},
+		{name: "description too long", input: CreateIssueInput{ProjectID: 1, Title: "Issue", Description: strings.Repeat("x", 10001)}, wantErr: true},
+		{name: "assignee too long", input: CreateIssueInput{ProjectID: 1, Title: "Issue", Assignee: strings.Repeat("x", 201)}, wantErr: true},
+		{name: "invalid status", input: CreateIssueInput{ProjectID: 1, Title: "Issue", Status: Status("unknown")}, wantErr: true},
+		{name: "invalid priority", input: CreateIssueInput{ProjectID: 1, Title: "Issue", Priority: Priority("unknown")}, wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

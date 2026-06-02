@@ -243,7 +243,11 @@ func (s *Server) issues(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	items, err := s.store.IssuesByStates(r.Context(), states)
+	projectID, ok := parseIssueProjectID(w, r)
+	if !ok {
+		return
+	}
+	items, err := s.store.IssuesByFilter(r.Context(), store.IssueFilter{States: states, ProjectID: projectID})
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "issues.list.internal_error", err)
 		return
@@ -271,6 +275,19 @@ func parseIssueStates(w http.ResponseWriter, r *http.Request) ([]entity.Status, 
 		states = append(states, state)
 	}
 	return states, true
+}
+
+func parseIssueProjectID(w http.ResponseWriter, r *http.Request) (*int64, bool) {
+	value := r.URL.Query().Get("project_id")
+	if value == "" {
+		return nil, true
+	}
+	id, err := strconv.ParseInt(value, 10, 64)
+	if err != nil || id <= 0 {
+		writeError(w, http.StatusBadRequest, "issues.list.invalid_project_id", errors.New("project_id is invalid"))
+		return nil, false
+	}
+	return &id, true
 }
 
 func (s *Server) createIssue(w http.ResponseWriter, r *http.Request) {

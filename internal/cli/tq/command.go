@@ -204,10 +204,23 @@ func (a app) commentList(ctx context.Context, args []string, cfg config) error {
 }
 
 func (a app) issueList(ctx context.Context, args []string, cfg config) error {
-	if len(args) > 0 {
+	fs := newFlagSet("issue list")
+	projectKey := fs.String("project", "", "project key")
+	if err := fs.Parse(args); err != nil {
+		return usageError(err.Error())
+	}
+	if fs.NArg() > 0 {
 		return usageError("issue list does not accept positional arguments")
 	}
-	issues, err := a.client.listIssues(ctx)
+	var projectID *int64
+	if *projectKey != "" {
+		project, err := a.client.projectByKey(ctx, *projectKey)
+		if err != nil {
+			return err
+		}
+		projectID = &project.ID
+	}
+	issues, err := a.client.listIssues(ctx, projectID)
 	if err != nil {
 		return err
 	}
@@ -237,6 +250,7 @@ func (a app) issueCreate(ctx context.Context, args []string, cfg config) error {
 	priority := fs.String("priority", "", "issue priority")
 	assignee := fs.String("assignee", "", "issue assignee")
 	attach := fs.String("attach", "", "image attachment path")
+	projectKey := fs.String("project", "", "project key")
 	if err := fs.Parse(args); err != nil {
 		return usageError(err.Error())
 	}
@@ -246,8 +260,16 @@ func (a app) issueCreate(ctx context.Context, args []string, cfg config) error {
 	if *title == "" {
 		return usageError("title is required")
 	}
+	if *projectKey == "" {
+		return usageError("project is required")
+	}
+	project, err := a.client.projectByKey(ctx, *projectKey)
+	if err != nil {
+		return err
+	}
 
 	input := entity.CreateIssueInput{
+		ProjectID:   project.ID,
 		Title:       *title,
 		Description: *description,
 		Status:      entity.Status(*status),
@@ -509,9 +531,9 @@ func printIssueHelp(w io.Writer) {
 	fmt.Fprintln(w, "Usage: tq issue <action> [flags]")
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "Actions:")
-	fmt.Fprintln(w, "  create   Create an issue")
+	fmt.Fprintln(w, "  create   Create an issue (--project KEY required)")
 	fmt.Fprintln(w, "  get      Get an issue by ID")
-	fmt.Fprintln(w, "  list     List issues")
+	fmt.Fprintln(w, "  list     List issues (--project KEY optional)")
 	fmt.Fprintln(w, "  update   Update an issue")
 	fmt.Fprintln(w, "  close    Mark an issue as done")
 	fmt.Fprintln(w, "  ready    Mark an issue as ready")

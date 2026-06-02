@@ -41,10 +41,14 @@ tq [--api-url URL] [--output text|json] <resource> <action> [flags]
 
 ### `issue list`
 
-Issue を一覧表示します。
+Issue を一覧表示します。`--project KEY` を渡すと 1 つの project に絞り込めます。
 
 ```sh
 make run-tq ARGS="issue list"
+```
+
+```sh
+make run-tq ARGS="issue list --project tasq"
 ```
 
 JSON output:
@@ -63,16 +67,17 @@ make run-tq ARGS="issue get 1"
 
 ### `issue create`
 
-Issue を作成します。
+Issue を作成します。`--project` は必須で、既存の project key を指定する必要があります。
 
 ```sh
-make run-tq ARGS='issue create --title "Write tq reference"'
+make run-tq ARGS='issue create --project tasq --title "Write tq reference"'
 ```
 
 Flags:
 
 | Flag | Required | Description |
 |---|---:|---|
+| `--project KEY` | yes | Issue を所有する project key。 |
 | `--title TITLE` | yes | Issue title。 |
 | `--description TEXT` | no | Issue description。 |
 | `--status STATUS` | no | Issue status。省略時は `backlog` です。 |
@@ -83,7 +88,7 @@ Flags:
 Example:
 
 ```sh
-make run-tq ARGS='issue create --title "Improve project list" --description "Render project list as a readable table." --status ready --priority high --assignee codex'
+make run-tq ARGS='issue create --project tasq --title "Improve project list" --description "Render project list as a readable table." --status ready --priority high --assignee codex'
 ```
 
 ### `issue update`

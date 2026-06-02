@@ -65,12 +65,14 @@ issue-tracker は issue management と display aggregation を所有します。
 Responsibilities:
 
 - issue を SQLite に保存する。
+- 各 issue が必ず 1 つの project に属するようにする。
 - issue を作成、編集、一覧表示する。
 - attachment metadata を SQLite に保存し、attachment bytes を `$TQ_HOME` 配下に保存する。
 - orchestrator や tool の reconciliation 向けに issue state を返す。
 - UI/TUI summary API を提供する。
 
 issue-tracker は issue status、priority、title、description、assignee、comment、attachment、project、workspace の source of truth です。
+Linked issue が存在する project は削除できません。
 
 ### orchestrator
 

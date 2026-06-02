@@ -252,6 +252,13 @@ paths:
           schema:
             type: string
             example: ready,in_progress
+        - name: project_id
+          in: query
+          required: false
+          description: Project ID used to limit issues to a single project. Omit this parameter to list issues from all projects.
+          schema:
+            type: integer
+            format: int64
       responses:
         "200":
           description: Issue list.
@@ -794,6 +801,8 @@ components:
       type: object
       required:
         - id
+        - projectId
+        - projectKey
         - title
         - description
         - status
@@ -805,6 +814,11 @@ components:
         id:
           type: integer
           format: int64
+        projectId:
+          type: integer
+          format: int64
+        projectKey:
+          type: string
         title:
           type: string
         description:
@@ -916,8 +930,12 @@ components:
     CreateIssueInput:
       type: object
       required:
+        - projectId
         - title
       properties:
+        projectId:
+          type: integer
+          format: int64
         title:
           type: string
         description:

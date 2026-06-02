@@ -65,12 +65,14 @@ The issue-tracker owns issue management and display aggregation.
 Responsibilities:
 
 - Store issues in SQLite.
+- Require each issue to belong to one project.
 - Create, edit, and list issues.
 - Store attachment metadata in SQLite and attachment bytes under `$TQ_HOME`.
 - Return issue states for orchestrator or tool reconciliation.
 - Serve the UI/TUI summary API.
 
 The issue-tracker is the source of truth for issue status, priority, title, description, assignee, comments, attachments, projects, and workspaces.
+Projects cannot be deleted while linked issues exist.
 
 ### orchestrator
 
