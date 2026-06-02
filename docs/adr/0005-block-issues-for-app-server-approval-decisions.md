@@ -24,9 +24,10 @@ For the current unattended runner, Tasq immediately responds to those app-server
 `{"decision":"cancel"}`. This is a protocol-level denial that also asks Codex to interrupt the
 current turn. The runner then terminates the run as `failed` with an `approval_required` error.
 
-If the latest issue state is still `ready`, the dispatcher marks the issue `blocked` and creates a
-blocker comment containing the approval method and raw request payload. The issue status remains the
-SPEC-compatible `blocked`; Tasq does not introduce a new `blocked_by_approval` issue status.
+If the latest issue state is still runnable (`ready` or `in_progress`), the dispatcher marks the
+issue `blocked` and creates a blocker comment containing the approval method and raw request payload.
+The issue status remains the SPEC-compatible `blocked`; Tasq does not introduce a new
+`blocked_by_approval` issue status.
 
 Human approval is handled out of band for now. An operator reviews the blocked issue and comment,
 decides whether the request is acceptable, and can move the issue back to `ready` for retry. A future

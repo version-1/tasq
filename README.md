@@ -41,6 +41,14 @@ List all available development commands:
 make help
 ```
 
+### Linux/WSL2 Sandbox Prerequisite
+
+Codex uses Bubblewrap for Linux sandboxing. The dev image installs `bubblewrap`,
+but Linux and WSL2 hosts must also allow unprivileged user namespace creation for
+Codex sandboxed commands to work reliably. If Codex reports `bwrap: No
+permissions to create a new namespace`, treat it as a host or Docker runtime
+capability issue, not just a missing package in the image.
+
 ## Verification
 
 Run the standard Compose-backed checks:

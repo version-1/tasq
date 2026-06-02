@@ -41,6 +41,14 @@ make dev-down
 make help
 ```
 
+### Linux/WSL2 Sandbox Prerequisite
+
+Codex は Linux sandboxing に Bubblewrap を使います。Dev image は `bubblewrap` を
+install しますが、Codex の sandboxed command を安定して動かすには Linux / WSL2 host
+側でも unprivileged user namespace creation が許可されている必要があります。Codex が
+`bwrap: No permissions to create a new namespace` を報告する場合は、image に package が
+ないだけではなく、host または Docker runtime の capability issue として扱います。
+
 ## Verification
 
 標準の Compose-backed checks を実行します。

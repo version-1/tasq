@@ -54,3 +54,6 @@ tq issue update {{ issue.id }} --status in_progress
 tq comment add {{ issue.id }} --type progress --body "Started work."
 tq issue update {{ issue.id }} --status review
 ```
+
+Run the installed `tq` binary from `PATH`. Do not use `go run ./cmd/tq` for
+tracker synchronization.

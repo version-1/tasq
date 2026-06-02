@@ -5,7 +5,13 @@
 # approval decisions out of this directory.
 
 prefix_rule(
-    pattern = [["pwd", "ls", "tree", "rg", "cat", "head", "tail", "find"]],
+    pattern = [["ls", "tree", "rg", "cat", "less"]],
+    decision = "allow",
+    justification = "Repository inspection commands are safe in the Tasq dev container."
+)
+
+prefix_rule(
+    pattern = [["pwd", "head", "tail", "find"]],
     decision = "allow",
     justification = "Repository inspection commands are safe in the Tasq dev container."
 )
@@ -17,13 +23,223 @@ prefix_rule(
 )
 
 prefix_rule(
-    pattern = ["git", ["status", "diff", "log", "show", "rev-parse", "merge-base", "ls-files", "grep"]],
+    pattern = [["npm", "pnpm", "yarn", "bun"], ["run", "start"]],
+    decision = "allow",
+    justification = "Local JavaScript package scripts are safe in the Tasq dev container."
+)
+
+prefix_rule(
+    pattern = [["npm", "pnpm", "yarn", "bun"], ["test", "install", "build"]],
+    decision = "allow",
+    justification = "Local JavaScript package operations are safe in the Tasq dev container."
+)
+
+prefix_rule(
+    pattern = ["bundle", ["exec", "install"]],
+    decision = "allow",
+    justification = "Local Ruby bundle operations are safe in the Tasq dev container."
+)
+
+prefix_rule(
+    pattern = ["make"],
+    decision = "allow",
+    justification = "Make targets are expected build and test operations in the Tasq dev container."
+)
+
+prefix_rule(
+    pattern = ["go", ["test", "list", "vet", "build"]],
+    decision = "allow",
+    justification = "Go verification and inspection commands are safe in the Tasq dev container."
+)
+
+prefix_rule(
+    pattern = ["go", "mod", "tidy"],
+    decision = "allow",
+    justification = "Tidying Go dependency definitions is normally safe in the Tasq dev container."
+)
+
+prefix_rule(
+    pattern = ["go", "run", "./cmd/tq"],
+    decision = "forbidden",
+    justification = "Use the installed tq binary from PATH for tracker synchronization."
+)
+
+prefix_rule(
+    pattern = ["cargo", ["test", "check"]],
+    decision = "allow",
+    justification = "Rust verification commands are safe in the Tasq dev container."
+)
+
+prefix_rule(
+    pattern = ["python", "-m", "pytest"],
+    decision = "allow",
+    justification = "Running Python pytest is normally safe in the Tasq dev container."
+)
+
+prefix_rule(
+    pattern = ["python3", "-m", "pytest"],
+    decision = "allow",
+    justification = "Running Python pytest is normally safe in the Tasq dev container."
+)
+
+prefix_rule(
+    pattern = ["git", "checkout", "-b"],
+    decision = "allow",
+    justification = "Creating a local branch is safe in the Tasq dev container."
+)
+
+prefix_rule(
+    pattern = ["git", "switch"],
+    decision = "allow",
+    justification = "Switching branches is normally safe in the Tasq dev container."
+)
+
+prefix_rule(
+    pattern = ["git", ["status", "diff", "log", "fetch", "pull"]],
+    decision = "allow",
+    justification = "Git inspection and update-fetch commands are safe in the Tasq dev container."
+)
+
+prefix_rule(
+    pattern = ["git", ["show", "rev-parse", "merge-base", "ls-files", "grep"]],
     decision = "allow",
     justification = "Read-only Git inspection commands are safe in the Tasq dev container."
+)
+
+prefix_rule(
+    pattern = ["git", "remote", "-v"],
+    decision = "allow",
+    justification = "Reading Git remote configuration is safe in the Tasq dev container."
+)
+
+prefix_rule(
+    pattern = ["git", "config", "--get"],
+    decision = "allow",
+    justification = "Reading Git configuration is safe in the Tasq dev container."
+)
+
+prefix_rule(
+    pattern = ["git", "submodule", "status"],
+    decision = "allow",
+    justification = "Reading Git submodule status is safe in the Tasq dev container."
 )
 
 prefix_rule(
     pattern = ["git", "branch", ["--show-current", "--list", "-a"]],
     decision = "allow",
     justification = "Read-only branch inspection is safe in the Tasq dev container."
+)
+
+prefix_rule(
+    pattern = ["git", ["commit", "add"]],
+    decision = "allow",
+    justification = "Creating commits and staging files are expected development operations in the Tasq dev container."
+)
+
+prefix_rule(
+    pattern = ["git", "branch", "-d"],
+    decision = "allow",
+    justification = "Deleting merged local branches is normally safe in the Tasq dev container."
+)
+
+prefix_rule(
+    pattern = ["git", "stash"],
+    decision = "allow",
+    justification = "Stashing local work is normally safe in the Tasq dev container."
+)
+
+prefix_rule(
+    pattern = ["git", "worktree", ["add", "list", "lock", "move", "repair", "unlock"]],
+    decision = "allow",
+    justification = "Git worktree operations except remove and prune are normally safe in the Tasq dev container."
+)
+
+prefix_rule(
+    pattern = ["docker", ["version", "info", "ps", "images", "logs", "inspect", "stats", "top", "port"]],
+    decision = "allow",
+    justification = "Docker inspection commands are safe in the Tasq dev container."
+)
+
+prefix_rule(
+    pattern = ["docker", "container", ["ls", "inspect", "logs", "stats", "top", "port"]],
+    decision = "allow",
+    justification = "Docker container inspection commands are safe in the Tasq dev container."
+)
+
+prefix_rule(
+    pattern = ["docker", "image", ["ls", "inspect", "history"]],
+    decision = "allow",
+    justification = "Docker image inspection commands are safe in the Tasq dev container."
+)
+
+prefix_rule(
+    pattern = ["docker", "network", ["ls", "inspect"]],
+    decision = "allow",
+    justification = "Docker network inspection commands are safe in the Tasq dev container."
+)
+
+prefix_rule(
+    pattern = ["docker", "volume", ["ls", "inspect"]],
+    decision = "allow",
+    justification = "Docker volume inspection commands are safe in the Tasq dev container."
+)
+
+prefix_rule(
+    pattern = ["docker", "compose", ["config", "ps", "logs", "ls", "top", "images"]],
+    decision = "allow",
+    justification = "Docker Compose inspection commands are safe in the Tasq dev container."
+)
+
+prefix_rule(
+    pattern = ["docker", "compose", ["version", "events"]],
+    decision = "allow",
+    justification = "Docker Compose inspection and monitoring commands are safe in the Tasq dev container."
+)
+
+prefix_rule(
+    pattern = ["docker", "compose", ["build", "up", "start", "stop", "restart", "pull", "pause", "unpause"]],
+    decision = "allow",
+    justification = "Docker Compose local development lifecycle commands are normally safe in the Tasq dev container."
+)
+
+prefix_rule(
+    pattern = ["gh", "pr", "create"],
+    decision = "allow",
+    justification = "Creating pull requests is normally safe in the Tasq dev container."
+)
+
+prefix_rule(
+    pattern = ["gh", "pr", "view"],
+    decision = "allow",
+    justification = "Reading pull request details is safe in the Tasq dev container."
+)
+
+prefix_rule(
+    pattern = ["gh", "pr", ["list", "status", "diff", "checks"]],
+    decision = "allow",
+    justification = "Reading pull request state and checks is safe in the Tasq dev container."
+)
+
+prefix_rule(
+    pattern = ["gh", "repo", ["view", "list"]],
+    decision = "allow",
+    justification = "Reading repository information is safe in the Tasq dev container."
+)
+
+prefix_rule(
+    pattern = ["gh", "issue", "create"],
+    decision = "allow",
+    justification = "Creating issues is normally safe in the Tasq dev container."
+)
+
+prefix_rule(
+    pattern = ["gh", "issue", ["view", "list", "status"]],
+    decision = "allow",
+    justification = "Reading issue state is safe in the Tasq dev container."
+)
+
+prefix_rule(
+    pattern = ["tq"],
+    decision = "allow",
+    justification = "The tq CLI is the approved issue-tracker client for Tasq workflow updates."
 )

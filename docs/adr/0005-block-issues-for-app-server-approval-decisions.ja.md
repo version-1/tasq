@@ -14,7 +14,7 @@ Tasq は `item/commandExecution/requestApproval` と `item/fileChange/requestApp
 
 現在の unattended runner では、Tasq はこれらの app-server request に即時 `{"decision":"cancel"}` を返す。これは protocol-level denial であり、同時に Codex に current turn の interrupt を求める。runner はその後、run を `approval_required` error 付きの `failed` として terminal にする。
 
-最新の issue state がまだ `ready` の場合、dispatcher は issue を `blocked` に更新し、approval method と raw request payload を含む blocker comment を作成する。Issue status は SPEC-compatible な `blocked` のままとし、Tasq は新しい `blocked_by_approval` issue status を導入しない。
+最新の issue state がまだ runnable（`ready` または `in_progress`）の場合、dispatcher は issue を `blocked` に更新し、approval method と raw request payload を含む blocker comment を作成する。Issue status は SPEC-compatible な `blocked` のままとし、Tasq は新しい `blocked_by_approval` issue status を導入しない。
 
 Human approval は現時点では out of band に扱う。Operator は blocked issue と comment を確認し、その request を許可できるか判断し、retry のために issue を `ready` へ戻せる。将来の approval decision store では、次の run が matching request だけを auto-approve できるようにするべきである。
 
