@@ -190,6 +190,46 @@ func TestDispatcherRespectsConcurrencyLimit(t *testing.T) {
 	}
 }
 
+func TestFormatRunnerEventLog(t *testing.T) {
+	t.Parallel()
+
+	line := formatRunnerEventLog("run-1", runner.Event{
+		EventType:   "turn/completed",
+		Message:     "done",
+		PayloadJSON: `{"ok":true}`,
+	})
+
+	want := `orchestrator runner event run=run-1 event=turn/completed message="done" payload={"ok":true}`
+	if line != want {
+		t.Fatalf("line = %q, want %q", line, want)
+	}
+}
+
+func TestFormatRunnerEventLogTruncatesPayload(t *testing.T) {
+	t.Parallel()
+
+	line := formatRunnerEventLog("run-1", runner.Event{
+		EventType:   "notification",
+		Message:     "large payload",
+		PayloadJSON: strings.Repeat("a", maxRunnerEventLogPayloadLength+1),
+	})
+
+	if !strings.Contains(line, strings.Repeat("a", maxRunnerEventLogPayloadLength)+"... truncated") {
+		t.Fatalf("line did not contain truncated payload: %q", line)
+	}
+}
+
+func TestShouldLogRunnerEventIgnoresAgentMessageDelta(t *testing.T) {
+	t.Parallel()
+
+	if shouldLogRunnerEvent(runner.Event{EventType: "item/agentMessage/delta"}) {
+		t.Fatal("agent message delta event should not be logged")
+	}
+	if !shouldLogRunnerEvent(runner.Event{EventType: "turn/completed"}) {
+		t.Fatal("turn completed event should be logged")
+	}
+}
+
 func createQueuedRun(t *testing.T, store *runstore.Store, issueID int64) run.Run {
 	t.Helper()
 	storedRun, err := store.CreateRun(context.Background(), runstore.CreateRunInput{

@@ -1,72 +1,56 @@
-# Workflow
+---
+polling:
+  interval_ms: 30000
+workspace:
+  root: .worktrees
+  source: .
+agent:
+  max_concurrent_agents: 1
+  max_turns: 20
+  continuation_turns_enabled: false
+  max_retry_attempts: 3
+  max_retry_backoff_ms: 300000
+codex:
+  command: codex app-server
+  read_timeout_ms: 5000
+  turn_timeout_ms: 3600000
+  stall_timeout_ms: 300000
+server:
+  port: 8081
+---
 
-## Worktree Usage
+# Task
 
-Create worktrees under sequential directories from `.worktrees/1` to `.worktrees/n` at the repository root, and use them as the working directories for tasks.
+Issue ID: {{ issue.id }}
+Title: {{ issue.title }}
+Status: {{ issue.status }}
+Priority: {{ issue.priority }}
+Assignee: {{ issue.assignee }}
+Attempt: {{ attempt }}
 
-When working on multiple tasks at the same time, assign an unused number to each task and keep it separate from existing worktrees.
+## Description
 
-Example:
+{{ issue.description }}
+
+## Repository Guidance
+
+Follow the development workflow in [docs/development.md](docs/development.md).
+Read the component workflow document for the area you change before editing.
+
+## Required Flow
+
+1. Confirm the task scope from the issue title and description above.
+2. Create or switch to an isolated task branch/worktree before editing.
+3. Make focused changes that satisfy the issue.
+4. Run the narrowest useful verification first, then broaden checks when shared behavior is affected.
+5. Commit the change and create or update a pull request.
+6. Leave a progress or handoff comment on the issue.
+7. Move the issue to `review` when the pull request is ready for human review.
+
+Use `tq` to keep the issue tracker synchronized:
 
 ```sh
-git worktree add .worktrees/1 <branch>
-git worktree add .worktrees/2 <branch>
+tq issue update {{ issue.id }} --status in_progress
+tq comment add {{ issue.id }} --type progress --body "Started work."
+tq issue update {{ issue.id }} --status review
 ```
-
-Before starting work, check the existing numbers under `.worktrees/` and use the next available number.
-
-## Task Flow
-
-Use this flow from the start of a task to handoff.
-
-1. Confirm the task scope, the expected output, and the files or components likely to be affected.
-2. Start the work with `cmd-start-branch` when creating a new task branch.
-3. Check the current branch and working tree before editing:
-
-   ```sh
-   git status --short --branch
-   ```
-
-4. Read the relevant design and workflow documents before changing code or documentation:
-
-   - [docs/design.md](docs/design.md)
-   - The component-level workflow document for the area being changed.
-
-5. Make focused changes that match the existing component boundary and ownership.
-6. Update related documentation and generated artifacts when the change affects contracts, setup, or developer workflow.
-7. Run the narrowest useful verification first, then broaden verification when the change affects shared behavior, contracts, persistence, or user-facing flows.
-8. Review the final diff before creating a pull request:
-
-   ```sh
-   git diff
-   git status --short
-   ```
-
-9. Create or update a pull request for the task with `cmd-create-pr`.
-10. Handoff with the pull request URL, a concise summary of changed files, verification performed, and any remaining risks or skipped checks.
-
-## GitHub Operations
-
-Use the GitHub CLI (`gh`) for GitHub operations such as viewing pull requests, creating pull requests, and checking pull request status.
-
-## API Generation
-
-Use `generate:api` for API generation.
-
-## Documentation Updates
-
-When updating documentation, keep the English `.md` file and the Japanese `*.ja.md` file synchronized.
-
-- Update both files for the same content change.
-- Add the missing counterpart when only one language file exists.
-- Keep links between the English and Japanese versions aligned.
-- Do not link Japanese `*.ja.md` counterparts from `AGENTS.md`; link the English `.md` document there.
-- Treat ADRs as historical decision records. Do not rewrite an earlier ADR to fit a later decision, except for clearly mechanical fixes such as typos or broken links. When a new decision changes or constrains an earlier one, write the change in a new ADR and describe the relationship there.
-
-## Component Workflows
-
-Use the component-level workflow documents when working in a specific runtime area:
-
-- [Issue Tracker](cmd/issue-tracker/WORKFLOW.md)
-- [Orchestrator](cmd/orchestrator/WORKFLOW.md)
-- [Web UI](web/WORKFLOW.md)

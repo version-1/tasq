@@ -8,6 +8,7 @@ Ask questions to clarify ambiguous instructions.
 # Documentation
 
 - Write documentation in English.
+- See [docs/development.md](docs/development.md) for repository workflow, task flow, documentation update rules, and component workflow links.
 - See [docs/design.md](docs/design.md) for the design documentation index.
   - [docs/design/architecture.md](docs/design/architecture.md): system architecture and ownership boundaries.
   - [docs/design/api.md](docs/design/api.md): issue-tracker API surface and CLI command mapping.

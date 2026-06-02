@@ -420,12 +420,12 @@ func hasNestedField(raw map[string]any, path []string) bool {
 func checkAgentsFile(root string) projectCheckItem {
 	content, err := os.ReadFile(filepath.Join(root, "AGENTS.md"))
 	if err != nil {
-		return projectCheckItem{Name: "agents.references_workflow", Passed: false, Reason: "AGENTS.md is missing"}
+		return projectCheckItem{Name: "agents.references_development", Passed: false, Reason: "AGENTS.md is missing"}
 	}
-	if !strings.Contains(string(content), workflowFileName) {
-		return projectCheckItem{Name: "agents.references_workflow", Passed: false, Reason: "AGENTS.md does not reference WORKFLOW.md"}
+	if !strings.Contains(string(content), "docs/development.md") {
+		return projectCheckItem{Name: "agents.references_development", Passed: false, Reason: "AGENTS.md does not reference docs/development.md"}
 	}
-	return projectCheckItem{Name: "agents.references_workflow", Passed: true, Reason: "AGENTS.md references WORKFLOW.md"}
+	return projectCheckItem{Name: "agents.references_development", Passed: true, Reason: "AGENTS.md references docs/development.md"}
 }
 
 func defaultWorkflowTemplate() string {

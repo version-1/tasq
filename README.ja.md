@@ -57,7 +57,8 @@ make dev-build
 
 ## Documentation
 
-- [WORKFLOW.md](WORKFLOW.md): repository workflow、task flow、documentation update rules、component workflow links。
+- [docs/development.ja.md](docs/development.ja.md): repository workflow、task flow、documentation update rules、component workflow links。
+- [WORKFLOW.md](WORKFLOW.md): orchestrator が使う Symphony runtime workflow contract。
 - [docs/design.md](docs/design.md): system architecture と service boundaries。
 - [docs/references/makefile.ja.md](docs/references/makefile.ja.md): Makefile targets、variables、local development command reference。
 - [cmd/issue-tracker/WORKFLOW.md](cmd/issue-tracker/WORKFLOW.md): issue-tracker development workflow。
@@ -75,7 +76,7 @@ English counterpart: [README.md](README.md).
 
 - Runtime state と SQLite files は repository の `.tasq/` 配下に作成され、git からは無視されます。
 - Compose は Go module/build caches、`web/node_modules`、Codex login state を named Docker volumes に保存します。
-- Orchestrator は Symphony-oriented runtime settings を `WORKFLOW.md` から読みます。
+- Orchestrator は Symphony-oriented runtime settings と issue ごとの agent prompt を `WORKFLOW.md` から読みます。
 - Web UI を別 origin から配信する場合は、`NEXT_PUBLIC_ISSUE_TRACKER_URL` で issue-tracker API の origin を指定します。
 - `make run-tq` 経由で実行した `tq` は `$TQ_HOME/system/state.json` から issue-tracker API URL を解決します。
 - Codex を device auth で認証し、authentication を `codex-home` Docker volume に永続化するため、初回に `make dev-codex-login` を実行します。
