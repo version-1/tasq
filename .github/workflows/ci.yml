@@ -10,6 +10,20 @@ permissions:
   contents: read
 
 jobs:
+  docs:
+    name: Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify Symphony SPEC matches upstream
+        run: |
+          curl --fail --location --silent --show-error \
+            https://raw.githubusercontent.com/openai/symphony/main/SPEC.md \
+            --output /tmp/openai-symphony-SPEC.md
+          cmp /tmp/openai-symphony-SPEC.md docs/symphony/SPEC.md
+
   go:
     name: Go services
     runs-on: ubuntu-latest
