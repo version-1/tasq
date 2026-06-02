@@ -59,6 +59,7 @@ make dev-build-app
 
 - [WORKFLOW.md](WORKFLOW.md): repository workflow, task flow, documentation update rules, and component workflow links.
 - [docs/design.md](docs/design.md): system architecture and service boundaries.
+- [docs/references/makefile.md](docs/references/makefile.md): Makefile targets, variables, and local development command reference.
 - [cmd/issue-tracker/WORKFLOW.md](cmd/issue-tracker/WORKFLOW.md): issue-tracker development workflow.
 - [cmd/orchestrator/WORKFLOW.md](cmd/orchestrator/WORKFLOW.md): orchestrator development workflow.
 - [web/WORKFLOW.md](web/WORKFLOW.md): Web UI development workflow.
