@@ -65,6 +65,63 @@ done
 	}
 }
 
+func TestCodexRunnerFailsTurnWhenApprovalRequestIsUnsupported(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	script := filepath.Join(dir, "fake-app-server.sh")
+	if err := os.WriteFile(script, []byte(`#!/bin/sh
+count=0
+while IFS= read -r line; do
+  count=$((count + 1))
+  case "$count" in
+    1)
+      echo '{"id":1,"result":{"codexHome":"/tmp/codex","platformFamily":"unix","platformOs":"linux","userAgent":"fake"}}'
+      ;;
+    3)
+      echo '{"id":2,"result":{"thread":{"id":"thread-1"},"approvalPolicy":"never","approvalsReviewer":"user","cwd":"'"$PWD"'","model":"fake","modelProvider":"fake","sandbox":{"type":"readOnly"}}}'
+      ;;
+    4)
+      echo '{"id":3,"result":{"turn":{"id":"turn-1"}}}'
+      echo '{"id":99,"method":"item/fileChange/requestApproval","params":{"threadId":"thread-1","turnId":"turn-1","itemId":"change-1","reason":"needs approval"}}'
+      ;;
+    5)
+      echo '{"method":"turn/completed","params":{"threadId":"thread-1","turn":{"id":"turn-1"}}}'
+      ;;
+  esac
+done
+`), 0o755); err != nil {
+		t.Fatalf("write fake app-server: %v", err)
+	}
+	var events []Event
+	result := CodexRunner{}.Run(context.Background(), Task{
+		Attempt: 1,
+		Issue: entity.Issue{
+			ID:          123,
+			Title:       "Runner task",
+			Description: "Wire Codex.",
+		},
+		RunID:          "run-1",
+		Workspace:      workspace.Workspace{Path: dir, WorkspaceKey: "ISSUE-123"},
+		PromptTemplate: "Work on {{ issue.id }}: {{ issue.title }}",
+		Command:        "sh " + strconv.Quote(script),
+		ReadTimeout:    5 * time.Second,
+		TurnTimeout:    5 * time.Second,
+		OnEvent: func(event Event) {
+			events = append(events, event)
+		},
+	})
+	if result.Status != run.StatusFailed {
+		t.Fatalf("status = %q error = %q", result.Status, result.Error)
+	}
+	if !strings.Contains(result.Error, "approval request is not supported") {
+		t.Fatalf("error = %q", result.Error)
+	}
+	if !eventTypesContain(events, "item/fileChange/requestApproval") || !eventTypesContain(events, "turn_completed") {
+		t.Fatalf("events = %+v", events)
+	}
+}
+
 func TestRenderPromptSubstitutesIssueFields(t *testing.T) {
 	t.Parallel()
 
@@ -90,6 +147,15 @@ func TestRenderPromptSubstitutesIssueFields(t *testing.T) {
 	if prompt != "7 Title Description ready high agent 2026-01-02T03:04:05Z 2026-01-03T03:04:05Z 2" {
 		t.Fatalf("prompt = %q", prompt)
 	}
+}
+
+func eventTypesContain(events []Event, eventType string) bool {
+	for _, event := range events {
+		if event.EventType == eventType {
+			return true
+		}
+	}
+	return false
 }
 
 func TestRenderPromptUsesZeroAttemptForFirstAttempt(t *testing.T) {

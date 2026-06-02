@@ -22,8 +22,10 @@ The current runner uses the v2 app-server JSON-RPC line protocol:
 
 Tasq currently treats server-to-client requests such as approval or dynamic tool requests as
 unsupported JSON-RPC errors. This prevents unattended runs from waiting indefinitely for operator
-input. Approval, sandbox, and user-input behavior should be revisited before enabling wider
-production usage.
+input. Unsupported command-execution or file-change approval requests fail the run even if Codex
+later emits `turn/completed`, because the requested task action was not allowed to complete.
+Approval, sandbox, and user-input behavior should be revisited before enabling wider production
+usage.
 
 Runner progress is persisted to SQLite in `runner_events`. The current implementation does not write
 separate large transcript artifacts to the filesystem.

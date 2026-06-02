@@ -316,6 +316,7 @@ func (s *session) startTurn(ctx context.Context, task Task, threadID string, pro
 func (s *session) waitTurn(ctx context.Context, timeout time.Duration, task Task, threadID string, turnID string) error {
 	timer := time.NewTimer(timeout)
 	defer timer.Stop()
+	var unsupportedApprovalErr error
 	for {
 		select {
 		case <-ctx.Done():
@@ -334,6 +335,9 @@ func (s *session) waitTurn(ctx context.Context, timeout time.Duration, task Task
 			payload := string(message.Params)
 			emit(task, message.Method, "", payload)
 			if message.ID != nil {
+				if isApprovalRequest(message.Method) && unsupportedApprovalErr == nil {
+					unsupportedApprovalErr = fmt.Errorf("approval request is not supported by tasq orchestrator: %s", message.Method)
+				}
 				_ = s.write(map[string]any{
 					"id": message.ID,
 					"error": map[string]any{
@@ -345,6 +349,9 @@ func (s *session) waitTurn(ctx context.Context, timeout time.Duration, task Task
 			}
 			if message.Method == "turn/completed" && notificationMatches(message.Params, threadID, turnID) {
 				emit(task, "turn_completed", "turn_id="+turnID, payload)
+				if unsupportedApprovalErr != nil {
+					return unsupportedApprovalErr
+				}
 				return nil
 			}
 			if message.Method == "error" && notificationMatches(message.Params, threadID, turnID) {
@@ -352,6 +359,10 @@ func (s *session) waitTurn(ctx context.Context, timeout time.Duration, task Task
 			}
 		}
 	}
+}
+
+func isApprovalRequest(method string) bool {
+	return method == "item/commandExecution/requestApproval" || method == "item/fileChange/requestApproval"
 }
 
 func (s *session) nextRequestID() int64 {
