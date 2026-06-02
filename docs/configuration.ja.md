@@ -20,6 +20,11 @@ Container 内で一度 `make dev-codex-login` を実行し、device auth で認�
 volume を削除すると login state も削除されます。Device auth を使うことで、container 内にだけ
 存在する localhost callback へ browser が redirect して失敗する問題を避けます。
 
+Repository-managed な Codex rules は `codex/rules/` に置き、dev container 内の
+`/home/codex/.codex/rules` へ read-only mount します。Authentication、personal override、
+generated approval decision、その他 secret-bearing な Codex state は repository ではなく
+`codex-home` volume に保持します。
+
 ## Directory Layout
 
 ```text

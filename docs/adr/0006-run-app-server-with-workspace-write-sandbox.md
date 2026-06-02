@@ -34,6 +34,11 @@ still-ready issue with the request details.
 The dev container remains the primary local-development isolation boundary. The project does not make
 the dev container privileged by default just to make Bubblewrap namespace creation work.
 
+Repository-managed Codex rules live in `codex/rules/` and are mounted read-only into
+`/home/codex/.codex/rules` inside the dev container. The rest of `CODEX_HOME` remains backed by the
+`codex-home` named volume so authentication, personal settings, and future generated approval
+decisions are not stored in the repository.
+
 ## Alternatives
 
 ### Keep the App-Server Command Without an Explicit Sandbox
@@ -58,6 +63,12 @@ Codex rules and exec policy are still useful for low-risk commands, but they do 
 runtime sandbox posture. They also may not cover sandbox-escape approvals triggered after namespace
 creation fails.
 
+### Mount the Entire Codex Home from the Repository
+
+This would make shared configuration easy to inspect, but it risks mixing authentication, personal
+settings, caches, and generated state into source control. Only shared rules are mounted from the
+repository.
+
 ## Consequences
 
 Local Tasq runs have a documented, reproducible Codex sandbox mode.
@@ -67,6 +78,10 @@ approval requests still become blocked issue work.
 
 The project continues to avoid privileged containers by default. If a developer needs a different
 sandbox posture, it should be introduced as an explicit opt-in workflow or profile.
+
+Shared baseline command rules are reviewable in the repository. Because the rules mount is
+read-only, Codex cannot persist new approval rules there at runtime. Future generated approval
+decisions need a separate structured store or a volume-backed local rules path.
 
 ## Notes
 

@@ -26,6 +26,11 @@ Tasq は ADR-0005 の approval workflow を維持する。Codex が command-exec
 
 Dev container は local development の primary isolation boundary として扱う。Project は Bubblewrap namespace creation を動かすためだけに dev container を default で privileged にしない。
 
+Repository-managed な Codex rules は `codex/rules/` に置き、dev container 内の
+`/home/codex/.codex/rules` へ read-only mount する。`CODEX_HOME` の残りは `codex-home`
+named volume のままにし、authentication、personal settings、将来の generated approval
+decision を repository に保存しない。
+
 ## Alternatives
 
 ### App-server command に explicit sandbox を指定しない
@@ -44,6 +49,10 @@ Externally sandboxed environment では approval prompt を減らせる可能性
 
 Codex rules と exec policy は低リスク command には有用である。しかし runtime sandbox posture を明確にする代替にはならない。また namespace creation failure 後に発生する sandbox-escape approval を完全に covered できるとは限らない。
 
+### Codex home 全体を repository から mount する
+
+Shared configuration は確認しやすくなるが、authentication、personal settings、cache、generated state が source control に混ざる risk がある。Repository から mount するのは shared rules のみにする。
+
 ## Consequences
 
 Local Tasq run は documented かつ reproducible な Codex sandbox mode を持つ。
@@ -51,6 +60,8 @@ Local Tasq run は documented かつ reproducible な Codex sandbox mode を持�
 Codex は per-issue workspace 内で basic workspace write access を持つ。一方で、より broad な approval request は引き続き blocked issue work になる。
 
 Project は default で privileged container を避け続ける。Developer が別の sandbox posture を必要とする場合は、explicit opt-in workflow または profile として導入する。
+
+Shared baseline command rules は repository 上で review できる。Rules mount は read-only なので、Codex は runtime に新しい approval rule をそこへ永続化できない。将来の generated approval decision には、別の structured store または volume-backed local rules path が必要である。
 
 ## Notes
 
