@@ -103,6 +103,40 @@ func TestDispatcherRecordsFailedRun(t *testing.T) {
 	}
 }
 
+func TestDispatcherIncludesApprovalRequestDetailsInBlockerComment(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store := openTestStore(t)
+	storedRun := createQueuedRun(t, store, 42)
+	errText := `approval_required: tasq denied app-server approval request by policy
+
+method: item/commandExecution/requestApproval
+payload: {"command":"make test","approvalId":"approval-1","reason":"needs command approval"}`
+	testRunner := &recordingRunner{result: runner.Result{Status: run.StatusFailed, Error: errText}}
+	tracker := newFakeTracker([]entity.Issue{{ID: 42, Status: entity.StatusReady}})
+	dispatcher := newTestDispatcherWithTracker(t, store, testRunner, tracker, 2)
+
+	if err := dispatcher.Dispatch(ctx, []run.Run{storedRun}); err != nil {
+		t.Fatalf("dispatch: %v", err)
+	}
+	shutdownDispatcher(t, dispatcher)
+
+	issue := tracker.issue(t, 42)
+	if issue.Status != entity.StatusBlocked {
+		t.Fatalf("issue status = %s", issue.Status)
+	}
+	comments := tracker.commentsForIssue(t, 42)
+	if len(comments) != 1 {
+		t.Fatalf("comments = %+v", comments)
+	}
+	for _, want := range []string{"approval_required", "item/commandExecution/requestApproval", "make test", "approval-1", "needs command approval"} {
+		if !strings.Contains(comments[0].Body, want) {
+			t.Fatalf("comment body missing %q: %s", want, comments[0].Body)
+		}
+	}
+}
+
 func TestDispatcherLeavesNonReadyIssueWhenRunFails(t *testing.T) {
 	t.Parallel()
 

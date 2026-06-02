@@ -65,7 +65,7 @@ done
 	}
 }
 
-func TestCodexRunnerFailsTurnWhenApprovalRequestIsUnsupported(t *testing.T) {
+func TestCodexRunnerFailsTurnWhenApprovalRequestIsDenied(t *testing.T) {
 	t.Parallel()
 
 	dir := t.TempDir()
@@ -83,9 +83,17 @@ while IFS= read -r line; do
       ;;
     4)
       echo '{"id":3,"result":{"turn":{"id":"turn-1"}}}'
-      echo '{"id":99,"method":"item/fileChange/requestApproval","params":{"threadId":"thread-1","turnId":"turn-1","itemId":"change-1","reason":"needs approval"}}'
+      echo '{"id":99,"method":"item/fileChange/requestApproval","params":{"threadId":"thread-1","turnId":"turn-1","itemId":"change-1","reason":"needs approval","startedAtMs":1}}'
       ;;
     5)
+      case "$line" in
+        *'"result":{"decision":"cancel"}'*)
+          ;;
+        *)
+          echo "unexpected approval response: $line" >&2
+          exit 2
+          ;;
+      esac
       echo '{"method":"turn/completed","params":{"threadId":"thread-1","turn":{"id":"turn-1"}}}'
       ;;
   esac
@@ -114,10 +122,10 @@ done
 	if result.Status != run.StatusFailed {
 		t.Fatalf("status = %q error = %q", result.Status, result.Error)
 	}
-	if !strings.Contains(result.Error, "approval request is not supported") {
+	if !strings.Contains(result.Error, "approval_required") || !strings.Contains(result.Error, "item/fileChange/requestApproval") || !strings.Contains(result.Error, "needs approval") {
 		t.Fatalf("error = %q", result.Error)
 	}
-	if !eventTypesContain(events, "item/fileChange/requestApproval") || !eventTypesContain(events, "turn_completed") {
+	if !eventTypesContain(events, "item/fileChange/requestApproval") {
 		t.Fatalf("events = %+v", events)
 	}
 }

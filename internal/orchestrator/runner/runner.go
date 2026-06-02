@@ -316,7 +316,6 @@ func (s *session) startTurn(ctx context.Context, task Task, threadID string, pro
 func (s *session) waitTurn(ctx context.Context, timeout time.Duration, task Task, threadID string, turnID string) error {
 	timer := time.NewTimer(timeout)
 	defer timer.Stop()
-	var unsupportedApprovalErr error
 	for {
 		select {
 		case <-ctx.Done():
@@ -335,8 +334,14 @@ func (s *session) waitTurn(ctx context.Context, timeout time.Duration, task Task
 			payload := string(message.Params)
 			emit(task, message.Method, "", payload)
 			if message.ID != nil {
-				if isApprovalRequest(message.Method) && unsupportedApprovalErr == nil {
-					unsupportedApprovalErr = fmt.Errorf("approval request is not supported by tasq orchestrator: %s", message.Method)
+				if isApprovalRequest(message.Method) {
+					if err := s.write(map[string]any{
+						"id":     message.ID,
+						"result": map[string]any{"decision": "cancel"},
+					}); err != nil {
+						return err
+					}
+					return approvalRequestDeniedError(message.Method, payload)
 				}
 				_ = s.write(map[string]any{
 					"id": message.ID,
@@ -349,9 +354,6 @@ func (s *session) waitTurn(ctx context.Context, timeout time.Duration, task Task
 			}
 			if message.Method == "turn/completed" && notificationMatches(message.Params, threadID, turnID) {
 				emit(task, "turn_completed", "turn_id="+turnID, payload)
-				if unsupportedApprovalErr != nil {
-					return unsupportedApprovalErr
-				}
 				return nil
 			}
 			if message.Method == "error" && notificationMatches(message.Params, threadID, turnID) {
@@ -361,8 +363,23 @@ func (s *session) waitTurn(ctx context.Context, timeout time.Duration, task Task
 	}
 }
 
+func approvalRequestDeniedError(method string, payload string) error {
+	return fmt.Errorf(
+		"approval_required: tasq denied app-server approval request by policy\n\nmethod: %s\npayload: %s",
+		method,
+		truncateText(payload, 4000),
+	)
+}
+
 func isApprovalRequest(method string) bool {
 	return method == "item/commandExecution/requestApproval" || method == "item/fileChange/requestApproval"
+}
+
+func truncateText(value string, maxLength int) string {
+	if maxLength <= 0 || len(value) <= maxLength {
+		return value
+	}
+	return value[:maxLength] + "... truncated"
 }
 
 func (s *session) nextRequestID() int64 {
