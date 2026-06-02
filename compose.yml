@@ -12,6 +12,8 @@ services:
         chown codex:codex /home/codex/.codex
         find /home/codex/.codex -mindepth 1 -maxdepth 1 ! -name rules -exec chown -R codex:codex {} +
         chown -R codex:codex /home/codex/.cache /go/pkg /workspace/web/node_modules
+        su codex -c 'git config --global user.name codex'
+        su codex -c 'git config --global user.email codex@example.local'
         go build -o /usr/local/bin/tq ./cmd/tq
         sleep infinity
     stdin_open: true
