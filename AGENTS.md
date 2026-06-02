@@ -8,7 +8,10 @@ Ask questions to clarify ambiguous instructions.
 # Documentation
 
 - Write documentation in English.
-- See [docs/design.md](docs/design.md) for system architecture.
+- See [docs/design.md](docs/design.md) for the design documentation index.
+  - [docs/design/architecture.md](docs/design/architecture.md): system architecture and ownership boundaries.
+  - [docs/design/api.md](docs/design/api.md): issue-tracker API surface and CLI command mapping.
+  - [docs/design/operations.md](docs/design/operations.md): local development environment, verification, and open decisions.
 - Symphony-related orchestration, workflow, workspace, agent-runner, tracker, and observability changes must comply with [docs/symphony/SPEC.md](docs/symphony/SPEC.md).
 - Do not change [docs/symphony/SPEC.md](docs/symphony/SPEC.md) to match Tasq-specific implementation differences. Record any intentional Tasq-vs-Symphony differences in [docs/symphony/DEVIATIONS.md](docs/symphony/DEVIATIONS.md) instead.
 - See [docs/schema.md](docs/schema.md) for entity field specifications and validation rules.
