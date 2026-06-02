@@ -18,7 +18,7 @@ Architecture boundary は [../../docs/design.md](../../docs/design.md) を参照
 Service interaction を確認するときは、repository-level の dev container flow を優先します。
 
 ```sh
-make issue-tracker-up
+make run-issue-tracker
 make dev-ports
 ```
 

@@ -18,7 +18,7 @@ Service boundary は [../../docs/design.md](../../docs/design.md) を参照し�
 Service boundary を確認するときは、issue-tracker と orchestrator を dev container 内で一緒に起動します。
 
 ```sh
-make orchestrator-up
+make run-orchestrator
 make dev-ports
 ```
 

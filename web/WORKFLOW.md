@@ -19,7 +19,7 @@ See [docs/design.md](docs/design.md) for Web UI structure and styling convention
 Prefer the repository-level Compose flow when checking the Web UI with the issue-tracker:
 
 ```sh
-make web-up
+make run-web
 make dev-ports
 ```
 
@@ -67,7 +67,7 @@ cd web
 npm run build
 ```
 
-Use `make dev-build-app` when verifying Go and Web UI changes together through Compose.
+Use `make dev-build` when verifying Go and Web UI changes together through Compose.
 
 ## Static Export Notes
 

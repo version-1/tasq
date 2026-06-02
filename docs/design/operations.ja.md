@@ -8,21 +8,20 @@ Docker Compose は local development を長時間起動する `dev` container �
 
 Recommended commands:
 
-- `make issue-tracker-up`
-- `make orchestrator-up`
+- `make run-issue-tracker`
+- `make run-orchestrator`
 - `make dev-up`
-- `make dev-up-forward`
-- `make web-up`
-- `make tui-up`
+- `make run-web`
+- `make run-tui`
 - `make dev-ports`
-- `make codex-login`
+- `make dev-codex-login`
 
 CLI commands:
 
-- `make tq ARGS="issue list"`
-- `make tq ARGS="issue get 1"`
+- `make run-tq ARGS="issue list"`
+- `make run-tq ARGS="issue get 1"`
 
-`make dev-up` は OpenAPI UI を起動し、`dev` container 内で issue-tracker、orchestrator、web-ui を起動します。Runtime state は `$TQ_HOME` 配下に保存され、container 内の default は `/workspace/.tasq` です。`make codex-login` は device auth を使い、Codex authentication を `codex-home` Docker volume に永続化します。
+`make dev-up` は OpenAPI UI を起動し、`dev` container 内で issue-tracker、orchestrator、web-ui を起動します。Runtime state は `$TQ_HOME` 配下に保存され、container 内の default は `/workspace/.tasq` です。`make dev-codex-login` は device auth を使い、Codex authentication を `codex-home` Docker volume に永続化します。
 
 ## Verification
 

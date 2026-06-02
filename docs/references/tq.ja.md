@@ -7,10 +7,10 @@
 ローカルの dev container 開発環境では Makefile target を使います。
 
 ```sh
-make tq ARGS="issue list"
+make run-tq ARGS="issue list"
 ```
 
-この target は必要に応じて dev container と issue-tracker process を起動し、dev container 内で `go run ./cmd/tq` を実行します。Default workflow では、`tq` は `$TQ_HOME/system/state.json` から issue-tracker API を解決します。
+この target は service process を起動、停止、再起動せず、起動済み dev container 内で `go run ./cmd/tq` を実行します。Default workflow では、`tq` は `$TQ_HOME/system/state.json` から issue-tracker API を解決します。
 
 Host-only workflow では直接 `tq` を実行することもできます。
 
@@ -44,13 +44,13 @@ tq [--api-url URL] [--output text|json] <resource> <action> [flags]
 Issue を一覧表示します。
 
 ```sh
-make tq ARGS="issue list"
+make run-tq ARGS="issue list"
 ```
 
 JSON output:
 
 ```sh
-make tq ARGS="--output json issue list"
+make run-tq ARGS="--output json issue list"
 ```
 
 ### `issue get`
@@ -58,7 +58,7 @@ make tq ARGS="--output json issue list"
 Numeric ID で issue を 1 件取得します。
 
 ```sh
-make tq ARGS="issue get 1"
+make run-tq ARGS="issue get 1"
 ```
 
 ### `issue create`
@@ -66,7 +66,7 @@ make tq ARGS="issue get 1"
 Issue を作成します。
 
 ```sh
-make tq ARGS='issue create --title "Write tq reference"'
+make run-tq ARGS='issue create --title "Write tq reference"'
 ```
 
 Flags:
@@ -83,7 +83,7 @@ Flags:
 Example:
 
 ```sh
-make tq ARGS='issue create --title "Improve project list" --description "Render project list as a readable table." --status ready --priority high --assignee codex'
+make run-tq ARGS='issue create --title "Improve project list" --description "Render project list as a readable table." --status ready --priority high --assignee codex'
 ```
 
 ### `issue update`
@@ -91,7 +91,7 @@ make tq ARGS='issue create --title "Improve project list" --description "Render 
 Issue の field を 1 つ以上更新します。
 
 ```sh
-make tq ARGS='issue update 1 --status in_progress'
+make run-tq ARGS='issue update 1 --status in_progress'
 ```
 
 少なくとも 1 つの update flag が必要です。
@@ -116,7 +116,7 @@ Attachment reference は `![filename](attachment://<id>)` を使います。issu
 Issue に comment を追加します。
 
 ```sh
-make tq ARGS='comment add 1 --body "Started implementation."'
+make run-tq ARGS='comment add 1 --body "Started implementation."'
 ```
 
 Flags:
@@ -133,7 +133,7 @@ Flags:
 Issue の comment を一覧表示します。
 
 ```sh
-make tq ARGS="comment list 1"
+make run-tq ARGS="comment list 1"
 ```
 
 ## Projects
@@ -143,7 +143,7 @@ make tq ARGS="comment list 1"
 Local repository を project として登録し、workspace record を作成します。
 
 ```sh
-make tq ARGS="project add ."
+make run-tq ARGS="project add ."
 ```
 
 `project add` はデフォルトで current directory を使います。path を host-local absolute path に解決し、local に存在することを確認してから issue-tracker API に送信します。
@@ -158,8 +158,8 @@ Flags:
 Examples:
 
 ```sh
-make tq ARGS='project add --key tasq --workspace-name tasq .'
-make tq ARGS='project add ../another-project'
+make run-tq ARGS='project add --key tasq --workspace-name tasq .'
+make run-tq ARGS='project add ../another-project'
 ```
 
 ### `project list`
@@ -167,13 +167,13 @@ make tq ARGS='project add ../another-project'
 登録済み project を一覧表示します。
 
 ```sh
-make tq ARGS="project list"
+make run-tq ARGS="project list"
 ```
 
 Machine-readable output には JSON を使います。
 
 ```sh
-make tq ARGS="--output json project list"
+make run-tq ARGS="--output json project list"
 ```
 
 ### `project check`
@@ -181,8 +181,8 @@ make tq ARGS="--output json project list"
 Local project の workflow files を check します。
 
 ```sh
-make tq ARGS="project check"
-make tq ARGS="project check tasq"
+make run-tq ARGS="project check"
+make run-tq ARGS="project check tasq"
 ```
 
 Project key を指定しない場合、`project check` は current directory に登録された project を探します。
@@ -192,7 +192,7 @@ Project key を指定しない場合、`project check` は current directory に
 Project key で project を削除します。
 
 ```sh
-make tq ARGS="project remove tasq"
+make run-tq ARGS="project remove tasq"
 ```
 
 ## Valid Values

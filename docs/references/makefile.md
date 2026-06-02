@@ -1,0 +1,118 @@
+# Makefile Reference
+
+The repository Makefile is the primary entry point for local development. It wraps Docker Compose, starts the dev container, runs service processes inside that container, and exposes the assigned local URLs.
+
+Use `make help` to print the prefix guide and sectioned target list generated from the Makefile comments.
+
+## Configuration Variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `COMPOSE` | `docker compose` | Docker Compose command. Override when using a wrapper or alternate Compose binary. |
+| `BROWSER_OPEN` | `open` | Browser opener used by `dev-open`. Set to another command, or to a no-op command in headless environments. |
+| `TQ_HOME` | `./.tasq` | Repository-local Tasq runtime state on the host. The dev container uses `/workspace/.tasq`. |
+| `ISSUE_TRACKER_PORT` | empty | Host port for issue-tracker. Empty means Docker Compose assigns a free port. |
+| `ORCHESTRATOR_PORT` | empty | Host port for orchestrator. Empty means Docker Compose assigns a free port. |
+| `OPENAPI_PORT` | empty | Host port for OpenAPI UI. Empty means Docker Compose assigns a free port. |
+| `WEB_PORT` | empty | Host port for Web UI. Empty means Docker Compose assigns a free port. |
+| `WEB_ISSUE_TRACKER_URL` | empty | Issue-tracker URL passed to the Web UI. Empty means the Makefile resolves the assigned issue-tracker port. |
+| `AIR_VERSION` | `v1.52.3` | Air version used to run Go services in watch mode. |
+
+Example with fixed ports:
+
+```sh
+ISSUE_TRACKER_PORT=8080 ORCHESTRATOR_PORT=8081 OPENAPI_PORT=8082 WEB_PORT=3000 make dev-up
+```
+
+## Main Development Targets
+
+| Target | Purpose |
+|---|---|
+| `make dev-up` | Start the `dev` container and OpenAPI UI, start issue-tracker, orchestrator, and Web in the background, then print URLs. |
+| `make dev-restart` | Stop Compose services and run `dev-up` again. |
+| `make dev-down` | Stop Compose services. |
+| `make dev-reset-db CONFIRM=1` | Stop Compose, remove local SQLite files under `.tasq/system/data/`, and start the dev environment again. |
+| `make dev-openapi` | Start only the OpenAPI UI Compose service and print ports. |
+| `make dev-open` | Open the Web UI and OpenAPI UI in a browser. |
+| `make dev-ports` | Print the currently assigned issue-tracker, orchestrator, OpenAPI, and Web URLs. |
+
+`dev-up` uses automatic host port assignment by default. It prints the assigned URLs but does not open a browser. Run `make dev-open` when you want to open the browser explicitly.
+
+## Container Targets
+
+Use `dc-*` targets for Docker Compose service status and commands that operate on the dev container itself.
+
+| Target | Purpose |
+|---|---|
+| `make dc-ready` | Wait until required dev container tools and volumes are writable by the `codex` user. |
+| `make dc-ps` | Show Docker Compose service status. |
+| `make dc-shell` | Open a shell in the running dev container as the `codex` user. |
+| `make dc-exec CMD="..."` | Run an arbitrary command inside the dev container as the `codex` user. |
+
+Useful examples:
+
+```sh
+make dc-ps
+make dc-shell
+make dc-exec CMD="go test ./internal/config"
+```
+
+## Runtime Targets
+
+Use `run-*` targets for processes and commands that run inside an already-running dev container.
+
+| Target | Purpose |
+|---|---|
+| `make run-all` | Start issue-tracker, orchestrator, and Web inside the running dev container. |
+| `make run-stop` | Stop Air and Next.js processes inside the dev container without stopping the container. |
+| `make run-issue-tracker` | Start only the issue-tracker process inside the running dev container. |
+| `make run-is` | Alias for `run-issue-tracker`. |
+| `make run-orchestrator` | Start issue-tracker, then start the orchestrator process. |
+| `make run-or` | Alias for `run-orchestrator`. |
+| `make run-web` | Start issue-tracker, then start the Web process. |
+| `make run-w` | Alias for `run-web`. |
+| `make run-tui` | Run the TUI interactively inside the dev container. |
+| `make run-tq ARGS="..."` | Run `go run ./cmd/tq $(ARGS)` inside the running dev container without changing service processes. |
+| `make run-ps` | Show dev processes running inside the dev container. |
+| `make run-logs` | Follow `.tmp/dev-logs/*.log`. |
+
+Useful examples:
+
+```sh
+make run-is
+make run-or
+make run-w
+make run-tq ARGS="issue list"
+make run-logs
+```
+
+## Verification Targets
+
+| Target | Purpose |
+|---|---|
+| `make dev-test` | Run `go test ./...`, install Web dependencies, and run Web typecheck inside the dev container. |
+| `make dev-build` | Run `go test ./...`, install Web dependencies, and run the Web production build inside the dev container. |
+
+## Codex Targets
+
+| Target | Purpose |
+|---|---|
+| `make dev-codex-login` | Run `codex login --device-auth` inside the dev container and persist credentials in the `codex-home` Docker volume. |
+| `make dev-codex-check` | Confirm Codex CLI and `codex app-server` are available inside the dev container. |
+
+Use device auth for container login because browser redirects to a localhost callback inside the container are not reachable from the host browser.
+
+Examples:
+
+```sh
+make dev-codex-login
+make dev-codex-check
+```
+
+## Operational Notes
+
+The `dev` container is long-lived. Service processes are ordinary child processes launched with `docker compose exec`; they are not separate Compose services. Use `make run-stop` to stop only those child processes, or `make dev-down` to stop the Compose services.
+
+The Makefile runs container commands as the `codex` user. At container startup, Compose prepares writable named volumes for Go module cache, Go build cache, Web `node_modules`, and Codex credentials.
+
+`NEXT_PUBLIC_ISSUE_TRACKER_URL` is resolved when the Web process starts. If the issue-tracker host port changes after Web has started, restart the Web process with `make run-web` or restart everything with `make dev-up`.
