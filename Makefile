@@ -144,11 +144,29 @@ dev-codex-check: dev-check ## Check Codex CLI availability inside the dev contai
 	$(MAKE) dc-ready
 	$(DEV_EXEC) sh -c 'codex --help >/dev/null && codex app-server --help >/dev/null'
 
+.PHONY: dev-gh-login
+dev-gh-login: dev-check ## Log in to GitHub CLI inside the dev container.
+	ISSUE_TRACKER_PORT=$(ISSUE_TRACKER_PORT) ORCHESTRATOR_PORT=$(ORCHESTRATOR_PORT) OPENAPI_PORT=$(OPENAPI_PORT) WEB_PORT=$(WEB_PORT) $(COMPOSE) up --build -d dev
+	$(MAKE) dc-ready
+	$(DEV_EXEC) sh -c 'gh auth login'
+
+.PHONY: dev-gh-status
+dev-gh-status: dev-check ## Check GitHub CLI authentication inside the dev container.
+	ISSUE_TRACKER_PORT=$(ISSUE_TRACKER_PORT) ORCHESTRATOR_PORT=$(ORCHESTRATOR_PORT) OPENAPI_PORT=$(OPENAPI_PORT) WEB_PORT=$(WEB_PORT) $(COMPOSE) up --build -d dev
+	$(MAKE) dc-ready
+	$(DEV_EXEC) sh -c 'gh auth status'
+
+.PHONY: dev-tool-auth-check
+dev-tool-auth-check: dev-check ## Check Codex and GitHub CLI authentication inside the dev container.
+	ISSUE_TRACKER_PORT=$(ISSUE_TRACKER_PORT) ORCHESTRATOR_PORT=$(ORCHESTRATOR_PORT) OPENAPI_PORT=$(OPENAPI_PORT) WEB_PORT=$(WEB_PORT) $(COMPOSE) up --build -d dev
+	$(MAKE) dc-ready
+	$(DEV_EXEC) sh -c 'codex login status && gh auth status'
+
 .PHONY: dc-ready
 dc-ready: dev-check ## Wait until the dev container tools and volumes are ready.
 	@attempt=1; \
 	while [ "$$attempt" -le 30 ]; do \
-		if $(DEV_EXEC_NO_TTY) sh -c 'test -x /usr/local/go/bin/go && test -w /go/pkg/mod && test -w /go/pkg/sumdb && test -w /home/codex/.cache/go-build && test -w /home/codex/.codex && test -w /workspace/web/node_modules' >/dev/null 2>&1; then \
+		if $(DEV_EXEC_NO_TTY) sh -c 'test -x /usr/local/go/bin/go && test -w /go/pkg/mod && test -w /go/pkg/sumdb && test -w /home/codex/.cache/go-build && test -w /home/codex/.codex && test -w /home/codex/.config/gh && test -w /workspace/web/node_modules' >/dev/null 2>&1; then \
 			exit 0; \
 		fi; \
 		attempt=$$((attempt + 1)); \

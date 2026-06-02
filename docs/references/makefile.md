@@ -93,26 +93,35 @@ make run-logs
 | `make dev-test` | Run `go test ./...`, install Web dependencies, and run Web typecheck inside the dev container. |
 | `make dev-build` | Run `go test ./...`, install Web dependencies, and run the Web production build inside the dev container. |
 
-## Codex Targets
+## Authentication Targets
 
 | Target | Purpose |
 |---|---|
 | `make dev-codex-login` | Run `codex login --device-auth` inside the dev container and persist credentials in the `codex-home` Docker volume. |
 | `make dev-codex-check` | Confirm Codex CLI and `codex app-server` are available inside the dev container. |
+| `make dev-gh-login` | Run `gh auth login` inside the dev container and persist credentials in the `gh-config` Docker volume. |
+| `make dev-gh-status` | Show GitHub CLI authentication status inside the dev container. |
+| `make dev-tool-auth-check` | Check both Codex login status and GitHub CLI authentication status inside the dev container. |
 
-Use device auth for container login because browser redirects to a localhost callback inside the container are not reachable from the host browser.
+Use device auth for container logins when a browser redirect points to a localhost callback inside
+the container that is not reachable from the host browser.
 
 Examples:
 
 ```sh
 make dev-codex-login
 make dev-codex-check
+make dev-gh-login
+make dev-gh-status
+make dev-tool-auth-check
 ```
 
 ## Operational Notes
 
 The `dev` container is long-lived. Service processes are ordinary child processes launched with `docker compose exec`; they are not separate Compose services. Use `make run-stop` to stop only those child processes, or `make dev-down` to stop the Compose services.
 
-The Makefile runs container commands as the `codex` user. At container startup, Compose prepares writable named volumes for Go module cache, Go build cache, Web `node_modules`, and Codex credentials.
+The Makefile runs container commands as the `codex` user. At container startup, Compose prepares
+writable named volumes for Go module cache, Go build cache, Web `node_modules`, Codex credentials,
+and GitHub CLI credentials.
 
 `NEXT_PUBLIC_ISSUE_TRACKER_URL` is resolved when the Web process starts. If the issue-tracker host port changes after Web has started, restart the Web process with `make run-web` or restart everything with `make dev-up`.

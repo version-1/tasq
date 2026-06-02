@@ -8,6 +8,7 @@ RUN apt-get update \
       ca-certificates \
       curl \
       git \
+      gh \
       gnupg \
       make \
       procps \
