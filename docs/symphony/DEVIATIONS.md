@@ -47,7 +47,7 @@ Implemented or in progress:
 - Config-gated continuation turns on a live Codex app-server thread.
 - In-process retry scheduling with capped exponential backoff.
 - Active-run reconciliation for terminal/non-active issue states and stall handling.
-- Repository-source workspace population on first workspace creation.
+- Git worktree workspace creation on first workspace creation.
 - Terminal and failed/cancelled workspace cleanup with cleanup metadata.
 - Operator-facing logs for workspace setup failures.
 
@@ -61,6 +61,27 @@ Not yet implemented:
 Tasq supports the workflow front matter fields documented in
 [WORKFLOW_CONTRACT.md](WORKFLOW_CONTRACT.md). Unknown fields are ignored for forward
 compatibility.
+
+## Workspace Creation Strategy
+
+Tasq creates per-issue orchestrator workspaces with `git worktree add` instead of copying files from a
+repository source directory.
+
+Rationale:
+
+- The coding agent needs the per-issue workspace to be a Git repository root.
+- Copying files without `.git` makes repository inspection commands observe a different Git root and
+  can cause edits to target the parent repository instead of the issue workspace.
+- A worktree preserves Git metadata while keeping the workspace path deterministic under
+  `workspace.root`.
+
+The `workspace.source` workflow field is intentionally not supported. `workspace.root` must be
+inside the target Git repository so the workspace manager can resolve the repository with
+`git rev-parse --show-toplevel`.
+
+Workspace branches use `agent/<workspace-key>`, for example `agent/issue-42`. Cleanup uses
+`git worktree remove --force`, deletes the corresponding local branch best-effort, and runs
+`git worktree prune` on orchestrator startup.
 
 ## Compatibility Notes
 

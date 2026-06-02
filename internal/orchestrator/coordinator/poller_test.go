@@ -3,7 +3,10 @@ package coordinator
 import (
 	"context"
 	"database/sql"
+	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -311,11 +314,30 @@ func openTestStore(t *testing.T) *runstore.Store {
 
 func newTestWorkspaceManager(t *testing.T) *workspace.Manager {
 	t.Helper()
-	manager, err := workspace.NewManager(t.TempDir())
+	repoRoot := t.TempDir()
+	gitCommand(t, repoRoot, "init")
+	gitCommand(t, repoRoot, "config", "user.email", "test@example.com")
+	gitCommand(t, repoRoot, "config", "user.name", "Test User")
+	if err := os.WriteFile(filepath.Join(repoRoot, "README.md"), []byte("test repo\n"), 0o644); err != nil {
+		t.Fatalf("write readme: %v", err)
+	}
+	gitCommand(t, repoRoot, "add", "README.md")
+	gitCommand(t, repoRoot, "commit", "-m", "initial commit")
+	manager, err := workspace.NewManager(filepath.Join(repoRoot, ".worktrees"))
 	if err != nil {
 		t.Fatalf("new workspace manager: %v", err)
 	}
 	return manager
+}
+
+func gitCommand(t *testing.T, dir string, args ...string) string {
+	t.Helper()
+	cmd := exec.Command("git", append([]string{"-C", dir}, args...)...)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("git %s: %v\n%s", strings.Join(args, " "), err, output)
+	}
+	return string(output)
 }
 
 func newTestPoller(t *testing.T, store *runstore.Store, manager *workspace.Manager, issues []entity.Issue) *Poller {

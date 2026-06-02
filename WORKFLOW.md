@@ -3,7 +3,6 @@ polling:
   interval_ms: 30000
 workspace:
   root: .worktrees
-  source: .
 agent:
   max_concurrent_agents: 1
   max_turns: 20

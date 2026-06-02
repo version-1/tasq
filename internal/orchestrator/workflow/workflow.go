@@ -27,7 +27,6 @@ type Config struct {
 	TrackerActiveStates      []string
 	TrackerTerminalStates    []string
 	WorkspaceRoot            string
-	WorkspaceSource          string
 	MaxConcurrentRuns        int
 	MaxConcurrentRunsByState map[string]int
 	MaxTurns                 int
@@ -79,7 +78,6 @@ func DefaultConfig(workflowDir string) Config {
 		TrackerActiveStates:      []string{"Todo", "In Progress"},
 		TrackerTerminalStates:    []string{"Closed", "Cancelled", "Canceled", "Duplicate", "Done"},
 		WorkspaceRoot:            filepath.Join(os.TempDir(), "symphony_workspaces"),
-		WorkspaceSource:          workflowDir,
 		MaxConcurrentRuns:        10,
 		MaxConcurrentRunsByState: map[string]int{},
 		MaxTurns:                 20,
@@ -134,8 +132,7 @@ type frontMatterConfig struct {
 		IntervalMs configScalar `yaml:"interval_ms"`
 	} `yaml:"polling"`
 	Workspace struct {
-		Root   configScalar `yaml:"root"`
-		Source configScalar `yaml:"source"`
+		Root configScalar `yaml:"root"`
 	} `yaml:"workspace"`
 	Agent struct {
 		MaxConcurrentAgents        configScalar `yaml:"max_concurrent_agents"`
@@ -267,9 +264,6 @@ func applyWorkflowYAML(config *Config, frontMatter frontMatterConfig) error {
 	}
 	if frontMatter.Workspace.Root.Set {
 		config.WorkspaceRoot = frontMatter.Workspace.Root.Value
-	}
-	if frontMatter.Workspace.Source.Set {
-		config.WorkspaceSource = frontMatter.Workspace.Source.Value
 	}
 	if frontMatter.Agent.MaxConcurrentAgents.Set {
 		parsed, err := parsePositiveInt(frontMatter.Agent.MaxConcurrentAgents.Value)
@@ -404,11 +398,6 @@ func normalizeConfig(config *Config, workflowDir string) error {
 		return err
 	}
 	config.WorkspaceRoot = root
-	source, err := resolveConfigPath(config.WorkspaceSource, workflowDir)
-	if err != nil {
-		return err
-	}
-	config.WorkspaceSource = source
 	return nil
 }
 

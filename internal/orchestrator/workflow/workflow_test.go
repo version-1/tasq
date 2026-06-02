@@ -27,7 +27,6 @@ tracker:
     - Canceled
 workspace:
   root: .workspaces
-  source: .
 agent:
   max_concurrent_agents: 2
   max_concurrent_agents_by_state:
@@ -94,9 +93,6 @@ Work on {{ issue.title }}.
 	}
 	if workflow.Config.WorkspaceRoot != filepath.Join(dir, ".workspaces") {
 		t.Fatalf("workspace root = %q", workflow.Config.WorkspaceRoot)
-	}
-	if workflow.Config.WorkspaceSource != dir {
-		t.Fatalf("workspace source = %q", workflow.Config.WorkspaceSource)
 	}
 	if workflow.Config.MaxConcurrentRuns != 2 {
 		t.Fatalf("max concurrent = %d", workflow.Config.MaxConcurrentRuns)

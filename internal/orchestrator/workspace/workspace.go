@@ -1,18 +1,19 @@
 package workspace
 
 import (
+	"bytes"
 	"fmt"
-	"io"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 )
 
 type Manager struct {
-	root   string
-	source string
-	hooks  HookConfig
+	root     string
+	repoRoot string
+	hooks    HookConfig
 }
 
 type Workspace struct {
@@ -22,14 +23,10 @@ type Workspace struct {
 }
 
 func NewManager(root string) (*Manager, error) {
-	return NewManagerWithSource(root, "")
+	return NewManagerWithHooks(root, HookConfig{})
 }
 
-func NewManagerWithSource(root string, source string) (*Manager, error) {
-	return NewManagerWithSourceAndHooks(root, source, HookConfig{})
-}
-
-func NewManagerWithSourceAndHooks(root string, source string, hooks HookConfig) (*Manager, error) {
+func NewManagerWithHooks(root string, hooks HookConfig) (*Manager, error) {
 	if root == "" {
 		return nil, fmt.Errorf("workspace root is required")
 	}
@@ -37,14 +34,16 @@ func NewManagerWithSourceAndHooks(root string, source string, hooks HookConfig) 
 	if err != nil {
 		return nil, fmt.Errorf("resolve workspace root: %w", err)
 	}
-	manager := &Manager{root: filepath.Clean(abs), hooks: hooks}
-	if source != "" {
-		sourceAbs, err := filepath.Abs(source)
-		if err != nil {
-			return nil, fmt.Errorf("resolve workspace source: %w", err)
-		}
-		manager.source = filepath.Clean(sourceAbs)
+	cleanRoot := filepath.Clean(abs)
+	if err := os.MkdirAll(cleanRoot, 0o755); err != nil {
+		return nil, fmt.Errorf("create workspace root: %w", err)
 	}
+	manager := &Manager{root: cleanRoot, hooks: hooks}
+	repoRoot, err := manager.gitExec("rev-parse", "--show-toplevel")
+	if err != nil {
+		return nil, fmt.Errorf("resolve workspace git repository: %w", err)
+	}
+	manager.repoRoot = filepath.Clean(strings.TrimSpace(repoRoot))
 	return manager, nil
 }
 
@@ -52,8 +51,8 @@ func (m *Manager) Root() string {
 	return m.root
 }
 
-func (m *Manager) Source() string {
-	return m.source
+func (m *Manager) RepoRoot() string {
+	return m.repoRoot
 }
 
 func (m *Manager) CreateForIssue(identifier string) (Workspace, error) {
@@ -76,18 +75,21 @@ func (m *Manager) CreateForIssue(identifier string) (Workspace, error) {
 	if !os.IsNotExist(err) {
 		return Workspace{}, fmt.Errorf("stat workspace path: %w", err)
 	}
-	if err := os.MkdirAll(path, 0o755); err != nil {
-		return Workspace{}, fmt.Errorf("create workspace: %w", err)
-	}
-	createdNow = true
-	if m.source != "" {
-		if err := m.populate(path); err != nil {
-			return Workspace{}, err
+	branch := workspaceBranch(key)
+	createdBranch := true
+	if _, err := m.gitExec("worktree", "add", "-b", branch, path); err != nil {
+		createdBranch = false
+		if _, retryErr := m.gitExec("worktree", "add", path, branch); retryErr != nil {
+			return Workspace{}, fmt.Errorf("create workspace worktree: %w; retry existing branch: %v", err, retryErr)
 		}
 	}
+	createdNow = true
 	if err := RunHook(m.hooks.AfterCreate, path, m.hooks.timeout()); err != nil {
-		if removeErr := os.RemoveAll(path); removeErr != nil {
+		if removeErr := m.removeWorktree(path); removeErr != nil {
 			return Workspace{}, fmt.Errorf("after_create hook failed: %w; remove partial workspace: %v", err, removeErr)
+		}
+		if createdBranch {
+			m.deleteBranchBestEffort(branch)
 		}
 		return Workspace{}, fmt.Errorf("after_create hook failed: %w", err)
 	}
@@ -110,46 +112,18 @@ func (m *Manager) RemoveForIssue(identifier string) error {
 	} else if !os.IsNotExist(err) {
 		return fmt.Errorf("stat workspace path: %w", err)
 	}
-	if err := os.RemoveAll(path); err != nil {
+	if err := m.removeWorktree(path); err != nil {
 		return fmt.Errorf("remove workspace: %w", err)
 	}
+	m.deleteBranchBestEffort(workspaceBranch(key))
 	return nil
 }
 
-func (m *Manager) populate(destination string) error {
-	info, err := os.Stat(m.source)
-	if err != nil {
-		return fmt.Errorf("stat workspace source: %w", err)
+func (m *Manager) Prune() error {
+	if _, err := m.gitExec("worktree", "prune"); err != nil {
+		return fmt.Errorf("prune workspace worktrees: %w", err)
 	}
-	if !info.IsDir() {
-		return fmt.Errorf("workspace source is not a directory: %s", m.source)
-	}
-	return filepath.WalkDir(m.source, func(path string, entry os.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		rel, err := filepath.Rel(m.source, path)
-		if err != nil {
-			return err
-		}
-		if rel == "." {
-			return nil
-		}
-		if shouldSkip(rel, path, m.root) {
-			if entry.IsDir() {
-				return filepath.SkipDir
-			}
-			return nil
-		}
-		target := filepath.Join(destination, rel)
-		if entry.IsDir() {
-			return os.MkdirAll(target, 0o755)
-		}
-		if entry.Type()&os.ModeSymlink != 0 {
-			return nil
-		}
-		return copyFile(path, target)
-	})
+	return nil
 }
 
 func (m *Manager) validatePath(path string) error {
@@ -167,6 +141,50 @@ func (m *Manager) validatePath(path string) error {
 	return nil
 }
 
+func (m *Manager) removeWorktree(path string) error {
+	if _, err := m.gitExec("worktree", "remove", "--force", path); err == nil {
+		return nil
+	}
+	if err := os.RemoveAll(path); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *Manager) deleteBranchBestEffort(branch string) {
+	if _, err := m.gitExec("branch", "-D", branch); err != nil {
+		log.Printf("delete workspace branch failed branch=%s: %v", branch, err)
+	}
+}
+
+func (m *Manager) gitExec(args ...string) (string, error) {
+	commandArgs := append([]string{"-C", m.gitRootForCommand()}, args...)
+	cmd := exec.Command("git", commandArgs...)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		message := strings.TrimSpace(stderr.String())
+		if message == "" {
+			message = err.Error()
+		}
+		return stdout.String(), fmt.Errorf("git %s: %s", strings.Join(args, " "), message)
+	}
+	return stdout.String(), nil
+}
+
+func (m *Manager) gitRootForCommand() string {
+	if m.repoRoot != "" {
+		return m.repoRoot
+	}
+	return m.root
+}
+
+func workspaceBranch(key string) string {
+	return "agent/" + key
+}
+
 func sanitizeKey(identifier string) string {
 	var builder strings.Builder
 	for _, r := range identifier {
@@ -177,35 +195,4 @@ func sanitizeKey(identifier string) string {
 		builder.WriteByte('_')
 	}
 	return builder.String()
-}
-
-func shouldSkip(rel string, path string, root string) bool {
-	name := strings.Split(rel, string(filepath.Separator))[0]
-	if name == ".git" || name == ".worktrees" || name == "node_modules" {
-		return true
-	}
-	relativeToRoot, err := filepath.Rel(root, path)
-	return err == nil && (relativeToRoot == "." || !strings.HasPrefix(relativeToRoot, ".."+string(filepath.Separator)))
-}
-
-func copyFile(source string, destination string) error {
-	if err := os.MkdirAll(filepath.Dir(destination), 0o755); err != nil {
-		return err
-	}
-	input, err := os.Open(source)
-	if err != nil {
-		return err
-	}
-	defer input.Close()
-	info, err := input.Stat()
-	if err != nil {
-		return err
-	}
-	output, err := os.OpenFile(destination, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, info.Mode().Perm())
-	if err != nil {
-		return err
-	}
-	defer output.Close()
-	_, err = io.Copy(output, input)
-	return err
 }

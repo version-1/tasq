@@ -93,26 +93,36 @@ make run-logs
 | `make dev-test` | dev container 内で `go test ./...`、Web dependency install、Web typecheck を実行します。 |
 | `make dev-build` | dev container 内で `go test ./...`、Web dependency install、Web production build を実行します。 |
 
-## Codex Targets
+## Authentication Targets
 
 | Target | Purpose |
 |---|---|
 | `make dev-codex-login` | dev container 内で `codex login --device-auth` を実行し、credential を `codex-home` Docker volume に永続化します。 |
-| `make dev-codex-check` | dev container 内で Codex CLI と `codex app-server` が利用できることを確認します。 |
+| `make dev-codex-status` | dev container 内で Codex authentication status を表示します。 |
+| `make dev-gh-login` | dev container 内で `gh auth login` と `gh auth setup-git` を実行し、credential を `gh-config` Docker volume に永続化します。 |
+| `make dev-gh-status` | dev container 内で GitHub CLI authentication status を表示します。 |
 
-Container login では device auth を使います。通常の browser redirect は container 内の localhost callback に戻るため、host browser から到達できません。
+Container login では、browser redirect が container 内の localhost callback に戻り host browser から
+到達できない場合に device auth を使います。
+
+Authentication targets は既存の `dev` container 内で command を実行するだけです。Container の
+build や起動は行わないため、dev container がない場合は先に `make dev-up` を実行します。
 
 例:
 
 ```sh
 make dev-codex-login
-make dev-codex-check
+make dev-codex-status
+make dev-gh-login
+make dev-gh-status
 ```
 
 ## Operational Notes
 
 `dev` container は long-lived です。Service process は separate Compose service ではなく、`docker compose exec` で起動される通常の child process です。Process だけ止める場合は `make run-stop`、Compose services も止める場合は `make dev-down` を使います。
 
-Makefile は container 内 command を `codex` user として実行します。Container startup 時に、Go module cache、Go build cache、Web `node_modules`、Codex credential 用の named volume が writable になるように準備します。
+Makefile は container 内 command を `codex` user として実行します。Container startup 時に、Go module
+cache、Go build cache、Web `node_modules`、Codex credential、GitHub CLI credential 用の named
+volume が writable になるように準備します。
 
 `NEXT_PUBLIC_ISSUE_TRACKER_URL` は Web process 起動時に解決されます。Web 起動後に issue-tracker の host port が変わった場合は、`make run-web` で Web process を再起動するか、`make dev-up` で全体を再起動してください。

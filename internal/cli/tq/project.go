@@ -381,7 +381,6 @@ func missingWorkflowFields(raw map[string]any) []string {
 	required := []string{
 		"polling.interval_ms",
 		"workspace.root",
-		"workspace.source",
 		"agent.max_concurrent_agents",
 		"agent.max_turns",
 		"agent.continuation_turns_enabled",
@@ -434,7 +433,6 @@ polling:
   interval_ms: 30000
 workspace:
   root: .worktrees
-  source: .
 agent:
   max_concurrent_agents: 1
   max_turns: 20
