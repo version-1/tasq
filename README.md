@@ -57,7 +57,8 @@ make dev-build
 
 ## Documentation
 
-- [WORKFLOW.md](WORKFLOW.md): repository workflow, task flow, documentation update rules, and component workflow links.
+- [docs/development.md](docs/development.md): repository workflow, task flow, documentation update rules, and component workflow links.
+- [WORKFLOW.md](WORKFLOW.md): Symphony runtime workflow contract used by the orchestrator.
 - [docs/design.md](docs/design.md): system architecture and service boundaries.
 - [docs/references/makefile.md](docs/references/makefile.md): Makefile targets, variables, and local development command reference.
 - [cmd/issue-tracker/WORKFLOW.md](cmd/issue-tracker/WORKFLOW.md): issue-tracker development workflow.
@@ -75,7 +76,7 @@ Japanese counterpart: [README.ja.md](README.ja.md).
 
 - Runtime state and SQLite files are created under `.tasq/` in the repository and are ignored by git.
 - Compose stores Go module/build caches, `web/node_modules`, and Codex login state in named Docker volumes.
-- The orchestrator reads `WORKFLOW.md` for Symphony-oriented runtime settings.
+- The orchestrator reads `WORKFLOW.md` for Symphony-oriented runtime settings and the per-issue agent prompt.
 - The Web UI calls the issue-tracker API through `NEXT_PUBLIC_ISSUE_TRACKER_URL` when served from a different origin.
 - `tq` resolves the issue-tracker API URL from `$TQ_HOME/system/state.json` when run through `make run-tq`.
 - Run `make dev-codex-login` once to authenticate Codex with device auth and persist credentials in the `codex-home` Docker volume.

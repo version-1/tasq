@@ -17,6 +17,8 @@ import (
 )
 
 const dispatcherShutdownTimeout = 30 * time.Second
+const maxRunnerEventLogPayloadLength = 2000
+const ignoredRunnerEventTypeAgentMessageDelta = "item/agentMessage/delta"
 
 type IssueReader interface {
 	Issue(ctx context.Context, id int64) (entity.Issue, error)
@@ -179,6 +181,7 @@ func (d *Dispatcher) startRun(storedRun run.Run, task runner.Task) {
 	d.recordEvent(storedRun.RunID, "running", "runner started", "")
 
 	task.OnEvent = func(event runner.Event) {
+		logRunnerEvent(storedRun.RunID, event)
 		d.recordEvent(storedRun.RunID, event.EventType, event.Message, event.PayloadJSON)
 	}
 	result := d.runner.Run(d.runCtx, task)
@@ -261,6 +264,37 @@ func (d *Dispatcher) recordEvent(runID string, eventType string, message string,
 	if err := d.store.RecordRunnerEvent(context.Background(), runID, eventType, message, payloadJSON); err != nil {
 		log.Printf("orchestrator dispatch record event failed run=%s event=%s: %v", runID, eventType, err)
 	}
+}
+
+func logRunnerEvent(runID string, event runner.Event) {
+	if !shouldLogRunnerEvent(event) {
+		return
+	}
+	log.Print(formatRunnerEventLog(runID, event))
+}
+
+func shouldLogRunnerEvent(event runner.Event) bool {
+	return event.EventType != ignoredRunnerEventTypeAgentMessageDelta
+}
+
+func formatRunnerEventLog(runID string, event runner.Event) string {
+	if event.PayloadJSON == "" {
+		return fmt.Sprintf("orchestrator runner event run=%s event=%s message=%q", runID, event.EventType, event.Message)
+	}
+	return fmt.Sprintf(
+		"orchestrator runner event run=%s event=%s message=%q payload=%s",
+		runID,
+		event.EventType,
+		event.Message,
+		truncateLogPayload(event.PayloadJSON),
+	)
+}
+
+func truncateLogPayload(payload string) string {
+	if len(payload) <= maxRunnerEventLogPayloadLength {
+		return payload
+	}
+	return payload[:maxRunnerEventLogPayloadLength] + "... truncated"
 }
 
 func (d *Dispatcher) claim(runID string) bool {

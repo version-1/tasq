@@ -1,4 +1,4 @@
-# Workflow
+# Development Workflow
 
 ## Worktree 運用
 
@@ -29,7 +29,7 @@ Task の開始から handoff までは、この flow を使います。
 
 4. Code または documentation を変更する前に、関連する design document と workflow document を読みます。
 
-   - [docs/design.md](docs/design.md)
+   - [docs/design.md](design.md)
    - 変更対象 area の component-level workflow document
 
 5. 既存の component boundary と ownership に合わせて、focused changes を行います。
@@ -67,6 +67,6 @@ Documentation を更新するときは、英語版の `.md` と日本語版の `
 
 特定の runtime area で作業するときは、component-level workflow documents を使います。
 
-- [Issue Tracker](cmd/issue-tracker/WORKFLOW.ja.md)
-- [Orchestrator](cmd/orchestrator/WORKFLOW.ja.md)
-- [Web UI](web/WORKFLOW.ja.md)
+- [Issue Tracker](../cmd/issue-tracker/WORKFLOW.ja.md)
+- [Orchestrator](../cmd/orchestrator/WORKFLOW.ja.md)
+- [Web UI](../web/WORKFLOW.ja.md)
