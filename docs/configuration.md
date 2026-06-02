@@ -20,6 +20,11 @@ once to authenticate inside the container with device auth. Removing the `codex-
 the login state. Device auth avoids browser redirects to a localhost callback that only exists inside
 the container.
 
+Repository-managed Codex rules live in `codex/rules/` and are mounted read-only into the dev
+container at `/home/codex/.codex/rules`. Authentication, personal overrides, generated approval
+decisions, and other secret-bearing Codex state stay in the `codex-home` volume instead of the
+repository.
+
 ## Directory Layout
 
 ```text

@@ -9,7 +9,9 @@ services:
       - -c
       - |
         mkdir -p /home/codex/.codex /home/codex/.cache/go-build /go/pkg/mod /go/pkg/sumdb /workspace/web/node_modules
-        chown -R codex:codex /home/codex/.codex /home/codex/.cache /go/pkg /workspace/web/node_modules
+        chown codex:codex /home/codex/.codex
+        find /home/codex/.codex -mindepth 1 -maxdepth 1 ! -name rules -exec chown -R codex:codex {} +
+        chown -R codex:codex /home/codex/.cache /go/pkg /workspace/web/node_modules
         sleep infinity
     stdin_open: true
     tty: true
@@ -26,6 +28,7 @@ services:
       - go-build-cache:/home/codex/.cache/go-build
       - web-node-modules:/workspace/web/node_modules
       - codex-home:/home/codex/.codex
+      - ./codex/rules:/home/codex/.codex/rules:ro
 
   openapi:
     image: swaggerapi/swagger-ui:v5.18.2

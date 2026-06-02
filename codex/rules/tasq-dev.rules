@@ -1,0 +1,29 @@
+# Tasq dev-container Codex rules.
+#
+# This file is repo-managed and mounted read-only into the dev container at
+# /home/codex/.codex/rules. Keep secrets, personal overrides, and generated
+# approval decisions out of this directory.
+
+prefix_rule(
+    pattern = [["pwd", "ls", "tree", "rg", "cat", "head", "tail", "find"]],
+    decision = "allow",
+    justification = "Repository inspection commands are safe in the Tasq dev container."
+)
+
+prefix_rule(
+    pattern = ["sed", "-n"],
+    decision = "allow",
+    justification = "Read-only sed usage is safe for repository inspection."
+)
+
+prefix_rule(
+    pattern = ["git", ["status", "diff", "log", "show", "rev-parse", "merge-base", "ls-files", "grep"]],
+    decision = "allow",
+    justification = "Read-only Git inspection commands are safe in the Tasq dev container."
+)
+
+prefix_rule(
+    pattern = ["git", "branch", ["--show-current", "--list", "-a"]],
+    decision = "allow",
+    justification = "Read-only branch inspection is safe in the Tasq dev container."
+)

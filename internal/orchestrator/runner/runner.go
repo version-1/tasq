@@ -334,6 +334,15 @@ func (s *session) waitTurn(ctx context.Context, timeout time.Duration, task Task
 			payload := string(message.Params)
 			emit(task, message.Method, "", payload)
 			if message.ID != nil {
+				if isApprovalRequest(message.Method) {
+					if err := s.write(map[string]any{
+						"id":     message.ID,
+						"result": map[string]any{"decision": "cancel"},
+					}); err != nil {
+						return err
+					}
+					return approvalRequestDeniedError(message.Method, payload)
+				}
 				_ = s.write(map[string]any{
 					"id": message.ID,
 					"error": map[string]any{
@@ -352,6 +361,25 @@ func (s *session) waitTurn(ctx context.Context, timeout time.Duration, task Task
 			}
 		}
 	}
+}
+
+func approvalRequestDeniedError(method string, payload string) error {
+	return fmt.Errorf(
+		"approval_required: tasq denied app-server approval request by policy\n\nmethod: %s\npayload: %s",
+		method,
+		truncateText(payload, 4000),
+	)
+}
+
+func isApprovalRequest(method string) bool {
+	return method == "item/commandExecution/requestApproval" || method == "item/fileChange/requestApproval"
+}
+
+func truncateText(value string, maxLength int) string {
+	if maxLength <= 0 || len(value) <= maxLength {
+		return value
+	}
+	return value[:maxLength] + "... truncated"
 }
 
 func (s *session) nextRequestID() int64 {
