@@ -19,24 +19,34 @@ type Definition struct {
 }
 
 type Config struct {
-	PollInterval      time.Duration
-	WorkspaceRoot     string
-	WorkspaceSource   string
-	MaxConcurrentRuns int
-	MaxTurns          int
-	ContinuationTurns bool
-	MaxRetryAttempts  int
-	MaxRetryBackoff   time.Duration
-	StallTimeout      time.Duration
-	CodexCommand      string
-	CodexReadTimeout  time.Duration
-	CodexTurnTimeout  time.Duration
-	ServerPort        int
-	HookAfterCreate   string
-	HookBeforeRun     string
-	HookAfterRun      string
-	HookBeforeRemove  string
-	HookTimeout       time.Duration
+	PollInterval             time.Duration
+	TrackerKind              string
+	TrackerEndpoint          string
+	TrackerAPIKey            string
+	TrackerProjectSlug       string
+	TrackerActiveStates      []string
+	TrackerTerminalStates    []string
+	WorkspaceRoot            string
+	WorkspaceSource          string
+	MaxConcurrentRuns        int
+	MaxConcurrentRunsByState map[string]int
+	MaxTurns                 int
+	ContinuationTurns        bool
+	MaxRetryAttempts         int
+	MaxRetryBackoff          time.Duration
+	StallTimeout             time.Duration
+	CodexCommand             string
+	CodexApprovalPolicy      string
+	CodexThreadSandbox       string
+	CodexTurnSandboxPolicy   string
+	CodexReadTimeout         time.Duration
+	CodexTurnTimeout         time.Duration
+	ServerPort               int
+	HookAfterCreate          string
+	HookBeforeRun            string
+	HookAfterRun             string
+	HookBeforeRemove         string
+	HookTimeout              time.Duration
 }
 
 func Load(path string) (Definition, error) {
@@ -64,20 +74,24 @@ func Load(path string) (Definition, error) {
 
 func DefaultConfig(workflowDir string) Config {
 	return Config{
-		PollInterval:      30 * time.Second,
-		WorkspaceRoot:     filepath.Join(os.TempDir(), "symphony_workspaces"),
-		WorkspaceSource:   workflowDir,
-		MaxConcurrentRuns: 10,
-		MaxTurns:          20,
-		ContinuationTurns: false,
-		MaxRetryAttempts:  3,
-		MaxRetryBackoff:   5 * time.Minute,
-		StallTimeout:      5 * time.Minute,
-		CodexCommand:      "codex app-server",
-		CodexReadTimeout:  5 * time.Second,
-		CodexTurnTimeout:  time.Hour,
-		ServerPort:        -1,
-		HookTimeout:       60 * time.Second,
+		PollInterval:             30 * time.Second,
+		TrackerEndpoint:          "https://api.linear.app/graphql",
+		TrackerActiveStates:      []string{"Todo", "In Progress"},
+		TrackerTerminalStates:    []string{"Closed", "Cancelled", "Canceled", "Duplicate", "Done"},
+		WorkspaceRoot:            filepath.Join(os.TempDir(), "symphony_workspaces"),
+		WorkspaceSource:          workflowDir,
+		MaxConcurrentRuns:        10,
+		MaxConcurrentRunsByState: map[string]int{},
+		MaxTurns:                 20,
+		ContinuationTurns:        false,
+		MaxRetryAttempts:         3,
+		MaxRetryBackoff:          5 * time.Minute,
+		StallTimeout:             5 * time.Minute,
+		CodexCommand:             "codex app-server",
+		CodexReadTimeout:         5 * time.Second,
+		CodexTurnTimeout:         time.Hour,
+		ServerPort:               -1,
+		HookTimeout:              60 * time.Second,
 	}
 }
 
@@ -108,6 +122,14 @@ func splitFrontMatter(rest string) (string, string, bool) {
 }
 
 type frontMatterConfig struct {
+	Tracker struct {
+		Kind           configScalar      `yaml:"kind"`
+		Endpoint       configScalar      `yaml:"endpoint"`
+		APIKey         configScalar      `yaml:"api_key"`
+		ProjectSlug    configScalar      `yaml:"project_slug"`
+		ActiveStates   configStringSlice `yaml:"active_states"`
+		TerminalStates configStringSlice `yaml:"terminal_states"`
+	} `yaml:"tracker"`
 	Polling struct {
 		IntervalMs configScalar `yaml:"interval_ms"`
 	} `yaml:"polling"`
@@ -116,17 +138,21 @@ type frontMatterConfig struct {
 		Source configScalar `yaml:"source"`
 	} `yaml:"workspace"`
 	Agent struct {
-		MaxConcurrentAgents      configScalar `yaml:"max_concurrent_agents"`
-		MaxTurns                 configScalar `yaml:"max_turns"`
-		ContinuationTurnsEnabled configScalar `yaml:"continuation_turns_enabled"`
-		MaxRetryAttempts         configScalar `yaml:"max_retry_attempts"`
-		MaxRetryBackoffMs        configScalar `yaml:"max_retry_backoff_ms"`
+		MaxConcurrentAgents        configScalar `yaml:"max_concurrent_agents"`
+		MaxConcurrentAgentsByState configIntMap `yaml:"max_concurrent_agents_by_state"`
+		MaxTurns                   configScalar `yaml:"max_turns"`
+		ContinuationTurnsEnabled   configScalar `yaml:"continuation_turns_enabled"`
+		MaxRetryAttempts           configScalar `yaml:"max_retry_attempts"`
+		MaxRetryBackoffMs          configScalar `yaml:"max_retry_backoff_ms"`
 	} `yaml:"agent"`
 	Codex struct {
-		Command        configScalar `yaml:"command"`
-		StallTimeoutMs configScalar `yaml:"stall_timeout_ms"`
-		ReadTimeoutMs  configScalar `yaml:"read_timeout_ms"`
-		TurnTimeoutMs  configScalar `yaml:"turn_timeout_ms"`
+		Command           configScalar `yaml:"command"`
+		ApprovalPolicy    configScalar `yaml:"approval_policy"`
+		ThreadSandbox     configScalar `yaml:"thread_sandbox"`
+		TurnSandboxPolicy configScalar `yaml:"turn_sandbox_policy"`
+		StallTimeoutMs    configScalar `yaml:"stall_timeout_ms"`
+		ReadTimeoutMs     configScalar `yaml:"read_timeout_ms"`
+		TurnTimeoutMs     configScalar `yaml:"turn_timeout_ms"`
 	} `yaml:"codex"`
 	Server struct {
 		Port configScalar `yaml:"port"`
@@ -151,7 +177,54 @@ func (s *configScalar) UnmarshalYAML(node *yaml.Node) error {
 	return nil
 }
 
+type configStringSlice struct {
+	Values []string
+	Set    bool
+}
+
+func (s *configStringSlice) UnmarshalYAML(node *yaml.Node) error {
+	s.Set = true
+	if node.Kind != yaml.SequenceNode {
+		return fmt.Errorf("must be a list")
+	}
+	for _, item := range node.Content {
+		s.Values = append(s.Values, item.Value)
+	}
+	return nil
+}
+
+type configIntMap struct {
+	Values map[string]int
+	Set    bool
+}
+
+func (m *configIntMap) UnmarshalYAML(node *yaml.Node) error {
+	m.Set = true
+	m.Values = map[string]int{}
+	if node.Kind != yaml.MappingNode {
+		return nil
+	}
+	for i := 0; i+1 < len(node.Content); i += 2 {
+		key := strings.ToLower(strings.TrimSpace(node.Content[i].Value))
+		value, err := strconv.Atoi(strings.TrimSpace(node.Content[i+1].Value))
+		if key == "" || err != nil || value <= 0 {
+			continue
+		}
+		m.Values[key] = value
+	}
+	return nil
+}
+
 func applyFrontMatter(config *Config, raw []byte, workflowDir string) error {
+	if strings.TrimSpace(string(raw)) != "" {
+		var root yaml.Node
+		if err := yaml.Unmarshal(raw, &root); err != nil {
+			return fmt.Errorf("workflow_parse_error: %w", err)
+		}
+		if len(root.Content) > 0 && root.Content[0].Kind != yaml.MappingNode {
+			return errors.New("workflow_front_matter_not_a_map: front matter must be a map")
+		}
+	}
 	var frontMatter frontMatterConfig
 	if err := yaml.Unmarshal(raw, &frontMatter); err != nil {
 		return fmt.Errorf("workflow_parse_error: %w", err)
@@ -163,6 +236,28 @@ func applyFrontMatter(config *Config, raw []byte, workflowDir string) error {
 }
 
 func applyWorkflowYAML(config *Config, frontMatter frontMatterConfig) error {
+	if frontMatter.Tracker.Kind.Set {
+		config.TrackerKind = frontMatter.Tracker.Kind.Value
+	}
+	if frontMatter.Tracker.Endpoint.Set {
+		config.TrackerEndpoint = frontMatter.Tracker.Endpoint.Value
+	}
+	if frontMatter.Tracker.APIKey.Set {
+		value, err := resolveConfigValue(frontMatter.Tracker.APIKey.Value)
+		if err != nil {
+			return fmt.Errorf("workflow_parse_error: tracker.api_key: %w", err)
+		}
+		config.TrackerAPIKey = value
+	}
+	if frontMatter.Tracker.ProjectSlug.Set {
+		config.TrackerProjectSlug = frontMatter.Tracker.ProjectSlug.Value
+	}
+	if frontMatter.Tracker.ActiveStates.Set {
+		config.TrackerActiveStates = frontMatter.Tracker.ActiveStates.Values
+	}
+	if frontMatter.Tracker.TerminalStates.Set {
+		config.TrackerTerminalStates = frontMatter.Tracker.TerminalStates.Values
+	}
 	if frontMatter.Polling.IntervalMs.Set {
 		parsed, err := parseMillis(frontMatter.Polling.IntervalMs.Value)
 		if err != nil {
@@ -182,6 +277,9 @@ func applyWorkflowYAML(config *Config, frontMatter frontMatterConfig) error {
 			return fmt.Errorf("workflow_parse_error: agent.max_concurrent_agents: %w", err)
 		}
 		config.MaxConcurrentRuns = parsed
+	}
+	if frontMatter.Agent.MaxConcurrentAgentsByState.Set {
+		config.MaxConcurrentRunsByState = frontMatter.Agent.MaxConcurrentAgentsByState.Values
 	}
 	if frontMatter.Agent.MaxTurns.Set {
 		parsed, err := parsePositiveInt(frontMatter.Agent.MaxTurns.Value)
@@ -213,6 +311,15 @@ func applyWorkflowYAML(config *Config, frontMatter frontMatterConfig) error {
 	}
 	if frontMatter.Codex.Command.Set {
 		config.CodexCommand = frontMatter.Codex.Command.Value
+	}
+	if frontMatter.Codex.ApprovalPolicy.Set {
+		config.CodexApprovalPolicy = frontMatter.Codex.ApprovalPolicy.Value
+	}
+	if frontMatter.Codex.ThreadSandbox.Set {
+		config.CodexThreadSandbox = frontMatter.Codex.ThreadSandbox.Value
+	}
+	if frontMatter.Codex.TurnSandboxPolicy.Set {
+		config.CodexTurnSandboxPolicy = frontMatter.Codex.TurnSandboxPolicy.Value
 	}
 	if frontMatter.Codex.StallTimeoutMs.Set {
 		parsed, err := parseMillis(frontMatter.Codex.StallTimeoutMs.Value)
@@ -265,6 +372,9 @@ func applyWorkflowYAML(config *Config, frontMatter frontMatterConfig) error {
 }
 
 func normalizeConfig(config *Config, workflowDir string) error {
+	if config.TrackerKind != "" && config.TrackerProjectSlug == "" {
+		return errors.New("workflow_parse_error: tracker.project_slug must be present when tracker.kind is set")
+	}
 	if config.PollInterval <= 0 {
 		return errors.New("workflow_parse_error: polling.interval_ms must be positive")
 	}
@@ -300,6 +410,13 @@ func normalizeConfig(config *Config, workflowDir string) error {
 	}
 	config.WorkspaceSource = source
 	return nil
+}
+
+func resolveConfigValue(value string) (string, error) {
+	if strings.HasPrefix(value, "$") {
+		return os.Getenv(strings.TrimPrefix(value, "$")), nil
+	}
+	return value, nil
 }
 
 func resolveConfigPath(value string, workflowDir string) (string, error) {

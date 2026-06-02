@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -67,16 +68,63 @@ done
 func TestRenderPromptSubstitutesIssueFields(t *testing.T) {
 	t.Parallel()
 
-	prompt := renderPrompt(Task{
-		PromptTemplate: "{{ issue.id }} {{ issue.title }} {{ issue.description }} {{ attempt }}",
+	createdAt := time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC)
+	updatedAt := time.Date(2026, 1, 3, 3, 4, 5, 0, time.UTC)
+	prompt, err := renderPrompt(Task{
+		PromptTemplate: "{{ issue.id }} {{ issue.title }} {{ issue.description }} {{ issue.status }} {{ issue.priority }} {{ issue.assignee }} {{ issue.created_at }} {{ issue.updated_at }} {{ attempt }}",
 		Attempt:        2,
 		Issue: entity.Issue{
 			ID:          7,
 			Title:       "Title",
 			Description: "Description",
+			Status:      entity.StatusReady,
+			Priority:    entity.PriorityHigh,
+			Assignee:    "agent",
+			CreatedAt:   createdAt,
+			UpdatedAt:   updatedAt,
 		},
 	})
-	if prompt != "7 Title Description 2" {
+	if err != nil {
+		t.Fatalf("render prompt: %v", err)
+	}
+	if prompt != "7 Title Description ready high agent 2026-01-02T03:04:05Z 2026-01-03T03:04:05Z 2" {
 		t.Fatalf("prompt = %q", prompt)
+	}
+}
+
+func TestRenderPromptUsesZeroAttemptForFirstAttempt(t *testing.T) {
+	t.Parallel()
+
+	prompt, err := renderPrompt(Task{
+		PromptTemplate: "{{ attempt }}",
+		Attempt:        1,
+	})
+	if err != nil {
+		t.Fatalf("render prompt: %v", err)
+	}
+	if prompt != "0" {
+		t.Fatalf("prompt = %q", prompt)
+	}
+}
+
+func TestRenderPromptRejectsUnknownVariableAndFilter(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		template string
+		want     string
+	}{
+		{name: "unknown variable", template: "{{ issue.labels }}", want: "template_render_error"},
+		{name: "unknown filter", template: "{{ issue.title | upcase }}", want: "template_render_error"},
+		{name: "unbalanced", template: "{{ issue.title", want: "template_parse_error"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := renderPrompt(Task{PromptTemplate: tt.template})
+			if err == nil || !strings.Contains(err.Error(), tt.want) {
+				t.Fatalf("error = %v, want %s", err, tt.want)
+			}
+		})
 	}
 }
