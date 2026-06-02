@@ -10,6 +10,16 @@ By default, `TQ_HOME` resolves to `~/.tasq`. For development, set it to a reposi
 TQ_HOME=./.tasq
 ```
 
+The default Compose development workflow runs tools inside the `dev` container with
+`TQ_HOME=/workspace/.tasq`. `tq`, TUI, issue-tracker, and orchestrator all read the same runtime
+state in that container.
+
+Codex credentials are separate from `TQ_HOME`. The dev container uses
+`CODEX_HOME=/home/codex/.codex`, backed by the `codex-home` named volume. Run `make codex-login`
+once to authenticate inside the container with device auth. Removing the `codex-home` volume removes
+the login state. Device auth avoids browser redirects to a localhost callback that only exists inside
+the container.
+
 ## Directory Layout
 
 ```text

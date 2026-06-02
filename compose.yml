@@ -1,37 +1,31 @@
 services:
-  issue-tracker:
-    image: golang:1.22-bookworm
+  dev:
+    build:
+      context: .
+      dockerfile: .devcontainer/Dockerfile
     working_dir: /workspace
-    command: >
-      sh -c "mkdir -p /workspace/.tmp &&
-      go mod download &&
-      go run github.com/air-verse/air@${AIR_VERSION:-v1.52.3} -c .air.issue-tracker.toml"
+    command:
+      - sh
+      - -c
+      - |
+        mkdir -p /home/codex/.codex /home/codex/.cache/go-build /go/pkg/mod /go/pkg/sumdb /workspace/web/node_modules
+        chown -R codex:codex /home/codex/.codex /home/codex/.cache /go/pkg /workspace/web/node_modules
+        sleep infinity
+    stdin_open: true
+    tty: true
     environment:
       TQ_HOME: /workspace/.tasq
+      CODEX_HOME: /home/codex/.codex
     ports:
       - "127.0.0.1:${ISSUE_TRACKER_PORT:-}:8080"
+      - "127.0.0.1:${ORCHESTRATOR_PORT:-}:8081"
+      - "127.0.0.1:${WEB_PORT:-}:3000"
     volumes:
       - .:/workspace
       - go-mod-cache:/go/pkg/mod
-      - go-build-cache:/root/.cache/go-build
-    restart: unless-stopped
-
-  orchestrator:
-    image: golang:1.22-bookworm
-    working_dir: /workspace
-    command: >
-      sh -c "mkdir -p /workspace/.tmp &&
-      go mod download &&
-      go run github.com/air-verse/air@${AIR_VERSION:-v1.52.3} -c .air.orchestrator.toml"
-    environment:
-      TQ_HOME: /workspace/.tasq
-    depends_on:
-      - issue-tracker
-    volumes:
-      - .:/workspace
-      - go-mod-cache:/go/pkg/mod
-      - go-build-cache:/root/.cache/go-build
-    restart: unless-stopped
+      - go-build-cache:/home/codex/.cache/go-build
+      - web-node-modules:/workspace/web/node_modules
+      - codex-home:/home/codex/.codex
 
   openapi:
     image: swaggerapi/swagger-ui:v5.18.2
@@ -44,36 +38,8 @@ services:
       - ./docs/openapi:/usr/share/nginx/html/openapi:ro
     restart: unless-stopped
 
-  web:
-    image: node:22-bookworm
-    working_dir: /workspace/web
-    stdin_open: true
-    tty: true
-    command: >
-      sh -c "npm install &&
-      npm run dev -- --hostname 0.0.0.0 --port 3000"
-    environment:
-      NEXT_PUBLIC_ISSUE_TRACKER_URL: ${NEXT_PUBLIC_ISSUE_TRACKER_URL:-}
-    ports:
-      - "127.0.0.1:${WEB_PORT:-}:3000"
-    depends_on:
-      - issue-tracker
-    volumes:
-      - .:/workspace
-      - web-node-modules:/workspace/web/node_modules
-    restart: unless-stopped
-
-  go-tools:
-    image: golang:1.22-bookworm
-    working_dir: /workspace
-    profiles:
-      - tools
-    volumes:
-      - .:/workspace
-      - go-mod-cache:/go/pkg/mod
-      - go-build-cache:/root/.cache/go-build
-
 volumes:
   go-mod-cache:
   go-build-cache:
   web-node-modules:
+  codex-home:

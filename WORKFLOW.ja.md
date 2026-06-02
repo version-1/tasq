@@ -61,6 +61,7 @@ Documentation を更新するときは、英語版の `.md` と日本語版の `
 - 片方の language file しかない場合は、対応するもう片方を追加します。
 - 英語版と日本語版の links を揃えます。
 - 日本語版の `*.ja.md` は `AGENTS.md` から link しなくてかまいません。`AGENTS.md` では英語版の `.md` を link します。
+- ADR は historical decision record として扱います。typo や broken link のような明らかな mechanical fix を除き、後続 decision に合わせて過去 ADR を書き換えません。新しい decision が過去 ADR を変更または制約する場合は、新しい ADR 側にその変更と関係を書きます。
 
 ## Component Workflows
 

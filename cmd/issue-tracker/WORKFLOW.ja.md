@@ -15,14 +15,14 @@ Architecture boundary は [../../docs/design.md](../../docs/design.md) を参照
 
 ## Local Run
 
-Service interaction を確認するときは、repository-level の Compose flow を優先します。
+Service interaction を確認するときは、repository-level の dev container flow を優先します。
 
 ```sh
 make issue-tracker-up
 make dev-ports
 ```
 
-Host-only development の場合:
+Host-only development の場合は、repository-local の `TQ_HOME` を使います。
 
 ```sh
 TQ_HOME=./.tasq go run ./cmd/issue-tracker -addr :8080

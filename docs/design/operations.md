@@ -4,7 +4,7 @@ This document covers the local development environment, verification commands, a
 
 ## Development Environment
 
-Docker Compose runs the issue-tracker on container port `8080`, the web-ui on container port `3000`, and the orchestrator service for optional runtime inspection.
+Docker Compose keeps local development in one long-lived `dev` container and a standalone OpenAPI UI container. The issue-tracker listens on container port `8080`, the orchestrator listens on container port `8081`, and the web-ui listens on container port `3000` inside `dev`.
 
 Recommended commands:
 
@@ -14,14 +14,15 @@ Recommended commands:
 - `make dev-up-forward`
 - `make web-up`
 - `make tui-up`
-- `make dev-status`
+- `make dev-ports`
+- `make codex-login`
 
-Host commands:
+CLI commands:
 
-- `go run ./cmd/tq --api-url http://localhost:8080 issue list`
-- `TQ_API_URL=http://localhost:8080 go run ./cmd/tq issue get 1`
+- `make tq ARGS="issue list"`
+- `make tq ARGS="issue get 1"`
 
-`make web-up` starts the issue-tracker, orchestrator, and web-ui. The web UI proxies `/api/v1/...` to the issue-tracker inside the Compose network.
+`make dev-up` starts the OpenAPI UI and launches the issue-tracker, orchestrator, and web-ui inside the `dev` container. Runtime state is stored under `$TQ_HOME`, which defaults to `/workspace/.tasq` inside the container. `make codex-login` uses device auth and persists Codex authentication in the `codex-home` Docker volume.
 
 ## Verification
 
@@ -39,10 +40,10 @@ npm run build
 
 Manual verification:
 
-1. Start issue-tracker and web UI.
+1. Start the dev environment with `make dev-up`.
 2. Create and update issues through the UI or `tq`.
 3. Confirm the issue-tracker summary reflects issue status changes.
-4. Start orchestrator with `--port` when runtime inspection is needed.
+4. Confirm orchestrator runtime inspection is available through the printed orchestrator URL.
 
 ## Open Decisions
 

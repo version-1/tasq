@@ -4,18 +4,18 @@
 
 ## 実行方法
 
-ローカルの Compose 開発環境では Makefile target を使います。
+ローカルの dev container 開発環境では Makefile target を使います。
 
 ```sh
 make tq ARGS="issue list"
 ```
 
-この target は必要に応じて Compose の issue-tracker service を起動し、割り当てられた localhost port を解決して、host 上で `go run ./cmd/tq` を実行します。
+この target は必要に応じて dev container と issue-tracker process を起動し、dev container 内で `go run ./cmd/tq` を実行します。Default workflow では、`tq` は `$TQ_HOME/system/state.json` から issue-tracker API を解決します。
 
-直接 `tq` を実行することもできます。
+Host-only workflow では直接 `tq` を実行することもできます。
 
 ```sh
-go run ./cmd/tq --api-url http://localhost:8080 issue list
+TQ_HOME=./.tasq go run ./cmd/tq --api-url http://localhost:8080 issue list
 ```
 
 ## Global Options
@@ -26,7 +26,7 @@ tq [--api-url URL] [--output text|json] <resource> <action> [flags]
 
 | Option | Default | Description |
 |---|---|---|
-| `--api-url URL` | `TQ_API_URL`、その後 `http://localhost:8080` | issue-tracker API の base URL。 |
+| `--api-url URL` | `TQ_API_URL`、その後 `$TQ_HOME/system/state.json`、その後 `http://localhost:8080` | issue-tracker API の base URL。 |
 | `--output text\|json` | `text` | Output format。JSON output は script や agent 向けです。 |
 
 ## Resources

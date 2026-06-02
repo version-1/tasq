@@ -18,10 +18,10 @@ Local configuration は [docs/configuration.ja.md](docs/configuration.ja.md) を
 Local development では `make` 経由で Docker Compose を使います。
 
 ```sh
-make web-up
+make dev-up
 ```
 
-このコマンドは issue-tracker、orchestrator、OpenAPI UI、Web UI を起動します。Docker Compose が host ports を自動割り当てし、割り当てられた URLs を表示します。
+このコマンドは `dev` container と OpenAPI UI を起動し、`dev` container 内で issue-tracker、orchestrator、Web UI を起動します。Docker Compose が host ports を自動割り当てし、割り当てられた URLs を表示します。
 
 URLs を再表示します。
 
@@ -72,48 +72,44 @@ English counterpart: [README.md](README.md).
 
 ## Notes
 
-- SQLite files は repository の `.data/` 配下に作成され、git からは無視されます。
-- Compose は Go module/build caches と `web/node_modules` を named Docker volumes に保存します。
+- Runtime state と SQLite files は repository の `.tasq/` 配下に作成され、git からは無視されます。
+- Compose は Go module/build caches、`web/node_modules`、Codex login state を named Docker volumes に保存します。
 - Orchestrator は Symphony-oriented runtime settings を `WORKFLOW.md` から読みます。
 - Web UI を別 origin から配信する場合は、`NEXT_PUBLIC_ISSUE_TRACKER_URL` で issue-tracker API の origin を指定します。
-- `tq` は `--api-url`、`TQ_API_URL`、または `http://localhost:8080` から issue-tracker API URL を解決します。
+- `make tq` 経由で実行した `tq` は `$TQ_HOME/system/state.json` から issue-tracker API URL を解決します。
+- Codex を device auth で認証し、authentication を `codex-home` Docker volume に永続化するため、初回に `make codex-login` を実行します。
 
 ## tq CLI
 
 issue を一覧表示します。
 
 ```sh
-go run ./cmd/tq --api-url http://localhost:8080 issue list
+make tq ARGS="issue list"
 ```
 
-default の `TQ_API_URL` から issue を取得します。
+issue を取得します。
 
 ```sh
-TQ_API_URL=http://localhost:8080 go run ./cmd/tq issue get 1
+make tq ARGS="issue get 1"
 ```
 
 issue を作成します。
 
 ```sh
-go run ./cmd/tq issue create \
-  --api-url http://localhost:8080 \
-  --title "Wire Symphony workflow" \
-  --description "Define the first workflow contract" \
-  --status ready \
-  --priority high
+make tq ARGS='issue create --title "Wire Symphony workflow" --description "Define the first workflow contract" --status ready --priority high'
 ```
 
 よく使う status / text update には issue shortcut を使えます。
 
 ```sh
-go run ./cmd/tq issue ready 1
-go run ./cmd/tq issue close 1
-go run ./cmd/tq issue rename 1 "Clarify workflow contract"
-go run ./cmd/tq issue edit 1 "Updated description"
+make tq ARGS="issue ready 1"
+make tq ARGS="issue close 1"
+make tq ARGS='issue rename 1 "Clarify workflow contract"'
+make tq ARGS='issue edit 1 "Updated description"'
 ```
 
 machine-readable output が必要な場合は `--output json` を使います。
 
 ```sh
-go run ./cmd/tq --api-url http://localhost:8080 --output json issue list
+make tq ARGS="--output json issue list"
 ```

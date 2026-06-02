@@ -61,6 +61,7 @@ When updating documentation, keep the English `.md` file and the Japanese `*.ja.
 - Add the missing counterpart when only one language file exists.
 - Keep links between the English and Japanese versions aligned.
 - Do not link Japanese `*.ja.md` counterparts from `AGENTS.md`; link the English `.md` document there.
+- Treat ADRs as historical decision records. Do not rewrite an earlier ADR to fit a later decision, except for clearly mechanical fixes such as typos or broken links. When a new decision changes or constrains an earlier one, write the change in a new ADR and describe the relationship there.
 
 ## Component Workflows
 

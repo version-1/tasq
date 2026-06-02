@@ -18,10 +18,10 @@ For local configuration, see [docs/configuration.md](docs/configuration.md).
 Use Docker Compose through `make` for local development:
 
 ```sh
-make web-up
+make dev-up
 ```
 
-This starts the issue-tracker, orchestrator, OpenAPI UI, and Web UI. Docker Compose assigns host ports automatically, and the command prints the assigned URLs.
+This starts the `dev` container and OpenAPI UI, then launches the issue-tracker, orchestrator, and Web UI inside the `dev` container. Docker Compose assigns host ports automatically, and the command prints the assigned URLs.
 
 Show the URLs again:
 
@@ -72,48 +72,44 @@ Japanese counterpart: [README.ja.md](README.ja.md).
 
 ## Notes
 
-- SQLite files are created under `.data/` in the repository and are ignored by git.
-- Compose stores Go module/build caches and `web/node_modules` in named Docker volumes.
+- Runtime state and SQLite files are created under `.tasq/` in the repository and are ignored by git.
+- Compose stores Go module/build caches, `web/node_modules`, and Codex login state in named Docker volumes.
 - The orchestrator reads `WORKFLOW.md` for Symphony-oriented runtime settings.
 - The Web UI calls the issue-tracker API through `NEXT_PUBLIC_ISSUE_TRACKER_URL` when served from a different origin.
-- `tq` resolves the issue-tracker API URL from `--api-url`, `TQ_API_URL`, or `http://localhost:8080`.
+- `tq` resolves the issue-tracker API URL from `$TQ_HOME/system/state.json` when run through `make tq`.
+- Run `make codex-login` once to authenticate Codex with device auth and persist credentials in the `codex-home` Docker volume.
 
 ## tq CLI
 
 List issues:
 
 ```sh
-go run ./cmd/tq --api-url http://localhost:8080 issue list
+make tq ARGS="issue list"
 ```
 
-Get an issue through the default `TQ_API_URL`:
+Get an issue:
 
 ```sh
-TQ_API_URL=http://localhost:8080 go run ./cmd/tq issue get 1
+make tq ARGS="issue get 1"
 ```
 
 Create an issue:
 
 ```sh
-go run ./cmd/tq issue create \
-  --api-url http://localhost:8080 \
-  --title "Wire Symphony workflow" \
-  --description "Define the first workflow contract" \
-  --status ready \
-  --priority high
+make tq ARGS='issue create --title "Wire Symphony workflow" --description "Define the first workflow contract" --status ready --priority high'
 ```
 
 Use issue shortcuts for common status and text updates:
 
 ```sh
-go run ./cmd/tq issue ready 1
-go run ./cmd/tq issue close 1
-go run ./cmd/tq issue rename 1 "Clarify workflow contract"
-go run ./cmd/tq issue edit 1 "Updated description"
+make tq ARGS="issue ready 1"
+make tq ARGS="issue close 1"
+make tq ARGS='issue rename 1 "Clarify workflow contract"'
+make tq ARGS='issue edit 1 "Updated description"'
 ```
 
 Use `--output json` for machine-readable output:
 
 ```sh
-go run ./cmd/tq --api-url http://localhost:8080 --output json issue list
+make tq ARGS="--output json issue list"
 ```

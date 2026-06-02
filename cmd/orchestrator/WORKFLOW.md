@@ -15,7 +15,7 @@ See [../../docs/design.md](../../docs/design.md) for the service boundary.
 
 ## Local Run
 
-Start issue-tracker and orchestrator together through Compose when checking service boundaries:
+Start issue-tracker and orchestrator together in the dev container when checking service boundaries:
 
 ```sh
 make orchestrator-up
