@@ -162,28 +162,23 @@ dc-ps: dev-check ## Show Docker Compose service status.
 	$(COMPOSE) ps
 
 .PHONY: dc-shell
-dc-shell: dev-check ## Open a shell in the dev container.
-	ISSUE_TRACKER_PORT=$(ISSUE_TRACKER_PORT) ORCHESTRATOR_PORT=$(ORCHESTRATOR_PORT) OPENAPI_PORT=$(OPENAPI_PORT) WEB_PORT=$(WEB_PORT) $(COMPOSE) up --build -d dev
-	$(MAKE) dc-ready
+dc-shell: dev-check ## Open a shell in the running dev container.
 	$(DEV_EXEC) sh
 
 .PHONY: dc-exec
-dc-exec: dev-check ## Run CMD in the dev container. Example: make dc-exec CMD="go test ./..."
+dc-exec: dev-check ## Run CMD in the running dev container. Example: make dc-exec CMD="go test ./..."
 	@if [ -z "$(CMD)" ]; then \
 		echo 'Usage: make dc-exec CMD="go test ./..."'; \
 		exit 1; \
 	fi
-	ISSUE_TRACKER_PORT=$(ISSUE_TRACKER_PORT) ORCHESTRATOR_PORT=$(ORCHESTRATOR_PORT) OPENAPI_PORT=$(OPENAPI_PORT) WEB_PORT=$(WEB_PORT) $(COMPOSE) up --build -d dev
-	$(MAKE) dc-ready
 	$(DEV_EXEC) sh -c '$(CMD)'
 
 .PHONY: run-all
-run-all: dev-check ## Start issue-tracker, orchestrator, and Web inside the dev container.
-	ISSUE_TRACKER_PORT=$(ISSUE_TRACKER_PORT) ORCHESTRATOR_PORT=$(ORCHESTRATOR_PORT) OPENAPI_PORT=$(OPENAPI_PORT) WEB_PORT=$(WEB_PORT) $(COMPOSE) up --build -d dev
-	$(MAKE) dc-ready
+run-all: dev-check ## Start issue-tracker, orchestrator, and Web inside the running dev container.
 	$(DEV_EXEC) sh -c 'mkdir -p $(DEV_LOG_DIR) /workspace/.tmp'
 	$(MAKE) run-stop
 	$(DEV_EXEC_DETACHED) sh -c 'go mod download >>$(DEV_LOG_DIR)/go-mod-download.log 2>&1; exec go run github.com/air-verse/air@$(AIR_VERSION) -c .air.issue-tracker.toml >>$(DEV_LOG_DIR)/issue-tracker.log 2>&1'
+	$(MAKE) run-ready-issue-tracker
 	$(DEV_EXEC_DETACHED) sh -c 'sleep 1; exec go run github.com/air-verse/air@$(AIR_VERSION) -c .air.orchestrator.toml >>$(DEV_LOG_DIR)/orchestrator.log 2>&1'
 	@web_issue_url="$(WEB_ISSUE_TRACKER_URL)"; \
 	if [ -z "$$web_issue_url" ]; then \
@@ -192,27 +187,47 @@ run-all: dev-check ## Start issue-tracker, orchestrator, and Web inside the dev 
 	fi; \
 	$(DEV_EXEC_DETACHED) sh -c 'cd web && npm install >>../$(DEV_LOG_DIR)/web-install.log 2>&1 && exec env NEXT_PUBLIC_ISSUE_TRACKER_URL="'"$$web_issue_url"'" npm run dev -- --hostname 0.0.0.0 --port 3000 >>../$(DEV_LOG_DIR)/web.log 2>&1'
 
+.PHONY: run-ready-issue-tracker
+run-ready-issue-tracker: dev-check
+	@$(DEV_EXEC_NO_TTY) sh -c 'attempt=1; \
+		while [ "$$attempt" -le 30 ]; do \
+			if curl -fsS http://127.0.0.1:8080/api/v1/health >/dev/null 2>&1; then \
+				exit 0; \
+			fi; \
+			attempt=$$((attempt + 1)); \
+			sleep 1; \
+		done; \
+		echo "issue-tracker is not ready"; \
+		exit 1'
+
+.PHONY: run-ensure-issue-tracker
+run-ensure-issue-tracker: dev-check
+	@if $(DEV_EXEC_NO_TTY) sh -c 'curl -fsS http://127.0.0.1:8080/api/v1/health >/dev/null 2>&1'; then \
+		:; \
+	else \
+		$(MAKE) run-issue-tracker; \
+	fi
+
 .PHONY: run-stop
 run-stop: dev-check ## Stop dev processes inside the dev container without stopping the container.
-	-$(DEV_EXEC) sh -c 'pkill -f "air.*\\.air.issue-tracker.toml" 2>/dev/null || true; pkill -f "air.*\\.air.orchestrator.toml" 2>/dev/null || true; pkill -f "next dev.*--hostname 0.0.0.0.*--port 3000" 2>/dev/null || true'
+	-$(DEV_EXEC) sh -c 'pkill -f "air.*\\.air[.]issue-tracker[.]toml" 2>/dev/null || true; pkill -f "air.*\\.air[.]orchestrator[.]toml" 2>/dev/null || true; pkill -f "next dev.*--hostname 0[.]0[.]0[.]0.*--port 3000" 2>/dev/null || true'
 
 .PHONY: run-issue-tracker run-is
-run-issue-tracker: dev-check ## Start the issue-tracker process inside the dev container.
-	ISSUE_TRACKER_PORT=$(ISSUE_TRACKER_PORT) ORCHESTRATOR_PORT=$(ORCHESTRATOR_PORT) OPENAPI_PORT=$(OPENAPI_PORT) WEB_PORT=$(WEB_PORT) $(COMPOSE) up --build -d dev
-	$(MAKE) dc-ready
-	$(DEV_EXEC) sh -c 'mkdir -p $(DEV_LOG_DIR) /workspace/.tmp; pkill -f "air.*\\.air.issue-tracker.toml" 2>/dev/null || true'
+run-issue-tracker: dev-check ## Start the issue-tracker process inside the running dev container.
+	$(DEV_EXEC) sh -c 'mkdir -p $(DEV_LOG_DIR) /workspace/.tmp; pkill -f "air.*\\.air[.]issue-tracker[.]toml" 2>/dev/null || true'
 	$(DEV_EXEC_DETACHED) sh -c 'go mod download >>$(DEV_LOG_DIR)/go-mod-download.log 2>&1; exec go run github.com/air-verse/air@$(AIR_VERSION) -c .air.issue-tracker.toml >>$(DEV_LOG_DIR)/issue-tracker.log 2>&1'
+	$(MAKE) run-ready-issue-tracker
 run-is: run-issue-tracker ## Alias for run-issue-tracker.
 
 .PHONY: run-orchestrator run-or
-run-orchestrator: run-issue-tracker ## Start the orchestrator process inside the dev container.
-	$(DEV_EXEC) sh -c 'mkdir -p $(DEV_LOG_DIR) /workspace/.tmp; pkill -f "air.*\\.air.orchestrator.toml" 2>/dev/null || true'
+run-orchestrator: run-ensure-issue-tracker ## Start the orchestrator process inside the running dev container.
+	$(DEV_EXEC) sh -c 'mkdir -p $(DEV_LOG_DIR) /workspace/.tmp; pkill -f "air.*\\.air[.]orchestrator[.]toml" 2>/dev/null || true'
 	$(DEV_EXEC_DETACHED) sh -c 'sleep 1; exec go run github.com/air-verse/air@$(AIR_VERSION) -c .air.orchestrator.toml >>$(DEV_LOG_DIR)/orchestrator.log 2>&1'
 run-or: run-orchestrator ## Alias for run-orchestrator.
 
 .PHONY: run-web run-w
-run-web: run-issue-tracker ## Start the Next.js Web process inside the dev container.
-	$(DEV_EXEC) sh -c 'mkdir -p $(DEV_LOG_DIR); pkill -f "next dev.*--hostname 0.0.0.0.*--port 3000" 2>/dev/null || true'
+run-web: run-ensure-issue-tracker ## Start the Next.js Web process inside the running dev container.
+	$(DEV_EXEC) sh -c 'mkdir -p $(DEV_LOG_DIR); pkill -f "next dev.*--hostname 0[.]0[.]0[.]0.*--port 3000" 2>/dev/null || true'
 	@web_issue_url="$(WEB_ISSUE_TRACKER_URL)"; \
 	if [ -z "$$web_issue_url" ]; then \
 		issue_port="$$($(COMPOSE) port dev 8080 | sed 's/.*://')"; \
@@ -222,11 +237,11 @@ run-web: run-issue-tracker ## Start the Next.js Web process inside the dev conta
 run-w: run-web ## Alias for run-web.
 
 .PHONY: run-tui
-run-tui: run-issue-tracker ## Run the TUI interactively inside the dev container.
+run-tui: run-ensure-issue-tracker ## Run the TUI interactively inside the running dev container.
 	$(DEV_EXEC) sh -c 'go run ./cmd/tasq-tui -watch'
 
 .PHONY: run-tq
-run-tq: run-issue-tracker ## Run tq inside the dev container. Example: make run-tq ARGS="issue list"
+run-tq: dev-check ## Run tq inside the running dev container. Example: make run-tq ARGS="issue list"
 	$(DEV_EXEC) sh -c 'go run ./cmd/tq $(ARGS)'
 
 .PHONY: run-ps

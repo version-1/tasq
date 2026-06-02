@@ -59,20 +59,20 @@ make dc-exec CMD="go test ./internal/config"
 
 ## Runtime Targets
 
-`run-*` targets は dev container 内で動く process や command に使います。
+`run-*` targets は既に起動している dev container 内で動く process や command に使います。
 
 | Target | Purpose |
 |---|---|
-| `make run-all` | dev container 内で issue-tracker、orchestrator、Web を起動します。 |
+| `make run-all` | 起動済み dev container 内で issue-tracker、orchestrator、Web を起動します。 |
 | `make run-stop` | container を停止せず、dev container 内の Air と Next.js process だけを停止します。 |
-| `make run-issue-tracker` | 必要に応じて dev container を起動し、issue-tracker process だけを起動します。 |
+| `make run-issue-tracker` | 起動済み dev container 内で issue-tracker process だけを起動します。 |
 | `make run-is` | `run-issue-tracker` の alias です。 |
 | `make run-orchestrator` | issue-tracker を起動してから orchestrator process を起動します。 |
 | `make run-or` | `run-orchestrator` の alias です。 |
 | `make run-web` | issue-tracker を起動してから Web process を起動します。 |
 | `make run-w` | `run-web` の alias です。 |
 | `make run-tui` | dev container 内で TUI を interactive に実行します。 |
-| `make run-tq ARGS="..."` | 必要に応じて issue-tracker を起動し、dev container 内で `go run ./cmd/tq $(ARGS)` を実行します。 |
+| `make run-tq ARGS="..."` | service process を変更せず、起動済み dev container 内で `go run ./cmd/tq $(ARGS)` を実行します。 |
 | `make run-ps` | dev container 内で動いている dev process を表示します。 |
 | `make run-logs` | `.tmp/dev-logs/*.log` を follow します。 |
 

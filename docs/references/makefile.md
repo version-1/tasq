@@ -59,20 +59,20 @@ make dc-exec CMD="go test ./internal/config"
 
 ## Runtime Targets
 
-Use `run-*` targets for processes and commands that run inside the dev container.
+Use `run-*` targets for processes and commands that run inside an already-running dev container.
 
 | Target | Purpose |
 |---|---|
-| `make run-all` | Start issue-tracker, orchestrator, and Web inside the dev container. |
+| `make run-all` | Start issue-tracker, orchestrator, and Web inside the running dev container. |
 | `make run-stop` | Stop Air and Next.js processes inside the dev container without stopping the container. |
-| `make run-issue-tracker` | Start the dev container if needed and start only the issue-tracker process. |
+| `make run-issue-tracker` | Start only the issue-tracker process inside the running dev container. |
 | `make run-is` | Alias for `run-issue-tracker`. |
 | `make run-orchestrator` | Start issue-tracker, then start the orchestrator process. |
 | `make run-or` | Alias for `run-orchestrator`. |
 | `make run-web` | Start issue-tracker, then start the Web process. |
 | `make run-w` | Alias for `run-web`. |
 | `make run-tui` | Run the TUI interactively inside the dev container. |
-| `make run-tq ARGS="..."` | Start issue-tracker if needed and run `go run ./cmd/tq $(ARGS)` inside the dev container. |
+| `make run-tq ARGS="..."` | Run `go run ./cmd/tq $(ARGS)` inside the running dev container without changing service processes. |
 | `make run-ps` | Show dev processes running inside the dev container. |
 | `make run-logs` | Follow `.tmp/dev-logs/*.log`. |
 
