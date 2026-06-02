@@ -8,8 +8,8 @@ services:
       - sh
       - -c
       - |
-        mkdir -p /home/codex/.codex /home/codex/.cache/go-build /go/pkg/mod /workspace/web/node_modules
-        chown -R codex:codex /home/codex/.codex /home/codex/.cache /go/pkg/mod /workspace/web/node_modules
+        mkdir -p /home/codex/.codex /home/codex/.cache/go-build /go/pkg/mod /go/pkg/sumdb /workspace/web/node_modules
+        chown -R codex:codex /home/codex/.codex /home/codex/.cache /go/pkg /workspace/web/node_modules
         sleep infinity
     stdin_open: true
     tty: true

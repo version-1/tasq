@@ -75,7 +75,7 @@ dev-start-processes: dev-check ## Start issue-tracker, orchestrator, and web ins
 dev-ready: dev-check ## Wait until the dev container volumes are writable by the codex user.
 	@attempt=1; \
 	while [ "$$attempt" -le 30 ]; do \
-		if $(DEV_EXEC_NO_TTY) sh -c 'test -x /usr/local/go/bin/go && test -w /go/pkg/mod && test -w /home/codex/.cache/go-build && test -w /home/codex/.codex && test -w /workspace/web/node_modules' >/dev/null 2>&1; then \
+		if $(DEV_EXEC_NO_TTY) sh -c 'test -x /usr/local/go/bin/go && test -w /go/pkg/mod && test -w /go/pkg/sumdb && test -w /home/codex/.cache/go-build && test -w /home/codex/.codex && test -w /workspace/web/node_modules' >/dev/null 2>&1; then \
 			exit 0; \
 		fi; \
 		attempt=$$((attempt + 1)); \
