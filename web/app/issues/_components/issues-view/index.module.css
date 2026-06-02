@@ -211,6 +211,19 @@
   line-height: 1.6;
 }
 
+.detailLink {
+  color: var(--primary-black);
+  display: inline-flex;
+  font-size: 14px;
+  font-weight: 700;
+  margin-top: 12px;
+  text-decoration: none;
+}
+
+.detailLink:hover {
+  text-decoration: underline;
+}
+
 .detailList {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

@@ -3,6 +3,10 @@ import {
   Priority as PriorityValues,
   WorkspaceStatus as WorkspaceStatusValues,
   type Column,
+  type Comment,
+  type CommentListMeta,
+  type CommentListResponse,
+  type CommentType,
   type CreateIssueInput,
   type Issue,
   type IssueStatus,
@@ -20,6 +24,10 @@ export const workspaceStatuses = Object.values(WorkspaceStatusValues);
 
 export type {
   Column,
+  Comment,
+  CommentListMeta,
+  CommentListResponse,
+  CommentType,
   CreateIssueInput,
   Issue,
   IssueStatus,
