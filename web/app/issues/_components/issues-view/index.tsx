@@ -143,6 +143,7 @@ function IssueCard({
         emptyText={t("issues.noDescription")}
       />
       <div className={styles.metaRow}>
+        <span className={styles.projectKey}>{issue.projectKey}</span>
         <span className={priorityClassName(issue.priority)}>{t(`priorities.${issue.priority}`)}</span>
         <span>{t(`statuses.${issue.status}`)}</span>
       </div>
@@ -182,6 +183,7 @@ function IssueDetail({
           emptyText={t("issues.noDescription")}
         />
         <dl className={styles.detailList}>
+          <div><dt>{t("issues.detail.project")}</dt><dd>{issue.projectKey}</dd></div>
           <div><dt>{t("issues.detail.issueStatus")}</dt><dd>{t(`statuses.${issue.status}`)}</dd></div>
           <div><dt>{t("issues.detail.priority")}</dt><dd>{t(`priorities.${issue.priority}`)}</dd></div>
           <div><dt>{t("issues.assignee")}</dt><dd>{issue.assignee || t("issues.unassigned")}</dd></div>

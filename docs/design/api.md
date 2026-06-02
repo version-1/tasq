@@ -36,13 +36,15 @@ Current issue-tracker endpoints:
 
 Attachment uploads accept multipart form data with `entity_type`, `entity_id`, and `file`. The first implementation supports PNG, JPEG, GIF, and WebP image files up to 5 MiB. Attachment bytes are stored below `$TQ_HOME/system/data/attachments`, while SQLite stores metadata and relative paths. Issue and comment text references attachments with Markdown image links such as `![screenshot](attachment://att_...)`.
 
+Issues belong to exactly one project. `POST /api/v1/issues` requires `projectId`, and issue responses include both `projectId` and `projectKey`. `GET /api/v1/issues` accepts optional `states` and `project_id` query parameters. Omitting `project_id` lists issues across all projects.
+
 JSON success responses use `{ "data": ..., "meta": {} }`. JSON error responses use `{ "error": { "code": "...", "message": "..." }, "meta": {} }`.
 
 The `tq` CLI wraps issue CRUD endpoints with these commands:
 
-- `tq issue list`
+- `tq issue list [--project <project-key>]`
 - `tq issue get <id>`
-- `tq issue create --title <title> [--description ...] [--status ...] [--priority ...] [--assignee ...]`
+- `tq issue create --project <project-key> --title <title> [--description ...] [--status ...] [--priority ...] [--assignee ...]`
 - `tq issue update <id> [--title ...] [--description ...] [--status ...] [--priority ...] [--assignee ...]`
 - `tq issue create ... --attach <image-path>`
 - `tq issue update <id> ... --attach <image-path>`

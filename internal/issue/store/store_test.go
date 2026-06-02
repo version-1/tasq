@@ -23,6 +23,7 @@ func TestOpenAppliesIssueTrackerSchema(t *testing.T) {
 
 	for _, name := range []string{
 		"issues",
+		"issues_project_id_idx",
 		"issues_status_idx",
 		"comments",
 		"comments_issue_id_idx",
@@ -37,6 +38,89 @@ func TestOpenAppliesIssueTrackerSchema(t *testing.T) {
 		if !schemaObjectExists(t, store, name) {
 			t.Fatalf("schema object %q does not exist", name)
 		}
+	}
+}
+
+func TestOpenDeletesLegacyIssuesWhenProjectIDIsMissing(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	path := filepath.Join(t.TempDir(), "issue-tracker.sqlite")
+	db, err := sql.Open("sqlite", path)
+	if err != nil {
+		t.Fatalf("open sqlite: %v", err)
+	}
+	if _, err := db.ExecContext(ctx, `
+		CREATE TABLE issues (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			title TEXT NOT NULL,
+			description TEXT NOT NULL DEFAULT '',
+			status TEXT NOT NULL,
+			priority TEXT NOT NULL,
+			assignee TEXT NOT NULL DEFAULT '',
+			created_at TEXT NOT NULL,
+			updated_at TEXT NOT NULL
+		);
+		CREATE TABLE comments (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			issue_id INTEGER NOT NULL,
+			author TEXT NOT NULL,
+			type TEXT NOT NULL,
+			body TEXT NOT NULL,
+			created_at TEXT NOT NULL
+		);
+		CREATE TABLE attachments (
+			id TEXT PRIMARY KEY,
+			entity_type TEXT NOT NULL,
+			entity_id TEXT NOT NULL,
+			filename TEXT NOT NULL,
+			path TEXT NOT NULL,
+			content_type TEXT NOT NULL,
+			size INTEGER NOT NULL,
+			created_at TEXT NOT NULL
+		);
+		INSERT INTO issues (title, status, priority, created_at, updated_at) VALUES ('Legacy', 'backlog', 'normal', '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z');
+		INSERT INTO comments (issue_id, author, type, body, created_at) VALUES (1, 'codex', 'general', 'legacy', '2026-01-01T00:00:00Z');
+		INSERT INTO attachments (id, entity_type, entity_id, filename, path, content_type, size, created_at) VALUES
+			('issue_att', 'issue', '1', 'issue.png', 'issue.png', 'image/png', 1, '2026-01-01T00:00:00Z'),
+			('comment_att', 'comment', '1', 'comment.png', 'comment.png', 'image/png', 1, '2026-01-01T00:00:00Z'),
+			('other_att', 'run', '1', 'run.png', 'run.png', 'image/png', 1, '2026-01-01T00:00:00Z');
+	`); err != nil {
+		t.Fatalf("seed legacy sqlite: %v", err)
+	}
+	if err := db.Close(); err != nil {
+		t.Fatalf("close sqlite: %v", err)
+	}
+
+	store, err := Open(ctx, path)
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer store.Close()
+
+	if exists, err := store.hasColumn(ctx, "issues", "project_id"); err != nil || !exists {
+		t.Fatalf("issues.project_id exists = %v err = %v", exists, err)
+	}
+	issues, err := store.Issues(ctx)
+	if err != nil {
+		t.Fatalf("list issues: %v", err)
+	}
+	if len(issues) != 0 {
+		t.Fatalf("issues = %+v, want empty", issues)
+	}
+	var commentCount int
+	if err := store.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM comments`).Scan(&commentCount); err != nil {
+		t.Fatalf("count comments: %v", err)
+	}
+	if commentCount != 0 {
+		t.Fatalf("comment count = %d, want 0", commentCount)
+	}
+	var remainingAttachmentID string
+	if err := store.db.QueryRowContext(ctx, `SELECT id FROM attachments`).Scan(&remainingAttachmentID); err != nil {
+		t.Fatalf("read remaining attachment: %v", err)
+	}
+	if remainingAttachmentID != "other_att" {
+		t.Fatalf("remaining attachment = %q", remainingAttachmentID)
 	}
 }
 
@@ -129,7 +213,8 @@ func TestCreateComment(t *testing.T) {
 	}
 	defer store.Close()
 
-	issue, err := store.CreateIssue(ctx, entity.CreateIssueInput{Title: "Add comments", Status: entity.StatusBacklog})
+	project := createTestProject(t, store, "COMMENTS")
+	issue, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Add comments", Status: entity.StatusBacklog})
 	if err != nil {
 		t.Fatalf("create issue: %v", err)
 	}
@@ -172,7 +257,8 @@ func TestCreateCommentRejectsInvalidInput(t *testing.T) {
 	}
 	defer store.Close()
 
-	issue, err := store.CreateIssue(ctx, entity.CreateIssueInput{Title: "Validate comments"})
+	project := createTestProject(t, store, "VALIDATE")
+	issue, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Validate comments"})
 	if err != nil {
 		t.Fatalf("create issue: %v", err)
 	}
@@ -237,7 +323,8 @@ func TestCommentsByIssueID(t *testing.T) {
 	}
 	defer store.Close()
 
-	issue, err := store.CreateIssue(ctx, entity.CreateIssueInput{Title: "List comments"})
+	project := createTestProject(t, store, "LIST")
+	issue, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "List comments"})
 	if err != nil {
 		t.Fatalf("create issue: %v", err)
 	}
@@ -276,7 +363,8 @@ func TestCommentsByIssueIDClampsLimit(t *testing.T) {
 	}
 	defer store.Close()
 
-	issue, err := store.CreateIssue(ctx, entity.CreateIssueInput{Title: "Clamp comments"})
+	project := createTestProject(t, store, "CLAMP")
+	issue, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Clamp comments"})
 	if err != nil {
 		t.Fatalf("create issue: %v", err)
 	}
@@ -344,6 +432,28 @@ func TestProjectCRUD(t *testing.T) {
 	}
 	if len(projects) != 0 {
 		t.Fatalf("project count after delete = %d", len(projects))
+	}
+}
+
+func TestDeleteProjectRejectsLinkedIssues(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store, err := Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer store.Close()
+
+	project := createTestProject(t, store, "LINKED")
+	if _, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Linked issue"}); err != nil {
+		t.Fatalf("create issue: %v", err)
+	}
+	if err := store.DeleteProject(ctx, project.ID); err == nil || !strings.Contains(err.Error(), "linked issues") {
+		t.Fatalf("err = %v, want linked issues error", err)
+	}
+	if _, err := store.Project(ctx, project.ID); err != nil {
+		t.Fatalf("project should remain: %v", err)
 	}
 }
 
@@ -439,15 +549,16 @@ func TestIssuesByStates(t *testing.T) {
 	}
 	defer store.Close()
 
-	backlog, err := store.CreateIssue(ctx, entity.CreateIssueInput{Title: "Plan tracker", Status: entity.StatusBacklog})
+	project := createTestProject(t, store, "ISSUES")
+	backlog, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Plan tracker", Status: entity.StatusBacklog})
 	if err != nil {
 		t.Fatalf("create backlog issue: %v", err)
 	}
-	ready, err := store.CreateIssue(ctx, entity.CreateIssueInput{Title: "Build worker", Status: entity.StatusReady})
+	ready, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Build worker", Status: entity.StatusReady})
 	if err != nil {
 		t.Fatalf("create ready issue: %v", err)
 	}
-	review, err := store.CreateIssue(ctx, entity.CreateIssueInput{Title: "Review API", Status: entity.StatusReview})
+	review, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Review API", Status: entity.StatusReview})
 	if err != nil {
 		t.Fatalf("create review issue: %v", err)
 	}
@@ -473,6 +584,46 @@ func TestIssuesByStates(t *testing.T) {
 	}
 }
 
+func TestIssuesByFilterFiltersByProject(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store, err := Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer store.Close()
+
+	primary := createTestProject(t, store, "PRIMARY")
+	secondary := createTestProject(t, store, "SECONDARY")
+	ready, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: primary.ID, Title: "Primary ready", Status: entity.StatusReady})
+	if err != nil {
+		t.Fatalf("create primary ready issue: %v", err)
+	}
+	if _, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: primary.ID, Title: "Primary backlog", Status: entity.StatusBacklog}); err != nil {
+		t.Fatalf("create primary backlog issue: %v", err)
+	}
+	other, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: secondary.ID, Title: "Secondary ready", Status: entity.StatusReady})
+	if err != nil {
+		t.Fatalf("create secondary issue: %v", err)
+	}
+
+	filtered, err := store.IssuesByFilter(ctx, IssueFilter{States: []entity.Status{entity.StatusReady}, ProjectID: &primary.ID})
+	if err != nil {
+		t.Fatalf("list issues by filter: %v", err)
+	}
+	assertIssueIDs(t, filtered, []int64{ready.ID})
+	if filtered[0].ProjectID != primary.ID || filtered[0].ProjectKey != primary.Key {
+		t.Fatalf("filtered issue project = %+v", filtered[0])
+	}
+
+	secondaryIssues, err := store.IssuesByFilter(ctx, IssueFilter{ProjectID: &secondary.ID})
+	if err != nil {
+		t.Fatalf("list secondary issues: %v", err)
+	}
+	assertIssueIDs(t, secondaryIssues, []int64{other.ID})
+}
+
 func TestIssueStatesByIDs(t *testing.T) {
 	t.Parallel()
 
@@ -483,15 +634,16 @@ func TestIssueStatesByIDs(t *testing.T) {
 	}
 	defer store.Close()
 
-	backlog, err := store.CreateIssue(ctx, entity.CreateIssueInput{Title: "Plan tracker", Status: entity.StatusBacklog})
+	project := createTestProject(t, store, "STATES")
+	backlog, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Plan tracker", Status: entity.StatusBacklog})
 	if err != nil {
 		t.Fatalf("create backlog issue: %v", err)
 	}
-	ready, err := store.CreateIssue(ctx, entity.CreateIssueInput{Title: "Build worker", Status: entity.StatusReady})
+	ready, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Build worker", Status: entity.StatusReady})
 	if err != nil {
 		t.Fatalf("create ready issue: %v", err)
 	}
-	review, err := store.CreateIssue(ctx, entity.CreateIssueInput{Title: "Review API", Status: entity.StatusReview})
+	review, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Review API", Status: entity.StatusReview})
 	if err != nil {
 		t.Fatalf("create review issue: %v", err)
 	}
@@ -613,6 +765,20 @@ func assertIssueStatuses(t *testing.T, issues []entity.Issue, want []entity.Stat
 			t.Fatalf("issue status %q is not expected in %+v", issue.Status, issues)
 		}
 	}
+}
+
+func createTestProject(t *testing.T, store *Store, key string) entity.Project {
+	t.Helper()
+
+	project, err := store.CreateProject(context.Background(), entity.CreateProjectInput{
+		Key:      key,
+		Name:     key,
+		Location: t.TempDir(),
+	})
+	if err != nil {
+		t.Fatalf("create project: %v", err)
+	}
+	return project
 }
 
 func createComment(t *testing.T, store *Store, issueID int64, body string) entity.Comment {

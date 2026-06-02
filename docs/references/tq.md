@@ -41,10 +41,14 @@ tq [--api-url URL] [--output text|json] <resource> <action> [flags]
 
 ### `issue list`
 
-List issues.
+List issues. Pass `--project KEY` to limit the result to one project.
 
 ```sh
 make run-tq ARGS="issue list"
+```
+
+```sh
+make run-tq ARGS="issue list --project tasq"
 ```
 
 JSON output:
@@ -63,16 +67,17 @@ make run-tq ARGS="issue get 1"
 
 ### `issue create`
 
-Create an issue.
+Create an issue. `--project` is required and must reference an existing project key.
 
 ```sh
-make run-tq ARGS='issue create --title "Write tq reference"'
+make run-tq ARGS='issue create --project tasq --title "Write tq reference"'
 ```
 
 Flags:
 
 | Flag | Required | Description |
 |---|---:|---|
+| `--project KEY` | yes | Project key that owns the issue. |
 | `--title TITLE` | yes | Issue title. |
 | `--description TEXT` | no | Issue description. |
 | `--status STATUS` | no | Issue status. Defaults to `backlog` when omitted. |
@@ -83,7 +88,7 @@ Flags:
 Example:
 
 ```sh
-make run-tq ARGS='issue create --title "Improve project list" --description "Render project list as a readable table." --status ready --priority high --assignee codex'
+make run-tq ARGS='issue create --project tasq --title "Improve project list" --description "Render project list as a readable table." --status ready --priority high --assignee codex'
 ```
 
 ### `issue update`

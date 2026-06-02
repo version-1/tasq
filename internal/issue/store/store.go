@@ -18,6 +18,11 @@ type Store struct {
 	db *sql.DB
 }
 
+type IssueFilter struct {
+	States    []entity.Status
+	ProjectID *int64
+}
+
 func Open(ctx context.Context, path string) (*Store, error) {
 	db, err := sql.Open("sqlite", path)
 	if err != nil {
@@ -37,6 +42,9 @@ func (s *Store) Close() error {
 }
 
 func (s *Store) migrate(ctx context.Context) error {
+	if err := s.rebuildIssuesForProjectScopeIfNeeded(ctx); err != nil {
+		return err
+	}
 	if _, err := s.db.ExecContext(ctx, schema.IssueTracker); err != nil {
 		return fmt.Errorf("migrate issue tracker sqlite: %w", err)
 	}
@@ -105,6 +113,18 @@ func (s *Store) Project(ctx context.Context, id int64) (entity.Project, error) {
 	return item, nil
 }
 
+func (s *Store) ProjectByKey(ctx context.Context, key string) (entity.Project, error) {
+	row := s.db.QueryRowContext(ctx, `SELECT `+projectColumns()+` FROM projects WHERE key = ?`, key)
+	item, err := scanProject(row)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return entity.Project{}, sql.ErrNoRows
+		}
+		return entity.Project{}, fmt.Errorf("read project by key: %w", err)
+	}
+	return item, nil
+}
+
 func (s *Store) UpdateProject(ctx context.Context, id int64, input entity.UpdateProjectInput) (entity.Project, error) {
 	normalized, err := entity.NormalizeUpdateProject(input)
 	if err != nil {
@@ -152,6 +172,13 @@ func (s *Store) DeleteProject(ctx context.Context, id int64) error {
 			_ = tx.Rollback()
 		}
 	}()
+	var issueCount int
+	if err := tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM issues WHERE project_id = ?`, id).Scan(&issueCount); err != nil {
+		return fmt.Errorf("count project issues: %w", err)
+	}
+	if issueCount > 0 {
+		return errors.New("project has linked issues")
+	}
 	if _, err := tx.ExecContext(ctx, `DELETE FROM workspaces WHERE project_id = ?`, id); err != nil {
 		return fmt.Errorf("delete project workspaces: %w", err)
 	}
@@ -295,10 +322,14 @@ func (s *Store) CreateIssue(ctx context.Context, input entity.CreateIssueInput) 
 	if err != nil {
 		return entity.Issue{}, err
 	}
+	if _, err := s.Project(ctx, normalized.ProjectID); err != nil {
+		return entity.Issue{}, err
+	}
 	now := nowString()
 	result, err := s.db.ExecContext(ctx, `INSERT INTO issues (
-		title, description, status, priority, assignee, created_at, updated_at
-	) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		project_id, title, description, status, priority, assignee, created_at, updated_at
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		normalized.ProjectID,
 		normalized.Title,
 		normalized.Description,
 		normalized.Status,
@@ -318,7 +349,37 @@ func (s *Store) CreateIssue(ctx context.Context, input entity.CreateIssueInput) 
 }
 
 func (s *Store) Issues(ctx context.Context) ([]entity.Issue, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT `+issueColumns()+` FROM issues ORDER BY updated_at DESC, id DESC`)
+	return s.IssuesByFilter(ctx, IssueFilter{})
+}
+
+func (s *Store) IssuesByStates(ctx context.Context, states []entity.Status) ([]entity.Issue, error) {
+	return s.IssuesByFilter(ctx, IssueFilter{States: states})
+}
+
+func (s *Store) IssuesByFilter(ctx context.Context, filter IssueFilter) ([]entity.Issue, error) {
+	clauses := []string{}
+	args := []any{}
+	if len(filter.States) > 0 {
+		for _, status := range filter.States {
+			if !entity.IsValidStatus(status) {
+				return nil, errors.New("status is invalid")
+			}
+			args = append(args, status)
+		}
+		clauses = append(clauses, `issues.status IN (`+placeholders(len(filter.States))+`)`)
+	}
+	if filter.ProjectID != nil {
+		if *filter.ProjectID <= 0 {
+			return nil, errors.New("projectId is invalid")
+		}
+		args = append(args, *filter.ProjectID)
+		clauses = append(clauses, `issues.project_id = ?`)
+	}
+	where := ""
+	if len(clauses) > 0 {
+		where = " WHERE " + strings.Join(clauses, " AND ")
+	}
+	rows, err := s.db.QueryContext(ctx, `SELECT `+issueColumns()+` FROM issues JOIN projects ON projects.id = issues.project_id`+where+` ORDER BY issues.updated_at DESC, issues.id DESC`, args...)
 	if err != nil {
 		return nil, fmt.Errorf("list issues: %w", err)
 	}
@@ -334,37 +395,6 @@ func (s *Store) Issues(ctx context.Context) ([]entity.Issue, error) {
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("iterate issues: %w", err)
-	}
-	return issues, nil
-}
-
-func (s *Store) IssuesByStates(ctx context.Context, states []entity.Status) ([]entity.Issue, error) {
-	if len(states) == 0 {
-		return s.Issues(ctx)
-	}
-	args := make([]any, 0, len(states))
-	for _, status := range states {
-		if !entity.IsValidStatus(status) {
-			return nil, errors.New("status is invalid")
-		}
-		args = append(args, status)
-	}
-	rows, err := s.db.QueryContext(ctx, `SELECT `+issueColumns()+` FROM issues WHERE status IN (`+placeholders(len(states))+`) ORDER BY updated_at DESC, id DESC`, args...)
-	if err != nil {
-		return nil, fmt.Errorf("list issues by states: %w", err)
-	}
-	defer rows.Close()
-
-	var issues []entity.Issue
-	for rows.Next() {
-		item, err := scanIssue(rows)
-		if err != nil {
-			return nil, err
-		}
-		issues = append(issues, item)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate issues by states: %w", err)
 	}
 	return issues, nil
 }
@@ -398,7 +428,7 @@ func (s *Store) IssueStatesByIDs(ctx context.Context, ids []int64) ([]entity.Iss
 }
 
 func (s *Store) Issue(ctx context.Context, id int64) (entity.Issue, error) {
-	row := s.db.QueryRowContext(ctx, `SELECT `+issueColumns()+` FROM issues WHERE id = ?`, id)
+	row := s.db.QueryRowContext(ctx, `SELECT `+issueColumns()+` FROM issues JOIN projects ON projects.id = issues.project_id WHERE issues.id = ?`, id)
 	item, err := scanIssue(row)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -563,7 +593,7 @@ func (s *Store) Summary(ctx context.Context) (entity.Summary, error) {
 }
 
 func issueColumns() string {
-	return `id, title, description, status, priority, assignee, created_at, updated_at`
+	return `issues.id, issues.project_id, projects.key, issues.title, issues.description, issues.status, issues.priority, issues.assignee, issues.created_at, issues.updated_at`
 }
 
 func commentColumns() string {
@@ -600,7 +630,7 @@ func scanIssue(row rowScanner) (entity.Issue, error) {
 	var item entity.Issue
 	var createdAt string
 	var updatedAt string
-	err := row.Scan(&item.ID, &item.Title, &item.Description, &item.Status, &item.Priority, &item.Assignee, &createdAt, &updatedAt)
+	err := row.Scan(&item.ID, &item.ProjectID, &item.ProjectKey, &item.Title, &item.Description, &item.Status, &item.Priority, &item.Assignee, &createdAt, &updatedAt)
 	if err != nil {
 		return entity.Issue{}, err
 	}
@@ -654,9 +684,23 @@ func scanProject(row rowScanner) (entity.Project, error) {
 }
 
 func (s *Store) addColumnIfMissing(ctx context.Context, table string, column string, definition string) error {
+	exists, err := s.hasColumn(ctx, table, column)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return nil
+	}
+	if _, err := s.db.ExecContext(ctx, `ALTER TABLE `+table+` ADD COLUMN `+column+` `+definition); err != nil {
+		return fmt.Errorf("add %s.%s column: %w", table, column, err)
+	}
+	return nil
+}
+
+func (s *Store) hasColumn(ctx context.Context, table string, column string) (bool, error) {
 	rows, err := s.db.QueryContext(ctx, `PRAGMA table_info(`+table+`)`)
 	if err != nil {
-		return fmt.Errorf("inspect %s columns: %w", table, err)
+		return false, fmt.Errorf("inspect %s columns: %w", table, err)
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -667,19 +711,95 @@ func (s *Store) addColumnIfMissing(ctx context.Context, table string, column str
 		var defaultValue any
 		var pk int
 		if err := rows.Scan(&cid, &name, &typ, &notNull, &defaultValue, &pk); err != nil {
-			return err
+			return false, err
 		}
 		if name == column {
-			return nil
+			return true, nil
 		}
 	}
 	if err := rows.Err(); err != nil {
+		return false, err
+	}
+	return false, nil
+}
+
+func (s *Store) rebuildIssuesForProjectScopeIfNeeded(ctx context.Context) error {
+	hasIssues, err := s.tableExists(ctx, "issues")
+	if err != nil {
 		return err
 	}
-	if _, err := s.db.ExecContext(ctx, `ALTER TABLE `+table+` ADD COLUMN `+column+` `+definition); err != nil {
-		return fmt.Errorf("add %s.%s column: %w", table, column, err)
+	if !hasIssues {
+		return nil
 	}
+	hasProjectID, err := s.hasColumn(ctx, "issues", "project_id")
+	if err != nil {
+		return err
+	}
+	if hasProjectID {
+		return nil
+	}
+	hasAttachments, err := s.tableExists(ctx, "attachments")
+	if err != nil {
+		return err
+	}
+	hasComments, err := s.tableExists(ctx, "comments")
+	if err != nil {
+		return err
+	}
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if tx != nil {
+			_ = tx.Rollback()
+		}
+	}()
+	statements := []string{}
+	if hasAttachments {
+		statements = append(statements, `DELETE FROM attachments WHERE entity_type IN ('issue', 'comment')`)
+	}
+	if hasComments {
+		statements = append(statements, `DELETE FROM comments`)
+	}
+	statements = append(statements,
+		`DROP TABLE issues`,
+		`CREATE TABLE issues (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			project_id INTEGER NOT NULL,
+			title TEXT NOT NULL,
+			description TEXT NOT NULL DEFAULT '',
+			status TEXT NOT NULL,
+			priority TEXT NOT NULL,
+			assignee TEXT NOT NULL DEFAULT '',
+			created_at TEXT NOT NULL,
+			updated_at TEXT NOT NULL,
+			FOREIGN KEY(project_id) REFERENCES projects(id)
+		)`,
+		`CREATE INDEX IF NOT EXISTS issues_project_id_idx ON issues(project_id)`,
+		`CREATE INDEX IF NOT EXISTS issues_status_idx ON issues(status)`,
+	)
+	for _, statement := range statements {
+		if _, err := tx.ExecContext(ctx, statement); err != nil {
+			return fmt.Errorf("rebuild issues for project scope: %w", err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	tx = nil
 	return nil
+}
+
+func (s *Store) tableExists(ctx context.Context, table string) (bool, error) {
+	var exists bool
+	err := s.db.QueryRowContext(ctx, `SELECT EXISTS (
+		SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?
+	)`, table).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("inspect %s table: %w", table, err)
+	}
+	return exists, nil
 }
 
 func scanWorkspace(row rowScanner) (entity.Workspace, error) {

@@ -155,6 +155,18 @@
   color: var(--dark-gray);
 }
 
+.projectKey {
+  background: #eef6f8;
+  border-radius: 6px;
+  color: #14636f;
+  font-weight: 700;
+  max-width: 120px;
+  overflow: hidden;
+  padding: 3px 6px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .warningPriority {
   background: #fff2cc;
   color: var(--warning);

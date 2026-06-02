@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -58,9 +59,13 @@ func newAPIClient(baseURL string) (*apiClient, error) {
 	}, nil
 }
 
-func (c *apiClient) listIssues(ctx context.Context) ([]entity.Issue, error) {
+func (c *apiClient) listIssues(ctx context.Context, projectID *int64) ([]entity.Issue, error) {
 	var issues []entity.Issue
-	if err := c.do(ctx, http.MethodGet, "/api/v1/issues", nil, &issues); err != nil {
+	path := "/api/v1/issues"
+	if projectID != nil {
+		path += "?project_id=" + url.QueryEscape(strconv.FormatInt(*projectID, 10))
+	}
+	if err := c.do(ctx, http.MethodGet, path, nil, &issues); err != nil {
 		return nil, err
 	}
 	return issues, nil
@@ -72,6 +77,19 @@ func (c *apiClient) listProjects(ctx context.Context) ([]entity.Project, error) 
 		return nil, err
 	}
 	return projects, nil
+}
+
+func (c *apiClient) projectByKey(ctx context.Context, key string) (entity.Project, error) {
+	projects, err := c.listProjects(ctx)
+	if err != nil {
+		return entity.Project{}, err
+	}
+	for _, project := range projects {
+		if project.Key == key {
+			return project, nil
+		}
+	}
+	return entity.Project{}, fmt.Errorf("project %q not found", key)
 }
 
 func (c *apiClient) createProject(ctx context.Context, input entity.CreateProjectInput) (entity.Project, error) {

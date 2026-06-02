@@ -150,6 +150,8 @@ export interface UpdateWorkspaceInput {
 
 export interface Issue {
   id: number;
+  projectId: number;
+  projectKey: string;
   title: string;
   description: string;
   status: IssueStatus;
@@ -215,6 +217,7 @@ export interface UpdateCommentInput {
 }
 
 export interface CreateIssueInput {
+  projectId: number;
   title: string;
   description?: string;
   status?: IssueStatus;
@@ -325,6 +328,10 @@ export type GetApiV1IssuesParams = {
  * Comma-separated issue statuses. Omit this parameter or pass an empty value to list all issues.
  */
 states?: string;
+/**
+ * Project ID used to limit issues to a single project. Omit this parameter to list issues from all projects.
+ */
+project_id?: number;
 };
 
 export type GetApiV1IssuesIssueIdCommentsParams = {

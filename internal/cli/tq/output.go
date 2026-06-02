@@ -28,7 +28,7 @@ func writeIssues(w io.Writer, format string, issues []entity.Issue) error {
 		return writeJSON(w, issues)
 	}
 	for _, issue := range issues {
-		fmt.Fprintf(w, "#%d\t%s\t%s\n", issue.ID, issue.Status, issue.Title)
+		fmt.Fprintf(w, "#%d\t[%s]\t%s\t%s\n", issue.ID, issue.ProjectKey, issue.Status, issue.Title)
 	}
 	return nil
 }
@@ -38,6 +38,7 @@ func writeIssue(w io.Writer, format string, issue entity.Issue) error {
 		return writeJSON(w, issue)
 	}
 	fmt.Fprintf(w, "ID: %d\n", issue.ID)
+	fmt.Fprintf(w, "Project: %s\n", issue.ProjectKey)
 	fmt.Fprintf(w, "Title: %s\n", issue.Title)
 	fmt.Fprintf(w, "Description: %s\n", issue.Description)
 	fmt.Fprintf(w, "Status: %s\n", colorValue(string(issue.Status), statusColor(issue.Status)))

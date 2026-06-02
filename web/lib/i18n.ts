@@ -20,6 +20,7 @@ const resources = {
         cancel: "キャンセル",
         close: "閉じる",
         errors: {
+          projectRequired: "Project を登録してください",
           titleRequired: "タイトルを入力してください",
         },
         fields: {
@@ -79,6 +80,7 @@ const resources = {
         },
         detail: {
           issueStatus: "Issue ステータス",
+          project: "Project",
           priority: "優先度",
           runStatus: "実行ステータス",
           workspace: "Workspace",
@@ -180,6 +182,7 @@ const resources = {
         cancel: "Cancel",
         close: "Close",
         errors: {
+          projectRequired: "Register a project first",
           titleRequired: "Enter a title",
         },
         fields: {
@@ -239,6 +242,7 @@ const resources = {
         },
         detail: {
           issueStatus: "Issue Status",
+          project: "Project",
           priority: "Priority",
           runStatus: "Run Status",
           workspace: "Workspace",

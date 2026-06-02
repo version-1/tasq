@@ -106,6 +106,8 @@ type UpdateWorkspaceInput struct {
 
 type Issue struct {
 	ID          int64     `json:"id"`
+	ProjectID   int64     `json:"projectId"`
+	ProjectKey  string    `json:"projectKey"`
 	Title       string    `json:"title"`
 	Description string    `json:"description"`
 	Status      Status    `json:"status"`
@@ -121,6 +123,7 @@ type IssueState struct {
 }
 
 type CreateIssueInput struct {
+	ProjectID   int64    `json:"projectId"`
 	Title       string   `json:"title"`
 	Description string   `json:"description"`
 	Status      Status   `json:"status"`
@@ -172,6 +175,9 @@ type Summary struct {
 }
 
 func NormalizeCreate(input CreateIssueInput) (CreateIssueInput, error) {
+	if input.ProjectID <= 0 {
+		return input, errors.New("projectId is required")
+	}
 	if input.Title == "" {
 		return input, errors.New("title is required")
 	}

@@ -1,14 +1,17 @@
 CREATE TABLE IF NOT EXISTS issues (
 	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	project_id INTEGER NOT NULL,
 	title TEXT NOT NULL,
 	description TEXT NOT NULL DEFAULT '',
 	status TEXT NOT NULL,
 	priority TEXT NOT NULL,
 	assignee TEXT NOT NULL DEFAULT '',
 	created_at TEXT NOT NULL,
-	updated_at TEXT NOT NULL
+	updated_at TEXT NOT NULL,
+	FOREIGN KEY(project_id) REFERENCES projects(id)
 );
 
+CREATE INDEX IF NOT EXISTS issues_project_id_idx ON issues(project_id);
 CREATE INDEX IF NOT EXISTS issues_status_idx ON issues(status);
 
 CREATE TABLE IF NOT EXISTS comments (

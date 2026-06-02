@@ -177,6 +177,7 @@ export function Layout({ children }: { children: ReactNode }) {
         />
 
         <AddIssueDialog
+          project={activeProject}
           state={addIssueState}
           onCancel={() => setAddIssueState({ kind: "closed" })}
           onSubmit={handleCreateIssue}
@@ -216,10 +217,12 @@ function PanelMessage({ title, detail }: { title: string; detail?: string }) {
 }
 
 function AddIssueDialog({
+  project,
   state,
   onCancel,
   onSubmit,
 }: {
+  project: Project | null;
   state: AddIssueDialogState;
   onCancel: () => void;
   onSubmit: (input: CreateIssueInput) => Promise<void>;
@@ -249,10 +252,14 @@ function AddIssueDialog({
       setValidationError(t("addIssue.errors.titleRequired"));
       return;
     }
+    if (!project) {
+      setValidationError(t("addIssue.errors.projectRequired"));
+      return;
+    }
 
     setIsSubmitting(true);
     setValidationError("");
-    await onSubmit(toCreateIssueInput(values, title));
+    await onSubmit(toCreateIssueInput(values, title, project.id));
     setIsSubmitting(false);
   }
 
@@ -363,8 +370,9 @@ function initialAddIssueValues(status: IssueStatus): AddIssueFormValues {
   };
 }
 
-function toCreateIssueInput(values: AddIssueFormValues, title: string): CreateIssueInput {
+function toCreateIssueInput(values: AddIssueFormValues, title: string, projectID: number): CreateIssueInput {
   return {
+    projectId: projectID,
     title,
     description: values.description.trim() || undefined,
     status: values.status,

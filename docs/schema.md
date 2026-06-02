@@ -13,6 +13,8 @@ Validation is enforced at the **store layer** (Go code) on every create and upda
 | Field       | Go Type    | Required (Create) | Required (Update) | Default     | Constraints                                                        |
 |-------------|------------|--------------------|--------------------|-------------|--------------------------------------------------------------------|
 | ID          | `int64`    | auto               | path param         | autoincrement | `> 0`                                                            |
+| ProjectID   | `int64`    | yes                | —                  | —           | `> 0`, referenced project must exist                               |
+| ProjectKey  | `string`   | response           | —                  | —           | copied from referenced project                                     |
 | Title       | `string`   | yes                | optional (`*string`) | —          | min 1, max 500 chars                                              |
 | Description | `string`   | no                 | optional (`*string`) | `""`       | max 10,000 chars                                                  |
 | Status      | `Status`   | no                 | optional (`*Status`) | `backlog`  | enum: `backlog`, `ready`, `in_progress`, `review`, `done`, `blocked`, `failed` |
@@ -22,6 +24,7 @@ Validation is enforced at the **store layer** (Go code) on every create and upda
 | UpdatedAt   | `time.Time`| auto               | auto               | `now()`     | —                                                                  |
 
 Issue descriptions may contain Markdown. Image attachments are referenced as `![alt](attachment://<attachment-id>)`.
+Every issue belongs to exactly one project. Issue project ownership is set at create time and cannot be changed through update APIs.
 
 ### Comment
 
@@ -60,6 +63,8 @@ Attachment records live in SQLite, while file bytes are stored under `$TQ_HOME/s
 | Location    | `string`   | yes                | optional (`*string`) | —          | absolute path (`/` prefix), max 1,000 chars, `os.Stat` directory existence check on set |
 | CreatedAt   | `time.Time`| auto               | —                  | `now()`     | —                                                                  |
 | UpdatedAt   | `time.Time`| auto               | auto               | `now()`     | —                                                                  |
+
+Projects cannot be deleted while linked issues exist.
 
 ### Workspace
 

@@ -229,6 +229,45 @@ func TestIssuesRejectsInvalidStates(t *testing.T) {
 	}
 }
 
+func TestIssuesFiltersByProjectID(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer(t)
+	primary := createProject(t, server, "PRIMARY")
+	secondary := createProject(t, server, "SECONDARY")
+	first := createIssueInProject(t, server, primary.ID, "Primary issue", entity.StatusReady)
+	_ = createIssueInProject(t, server, secondary.ID, "Secondary issue", entity.StatusReady)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/issues?project_id="+stringID(primary.ID), nil)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d body=%s", rec.Code, rec.Body.String())
+	}
+	issues := decodeData[[]entity.Issue](t, rec)
+	assertIssueIDs(t, issues, []int64{first.ID})
+	if issues[0].ProjectID != primary.ID || issues[0].ProjectKey != primary.Key {
+		t.Fatalf("issue project = %+v", issues[0])
+	}
+}
+
+func TestIssuesRejectsInvalidProjectID(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer(t)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/issues?project_id=bad", nil)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d", rec.Code)
+	}
+	assertErrorCode(t, rec, "issues.list.invalid_project_id")
+}
+
 func TestIssueStatesReturnsMatchingStates(t *testing.T) {
 	t.Parallel()
 
@@ -486,14 +525,39 @@ func stringID(id int64) string {
 func createIssue(t *testing.T, server *Server, title string, status entity.Status) entity.Issue {
 	t.Helper()
 
+	project, err := server.store.ProjectByKey(context.Background(), "TEST")
+	if err != nil {
+		project = createProject(t, server, "TEST")
+	}
+	return createIssueInProject(t, server, project.ID, title, status)
+}
+
+func createIssueInProject(t *testing.T, server *Server, projectID int64, title string, status entity.Status) entity.Issue {
+	t.Helper()
+
 	issue, err := server.store.CreateIssue(context.Background(), entity.CreateIssueInput{
-		Title:  title,
-		Status: status,
+		ProjectID: projectID,
+		Title:     title,
+		Status:    status,
 	})
 	if err != nil {
 		t.Fatalf("create issue: %v", err)
 	}
 	return issue
+}
+
+func createProject(t *testing.T, server *Server, key string) entity.Project {
+	t.Helper()
+
+	project, err := server.store.CreateProject(context.Background(), entity.CreateProjectInput{
+		Key:      key,
+		Name:     key,
+		Location: t.TempDir(),
+	})
+	if err != nil {
+		t.Fatalf("create project: %v", err)
+	}
+	return project
 }
 
 func createComment(t *testing.T, server *Server, issueID int64, body string) entity.Comment {
