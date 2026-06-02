@@ -8,21 +8,20 @@ Docker Compose keeps local development in one long-lived `dev` container and a s
 
 Recommended commands:
 
-- `make issue-tracker-up`
-- `make orchestrator-up`
+- `make run-issue-tracker`
+- `make run-orchestrator`
 - `make dev-up`
-- `make dev-up-forward`
-- `make web-up`
-- `make tui-up`
+- `make run-web`
+- `make run-tui`
 - `make dev-ports`
-- `make codex-login`
+- `make dev-codex-login`
 
 CLI commands:
 
-- `make tq ARGS="issue list"`
-- `make tq ARGS="issue get 1"`
+- `make run-tq ARGS="issue list"`
+- `make run-tq ARGS="issue get 1"`
 
-`make dev-up` starts the OpenAPI UI and launches the issue-tracker, orchestrator, and web-ui inside the `dev` container. Runtime state is stored under `$TQ_HOME`, which defaults to `/workspace/.tasq` inside the container. `make codex-login` uses device auth and persists Codex authentication in the `codex-home` Docker volume.
+`make dev-up` starts the OpenAPI UI and launches the issue-tracker, orchestrator, and web-ui inside the `dev` container. Runtime state is stored under `$TQ_HOME`, which defaults to `/workspace/.tasq` inside the container. `make dev-codex-login` uses device auth and persists Codex authentication in the `codex-home` Docker volume.
 
 ## Verification
 

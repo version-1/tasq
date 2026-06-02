@@ -52,7 +52,7 @@ make dev-test
 Run the broader build check before handing off changes that affect both Go services and the Web UI:
 
 ```sh
-make dev-build-app
+make dev-build
 ```
 
 ## Documentation
@@ -77,40 +77,40 @@ Japanese counterpart: [README.ja.md](README.ja.md).
 - Compose stores Go module/build caches, `web/node_modules`, and Codex login state in named Docker volumes.
 - The orchestrator reads `WORKFLOW.md` for Symphony-oriented runtime settings.
 - The Web UI calls the issue-tracker API through `NEXT_PUBLIC_ISSUE_TRACKER_URL` when served from a different origin.
-- `tq` resolves the issue-tracker API URL from `$TQ_HOME/system/state.json` when run through `make tq`.
-- Run `make codex-login` once to authenticate Codex with device auth and persist credentials in the `codex-home` Docker volume.
+- `tq` resolves the issue-tracker API URL from `$TQ_HOME/system/state.json` when run through `make run-tq`.
+- Run `make dev-codex-login` once to authenticate Codex with device auth and persist credentials in the `codex-home` Docker volume.
 
 ## tq CLI
 
 List issues:
 
 ```sh
-make tq ARGS="issue list"
+make run-tq ARGS="issue list"
 ```
 
 Get an issue:
 
 ```sh
-make tq ARGS="issue get 1"
+make run-tq ARGS="issue get 1"
 ```
 
 Create an issue:
 
 ```sh
-make tq ARGS='issue create --title "Wire Symphony workflow" --description "Define the first workflow contract" --status ready --priority high'
+make run-tq ARGS='issue create --title "Wire Symphony workflow" --description "Define the first workflow contract" --status ready --priority high'
 ```
 
 Use issue shortcuts for common status and text updates:
 
 ```sh
-make tq ARGS="issue ready 1"
-make tq ARGS="issue close 1"
-make tq ARGS='issue rename 1 "Clarify workflow contract"'
-make tq ARGS='issue edit 1 "Updated description"'
+make run-tq ARGS="issue ready 1"
+make run-tq ARGS="issue close 1"
+make run-tq ARGS='issue rename 1 "Clarify workflow contract"'
+make run-tq ARGS='issue edit 1 "Updated description"'
 ```
 
 Use `--output json` for machine-readable output:
 
 ```sh
-make tq ARGS="--output json issue list"
+make run-tq ARGS="--output json issue list"
 ```

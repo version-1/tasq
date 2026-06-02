@@ -18,7 +18,7 @@ See [../../docs/design.md](../../docs/design.md) for the architecture boundary.
 Prefer the repository-level dev container flow when testing service interactions:
 
 ```sh
-make issue-tracker-up
+make run-issue-tracker
 make dev-ports
 ```
 

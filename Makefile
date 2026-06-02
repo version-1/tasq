@@ -16,11 +16,22 @@ DEV_LOG_DIR = .tmp/dev-logs
 AIR_VERSION ?= v1.52.3
 
 .PHONY: help
-help: ## Show available targets.
-	@awk 'BEGIN {FS = ":.*## "}; /^[a-zA-Z0-9_-]+:.*## / {printf "%-28s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+help: ## Show target prefixes and available targets.
+	@printf "Prefixes:\n"
+	@printf "  dev-*  Host-facing local development entry points.\n"
+	@printf "  dc-*   Docker Compose and dev-container operations.\n"
+	@printf "  run-*  Processes and commands that run inside the dev container.\n"
+	@printf "\nGeneral:\n"
+	@awk 'BEGIN {FS = ":.*## "}; /^help:.*## / {printf "%-28s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+	@printf "\ndev-* targets:\n"
+	@awk 'BEGIN {FS = ":.*## "}; /^dev-[a-zA-Z0-9_-]+:.*## / {printf "%-28s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+	@printf "\ndc-* targets:\n"
+	@awk 'BEGIN {FS = ":.*## "}; /^dc-[a-zA-Z0-9_-]+:.*## / {printf "%-28s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+	@printf "\nrun-* targets:\n"
+	@awk 'BEGIN {FS = ":.*## "}; /^run-[a-zA-Z0-9_-]+:.*## / {printf "%-28s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 .PHONY: dev-check
-dev-check: ## Check that Docker CLI and Compose are installed.
+dev-check:
 	@command -v docker >/dev/null 2>&1 || { \
 		echo "Docker CLI is required. Install and start Docker Desktop."; \
 		exit 1; \
@@ -30,90 +41,40 @@ dev-check: ## Check that Docker CLI and Compose are installed.
 		exit 1; \
 	}
 
-.PHONY: dev-up-forward
-dev-up-forward: dev-check ## Start issue-tracker, orchestrator, OpenAPI UI, and web UI in the foreground.
-	ISSUE_TRACKER_PORT=$(ISSUE_TRACKER_PORT) ORCHESTRATOR_PORT=$(ORCHESTRATOR_PORT) OPENAPI_PORT=$(OPENAPI_PORT) WEB_PORT=$(WEB_PORT) $(COMPOSE) up --build -d dev openapi
-	$(MAKE) dev-ready
-	$(DEV_EXEC) sh -c 'set -e; \
-		mkdir -p $(DEV_LOG_DIR) /workspace/.tmp; \
-		pkill -f "air.*\\.air.issue-tracker.toml" 2>/dev/null || true; \
-		pkill -f "air.*\\.air.orchestrator.toml" 2>/dev/null || true; \
-		pkill -f "next dev.*--hostname 0.0.0.0.*--port 3000" 2>/dev/null || true; \
-		trap "pkill -f \"air.*\\.air.issue-tracker.toml\" 2>/dev/null || true; pkill -f \"air.*\\.air.orchestrator.toml\" 2>/dev/null || true; pkill -f \"next dev.*--hostname 0.0.0.0.*--port 3000\" 2>/dev/null || true" INT TERM EXIT; \
-		go mod download; \
-		(go run github.com/air-verse/air@$(AIR_VERSION) -c .air.issue-tracker.toml) & \
-		sleep 1; \
-		(go run github.com/air-verse/air@$(AIR_VERSION) -c .air.orchestrator.toml) & \
-		(cd web && npm install && NEXT_PUBLIC_ISSUE_TRACKER_URL="$(WEB_ISSUE_TRACKER_URL)" npm run dev -- --hostname 0.0.0.0 --port 3000) & \
-		wait'
-
 .PHONY: dev-up
-dev-up: dev-check ## Start dev container, OpenAPI UI, issue-tracker, orchestrator, and web UI in the background.
+dev-up: dev-check ## Start the dev environment and print assigned URLs.
 	ISSUE_TRACKER_PORT=$(ISSUE_TRACKER_PORT) ORCHESTRATOR_PORT=$(ORCHESTRATOR_PORT) OPENAPI_PORT=$(OPENAPI_PORT) WEB_PORT=$(WEB_PORT) $(COMPOSE) up --build -d dev openapi
-	$(MAKE) dev-ready
-	$(MAKE) dev-start-processes
+	$(MAKE) dc-ready
+	$(MAKE) run-all
 	$(MAKE) dev-ports
-	$(MAKE) dev-open
-
-.PHONY: dev-up-d
-dev-up-d: dev-up
-
-.PHONY: dev-start-processes
-dev-start-processes: dev-check ## Start issue-tracker, orchestrator, and web inside the dev container.
-	$(DEV_EXEC) sh -c 'mkdir -p $(DEV_LOG_DIR) /workspace/.tmp'
-	$(MAKE) dev-stop-processes
-	$(DEV_EXEC_DETACHED) sh -c 'go mod download >>$(DEV_LOG_DIR)/go-mod-download.log 2>&1; exec go run github.com/air-verse/air@$(AIR_VERSION) -c .air.issue-tracker.toml >>$(DEV_LOG_DIR)/issue-tracker.log 2>&1'
-	$(DEV_EXEC_DETACHED) sh -c 'sleep 1; exec go run github.com/air-verse/air@$(AIR_VERSION) -c .air.orchestrator.toml >>$(DEV_LOG_DIR)/orchestrator.log 2>&1'
-	@web_issue_url="$(WEB_ISSUE_TRACKER_URL)"; \
-	if [ -z "$$web_issue_url" ]; then \
-		issue_port="$$($(COMPOSE) port dev 8080 | sed 's/.*://')"; \
-		web_issue_url="http://127.0.0.1:$$issue_port"; \
-	fi; \
-	$(DEV_EXEC_DETACHED) sh -c 'cd web && npm install >>../$(DEV_LOG_DIR)/web-install.log 2>&1 && exec env NEXT_PUBLIC_ISSUE_TRACKER_URL="'"$$web_issue_url"'" npm run dev -- --hostname 0.0.0.0 --port 3000 >>../$(DEV_LOG_DIR)/web.log 2>&1'
-
-.PHONY: dev-ready
-dev-ready: dev-check ## Wait until the dev container volumes are writable by the codex user.
-	@attempt=1; \
-	while [ "$$attempt" -le 30 ]; do \
-		if $(DEV_EXEC_NO_TTY) sh -c 'test -x /usr/local/go/bin/go && test -w /go/pkg/mod && test -w /go/pkg/sumdb && test -w /home/codex/.cache/go-build && test -w /home/codex/.codex && test -w /workspace/web/node_modules' >/dev/null 2>&1; then \
-			exit 0; \
-		fi; \
-		attempt=$$((attempt + 1)); \
-		sleep 1; \
-	done; \
-	echo "dev container is not ready for the codex user"; \
-	exit 1
-
-.PHONY: dev-stop-processes
-dev-stop-processes: dev-check ## Stop dev processes inside the dev container without stopping the container.
-	-$(DEV_EXEC) sh -c 'pkill -f "air.*\\.air.issue-tracker.toml" 2>/dev/null || true; pkill -f "air.*\\.air.orchestrator.toml" 2>/dev/null || true; pkill -f "next dev.*--hostname 0.0.0.0.*--port 3000" 2>/dev/null || true'
 
 .PHONY: dev-down
-dev-down: dev-check ## Stop Compose services and all dev processes.
+dev-down: dev-check ## Stop Compose services.
 	$(COMPOSE) down
 
 .PHONY: dev-restart
-dev-restart: dev-check ## Restart all development services.
+dev-restart: dev-check ## Restart the dev environment.
 	$(COMPOSE) down
 	$(MAKE) dev-up
 
-.PHONY: dev-rebuild-schema
-dev-rebuild-schema: dev-check ## Recreate local SQLite schemas. Usage: make dev-rebuild-schema CONFIRM=1
+.PHONY: dev-reset-db
+dev-reset-db: dev-check ## Reset local SQLite data. Usage: make dev-reset-db CONFIRM=1
 	@if [ "$(CONFIRM)" != "1" ]; then \
 		echo 'This removes local SQLite data under .tasq/system/data/.'; \
-		echo 'Run: make dev-rebuild-schema CONFIRM=1'; \
+		echo 'Run: make dev-reset-db CONFIRM=1'; \
 		exit 1; \
 	fi
 	$(COMPOSE) down
 	rm -f .tasq/system/data/issues.sqlite .tasq/system/data/orchestrator.sqlite
 	$(MAKE) dev-up
 
-.PHONY: dev-ps
-dev-ps: dev-check ## Show Compose service status.
-	$(COMPOSE) ps
+.PHONY: dev-openapi
+dev-openapi: dev-check ## Start only the OpenAPI UI Compose service and print assigned URLs.
+	OPENAPI_PORT=$(OPENAPI_PORT) $(COMPOSE) up -d openapi
+	$(MAKE) dev-ports
 
 .PHONY: dev-ports
-dev-ports: dev-check ## Show assigned host ports for Compose services.
+dev-ports: dev-check ## Show assigned local URLs for dev services.
 	@issue_port="$$($(COMPOSE) port dev 8080 2>/dev/null | sed 's/.*://')"; \
 	if [ -n "$$issue_port" ]; then \
 		printf "issue-tracker: http://localhost:%s\n" "$$issue_port"; \
@@ -140,7 +101,7 @@ dev-ports: dev-check ## Show assigned host ports for Compose services.
 	fi
 
 .PHONY: dev-open
-dev-open: dev-check ## Open the web UI and OpenAPI UI in a browser.
+dev-open: dev-check ## Open the Web UI and OpenAPI UI in a browser.
 	@opener="$(BROWSER_OPEN)"; \
 	if ! command -v "$$opener" >/dev/null 2>&1; then \
 		echo "browser opener '$$opener' is not available"; \
@@ -159,60 +120,71 @@ dev-open: dev-check ## Open the web UI and OpenAPI UI in a browser.
 		"$$opener" "$$web_url" >/dev/null 2>&1 || true; \
 	fi
 
-.PHONY: dev-logs
-dev-logs: dev-check ## Follow dev process logs.
-	@mkdir -p $(DEV_LOG_DIR)
-	@touch $(DEV_LOG_DIR)/issue-tracker.log $(DEV_LOG_DIR)/orchestrator.log $(DEV_LOG_DIR)/web.log
-	tail -f $(DEV_LOG_DIR)/*.log
-
-.PHONY: dev-shell
-dev-shell: dev-check ## Open a shell in the dev container.
+.PHONY: dev-test
+dev-test: dev-check ## Run Go tests and Web UI typecheck in the dev container.
 	ISSUE_TRACKER_PORT=$(ISSUE_TRACKER_PORT) ORCHESTRATOR_PORT=$(ORCHESTRATOR_PORT) OPENAPI_PORT=$(OPENAPI_PORT) WEB_PORT=$(WEB_PORT) $(COMPOSE) up --build -d dev
-	$(MAKE) dev-ready
+	$(MAKE) dc-ready
+	$(DEV_EXEC) sh -c 'go test ./... && cd web && npm install && npm run typecheck'
+
+.PHONY: dev-build
+dev-build: dev-check ## Run Go tests and the Web UI production build in the dev container.
+	ISSUE_TRACKER_PORT=$(ISSUE_TRACKER_PORT) ORCHESTRATOR_PORT=$(ORCHESTRATOR_PORT) OPENAPI_PORT=$(OPENAPI_PORT) WEB_PORT=$(WEB_PORT) $(COMPOSE) up --build -d dev
+	$(MAKE) dc-ready
+	$(DEV_EXEC) sh -c 'go test ./... && cd web && npm install && npm run build'
+
+.PHONY: dev-codex-login
+dev-codex-login: dev-check ## Log in to Codex inside the dev container with device auth.
+	ISSUE_TRACKER_PORT=$(ISSUE_TRACKER_PORT) ORCHESTRATOR_PORT=$(ORCHESTRATOR_PORT) OPENAPI_PORT=$(OPENAPI_PORT) WEB_PORT=$(WEB_PORT) $(COMPOSE) up --build -d dev
+	$(MAKE) dc-ready
+	$(DEV_EXEC) sh -c 'codex login --device-auth'
+
+.PHONY: dev-codex-check
+dev-codex-check: dev-check ## Check Codex CLI availability inside the dev container.
+	ISSUE_TRACKER_PORT=$(ISSUE_TRACKER_PORT) ORCHESTRATOR_PORT=$(ORCHESTRATOR_PORT) OPENAPI_PORT=$(OPENAPI_PORT) WEB_PORT=$(WEB_PORT) $(COMPOSE) up --build -d dev
+	$(MAKE) dc-ready
+	$(DEV_EXEC) sh -c 'codex --help >/dev/null && codex app-server --help >/dev/null'
+
+.PHONY: dc-ready
+dc-ready: dev-check ## Wait until the dev container tools and volumes are ready.
+	@attempt=1; \
+	while [ "$$attempt" -le 30 ]; do \
+		if $(DEV_EXEC_NO_TTY) sh -c 'test -x /usr/local/go/bin/go && test -w /go/pkg/mod && test -w /go/pkg/sumdb && test -w /home/codex/.cache/go-build && test -w /home/codex/.codex && test -w /workspace/web/node_modules' >/dev/null 2>&1; then \
+			exit 0; \
+		fi; \
+		attempt=$$((attempt + 1)); \
+		sleep 1; \
+	done; \
+	echo "dev container is not ready for the codex user"; \
+	exit 1
+
+.PHONY: dc-ps
+dc-ps: dev-check ## Show Docker Compose service status.
+	$(COMPOSE) ps
+
+.PHONY: dc-shell
+dc-shell: dev-check ## Open a shell in the dev container.
+	ISSUE_TRACKER_PORT=$(ISSUE_TRACKER_PORT) ORCHESTRATOR_PORT=$(ORCHESTRATOR_PORT) OPENAPI_PORT=$(OPENAPI_PORT) WEB_PORT=$(WEB_PORT) $(COMPOSE) up --build -d dev
+	$(MAKE) dc-ready
 	$(DEV_EXEC) sh
 
-.PHONY: dev-exec
-dev-exec: dev-check ## Run CMD in the dev container. Example: make dev-exec CMD="go test ./..."
+.PHONY: dc-exec
+dc-exec: dev-check ## Run CMD in the dev container. Example: make dc-exec CMD="go test ./..."
 	@if [ -z "$(CMD)" ]; then \
-		echo 'Usage: make dev-exec CMD="go test ./..."'; \
+		echo 'Usage: make dc-exec CMD="go test ./..."'; \
 		exit 1; \
 	fi
 	ISSUE_TRACKER_PORT=$(ISSUE_TRACKER_PORT) ORCHESTRATOR_PORT=$(ORCHESTRATOR_PORT) OPENAPI_PORT=$(OPENAPI_PORT) WEB_PORT=$(WEB_PORT) $(COMPOSE) up --build -d dev
-	$(MAKE) dev-ready
+	$(MAKE) dc-ready
 	$(DEV_EXEC) sh -c '$(CMD)'
 
-.PHONY: dev-test
-dev-test: dev-check ## Run Go tests and web UI typecheck in the dev container.
+.PHONY: run-all
+run-all: dev-check ## Start issue-tracker, orchestrator, and Web inside the dev container.
 	ISSUE_TRACKER_PORT=$(ISSUE_TRACKER_PORT) ORCHESTRATOR_PORT=$(ORCHESTRATOR_PORT) OPENAPI_PORT=$(OPENAPI_PORT) WEB_PORT=$(WEB_PORT) $(COMPOSE) up --build -d dev
-	$(MAKE) dev-ready
-	$(DEV_EXEC) sh -c 'go test ./... && cd web && npm install && npm run typecheck'
-
-.PHONY: dev-build-app
-dev-build-app: dev-check ## Run Go tests and the web UI production build in the dev container.
-	ISSUE_TRACKER_PORT=$(ISSUE_TRACKER_PORT) ORCHESTRATOR_PORT=$(ORCHESTRATOR_PORT) OPENAPI_PORT=$(OPENAPI_PORT) WEB_PORT=$(WEB_PORT) $(COMPOSE) up --build -d dev
-	$(MAKE) dev-ready
-	$(DEV_EXEC) sh -c 'go test ./... && cd web && npm install && npm run build'
-
-.PHONY: issue-tracker-up
-issue-tracker-up: dev-check ## Start the issue-tracker process inside the dev container.
-	ISSUE_TRACKER_PORT=$(ISSUE_TRACKER_PORT) ORCHESTRATOR_PORT=$(ORCHESTRATOR_PORT) OPENAPI_PORT=$(OPENAPI_PORT) WEB_PORT=$(WEB_PORT) $(COMPOSE) up --build -d dev
-	$(MAKE) dev-ready
-	$(DEV_EXEC) sh -c 'mkdir -p $(DEV_LOG_DIR) /workspace/.tmp; pkill -f "air.*\\.air.issue-tracker.toml" 2>/dev/null || true'
+	$(MAKE) dc-ready
+	$(DEV_EXEC) sh -c 'mkdir -p $(DEV_LOG_DIR) /workspace/.tmp'
+	$(MAKE) run-stop
 	$(DEV_EXEC_DETACHED) sh -c 'go mod download >>$(DEV_LOG_DIR)/go-mod-download.log 2>&1; exec go run github.com/air-verse/air@$(AIR_VERSION) -c .air.issue-tracker.toml >>$(DEV_LOG_DIR)/issue-tracker.log 2>&1'
-
-.PHONY: orchestrator-up
-orchestrator-up: issue-tracker-up ## Start the orchestrator process inside the dev container.
-	$(DEV_EXEC) sh -c 'mkdir -p $(DEV_LOG_DIR) /workspace/.tmp; pkill -f "air.*\\.air.orchestrator.toml" 2>/dev/null || true'
 	$(DEV_EXEC_DETACHED) sh -c 'sleep 1; exec go run github.com/air-verse/air@$(AIR_VERSION) -c .air.orchestrator.toml >>$(DEV_LOG_DIR)/orchestrator.log 2>&1'
-
-.PHONY: openapi-up
-openapi-up: dev-check ## Start the OpenAPI UI with Docker Compose in the background.
-	OPENAPI_PORT=$(OPENAPI_PORT) $(COMPOSE) up -d openapi
-	$(MAKE) dev-ports
-
-.PHONY: web-up
-web-up: issue-tracker-up ## Start the Next.js web UI inside the dev container.
-	$(DEV_EXEC) sh -c 'mkdir -p $(DEV_LOG_DIR); pkill -f "next dev.*--hostname 0.0.0.0.*--port 3000" 2>/dev/null || true'
 	@web_issue_url="$(WEB_ISSUE_TRACKER_URL)"; \
 	if [ -z "$$web_issue_url" ]; then \
 		issue_port="$$($(COMPOSE) port dev 8080 | sed 's/.*://')"; \
@@ -220,25 +192,49 @@ web-up: issue-tracker-up ## Start the Next.js web UI inside the dev container.
 	fi; \
 	$(DEV_EXEC_DETACHED) sh -c 'cd web && npm install >>../$(DEV_LOG_DIR)/web-install.log 2>&1 && exec env NEXT_PUBLIC_ISSUE_TRACKER_URL="'"$$web_issue_url"'" npm run dev -- --hostname 0.0.0.0 --port 3000 >>../$(DEV_LOG_DIR)/web.log 2>&1'
 
-.PHONY: tui-up
-tui-up: issue-tracker-up ## Run the TUI interactively inside the dev container.
+.PHONY: run-stop
+run-stop: dev-check ## Stop dev processes inside the dev container without stopping the container.
+	-$(DEV_EXEC) sh -c 'pkill -f "air.*\\.air.issue-tracker.toml" 2>/dev/null || true; pkill -f "air.*\\.air.orchestrator.toml" 2>/dev/null || true; pkill -f "next dev.*--hostname 0.0.0.0.*--port 3000" 2>/dev/null || true'
+
+.PHONY: run-issue-tracker run-is
+run-issue-tracker: dev-check ## Start the issue-tracker process inside the dev container.
+	ISSUE_TRACKER_PORT=$(ISSUE_TRACKER_PORT) ORCHESTRATOR_PORT=$(ORCHESTRATOR_PORT) OPENAPI_PORT=$(OPENAPI_PORT) WEB_PORT=$(WEB_PORT) $(COMPOSE) up --build -d dev
+	$(MAKE) dc-ready
+	$(DEV_EXEC) sh -c 'mkdir -p $(DEV_LOG_DIR) /workspace/.tmp; pkill -f "air.*\\.air.issue-tracker.toml" 2>/dev/null || true'
+	$(DEV_EXEC_DETACHED) sh -c 'go mod download >>$(DEV_LOG_DIR)/go-mod-download.log 2>&1; exec go run github.com/air-verse/air@$(AIR_VERSION) -c .air.issue-tracker.toml >>$(DEV_LOG_DIR)/issue-tracker.log 2>&1'
+run-is: run-issue-tracker ## Alias for run-issue-tracker.
+
+.PHONY: run-orchestrator run-or
+run-orchestrator: run-issue-tracker ## Start the orchestrator process inside the dev container.
+	$(DEV_EXEC) sh -c 'mkdir -p $(DEV_LOG_DIR) /workspace/.tmp; pkill -f "air.*\\.air.orchestrator.toml" 2>/dev/null || true'
+	$(DEV_EXEC_DETACHED) sh -c 'sleep 1; exec go run github.com/air-verse/air@$(AIR_VERSION) -c .air.orchestrator.toml >>$(DEV_LOG_DIR)/orchestrator.log 2>&1'
+run-or: run-orchestrator ## Alias for run-orchestrator.
+
+.PHONY: run-web run-w
+run-web: run-issue-tracker ## Start the Next.js Web process inside the dev container.
+	$(DEV_EXEC) sh -c 'mkdir -p $(DEV_LOG_DIR); pkill -f "next dev.*--hostname 0.0.0.0.*--port 3000" 2>/dev/null || true'
+	@web_issue_url="$(WEB_ISSUE_TRACKER_URL)"; \
+	if [ -z "$$web_issue_url" ]; then \
+		issue_port="$$($(COMPOSE) port dev 8080 | sed 's/.*://')"; \
+		web_issue_url="http://127.0.0.1:$$issue_port"; \
+	fi; \
+	$(DEV_EXEC_DETACHED) sh -c 'cd web && npm install >>../$(DEV_LOG_DIR)/web-install.log 2>&1 && exec env NEXT_PUBLIC_ISSUE_TRACKER_URL="'"$$web_issue_url"'" npm run dev -- --hostname 0.0.0.0 --port 3000 >>../$(DEV_LOG_DIR)/web.log 2>&1'
+run-w: run-web ## Alias for run-web.
+
+.PHONY: run-tui
+run-tui: run-issue-tracker ## Run the TUI interactively inside the dev container.
 	$(DEV_EXEC) sh -c 'go run ./cmd/tasq-tui -watch'
 
-.PHONY: tq
-tq: issue-tracker-up ## Run tq inside the dev container. Example: make tq ARGS="issue list"
+.PHONY: run-tq
+run-tq: run-issue-tracker ## Run tq inside the dev container. Example: make run-tq ARGS="issue list"
 	$(DEV_EXEC) sh -c 'go run ./cmd/tq $(ARGS)'
 
-.PHONY: codex-login
-codex-login: dev-check ## Log in to Codex inside the dev container with device auth and persist credentials in codex-home.
-	ISSUE_TRACKER_PORT=$(ISSUE_TRACKER_PORT) ORCHESTRATOR_PORT=$(ORCHESTRATOR_PORT) OPENAPI_PORT=$(OPENAPI_PORT) WEB_PORT=$(WEB_PORT) $(COMPOSE) up --build -d dev
-	$(MAKE) dev-ready
-	$(DEV_EXEC) sh -c 'codex login --device-auth'
+.PHONY: run-ps
+run-ps: dev-check ## Show dev processes running inside the dev container.
+	-$(DEV_EXEC) sh -c 'ps -ef | grep -E "air|issue-tracker|orchestrator|next" | grep -v grep || true'
 
-.PHONY: codex-check
-codex-check: dev-check ## Check Codex CLI availability inside the dev container.
-	ISSUE_TRACKER_PORT=$(ISSUE_TRACKER_PORT) ORCHESTRATOR_PORT=$(ORCHESTRATOR_PORT) OPENAPI_PORT=$(OPENAPI_PORT) WEB_PORT=$(WEB_PORT) $(COMPOSE) up --build -d dev
-	$(MAKE) dev-ready
-	$(DEV_EXEC) sh -c 'codex --help >/dev/null && codex app-server --help >/dev/null'
-
-.PHONY: dev-gui
-dev-gui: web-up ## Alias-style command for web-up.
+.PHONY: run-logs
+run-logs: dev-check ## Follow dev process logs.
+	@mkdir -p $(DEV_LOG_DIR)
+	@touch $(DEV_LOG_DIR)/issue-tracker.log $(DEV_LOG_DIR)/orchestrator.log $(DEV_LOG_DIR)/web.log
+	tail -f $(DEV_LOG_DIR)/*.log

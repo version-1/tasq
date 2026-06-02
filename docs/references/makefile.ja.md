@@ -2,7 +2,7 @@
 
 Repository の Makefile は local development の主な入口です。Docker Compose を wrap し、dev container を起動し、その container 内で service process を起動し、割り当てられた local URL を表示します。
 
-Target 一覧は `make help` で確認できます。これは Makefile comment から生成されます。
+Prefix guide と section 分けされた target 一覧は `make help` で確認できます。Target 一覧は Makefile comment から生成されます。
 
 ## Configuration Variables
 
@@ -28,46 +28,62 @@ ISSUE_TRACKER_PORT=8080 ORCHESTRATOR_PORT=8081 OPENAPI_PORT=8082 WEB_PORT=3000 m
 
 | Target | Purpose |
 |---|---|
-| `make dev-up` | `dev` container と OpenAPI UI を起動し、issue-tracker、orchestrator、Web を background で起動し、URL を表示して OpenAPI と Web を browser で開きます。 |
-| `make dev-up-d` | `dev-up` の alias です。 |
-| `make dev-up-forward` | OpenAPI UI を起動し、issue-tracker、orchestrator、Web を dev container 内の foreground で実行します。 |
+| `make dev-up` | `dev` container と OpenAPI UI を起動し、issue-tracker、orchestrator、Web を background で起動して URL を表示します。 |
 | `make dev-restart` | Compose services を停止し、再度 `dev-up` を実行します。 |
 | `make dev-down` | Compose services を停止します。 |
-| `make dev-rebuild-schema CONFIRM=1` | Compose を停止し、`.tasq/system/data/` 配下の local SQLite files を削除して dev environment を再起動します。 |
-
-`dev-up` は default で host port を自動割り当てします。現在の URL が必要な場合は、起動後に必ず `make dev-ports` を実行します。
-
-## Service Process Targets
-
-| Target | Purpose |
-|---|---|
-| `make dev-start-processes` | 既に起動している dev container 内で issue-tracker、orchestrator、Web を起動します。 |
-| `make dev-stop-processes` | container を停止せず、dev container 内の Air と Next.js process だけを停止します。 |
-| `make issue-tracker-up` | 必要に応じて dev container を起動し、issue-tracker process だけを起動します。 |
-| `make orchestrator-up` | issue-tracker を起動してから orchestrator process を起動します。 |
-| `make web-up` | issue-tracker を起動してから Web process を起動します。 |
-| `make openapi-up` | OpenAPI UI Compose service だけを起動し、ports を表示します。 |
-| `make tui-up` | dev container 内で TUI を interactive に実行します。 |
-
-Background process log は `.tmp/dev-logs/` 配下に出力されます。
-
-## Inspection Targets
-
-| Target | Purpose |
-|---|---|
-| `make dev-ps` | Docker Compose service status を表示します。 |
+| `make dev-reset-db CONFIRM=1` | Compose を停止し、`.tasq/system/data/` 配下の local SQLite files を削除して dev environment を再起動します。 |
+| `make dev-openapi` | OpenAPI UI Compose service だけを起動し、ports を表示します。 |
+| `make dev-open` | Web UI と OpenAPI UI を browser で開きます。 |
 | `make dev-ports` | 現在割り当てられている issue-tracker、orchestrator、OpenAPI、Web の URL を表示します。 |
-| `make dev-logs` | `.tmp/dev-logs/*.log` を follow します。 |
-| `make dev-shell` | 実行中の dev container に `codex` user で shell を開きます。 |
-| `make dev-exec CMD="..."` | dev container 内で任意 command を `codex` user として実行します。 |
-| `make dev-ready` | 必要な tools と volumes が `codex` user から writable になるまで待機します。 |
+
+`dev-up` は default で host port を自動割り当てします。割り当てられた URL は表示しますが、browser は開きません。Browser を開く場合は `make dev-open` を明示的に実行します。
+
+## Container Targets
+
+`dc-*` targets は Docker Compose service status と dev container 自体に対する操作に使います。
+
+| Target | Purpose |
+|---|---|
+| `make dc-ready` | 必要な tools と volumes が `codex` user から writable になるまで待機します。 |
+| `make dc-ps` | Docker Compose service status を表示します。 |
+| `make dc-shell` | 実行中の dev container に `codex` user で shell を開きます。 |
+| `make dc-exec CMD="..."` | dev container 内で任意 command を `codex` user として実行します。 |
 
 よく使う例:
 
 ```sh
-make dev-ports
-make dev-shell
-make dev-exec CMD="go test ./internal/config"
+make dc-ps
+make dc-shell
+make dc-exec CMD="go test ./internal/config"
+```
+
+## Runtime Targets
+
+`run-*` targets は dev container 内で動く process や command に使います。
+
+| Target | Purpose |
+|---|---|
+| `make run-all` | dev container 内で issue-tracker、orchestrator、Web を起動します。 |
+| `make run-stop` | container を停止せず、dev container 内の Air と Next.js process だけを停止します。 |
+| `make run-issue-tracker` | 必要に応じて dev container を起動し、issue-tracker process だけを起動します。 |
+| `make run-is` | `run-issue-tracker` の alias です。 |
+| `make run-orchestrator` | issue-tracker を起動してから orchestrator process を起動します。 |
+| `make run-or` | `run-orchestrator` の alias です。 |
+| `make run-web` | issue-tracker を起動してから Web process を起動します。 |
+| `make run-w` | `run-web` の alias です。 |
+| `make run-tui` | dev container 内で TUI を interactive に実行します。 |
+| `make run-tq ARGS="..."` | 必要に応じて issue-tracker を起動し、dev container 内で `go run ./cmd/tq $(ARGS)` を実行します。 |
+| `make run-ps` | dev container 内で動いている dev process を表示します。 |
+| `make run-logs` | `.tmp/dev-logs/*.log` を follow します。 |
+
+よく使う例:
+
+```sh
+make run-is
+make run-or
+make run-w
+make run-tq ARGS="issue list"
+make run-logs
 ```
 
 ## Verification Targets
@@ -75,30 +91,28 @@ make dev-exec CMD="go test ./internal/config"
 | Target | Purpose |
 |---|---|
 | `make dev-test` | dev container 内で `go test ./...`、Web dependency install、Web typecheck を実行します。 |
-| `make dev-build-app` | dev container 内で `go test ./...`、Web dependency install、Web production build を実行します。 |
-| `make codex-check` | dev container 内で Codex CLI と `codex app-server` が利用できることを確認します。 |
+| `make dev-build` | dev container 内で `go test ./...`、Web dependency install、Web production build を実行します。 |
 
-## CLI And Codex Targets
+## Codex Targets
 
 | Target | Purpose |
 |---|---|
-| `make tq ARGS="..."` | 必要に応じて issue-tracker を起動し、dev container 内で `go run ./cmd/tq $(ARGS)` を実行します。 |
-| `make codex-login` | dev container 内で `codex login --device-auth` を実行し、credential を `codex-home` Docker volume に永続化します。 |
+| `make dev-codex-login` | dev container 内で `codex login --device-auth` を実行し、credential を `codex-home` Docker volume に永続化します。 |
+| `make dev-codex-check` | dev container 内で Codex CLI と `codex app-server` が利用できることを確認します。 |
 
 Container login では device auth を使います。通常の browser redirect は container 内の localhost callback に戻るため、host browser から到達できません。
 
 例:
 
 ```sh
-make tq ARGS="issue list"
-make codex-login
-make codex-check
+make dev-codex-login
+make dev-codex-check
 ```
 
 ## Operational Notes
 
-`dev` container は long-lived です。Service process は separate Compose service ではなく、`docker compose exec` で起動される通常の child process です。Process だけ止める場合は `make dev-stop-processes`、Compose services も止める場合は `make dev-down` を使います。
+`dev` container は long-lived です。Service process は separate Compose service ではなく、`docker compose exec` で起動される通常の child process です。Process だけ止める場合は `make run-stop`、Compose services も止める場合は `make dev-down` を使います。
 
 Makefile は container 内 command を `codex` user として実行します。Container startup 時に、Go module cache、Go build cache、Web `node_modules`、Codex credential 用の named volume が writable になるように準備します。
 
-`NEXT_PUBLIC_ISSUE_TRACKER_URL` は Web process 起動時に解決されます。Web 起動後に issue-tracker の host port が変わった場合は、`make web-up` で Web process を再起動するか、`make dev-up` で全体を再起動してください。
+`NEXT_PUBLIC_ISSUE_TRACKER_URL` は Web process 起動時に解決されます。Web 起動後に issue-tracker の host port が変わった場合は、`make run-web` で Web process を再起動するか、`make dev-up` で全体を再起動してください。

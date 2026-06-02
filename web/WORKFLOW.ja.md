@@ -19,7 +19,7 @@ Web UI structure と styling conventions は [docs/design.md](docs/design.md) �
 issue-tracker と一緒に Web UI を確認するときは、repository-level の Compose flow を優先します。
 
 ```sh
-make web-up
+make run-web
 make dev-ports
 ```
 
@@ -67,7 +67,7 @@ cd web
 npm run build
 ```
 
-Go と Web UI の変更を Compose でまとめて確認するときは `make dev-build-app` を使います。
+Go と Web UI の変更を Compose でまとめて確認するときは `make dev-build` を使います。
 
 ## Static Export Notes
 

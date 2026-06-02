@@ -7,7 +7,7 @@
 Use the Makefile target during local dev-container development:
 
 ```sh
-make tq ARGS="issue list"
+make run-tq ARGS="issue list"
 ```
 
 The target starts the dev container and issue-tracker process if needed, then runs `go run ./cmd/tq` inside the dev container. In the default workflow, `tq` resolves the issue-tracker API from `$TQ_HOME/system/state.json`.
@@ -44,13 +44,13 @@ tq [--api-url URL] [--output text|json] <resource> <action> [flags]
 List issues.
 
 ```sh
-make tq ARGS="issue list"
+make run-tq ARGS="issue list"
 ```
 
 JSON output:
 
 ```sh
-make tq ARGS="--output json issue list"
+make run-tq ARGS="--output json issue list"
 ```
 
 ### `issue get`
@@ -58,7 +58,7 @@ make tq ARGS="--output json issue list"
 Get one issue by numeric ID.
 
 ```sh
-make tq ARGS="issue get 1"
+make run-tq ARGS="issue get 1"
 ```
 
 ### `issue create`
@@ -66,7 +66,7 @@ make tq ARGS="issue get 1"
 Create an issue.
 
 ```sh
-make tq ARGS='issue create --title "Write tq reference"'
+make run-tq ARGS='issue create --title "Write tq reference"'
 ```
 
 Flags:
@@ -83,7 +83,7 @@ Flags:
 Example:
 
 ```sh
-make tq ARGS='issue create --title "Improve project list" --description "Render project list as a readable table." --status ready --priority high --assignee codex'
+make run-tq ARGS='issue create --title "Improve project list" --description "Render project list as a readable table." --status ready --priority high --assignee codex'
 ```
 
 ### `issue update`
@@ -91,7 +91,7 @@ make tq ARGS='issue create --title "Improve project list" --description "Render 
 Update one or more fields on an issue.
 
 ```sh
-make tq ARGS='issue update 1 --status in_progress'
+make run-tq ARGS='issue update 1 --status in_progress'
 ```
 
 At least one update flag is required.
@@ -116,7 +116,7 @@ Attachment references use `![filename](attachment://<id>)`. The issue-tracker se
 Add a comment to an issue.
 
 ```sh
-make tq ARGS='comment add 1 --body "Started implementation."'
+make run-tq ARGS='comment add 1 --body "Started implementation."'
 ```
 
 Flags:
@@ -133,7 +133,7 @@ Flags:
 List comments for an issue.
 
 ```sh
-make tq ARGS="comment list 1"
+make run-tq ARGS="comment list 1"
 ```
 
 ## Projects
@@ -143,7 +143,7 @@ make tq ARGS="comment list 1"
 Register a local repository as a project and create its workspace record.
 
 ```sh
-make tq ARGS="project add ."
+make run-tq ARGS="project add ."
 ```
 
 By default, `project add` uses the current directory. It resolves the path to a host-local absolute path and checks that it exists locally before sending it to the issue-tracker API.
@@ -158,8 +158,8 @@ Flags:
 Examples:
 
 ```sh
-make tq ARGS='project add --key tasq --workspace-name tasq .'
-make tq ARGS='project add ../another-project'
+make run-tq ARGS='project add --key tasq --workspace-name tasq .'
+make run-tq ARGS='project add ../another-project'
 ```
 
 ### `project list`
@@ -167,13 +167,13 @@ make tq ARGS='project add ../another-project'
 List registered projects.
 
 ```sh
-make tq ARGS="project list"
+make run-tq ARGS="project list"
 ```
 
 Use JSON for machine-readable output:
 
 ```sh
-make tq ARGS="--output json project list"
+make run-tq ARGS="--output json project list"
 ```
 
 ### `project check`
@@ -181,8 +181,8 @@ make tq ARGS="--output json project list"
 Check local project workflow files.
 
 ```sh
-make tq ARGS="project check"
-make tq ARGS="project check tasq"
+make run-tq ARGS="project check"
+make run-tq ARGS="project check tasq"
 ```
 
 When no project key is provided, `project check` tries to find the project registered for the current directory.
@@ -192,7 +192,7 @@ When no project key is provided, `project check` tries to find the project regis
 Remove a project by key.
 
 ```sh
-make tq ARGS="project remove tasq"
+make run-tq ARGS="project remove tasq"
 ```
 
 ## Valid Values

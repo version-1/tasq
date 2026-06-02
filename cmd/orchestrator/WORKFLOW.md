@@ -18,7 +18,7 @@ See [../../docs/design.md](../../docs/design.md) for the service boundary.
 Start issue-tracker and orchestrator together in the dev container when checking service boundaries:
 
 ```sh
-make orchestrator-up
+make run-orchestrator
 make dev-ports
 ```
 

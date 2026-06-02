@@ -15,7 +15,7 @@ The default Compose development workflow runs tools inside the `dev` container w
 state in that container.
 
 Codex credentials are separate from `TQ_HOME`. The dev container uses
-`CODEX_HOME=/home/codex/.codex`, backed by the `codex-home` named volume. Run `make codex-login`
+`CODEX_HOME=/home/codex/.codex`, backed by the `codex-home` named volume. Run `make dev-codex-login`
 once to authenticate inside the container with device auth. Removing the `codex-home` volume removes
 the login state. Device auth avoids browser redirects to a localhost callback that only exists inside
 the container.

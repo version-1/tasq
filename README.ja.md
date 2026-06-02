@@ -52,7 +52,7 @@ make dev-test
 Go services と Web UI の両方に影響する変更を handoff する前は、broader build check を実行します。
 
 ```sh
-make dev-build-app
+make dev-build
 ```
 
 ## Documentation
@@ -77,40 +77,40 @@ English counterpart: [README.md](README.md).
 - Compose は Go module/build caches、`web/node_modules`、Codex login state を named Docker volumes に保存します。
 - Orchestrator は Symphony-oriented runtime settings を `WORKFLOW.md` から読みます。
 - Web UI を別 origin から配信する場合は、`NEXT_PUBLIC_ISSUE_TRACKER_URL` で issue-tracker API の origin を指定します。
-- `make tq` 経由で実行した `tq` は `$TQ_HOME/system/state.json` から issue-tracker API URL を解決します。
-- Codex を device auth で認証し、authentication を `codex-home` Docker volume に永続化するため、初回に `make codex-login` を実行します。
+- `make run-tq` 経由で実行した `tq` は `$TQ_HOME/system/state.json` から issue-tracker API URL を解決します。
+- Codex を device auth で認証し、authentication を `codex-home` Docker volume に永続化するため、初回に `make dev-codex-login` を実行します。
 
 ## tq CLI
 
 issue を一覧表示します。
 
 ```sh
-make tq ARGS="issue list"
+make run-tq ARGS="issue list"
 ```
 
 issue を取得します。
 
 ```sh
-make tq ARGS="issue get 1"
+make run-tq ARGS="issue get 1"
 ```
 
 issue を作成します。
 
 ```sh
-make tq ARGS='issue create --title "Wire Symphony workflow" --description "Define the first workflow contract" --status ready --priority high'
+make run-tq ARGS='issue create --title "Wire Symphony workflow" --description "Define the first workflow contract" --status ready --priority high'
 ```
 
 よく使う status / text update には issue shortcut を使えます。
 
 ```sh
-make tq ARGS="issue ready 1"
-make tq ARGS="issue close 1"
-make tq ARGS='issue rename 1 "Clarify workflow contract"'
-make tq ARGS='issue edit 1 "Updated description"'
+make run-tq ARGS="issue ready 1"
+make run-tq ARGS="issue close 1"
+make run-tq ARGS='issue rename 1 "Clarify workflow contract"'
+make run-tq ARGS='issue edit 1 "Updated description"'
 ```
 
 machine-readable output が必要な場合は `--output json` を使います。
 
 ```sh
-make tq ARGS="--output json issue list"
+make run-tq ARGS="--output json issue list"
 ```
