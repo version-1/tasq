@@ -22,7 +22,7 @@ CLI commands:
 - `make tq ARGS="issue list"`
 - `make tq ARGS="issue get 1"`
 
-`make dev-up` starts the OpenAPI UI and launches the issue-tracker, orchestrator, and web-ui inside the `dev` container. Runtime state is stored under `$TQ_HOME`, which defaults to `/workspace/.tasq` inside the container. `make codex-login` persists Codex authentication in the `codex-home` Docker volume.
+`make dev-up` starts the OpenAPI UI and launches the issue-tracker, orchestrator, and web-ui inside the `dev` container. Runtime state is stored under `$TQ_HOME`, which defaults to `/workspace/.tasq` inside the container. `make codex-login` uses device auth and persists Codex authentication in the `codex-home` Docker volume.
 
 ## Verification
 

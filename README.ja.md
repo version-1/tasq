@@ -77,7 +77,7 @@ English counterpart: [README.md](README.md).
 - Orchestrator は Symphony-oriented runtime settings を `WORKFLOW.md` から読みます。
 - Web UI を別 origin から配信する場合は、`NEXT_PUBLIC_ISSUE_TRACKER_URL` で issue-tracker API の origin を指定します。
 - `make tq` 経由で実行した `tq` は `$TQ_HOME/system/state.json` から issue-tracker API URL を解決します。
-- Codex authentication を `codex-home` Docker volume に永続化するため、初回に `make codex-login` を実行します。
+- Codex を device auth で認証し、authentication を `codex-home` Docker volume に永続化するため、初回に `make codex-login` を実行します。
 
 ## tq CLI
 

@@ -19,7 +19,7 @@ The `dev` container runs issue-tracker, orchestrator, Web, `tq`, TUI, and Codex 
 - a fixed non-root user
 - named volumes for Go caches, Web `node_modules`, and Codex credentials
 
-Codex authentication is done by running `codex login` inside the dev container. The resulting credentials are stored in the `codex-home` named volume. The Docker image does not contain credentials, and the default workflow does not mount host Codex credentials.
+Codex authentication is done by running `codex login --device-auth` inside the dev container. The resulting credentials are stored in the `codex-home` named volume. Device auth avoids browser redirects to a localhost callback that exists only inside the container. The Docker image does not contain credentials, and the default workflow does not mount host Codex credentials.
 
 Process management remains Makefile-based. The Makefile starts issue-tracker, orchestrator, and Web inside the dev container, stores background logs under `.tmp/dev-logs/`, and keeps TUI as an interactive command.
 

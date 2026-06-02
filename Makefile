@@ -219,10 +219,10 @@ tq: issue-tracker-up ## Run tq inside the dev container. Example: make tq ARGS="
 	$(DEV_EXEC) sh -c 'go run ./cmd/tq $(ARGS)'
 
 .PHONY: codex-login
-codex-login: dev-check ## Log in to Codex inside the dev container and persist credentials in codex-home.
+codex-login: dev-check ## Log in to Codex inside the dev container with device auth and persist credentials in codex-home.
 	ISSUE_TRACKER_PORT=$(ISSUE_TRACKER_PORT) ORCHESTRATOR_PORT=$(ORCHESTRATOR_PORT) OPENAPI_PORT=$(OPENAPI_PORT) WEB_PORT=$(WEB_PORT) $(COMPOSE) up --build -d dev
 	$(MAKE) dev-ready
-	$(DEV_EXEC) sh -c 'codex login'
+	$(DEV_EXEC) sh -c 'codex login --device-auth'
 
 .PHONY: codex-check
 codex-check: dev-check ## Check Codex CLI availability inside the dev container.

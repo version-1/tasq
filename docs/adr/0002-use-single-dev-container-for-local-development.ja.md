@@ -19,7 +19,7 @@ Local development では、単一の `dev` container と standalone な `openapi
 - 固定 non-root user
 - Go cache、Web `node_modules`、Codex credential 用の named volume
 
-Codex authentication は dev container 内で `codex login` を実行して行う。認証情報は `codex-home` named volume に保存する。Docker image には credential を含めず、default workflow では host の Codex credential を mount しない。
+Codex authentication は dev container 内で `codex login --device-auth` を実行して行う。認証情報は `codex-home` named volume に保存する。Device auth により、container 内にだけ存在する localhost callback へ browser が redirect して失敗する問題を避ける。Docker image には credential を含めず、default workflow では host の Codex credential を mount しない。
 
 Process management は Makefile に残す。Makefile は issue-tracker、orchestrator、Web を dev container 内で起動し、background log を `.tmp/dev-logs/` に保存し、TUI は interactive command として扱う。
 

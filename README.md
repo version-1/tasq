@@ -77,7 +77,7 @@ Japanese counterpart: [README.ja.md](README.ja.md).
 - The orchestrator reads `WORKFLOW.md` for Symphony-oriented runtime settings.
 - The Web UI calls the issue-tracker API through `NEXT_PUBLIC_ISSUE_TRACKER_URL` when served from a different origin.
 - `tq` resolves the issue-tracker API URL from `$TQ_HOME/system/state.json` when run through `make tq`.
-- Run `make codex-login` once to persist Codex authentication in the `codex-home` Docker volume.
+- Run `make codex-login` once to authenticate Codex with device auth and persist credentials in the `codex-home` Docker volume.
 
 ## tq CLI
 

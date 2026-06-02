@@ -16,7 +16,9 @@ state in that container.
 
 Codex credentials are separate from `TQ_HOME`. The dev container uses
 `CODEX_HOME=/home/codex/.codex`, backed by the `codex-home` named volume. Run `make codex-login`
-once to authenticate inside the container. Removing the `codex-home` volume removes the login state.
+once to authenticate inside the container with device auth. Removing the `codex-home` volume removes
+the login state. Device auth avoids browser redirects to a localhost callback that only exists inside
+the container.
 
 ## Directory Layout
 

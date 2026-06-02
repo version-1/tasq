@@ -22,7 +22,7 @@ CLI commands:
 - `make tq ARGS="issue list"`
 - `make tq ARGS="issue get 1"`
 
-`make dev-up` は OpenAPI UI を起動し、`dev` container 内で issue-tracker、orchestrator、web-ui を起動します。Runtime state は `$TQ_HOME` 配下に保存され、container 内の default は `/workspace/.tasq` です。`make codex-login` は Codex authentication を `codex-home` Docker volume に永続化します。
+`make dev-up` は OpenAPI UI を起動し、`dev` container 内で issue-tracker、orchestrator、web-ui を起動します。Runtime state は `$TQ_HOME` 配下に保存され、container 内の default は `/workspace/.tasq` です。`make codex-login` は device auth を使い、Codex authentication を `codex-home` Docker volume に永続化します。
 
 ## Verification
 

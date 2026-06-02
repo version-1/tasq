@@ -16,8 +16,9 @@ container 内の runtime state を読みます。
 
 Codex credential は `TQ_HOME` とは分離します。dev container では
 `CODEX_HOME=/home/codex/.codex` を使い、`codex-home` named volume に保存します。
-Container 内で一度 `make codex-login` を実行して認証します。`codex-home` volume を削除すると
-login state も削除されます。
+Container 内で一度 `make codex-login` を実行し、device auth で認証します。`codex-home`
+volume を削除すると login state も削除されます。Device auth を使うことで、container 内にだけ
+存在する localhost callback へ browser が redirect して失敗する問題を避けます。
 
 ## Directory Layout
 
