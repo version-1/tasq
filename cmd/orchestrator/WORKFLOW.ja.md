@@ -25,8 +25,8 @@ make dev-ports
 Host-only development の場合は、先に issue-tracker を起動してから実行します。
 
 ```sh
+TQ_HOME=./.tasq \
 go run ./cmd/orchestrator \
-  -db tasq-orchestrator.sqlite \
   -issue-tracker http://localhost:8080 \
   -port 8081
 ```

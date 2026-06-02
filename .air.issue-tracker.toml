@@ -4,10 +4,10 @@ tmp_dir = ".tmp/air-issue-tracker"
 [build]
 cmd = "mkdir -p .tmp/air-issue-tracker && rm -f .tmp/air-issue-tracker/issue-tracker && go build -o .tmp/air-issue-tracker/issue-tracker ./cmd/issue-tracker"
 bin = "./.tmp/air-issue-tracker/issue-tracker"
-full_bin = "./.tmp/air-issue-tracker/issue-tracker -addr :8080 -db /workspace/.data/tasq-issues.sqlite"
+full_bin = "./.tmp/air-issue-tracker/issue-tracker -addr :8080"
 include_dir = ["cmd", "db", "internal"]
 include_ext = ["go", "mod", "sql", "sum"]
-exclude_dir = [".data", ".git", ".tmp", ".worktrees", "web"]
+exclude_dir = [".git", ".tasq", ".tmp", ".worktrees", "web"]
 exclude_regex = ["_test\\.go"]
 delay = 1000
 stop_on_error = true

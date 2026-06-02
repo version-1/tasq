@@ -25,7 +25,7 @@ make dev-ports
 Host-only development の場合:
 
 ```sh
-go run ./cmd/issue-tracker -addr :8080 -db tasq-issues.sqlite
+TQ_HOME=./.tasq go run ./cmd/issue-tracker -addr :8080
 ```
 
 ## Change Flow
