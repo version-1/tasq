@@ -16,6 +16,8 @@ services:
         sleep infinity
     stdin_open: true
     tty: true
+    security_opt:
+      - seccomp=unconfined
     environment:
       TQ_HOME: /workspace/.tasq
       CODEX_HOME: /home/codex/.codex
