@@ -105,6 +105,9 @@ make run-logs
 Container login では、browser redirect が container 内の localhost callback に戻り host browser から
 到達できない場合に device auth を使います。
 
+Authentication targets は既存の `dev` container 内で command を実行するだけです。Container の
+build や起動は行わないため、dev container がない場合は先に `make dev-up` を実行します。
+
 例:
 
 ```sh

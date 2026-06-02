@@ -134,22 +134,18 @@ dev-build: dev-check ## Run Go tests and the Web UI production build in the dev 
 
 .PHONY: dev-codex-login
 dev-codex-login: dev-check ## Log in to Codex inside the dev container with device auth.
-	ISSUE_TRACKER_PORT=$(ISSUE_TRACKER_PORT) ORCHESTRATOR_PORT=$(ORCHESTRATOR_PORT) OPENAPI_PORT=$(OPENAPI_PORT) WEB_PORT=$(WEB_PORT) $(COMPOSE) up --build -d dev
 	$(DEV_EXEC) sh -c 'codex login --device-auth'
 
 .PHONY: dev-codex-status
 dev-codex-status: dev-check ## Check Codex authentication status inside the dev container.
-	ISSUE_TRACKER_PORT=$(ISSUE_TRACKER_PORT) ORCHESTRATOR_PORT=$(ORCHESTRATOR_PORT) OPENAPI_PORT=$(OPENAPI_PORT) WEB_PORT=$(WEB_PORT) $(COMPOSE) up --build -d dev
 	$(DEV_EXEC) sh -c 'codex login status'
 
 .PHONY: dev-gh-login
 dev-gh-login: dev-check ## Log in to GitHub CLI inside the dev container.
-	ISSUE_TRACKER_PORT=$(ISSUE_TRACKER_PORT) ORCHESTRATOR_PORT=$(ORCHESTRATOR_PORT) OPENAPI_PORT=$(OPENAPI_PORT) WEB_PORT=$(WEB_PORT) $(COMPOSE) up --build -d dev
 	$(DEV_EXEC) sh -c 'gh auth login'
 
 .PHONY: dev-gh-status
 dev-gh-status: dev-check ## Check GitHub CLI authentication inside the dev container.
-	ISSUE_TRACKER_PORT=$(ISSUE_TRACKER_PORT) ORCHESTRATOR_PORT=$(ORCHESTRATOR_PORT) OPENAPI_PORT=$(OPENAPI_PORT) WEB_PORT=$(WEB_PORT) $(COMPOSE) up --build -d dev
 	$(DEV_EXEC) sh -c 'gh auth status'
 
 .PHONY: dc-ready

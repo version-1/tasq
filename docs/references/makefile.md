@@ -105,6 +105,9 @@ make run-logs
 Use device auth for container logins when a browser redirect points to a localhost callback inside
 the container that is not reachable from the host browser.
 
+Authentication targets only execute commands in an existing `dev` container. They do not build or
+start the container; run `make dev-up` first when the dev container does not exist.
+
 Examples:
 
 ```sh
