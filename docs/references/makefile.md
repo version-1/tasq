@@ -98,7 +98,7 @@ make run-logs
 | Target | Purpose |
 |---|---|
 | `make dev-codex-login` | Run `codex login --device-auth` inside the dev container and persist credentials in the `codex-home` Docker volume. |
-| `make dev-codex-check` | Confirm Codex CLI and `codex app-server` are available inside the dev container. |
+| `make dev-codex-status` | Show Codex authentication status inside the dev container. |
 | `make dev-gh-login` | Run `gh auth login` inside the dev container and persist credentials in the `gh-config` Docker volume. |
 | `make dev-gh-status` | Show GitHub CLI authentication status inside the dev container. |
 
@@ -109,7 +109,7 @@ Examples:
 
 ```sh
 make dev-codex-login
-make dev-codex-check
+make dev-codex-status
 make dev-gh-login
 make dev-gh-status
 ```

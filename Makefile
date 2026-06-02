@@ -137,10 +137,10 @@ dev-codex-login: dev-check ## Log in to Codex inside the dev container with devi
 	ISSUE_TRACKER_PORT=$(ISSUE_TRACKER_PORT) ORCHESTRATOR_PORT=$(ORCHESTRATOR_PORT) OPENAPI_PORT=$(OPENAPI_PORT) WEB_PORT=$(WEB_PORT) $(COMPOSE) up --build -d dev
 	$(DEV_EXEC) sh -c 'codex login --device-auth'
 
-.PHONY: dev-codex-check
-dev-codex-check: dev-check ## Check Codex CLI availability inside the dev container.
+.PHONY: dev-codex-status
+dev-codex-status: dev-check ## Check Codex authentication status inside the dev container.
 	ISSUE_TRACKER_PORT=$(ISSUE_TRACKER_PORT) ORCHESTRATOR_PORT=$(ORCHESTRATOR_PORT) OPENAPI_PORT=$(OPENAPI_PORT) WEB_PORT=$(WEB_PORT) $(COMPOSE) up --build -d dev
-	$(DEV_EXEC) sh -c 'codex --help >/dev/null && codex app-server --help >/dev/null'
+	$(DEV_EXEC) sh -c 'codex login status'
 
 .PHONY: dev-gh-login
 dev-gh-login: dev-check ## Log in to GitHub CLI inside the dev container.
