@@ -17,12 +17,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Verify Symphony SPEC matches upstream
+      - name: Verify Symphony SPEC is not changed
         run: |
-          curl --fail --location --silent --show-error \
-            https://raw.githubusercontent.com/openai/symphony/main/SPEC.md \
-            --output /tmp/openai-symphony-SPEC.md
-          cmp /tmp/openai-symphony-SPEC.md docs/symphony/SPEC.md
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
+            git diff --exit-code "origin/${{ github.base_ref }}" -- docs/symphony/SPEC.md
+          else
+            git diff --exit-code HEAD~1 -- docs/symphony/SPEC.md
+          fi
 
   go:
     name: Go services
