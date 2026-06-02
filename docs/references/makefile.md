@@ -101,7 +101,6 @@ make run-logs
 | `make dev-codex-check` | Confirm Codex CLI and `codex app-server` are available inside the dev container. |
 | `make dev-gh-login` | Run `gh auth login` inside the dev container and persist credentials in the `gh-config` Docker volume. |
 | `make dev-gh-status` | Show GitHub CLI authentication status inside the dev container. |
-| `make dev-tool-auth-check` | Check both Codex login status and GitHub CLI authentication status inside the dev container. |
 
 Use device auth for container logins when a browser redirect points to a localhost callback inside
 the container that is not reachable from the host browser.
@@ -113,7 +112,6 @@ make dev-codex-login
 make dev-codex-check
 make dev-gh-login
 make dev-gh-status
-make dev-tool-auth-check
 ```
 
 ## Operational Notes
