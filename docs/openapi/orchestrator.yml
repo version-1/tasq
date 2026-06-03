@@ -10,7 +10,7 @@ info:
     in `WORKFLOW.md`. Responses are returned as direct JSON payloads and do not
     use the issue-tracker `{ "data": ..., "meta": {} }` envelope.
 servers:
-  - url: http://127.0.0.1:8080
+  - url: http://127.0.0.1:37652
     description: Local orchestrator HTTP API
 tags:
   - name: Runtime State

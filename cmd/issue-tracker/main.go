@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -17,7 +18,7 @@ import (
 )
 
 func main() {
-	addr := flag.String("addr", ":8080", "HTTP listen address")
+	addr := flag.String("addr", ":"+strconv.Itoa(tqconfig.DefaultIssueTrackerPort), "HTTP listen address")
 	dbPath := flag.String("db", "", "SQLite database path")
 	flag.Parse()
 

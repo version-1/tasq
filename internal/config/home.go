@@ -32,6 +32,7 @@ func EnsureHome() (string, error) {
 		ConfigDir(home),
 		SystemDir(home),
 		DataDir(home),
+		LogDir(home),
 	} {
 		if err := os.MkdirAll(path, 0o755); err != nil {
 			return "", fmt.Errorf("create %s: %w", path, err)
@@ -50,6 +51,10 @@ func SystemDir(home string) string {
 
 func DataDir(home string) string {
 	return filepath.Join(SystemDir(home), "data")
+}
+
+func LogDir(home string) string {
+	return filepath.Join(SystemDir(home), "log")
 }
 
 func ConfigPath(home string) string {

@@ -9,7 +9,7 @@ info:
     JSON error responses use `{ "error": { "code": "...", "message": "..." }, "meta": {} }`.
     `204 No Content` and CORS `OPTIONS` responses do not include a JSON body.
 servers:
-  - url: http://localhost:8080
+  - url: http://localhost:37651
     description: Local issue-tracker API
 tags:
   - name: Health

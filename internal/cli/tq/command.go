@@ -14,7 +14,7 @@ import (
 	"github.com/version-1/tasq/internal/issue/domain/entity"
 )
 
-const defaultAPIURL = "http://localhost:8080"
+var defaultAPIURL = "http://localhost:" + strconv.Itoa(tqconfig.DefaultIssueTrackerPort)
 
 type config struct {
 	apiURL string
@@ -64,6 +64,8 @@ func (a app) route(ctx context.Context, args []string, cfg config) error {
 		return a.routeComment(ctx, args[1:], cfg)
 	case "project":
 		return a.routeProject(ctx, args[1:], cfg)
+	case "service":
+		return a.routeService(ctx, args[1:], cfg)
 	default:
 		return usageError("unknown resource %q", resource)
 	}
@@ -525,6 +527,7 @@ func printRootHelp(w io.Writer) {
 	fmt.Fprintln(w, "  issue    create, get, list, update, and shortcut issue actions")
 	fmt.Fprintln(w, "  comment  add and list issue comments")
 	fmt.Fprintln(w, "  project  add, remove, check, and list projects")
+	fmt.Fprintln(w, "  service  start, stop, and inspect local services")
 }
 
 func printIssueHelp(w io.Writer) {

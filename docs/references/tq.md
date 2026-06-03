@@ -15,7 +15,7 @@ The target runs the installed `tq` binary inside the already-running dev contain
 You can also run `tq` directly in host-only workflows:
 
 ```sh
-TQ_HOME=./.tasq go run ./cmd/tq --api-url http://localhost:8080 issue list
+TQ_HOME=./.tasq go run ./cmd/tq --api-url http://localhost:37651 issue list
 ```
 
 ## Global Options
@@ -26,7 +26,7 @@ tq [--api-url URL] [--output text|json] <resource> <action> [flags]
 
 | Option | Default | Description |
 |---|---|---|
-| `--api-url URL` | `TQ_API_URL`, then `$TQ_HOME/system/state.json`, then `http://localhost:8080` | Issue-tracker API base URL. |
+| `--api-url URL` | `TQ_API_URL`, then `$TQ_HOME/system/state.json`, then `http://localhost:37651` | Issue-tracker API base URL. |
 | `--output text\|json` | `text` | Output format. JSON output is intended for scripts and agents. |
 
 ## Resources
@@ -36,6 +36,7 @@ tq [--api-url URL] [--output text|json] <resource> <action> [flags]
 | `issue` | `create`, `get`, `list`, `update` |
 | `comment` | `add`, `list` |
 | `project` | `add`, `remove`, `check`, `list` |
+| `service` | `start`, `stop`, `status` |
 
 ## Issues
 
@@ -139,6 +140,43 @@ List comments for an issue.
 
 ```sh
 make run-tq ARGS="comment list 1"
+```
+
+## Services
+
+### `service start`
+
+Start issue-tracker and orchestrator as host-local background processes. The command starts issue-tracker first, waits for its health endpoint, and then starts orchestrator. Logs are appended under `$TQ_HOME/system/log/`.
+
+```sh
+TQ_HOME=./.tasq go run ./cmd/tq service start
+```
+
+Default service ports:
+
+| Service | Port | Log |
+|---|---:|---|
+| issue-tracker | `37651` | `$TQ_HOME/system/log/issue-tracker.log` |
+| orchestrator | `37652` | `$TQ_HOME/system/log/orchestrator.log` |
+
+### `service status`
+
+Show service state, PID, port, and uptime. JSON output is available for scripts.
+
+```sh
+TQ_HOME=./.tasq go run ./cmd/tq service status
+```
+
+```sh
+TQ_HOME=./.tasq go run ./cmd/tq --output json service status
+```
+
+### `service stop`
+
+Stop orchestrator first and issue-tracker second. Each process receives `SIGTERM`; if it does not exit within the grace period, it is killed.
+
+```sh
+TQ_HOME=./.tasq go run ./cmd/tq service stop
 ```
 
 ## Projects

@@ -25,7 +25,7 @@ make dev-ports
 Host-only development の場合は、repository-local の `TQ_HOME` を使います。
 
 ```sh
-TQ_HOME=./.tasq go run ./cmd/issue-tracker -addr :8080
+TQ_HOME=./.tasq go run ./cmd/issue-tracker -addr :37651
 ```
 
 ## Change Flow

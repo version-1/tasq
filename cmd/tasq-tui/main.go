@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -35,7 +36,7 @@ func main() {
 		}
 	}
 	if resolvedAPIURL == "" {
-		resolvedAPIURL = "http://localhost:8080"
+		resolvedAPIURL = "http://localhost:" + strconv.Itoa(tqconfig.DefaultIssueTrackerPort)
 	}
 	for {
 		if err := render(ctx, resolvedAPIURL); err != nil {
