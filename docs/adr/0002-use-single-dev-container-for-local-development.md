@@ -21,7 +21,7 @@ The `dev` container runs issue-tracker, orchestrator, Web, `tq`, TUI, and Codex 
 
 Codex authentication is done by running `codex login --device-auth` inside the dev container. The resulting credentials are stored in the `codex-home` named volume. Device auth avoids browser redirects to a localhost callback that exists only inside the container. The Docker image does not contain credentials, and the default workflow does not mount host Codex credentials.
 
-Process management remains Makefile-based. The Makefile starts issue-tracker, orchestrator, and Web inside the dev container, stores background logs under `$TQ_HOME/system/log/`, and keeps TUI as an interactive command.
+Process management remains Makefile-based. The Makefile starts issue-tracker, orchestrator, and Web inside the dev container, stores background logs under `.tmp/dev-logs/`, and keeps TUI as an interactive command.
 
 The split Compose services for issue-tracker, orchestrator, Web, and Go tools are removed from the default development Compose file.
 
@@ -47,7 +47,7 @@ The dev container remains an isolation boundary for Codex. The `codex-home` volu
 
 The default `make tq` path now runs inside the dev container. This improves endpoint consistency, but project path handling needs care: commands that persist project paths can see the container workspace path rather than a host-local path unless run through a host-aware workflow. ADR-0001 remains the durable product model for project records.
 
-The Makefile owns process lifecycle. Duplicate process prevention relies on narrow process patterns, and background logs are written under `$TQ_HOME/system/log/`.
+The Makefile owns process lifecycle. Duplicate process prevention relies on narrow process patterns, and background logs are written under `.tmp/dev-logs/`.
 
 Existing scripts or habits that addressed old Compose service names need to migrate to the dev-container targets.
 
