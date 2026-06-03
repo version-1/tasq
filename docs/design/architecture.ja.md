@@ -54,7 +54,8 @@ Responsibilities:
 - issue-tracker API 経由で issue を作成、取得、一覧表示、更新する。
 - issue description と comment 用の image attachment を upload する。
 - default では human-readable output を使い、tool use 向けに JSON output をサポートする。
-- issue-tracker API URL を `--api-url`、`TQ_API_URL`、または `http://localhost:8080` から解決する。
+- issue-tracker API URL を `--api-url`、`TQ_API_URL`、`$TQ_HOME/system/state.json`、または `http://localhost:37651` から解決する。
+- `tq service` で host-local な issue-tracker と orchestrator process を管理する。
 - command が失敗した場合、stderr に machine-readable JSON error を出し、non-zero exit code を返す。
 - orchestrator へ直接アクセスしない。
 

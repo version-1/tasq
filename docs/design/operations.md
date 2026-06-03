@@ -6,6 +6,8 @@ This document covers the local development environment, verification commands, a
 
 Docker Compose keeps local development in one long-lived `dev` container and a standalone OpenAPI UI container. The issue-tracker listens on container port `8080`, the orchestrator listens on container port `8081`, and the web-ui listens on container port `3000` inside `dev`.
 
+For host-only operation on a personal machine, `tq service start` runs issue-tracker and orchestrator as background processes. It uses fixed local ports `37651` and `37652`, writes discovery state to `$TQ_HOME/system/state.json`, and appends logs under `$TQ_HOME/system/log/`.
+
 Recommended commands:
 
 - `make run-issue-tracker`
@@ -20,6 +22,7 @@ CLI commands:
 
 - `make run-tq ARGS="issue list"`
 - `make run-tq ARGS="issue get 1"`
+- `TQ_HOME=./.tasq go run ./cmd/tq service status`
 
 `make dev-up` starts the OpenAPI UI and launches the issue-tracker, orchestrator, and web-ui inside the `dev` container. Runtime state is stored under `$TQ_HOME`, which defaults to `/workspace/.tasq` inside the container. `make dev-codex-login` uses device auth and persists Codex authentication in the `codex-home` Docker volume.
 

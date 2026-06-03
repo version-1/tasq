@@ -27,8 +27,8 @@ For host-only development, start the issue-tracker first, then run:
 ```sh
 TQ_HOME=./.tasq \
 go run ./cmd/orchestrator \
-  -issue-tracker http://localhost:8080 \
-  -port 8081
+  -issue-tracker http://localhost:37651 \
+  -port 37652
 ```
 
 ## Change Flow

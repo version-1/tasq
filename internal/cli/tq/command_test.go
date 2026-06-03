@@ -283,6 +283,99 @@ func TestCommentAdd(t *testing.T) {
 	}
 }
 
+func TestServiceStatusStopped(t *testing.T) {
+	t.Setenv(tqconfig.EnvHome, t.TempDir())
+
+	stdout, stderr, code := runCLI(t, []string{"service", "status"})
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr)
+	}
+	if !strings.Contains(stdout, "issue-tracker\tstopped") {
+		t.Fatalf("stdout missing issue-tracker stopped status: %s", stdout)
+	}
+	if !strings.Contains(stdout, "orchestrator\tstopped") {
+		t.Fatalf("stdout missing orchestrator stopped status: %s", stdout)
+	}
+}
+
+func TestServiceStatusJSONRunning(t *testing.T) {
+	t.Setenv(tqconfig.EnvHome, t.TempDir())
+	startedAt := time.Now().Add(-time.Minute).UTC()
+	if err := tqconfig.UpdateState(func(state *tqconfig.State) error {
+		state.IssueTracker = &tqconfig.ServiceState{
+			PID:       os.Getpid(),
+			Addr:      "127.0.0.1:" + strconv.Itoa(tqconfig.DefaultIssueTrackerPort),
+			DB:        "/tmp/issues.sqlite",
+			StartedAt: startedAt,
+		}
+		return nil
+	}); err != nil {
+		t.Fatalf("write state: %v", err)
+	}
+
+	stdout, stderr, code := runCLI(t, []string{"--output", "json", "service", "status"})
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr)
+	}
+	var statuses []serviceStatus
+	if err := json.Unmarshal([]byte(stdout), &statuses); err != nil {
+		t.Fatalf("decode stdout: %v: %s", err, stdout)
+	}
+	if len(statuses) != 2 {
+		t.Fatalf("statuses=%+v", statuses)
+	}
+	if statuses[0].Name != "issue-tracker" || statuses[0].State != "running" || statuses[0].PID != os.Getpid() || statuses[0].Port != tqconfig.DefaultIssueTrackerPort {
+		t.Fatalf("unexpected issue-tracker status: %+v", statuses[0])
+	}
+	if statuses[1].Name != "orchestrator" || statuses[1].State != "stopped" {
+		t.Fatalf("unexpected orchestrator status: %+v", statuses[1])
+	}
+}
+
+func TestServiceStatusCleansStaleState(t *testing.T) {
+	t.Setenv(tqconfig.EnvHome, t.TempDir())
+	if err := tqconfig.UpdateState(func(state *tqconfig.State) error {
+		state.IssueTracker = &tqconfig.ServiceState{
+			PID:       -1,
+			Addr:      "127.0.0.1:" + strconv.Itoa(tqconfig.DefaultIssueTrackerPort),
+			StartedAt: time.Now().Add(-time.Hour),
+		}
+		return nil
+	}); err != nil {
+		t.Fatalf("write state: %v", err)
+	}
+
+	stdout, stderr, code := runCLI(t, []string{"service", "status"})
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr)
+	}
+	if !strings.Contains(stdout, "issue-tracker\tstopped") {
+		t.Fatalf("unexpected stdout: %s", stdout)
+	}
+	state, err := tqconfig.ReadState()
+	if err != nil {
+		t.Fatalf("read state: %v", err)
+	}
+	if state.IssueTracker != nil {
+		t.Fatalf("stale issue-tracker state was not removed: %+v", state.IssueTracker)
+	}
+}
+
+func TestServiceUnknownAction(t *testing.T) {
+	t.Setenv(tqconfig.EnvHome, t.TempDir())
+
+	stdout, stderr, code := runCLI(t, []string{"service", "restart"})
+	if code != 2 {
+		t.Fatalf("code=%d stderr=%s", code, stderr)
+	}
+	if stdout != "" {
+		t.Fatalf("expected empty stdout: %s", stdout)
+	}
+	if got := decodeCLIError(t, stderr); got != `unknown service action "restart"` {
+		t.Fatalf("error=%q", got)
+	}
+}
+
 func TestCommentAddDefaultsAuthorFromEnvironment(t *testing.T) {
 	t.Setenv("TQ_AUTHOR", "agent")
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

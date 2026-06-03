@@ -54,7 +54,8 @@ Responsibilities:
 - Create, read, list, and update issues through the issue-tracker API.
 - Upload image attachments for issue descriptions and comments.
 - Support human-readable output by default and JSON output for tool use.
-- Resolve the issue-tracker API URL from `--api-url`, `TQ_API_URL`, or `http://localhost:8080`.
+- Resolve the issue-tracker API URL from `--api-url`, `TQ_API_URL`, `$TQ_HOME/system/state.json`, or `http://localhost:37651`.
+- Manage host-local issue-tracker and orchestrator processes through `tq service`.
 - Return machine-readable JSON errors on stderr and a non-zero exit code when a command fails.
 - Avoid direct calls to the orchestrator.
 

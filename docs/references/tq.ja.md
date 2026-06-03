@@ -15,7 +15,7 @@ make run-tq ARGS="issue list"
 Host-only workflow では直接 `tq` を実行することもできます。
 
 ```sh
-TQ_HOME=./.tasq go run ./cmd/tq --api-url http://localhost:8080 issue list
+TQ_HOME=./.tasq go run ./cmd/tq --api-url http://localhost:37651 issue list
 ```
 
 ## Global Options
@@ -26,7 +26,7 @@ tq [--api-url URL] [--output text|json] <resource> <action> [flags]
 
 | Option | Default | Description |
 |---|---|---|
-| `--api-url URL` | `TQ_API_URL`、その後 `$TQ_HOME/system/state.json`、その後 `http://localhost:8080` | issue-tracker API の base URL。 |
+| `--api-url URL` | `TQ_API_URL`、その後 `$TQ_HOME/system/state.json`、その後 `http://localhost:37651` | issue-tracker API の base URL。 |
 | `--output text\|json` | `text` | Output format。JSON output は script や agent 向けです。 |
 
 ## Resources
@@ -36,6 +36,7 @@ tq [--api-url URL] [--output text|json] <resource> <action> [flags]
 | `issue` | `create`, `get`, `list`, `update` |
 | `comment` | `add`, `list` |
 | `project` | `add`, `remove`, `check`, `list` |
+| `service` | `start`, `stop`, `status` |
 
 ## Issues
 
@@ -139,6 +140,43 @@ Issue の comment を一覧表示します。
 
 ```sh
 make run-tq ARGS="comment list 1"
+```
+
+## Services
+
+### `service start`
+
+issue-tracker と orchestrator を host-local background process として起動します。この command は issue-tracker を先に起動し、health endpoint を待ってから orchestrator を起動します。Log は `$TQ_HOME/system/log/` 配下へ追記されます。
+
+```sh
+TQ_HOME=./.tasq go run ./cmd/tq service start
+```
+
+Default service ports:
+
+| Service | Port | Log |
+|---|---:|---|
+| issue-tracker | `37651` | `$TQ_HOME/system/log/issue-tracker.log` |
+| orchestrator | `37652` | `$TQ_HOME/system/log/orchestrator.log` |
+
+### `service status`
+
+service state、PID、port、uptime を表示します。Script 向けに JSON output も使えます。
+
+```sh
+TQ_HOME=./.tasq go run ./cmd/tq service status
+```
+
+```sh
+TQ_HOME=./.tasq go run ./cmd/tq --output json service status
+```
+
+### `service stop`
+
+orchestrator を先に停止し、その後 issue-tracker を停止します。各 process へ `SIGTERM` を送り、grace period 内に終了しない場合は kill します。
+
+```sh
+TQ_HOME=./.tasq go run ./cmd/tq service stop
 ```
 
 ## Projects

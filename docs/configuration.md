@@ -43,7 +43,7 @@ $TQ_HOME/
 ```
 
 `config/` is user-editable. `system/` is managed by Tasq processes and may be overwritten.
-Development service logs are written under `system/log/`.
+Development service logs are written under `system/log/`. `tq service start` appends issue-tracker and orchestrator logs to that directory.
 
 ## config.yaml
 
@@ -65,13 +65,13 @@ Running services write discovery metadata to `system/state.json`.
 {
   "issue_tracker": {
     "pid": 12345,
-    "addr": "127.0.0.1:51234",
+    "addr": "127.0.0.1:37651",
     "db": "/Users/me/.tasq/system/data/issues.sqlite",
     "started_at": "2026-06-01T10:00:00Z"
   },
   "orchestrator": {
     "pid": 12346,
-    "addr": "http://127.0.0.1:51235",
+    "addr": "http://127.0.0.1:37652",
     "db": "/Users/me/.tasq/system/data/orchestrator.sqlite",
     "started_at": "2026-06-01T10:00:01Z"
   }
@@ -85,7 +85,7 @@ Running services write discovery metadata to `system/state.json`.
 Issue-tracker API URL:
 
 ```text
---api-url / -api flag > TQ_API_URL > state.json issue_tracker.addr > http://localhost:8080
+--api-url / -api flag > TQ_API_URL > state.json issue_tracker.addr > http://localhost:37651
 ```
 
 Comment author:
