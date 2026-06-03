@@ -21,7 +21,7 @@ Local development では、単一の `dev` container と standalone な `openapi
 
 Codex authentication は dev container 内で `codex login --device-auth` を実行して行う。認証情報は `codex-home` named volume に保存する。Device auth により、container 内にだけ存在する localhost callback へ browser が redirect して失敗する問題を避ける。Docker image には credential を含めず、default workflow では host の Codex credential を mount しない。
 
-Process management は Makefile に残す。Makefile は issue-tracker、orchestrator、Web を dev container 内で起動し、background log を `.tmp/dev-logs/` に保存し、TUI は interactive command として扱う。
+Process management は Makefile に残す。Makefile は issue-tracker、orchestrator、Web を dev container 内で起動し、background log を `$TQ_HOME/system/log/` に保存し、TUI は interactive command として扱う。
 
 Default development Compose file から、issue-tracker、orchestrator、Web、Go tools の分割 service を削除する。
 
@@ -47,7 +47,7 @@ Dev container は Codex の isolation boundary でもある。`codex-home` volum
 
 Default の `make tq` は dev container 内で実行される。endpoint consistency は改善するが、project path を永続化する command では注意が必要である。container workspace path が見える可能性があるため、project record の durable model としては ADR-0001 の host-local path 方針を維持する。
 
-Process lifecycle は Makefile が所有する。二重起動対策は狭い process pattern に依存し、background log は `.tmp/dev-logs/` に保存される。
+Process lifecycle は Makefile が所有する。二重起動対策は狭い process pattern に依存し、background log は `$TQ_HOME/system/log/` に保存される。
 
 旧 Compose service name に依存していた script や開発習慣は、dev-container target へ移行する必要がある。
 

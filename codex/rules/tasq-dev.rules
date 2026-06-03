@@ -173,6 +173,12 @@ prefix_rule(
 )
 
 prefix_rule(
+    pattern = ["git", "restore"],
+    decision = "allow",
+    justification = "Restoring local working tree changes is normally safe in the Tasq dev container."
+)
+
+prefix_rule(
     pattern = ["git", "worktree", ["add", "list", "lock", "move", "repair", "unlock"]],
     decision = "allow",
     justification = "Git worktree operations except remove and prune are normally safe in the Tasq dev container."

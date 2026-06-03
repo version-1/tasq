@@ -33,12 +33,17 @@ $TQ_HOME/
 │   └── config.yaml
 └── system/
     ├── state.json
+    ├── log
+    │   ├── issue-tracker.log
+    │   ├── orchestrator.log
+    │   └── web.log
     └── data/
         ├── issues.sqlite
         └── orchestrator.sqlite
 ```
 
 `config/` is user-editable. `system/` is managed by Tasq processes and may be overwritten.
+Development service logs are written under `system/log/`.
 
 ## config.yaml
 

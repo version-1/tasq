@@ -33,12 +33,17 @@ $TQ_HOME/
 │   └── config.yaml
 └── system/
     ├── state.json
+    ├── log
+    │   ├── issue-tracker.log
+    │   ├── orchestrator.log
+    │   └── web.log
     └── data/
         ├── issues.sqlite
         └── orchestrator.sqlite
 ```
 
 `config/` は user-editable です。`system/` は Tasq processes が管理し、上書きされる可能性があります。
+Development service logs は `system/log/` 配下に書き込まれます。
 
 ## config.yaml
 
