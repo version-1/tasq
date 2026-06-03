@@ -74,7 +74,7 @@ make dc-exec CMD="go test ./internal/config"
 | `make run-tui` | dev container 内で TUI を interactive に実行します。 |
 | `make run-tq ARGS="..."` | service process を変更せず、起動済み dev container 内で installed `tq $(ARGS)` binary を実行します。 |
 | `make run-ps` | dev container 内で動いている dev process を表示します。 |
-| `make run-logs` | `.tmp/dev-logs/*.log` を follow します。 |
+| `make run-logs` | `$TQ_HOME/system/log/*.log` を follow します。 |
 
 よく使う例:
 

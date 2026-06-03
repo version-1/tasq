@@ -74,7 +74,7 @@ Use `run-*` targets for processes and commands that run inside an already-runnin
 | `make run-tui` | Run the TUI interactively inside the dev container. |
 | `make run-tq ARGS="..."` | Run the installed `tq $(ARGS)` binary inside the running dev container without changing service processes. |
 | `make run-ps` | Show dev processes running inside the dev container. |
-| `make run-logs` | Follow `.tmp/dev-logs/*.log`. |
+| `make run-logs` | Follow `$TQ_HOME/system/log/*.log`. |
 
 Useful examples:
 

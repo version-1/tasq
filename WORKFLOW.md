@@ -4,7 +4,7 @@ polling:
 workspace:
   root: .worktrees
 agent:
-  max_concurrent_agents: 1
+  max_concurrent_agents: 5
   max_turns: 20
   continuation_turns_enabled: false
   max_retry_attempts: 3
