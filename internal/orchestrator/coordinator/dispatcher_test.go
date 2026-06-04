@@ -40,6 +40,7 @@ func TestDispatcherCompletesSuccessfulRun(t *testing.T) {
 	testRunner := &recordingRunner{
 		result: runner.Result{Status: run.StatusSucceeded},
 		events: []runner.Event{
+			{EventType: "item/agentMessage/delta", Message: "token", PayloadJSON: `{"delta":"token"}`},
 			{EventType: "turn_completed", Message: "done", PayloadJSON: `{"ok":true}`},
 		},
 	}
@@ -278,14 +279,14 @@ func TestFormatRunnerEventLogTruncatesPayload(t *testing.T) {
 	}
 }
 
-func TestShouldLogRunnerEventIgnoresAgentMessageDelta(t *testing.T) {
+func TestShouldKeepRunnerEventIgnoresAgentMessageDelta(t *testing.T) {
 	t.Parallel()
 
-	if shouldLogRunnerEvent(runner.Event{EventType: "item/agentMessage/delta"}) {
-		t.Fatal("agent message delta event should not be logged")
+	if shouldKeepRunnerEvent(runner.Event{EventType: "item/agentMessage/delta"}) {
+		t.Fatal("agent message delta event should not be kept")
 	}
-	if !shouldLogRunnerEvent(runner.Event{EventType: "turn/completed"}) {
-		t.Fatal("turn completed event should be logged")
+	if !shouldKeepRunnerEvent(runner.Event{EventType: "turn/completed"}) {
+		t.Fatal("turn completed event should be kept")
 	}
 }
 
