@@ -15,6 +15,7 @@ import (
 type State struct {
 	IssueTracker *ServiceState `json:"issue_tracker,omitempty"`
 	Orchestrator *ServiceState `json:"orchestrator,omitempty"`
+	Web          *ServiceState `json:"web,omitempty"`
 }
 
 type ServiceState struct {

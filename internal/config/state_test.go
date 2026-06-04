@@ -13,7 +13,7 @@ func TestReadStateMissingReturnsEmpty(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read state: %v", err)
 	}
-	if state.IssueTracker != nil || state.Orchestrator != nil {
+	if state.IssueTracker != nil || state.Orchestrator != nil || state.Web != nil {
 		t.Fatalf("state=%+v", state)
 	}
 }
@@ -29,6 +29,11 @@ func TestUpdateStateWritesAtomically(t *testing.T) {
 			DB:        "system/data/issues.sqlite",
 			StartedAt: startedAt,
 		}
+		state.Web = &ServiceState{
+			PID:       124,
+			Addr:      "127.0.0.1:37653",
+			StartedAt: startedAt,
+		}
 		return nil
 	}); err != nil {
 		t.Fatalf("update state: %v", err)
@@ -38,6 +43,9 @@ func TestUpdateStateWritesAtomically(t *testing.T) {
 		t.Fatalf("read state: %v", err)
 	}
 	if state.IssueTracker == nil || state.IssueTracker.PID != 123 || !state.IssueTracker.StartedAt.Equal(startedAt) {
+		t.Fatalf("state=%+v", state)
+	}
+	if state.Web == nil || state.Web.PID != 124 || state.Web.Addr != "127.0.0.1:37653" {
 		t.Fatalf("state=%+v", state)
 	}
 	if _, err := os.Stat(StateLockPath(home)); err != nil {
@@ -78,5 +86,8 @@ func TestReadStateParsesExistingFile(t *testing.T) {
 	}
 	if state.Orchestrator == nil || state.Orchestrator.PID != 7 {
 		t.Fatalf("state=%+v", state)
+	}
+	if state.Web != nil {
+		t.Fatalf("web should be empty for legacy state: %+v", state)
 	}
 }
