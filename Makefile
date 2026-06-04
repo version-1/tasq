@@ -6,6 +6,8 @@ ORCHESTRATOR_PORT ?=
 OPENAPI_PORT ?=
 WEB_PORT ?=
 WEB_ISSUE_TRACKER_URL ?=
+RELEASE_BRANCH ?= main
+RELEASE_REMOTE ?= origin
 
 export TQ_HOME
 
@@ -30,6 +32,16 @@ help: ## Show target prefixes and available targets.
 	@awk 'BEGIN {FS = ":.*## "}; /^dc-[a-zA-Z0-9_-]+:.*## / {printf "%-28s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 	@printf "\nrun-* targets:\n"
 	@awk 'BEGIN {FS = ":.*## "}; /^run-[a-zA-Z0-9_-]+:.*## / {printf "%-28s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+	@printf "\nRelease:\n"
+	@awk 'BEGIN {FS = ":.*## "}; /^(prerelease|release):.*## / {printf "%-28s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+
+.PHONY: prerelease
+prerelease: ## Create and push a prerelease tag from the latest formal release.
+	@RELEASE_REMOTE="$(RELEASE_REMOTE)" sh scripts/release.sh prerelease
+
+.PHONY: release
+release: ## Create and push a formal release tag. Usage: make release version=v0.1.1
+	@RELEASE_BRANCH="$(RELEASE_BRANCH)" RELEASE_REMOTE="$(RELEASE_REMOTE)" sh scripts/release.sh release "$(version)"
 
 .PHONY: dev-check
 dev-check:
