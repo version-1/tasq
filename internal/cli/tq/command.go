@@ -58,6 +58,9 @@ func (a app) route(ctx context.Context, args []string, cfg config) error {
 	}
 	resource := args[0]
 	switch resource {
+	case "version":
+		printVersion(a.stdout)
+		return nil
 	case "issue":
 		return a.routeIssue(ctx, args[1:], cfg)
 	case "comment":
@@ -528,6 +531,7 @@ func printRootHelp(w io.Writer) {
 	fmt.Fprintln(w, "  comment  add and list issue comments")
 	fmt.Fprintln(w, "  project  add, remove, check, and list projects")
 	fmt.Fprintln(w, "  service  start, stop, and inspect local services")
+	fmt.Fprintln(w, "  version  show version information")
 }
 
 func printIssueHelp(w io.Writer) {
