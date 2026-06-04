@@ -53,6 +53,26 @@ func TestIsPseudoVersion(t *testing.T) {
 	}
 }
 
+func TestVersionInfoUsesInjectedBuildMetadata(t *testing.T) {
+	originalVersion := buildVersion
+	originalCommit := buildCommit
+	t.Cleanup(func() {
+		buildVersion = originalVersion
+		buildCommit = originalCommit
+	})
+
+	buildVersion = "v0.1.0"
+	buildCommit = "abc1234"
+
+	version, commit := versionInfo()
+	if version != "v0.1.0" {
+		t.Fatalf("version=%q, want %q", version, "v0.1.0")
+	}
+	if commit != "abc1234" {
+		t.Fatalf("commit=%q, want %q", commit, "abc1234")
+	}
+}
+
 func TestIssueListJSON(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet || r.URL.Path != "/api/v1/issues" {
