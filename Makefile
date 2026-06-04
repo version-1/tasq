@@ -37,49 +37,11 @@ help: ## Show target prefixes and available targets.
 
 .PHONY: prerelease
 prerelease: ## Create and push a prerelease tag from the latest formal release.
-	@if [ -n "$$(git status --porcelain)" ]; then \
-		echo "working tree must be clean before creating a prerelease tag"; \
-		exit 1; \
-	fi
-	@base="$$(git describe --tags --abbrev=0 --match 'v[0-9]*.[0-9]*.[0-9]*' --exclude '*-*' 2>/dev/null || true)"; \
-	if [ -z "$$base" ]; then \
-		base="v0.0.0"; \
-	fi; \
-	timestamp="$$(date -u '+%Y%m%dT%H%M')"; \
-	short_sha="$$(git rev-parse --short HEAD)"; \
-	tag="$$base-dev.$$timestamp.$$short_sha"; \
-	if git rev-parse -q --verify "refs/tags/$$tag" >/dev/null; then \
-		echo "tag already exists: $$tag"; \
-		exit 1; \
-	fi; \
-	echo "creating prerelease tag $$tag"; \
-	git tag "$$tag"; \
-	git push "$(RELEASE_REMOTE)" "$$tag"
+	@RELEASE_REMOTE="$(RELEASE_REMOTE)" sh scripts/release.sh prerelease
 
 .PHONY: release
 release: ## Create and push a formal release tag. Usage: make release version=v0.1.1
-	@if [ -z "$(version)" ]; then \
-		echo 'version is required. Usage: make release version=v0.1.1'; \
-		exit 1; \
-	fi
-	@if ! printf '%s\n' "$(version)" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$$'; then \
-		echo "version must match vX.Y.Z without a prerelease suffix: $(version)"; \
-		exit 1; \
-	fi
-	@if [ "$$(git branch --show-current)" != "$(RELEASE_BRANCH)" ]; then \
-		echo "release tags must be created from $(RELEASE_BRANCH)"; \
-		exit 1; \
-	fi
-	@if [ -n "$$(git status --porcelain)" ]; then \
-		echo "working tree must be clean before creating a release tag"; \
-		exit 1; \
-	fi
-	@if git rev-parse -q --verify "refs/tags/$(version)" >/dev/null; then \
-		echo "tag already exists: $(version)"; \
-		exit 1; \
-	fi
-	@git tag "$(version)"
-	git push "$(RELEASE_REMOTE)" "$(version)"
+	@RELEASE_BRANCH="$(RELEASE_BRANCH)" RELEASE_REMOTE="$(RELEASE_REMOTE)" sh scripts/release.sh release "$(version)"
 
 .PHONY: dev-check
 dev-check:
