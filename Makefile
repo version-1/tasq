@@ -8,6 +8,9 @@ WEB_PORT ?=
 WEB_ISSUE_TRACKER_URL ?=
 RELEASE_BRANCH ?= main
 RELEASE_REMOTE ?= origin
+RELEASE_REPO ?= version-1/tasq
+TQ_INSTALL_DIR ?= $(HOME)/.local/bin
+TQ_INSTALL_NAME ?= tq
 
 export TQ_HOME
 
@@ -33,7 +36,7 @@ help: ## Show target prefixes and available targets.
 	@printf "\nrun-* targets:\n"
 	@awk 'BEGIN {FS = ":.*## "}; /^run-[a-zA-Z0-9_-]+:.*## / {printf "%-28s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 	@printf "\nRelease:\n"
-	@awk 'BEGIN {FS = ":.*## "}; /^(prerelease|release):.*## / {printf "%-28s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+	@awk 'BEGIN {FS = ":.*## "}; /^(prerelease|release|install-tq|install-tq-prerelease):.*## / {printf "%-28s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 .PHONY: prerelease
 prerelease: ## Create and push a prerelease tag from the latest formal release.
@@ -42,6 +45,14 @@ prerelease: ## Create and push a prerelease tag from the latest formal release.
 .PHONY: release
 release: ## Create and push a formal release tag. Usage: make release version=v0.1.1
 	@RELEASE_BRANCH="$(RELEASE_BRANCH)" RELEASE_REMOTE="$(RELEASE_REMOTE)" sh scripts/release.sh release "$(version)"
+
+.PHONY: install-tq
+install-tq: ## Install tq from the latest formal release, or a specific tag. Usage: make install-tq version=v0.1.0
+	@TQ_RELEASE_REPO="$(RELEASE_REPO)" TQ_INSTALL_DIR="$(TQ_INSTALL_DIR)" TQ_INSTALL_NAME="$(TQ_INSTALL_NAME)" sh scripts/install-tq-release.sh release "$(version)"
+
+.PHONY: install-tq-prerelease
+install-tq-prerelease: ## Install tq from the latest prerelease, or a specific tag. Usage: make install-tq-prerelease version=v0.1.0-pre.1
+	@TQ_RELEASE_REPO="$(RELEASE_REPO)" TQ_INSTALL_DIR="$(TQ_INSTALL_DIR)" TQ_INSTALL_NAME="$(TQ_INSTALL_NAME)" sh scripts/install-tq-release.sh prerelease "$(version)"
 
 .PHONY: dev-check
 dev-check:

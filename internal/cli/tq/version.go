@@ -7,16 +7,21 @@ import (
 	"strings"
 )
 
+var (
+	buildVersion = "dev"
+	buildCommit  = "unknown"
+)
+
 func versionInfo() (version, commit string) {
-	version = "dev"
-	commit = "unknown"
+	version = buildVersion
+	commit = buildCommit
 
 	info, ok := debug.ReadBuildInfo()
 	if !ok {
 		return version, commit
 	}
 
-	if info.Main.Version != "" && info.Main.Version != "(devel)" && !isPseudoVersion(info.Main.Version) {
+	if version == "dev" && info.Main.Version != "" && info.Main.Version != "(devel)" && !isPseudoVersion(info.Main.Version) {
 		version = info.Main.Version
 	}
 
@@ -24,6 +29,9 @@ func versionInfo() (version, commit string) {
 	for _, setting := range info.Settings {
 		switch setting.Key {
 		case "vcs.revision":
+			if commit != "unknown" {
+				continue
+			}
 			if len(setting.Value) > 7 {
 				commit = setting.Value[:7]
 			} else if setting.Value != "" {
