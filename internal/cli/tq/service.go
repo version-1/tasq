@@ -28,6 +28,7 @@ type serviceName string
 const (
 	serviceIssueTracker serviceName = "issue-tracker"
 	serviceOrchestrator serviceName = "orchestrator"
+	serviceWeb          serviceName = "web"
 )
 
 type serviceStatus struct {
@@ -85,8 +86,13 @@ func (a app) serviceStart(ctx context.Context, args []string, cfg config) error 
 	if state.Orchestrator != nil && processAlive(state.Orchestrator.PID) {
 		return usageError("orchestrator is already running")
 	}
+	if state.Web != nil && processAlive(state.Web.PID) {
+		return usageError("web is already running")
+	}
 
 	issueAddr := "127.0.0.1:" + strconv.Itoa(tqconfig.DefaultIssueTrackerPort)
+	orchestratorAddr := "127.0.0.1:" + strconv.Itoa(tqconfig.DefaultOrchestratorPort)
+	webAddr := "127.0.0.1:" + strconv.Itoa(tqconfig.DefaultWebPort)
 	issueDB := tqconfig.IssueTrackerDBPath(home)
 	orchestratorDB := tqconfig.OrchestratorDBPath(home)
 
@@ -125,6 +131,27 @@ func (a app) serviceStart(ctx context.Context, args []string, cfg config) error 
 		return fmt.Errorf("orchestrator startup failed: %w", err)
 	}
 
+	webService := managedService{
+		name:    serviceWeb,
+		logName: "web.log",
+		args: []string{
+			"-addr", webAddr,
+			"-tracker-url", "http://" + issueAddr,
+			"-orchestrator-url", "http://" + orchestratorAddr,
+		},
+	}
+	if _, err := startManagedService(ctx, home, webService); err != nil {
+		_ = stopServiceByName(context.Background(), serviceOrchestrator)
+		_ = stopServiceByName(context.Background(), serviceIssueTracker)
+		return err
+	}
+	if err := waitWebHealthy(ctx, "http://"+webAddr); err != nil {
+		_ = stopServiceByName(context.Background(), serviceWeb)
+		_ = stopServiceByName(context.Background(), serviceOrchestrator)
+		_ = stopServiceByName(context.Background(), serviceIssueTracker)
+		return fmt.Errorf("web health check failed: %w", err)
+	}
+
 	if cfg.output == "json" {
 		return a.serviceStatus(ctx, nil, cfg)
 	}
@@ -136,10 +163,16 @@ func (a app) serviceStop(ctx context.Context, args []string, cfg config) error {
 	if len(args) != 0 {
 		return usageError("service stop does not accept positional arguments")
 	}
+	if err := stopServiceByName(ctx, serviceWeb); err != nil {
+		return err
+	}
 	if err := stopServiceByName(ctx, serviceOrchestrator); err != nil {
 		return err
 	}
 	if err := stopServiceByName(ctx, serviceIssueTracker); err != nil {
+		return err
+	}
+	if err := cleanupServiceState(serviceWeb, true); err != nil {
 		return err
 	}
 	if err := cleanupServiceState(serviceOrchestrator, true); err != nil {
@@ -169,6 +202,7 @@ func (a app) serviceStatus(ctx context.Context, args []string, cfg config) error
 	statuses := []serviceStatus{
 		statusForService(serviceIssueTracker, state.IssueTracker),
 		statusForService(serviceOrchestrator, state.Orchestrator),
+		statusForService(serviceWeb, state.Web),
 	}
 	if cfg.output == "json" {
 		return writeJSON(a.stdout, statuses)
@@ -196,6 +230,7 @@ func startManagedService(ctx context.Context, home string, service managedServic
 	cmd.Stdout = logFile
 	cmd.Stderr = logFile
 	cmd.Dir = serviceWorkingDir()
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	if err := cmd.Start(); err != nil {
 		return 0, fmt.Errorf("start %s: %w", service.name, err)
 	}
@@ -249,11 +284,19 @@ func openServiceLog(home string, name string) (*os.File, error) {
 }
 
 func waitIssueTrackerHealthy(ctx context.Context, baseURL string) error {
+	return waitHTTPHealthy(ctx, strings.TrimRight(baseURL, "/")+"/api/v1/health")
+}
+
+func waitWebHealthy(ctx context.Context, baseURL string) error {
+	return waitHTTPHealthy(ctx, strings.TrimRight(baseURL, "/")+"/health")
+}
+
+func waitHTTPHealthy(ctx context.Context, url string) error {
 	deadline := time.Now().Add(serviceHealthTimeout)
 	client := http.Client{Timeout: time.Second}
 	var lastErr error
 	for time.Now().Before(deadline) {
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, strings.TrimRight(baseURL, "/")+"/api/v1/health", nil)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 		if err != nil {
 			return err
 		}
@@ -346,6 +389,9 @@ func cleanupStaleServices() error {
 		if state.Orchestrator != nil && !processAlive(state.Orchestrator.PID) {
 			state.Orchestrator = nil
 		}
+		if state.Web != nil && !processAlive(state.Web.PID) {
+			state.Web = nil
+		}
 		return nil
 	})
 }
@@ -361,6 +407,10 @@ func cleanupServiceState(name serviceName, force bool) error {
 			if force || state.Orchestrator == nil || !processAlive(state.Orchestrator.PID) {
 				state.Orchestrator = nil
 			}
+		case serviceWeb:
+			if force || state.Web == nil || !processAlive(state.Web.PID) {
+				state.Web = nil
+			}
 		}
 		return nil
 	})
@@ -372,6 +422,8 @@ func serviceStateByName(state tqconfig.State, name serviceName) *tqconfig.Servic
 		return state.IssueTracker
 	case serviceOrchestrator:
 		return state.Orchestrator
+	case serviceWeb:
+		return state.Web
 	default:
 		return nil
 	}
@@ -425,7 +477,7 @@ func printServiceHelp(w io.Writer) {
 	fmt.Fprintln(w, "Usage: tq service <action>")
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "Actions:")
-	fmt.Fprintln(w, "  start    Start issue-tracker and orchestrator")
-	fmt.Fprintln(w, "  stop     Stop orchestrator and issue-tracker")
+	fmt.Fprintln(w, "  start    Start issue-tracker, orchestrator, and web")
+	fmt.Fprintln(w, "  stop     Stop web, orchestrator, and issue-tracker")
 	fmt.Fprintln(w, "  status   Show service status")
 }

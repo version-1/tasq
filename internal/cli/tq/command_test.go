@@ -350,6 +350,9 @@ func TestServiceStatusStopped(t *testing.T) {
 	if !strings.Contains(stdout, "orchestrator\tstopped") {
 		t.Fatalf("stdout missing orchestrator stopped status: %s", stdout)
 	}
+	if !strings.Contains(stdout, "web\tstopped") {
+		t.Fatalf("stdout missing web stopped status: %s", stdout)
+	}
 }
 
 func TestServiceStatusJSONRunning(t *testing.T) {
@@ -360,6 +363,11 @@ func TestServiceStatusJSONRunning(t *testing.T) {
 			PID:       os.Getpid(),
 			Addr:      "127.0.0.1:" + strconv.Itoa(tqconfig.DefaultIssueTrackerPort),
 			DB:        "/tmp/issues.sqlite",
+			StartedAt: startedAt,
+		}
+		state.Web = &tqconfig.ServiceState{
+			PID:       os.Getpid(),
+			Addr:      "127.0.0.1:" + strconv.Itoa(tqconfig.DefaultWebPort),
 			StartedAt: startedAt,
 		}
 		return nil
@@ -375,7 +383,7 @@ func TestServiceStatusJSONRunning(t *testing.T) {
 	if err := json.Unmarshal([]byte(stdout), &statuses); err != nil {
 		t.Fatalf("decode stdout: %v: %s", err, stdout)
 	}
-	if len(statuses) != 2 {
+	if len(statuses) != 3 {
 		t.Fatalf("statuses=%+v", statuses)
 	}
 	if statuses[0].Name != "issue-tracker" || statuses[0].State != "running" || statuses[0].PID != os.Getpid() || statuses[0].Port != tqconfig.DefaultIssueTrackerPort {
@@ -383,6 +391,9 @@ func TestServiceStatusJSONRunning(t *testing.T) {
 	}
 	if statuses[1].Name != "orchestrator" || statuses[1].State != "stopped" {
 		t.Fatalf("unexpected orchestrator status: %+v", statuses[1])
+	}
+	if statuses[2].Name != "web" || statuses[2].State != "running" || statuses[2].PID != os.Getpid() || statuses[2].Port != tqconfig.DefaultWebPort {
+		t.Fatalf("unexpected web status: %+v", statuses[2])
 	}
 }
 

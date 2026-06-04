@@ -1,16 +1,22 @@
 package main
 
 import (
+	"context"
 	"embed"
 	"errors"
 	"flag"
 	"fmt"
 	"io/fs"
 	"log"
+	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"os"
+	"os/signal"
 	"strings"
+	"syscall"
+	"time"
 
 	"github.com/version-1/tasq/internal/config"
 )
@@ -29,9 +35,52 @@ func main() {
 		log.Fatalf("initialize web server: %v", err)
 	}
 
-	log.Printf("web server listening on %s", *addr)
-	if err := http.ListenAndServe(*addr, mux); err != nil && !errors.Is(err, http.ErrServerClosed) {
-		log.Fatalf("web server failed: %v", err)
+	if _, err := config.EnsureHome(); err != nil {
+		log.Fatalf("ensure TQ_HOME: %v", err)
+	}
+	server := &http.Server{
+		Handler:           mux,
+		ReadHeaderTimeout: 5 * time.Second,
+	}
+	listener, err := net.Listen("tcp", *addr)
+	if err != nil {
+		log.Fatalf("listen: %v", err)
+	}
+	serviceAddr := clientAddr(listener.Addr().String())
+	if err := config.UpdateState(func(state *config.State) error {
+		state.Web = &config.ServiceState{
+			PID:       os.Getpid(),
+			Addr:      serviceAddr,
+			StartedAt: time.Now().UTC(),
+		}
+		return nil
+	}); err != nil {
+		log.Fatalf("write web state: %v", err)
+	}
+	defer func() {
+		if err := config.UpdateState(func(state *config.State) error {
+			state.Web = nil
+			return nil
+		}); err != nil {
+			log.Printf("clear web state: %v", err)
+		}
+	}()
+
+	go func() {
+		log.Printf("web server listening on %s", serviceAddr)
+		if err := server.Serve(listener); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Fatalf("web server failed: %v", err)
+		}
+	}()
+
+	shutdown := make(chan os.Signal, 1)
+	signal.Notify(shutdown, os.Interrupt, syscall.SIGTERM)
+	<-shutdown
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		log.Fatalf("shutdown server: %v", err)
 	}
 }
 
@@ -42,10 +91,24 @@ func newMux(trackerURL string, orchestratorURL string) (http.Handler, error) {
 	}
 
 	mux := http.NewServeMux()
+	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
 	mux.Handle("/tracker/", reverseProxy("/tracker", trackerURL))
 	mux.Handle("/orchestrator/", reverseProxy("/orchestrator", orchestratorURL))
 	mux.Handle("/", spaHandler{assets: dist})
 	return mux, nil
+}
+
+func clientAddr(addr string) string {
+	host, port, err := net.SplitHostPort(addr)
+	if err != nil {
+		return addr
+	}
+	if host == "" || host == "::" || host == "[::]" || host == "0.0.0.0" {
+		host = "127.0.0.1"
+	}
+	return net.JoinHostPort(host, port)
 }
 
 func reverseProxy(prefix string, target string) http.Handler {
