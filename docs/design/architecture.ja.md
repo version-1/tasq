@@ -73,7 +73,7 @@ Responsibilities:
 - orchestrator や tool の reconciliation 向けに issue state を返す。
 - UI/TUI summary API を提供する。
 
-issue-tracker は issue status、priority、title、description、assignee、comment、attachment、project、workspace の source of truth です。
+issue-tracker は issue status、priority、title、description、assignee、comment、attachment、project の source of truth です。
 Linked issue が存在する project は削除できません。
 
 ### orchestrator
@@ -122,7 +122,7 @@ orchestrator は issue-tracker の work queue や event receiver endpoint を使
 
 ```text
 web-ui ─┐
-tui ────┼─ issue-tracker ── SQLite: issues, comments, attachments, projects, workspaces
+tui ────┼─ issue-tracker ── SQLite: issues, comments, attachments, projects
 tq ─────┘
                  │
                  └─ $TQ_HOME/system/data/attachments
@@ -166,7 +166,7 @@ orchestrator は issue status を直接変更しません。issue status の変�
 - `cmd/issue-tracker`
 - `cmd/tq`
 - `cmd/orchestrator`
-- issue、project、workspace のための issue-tracker SQLite table。
+- issue と project のための issue-tracker SQLite table。
 - issue-tracker attachment metadata in SQLite and image bytes under `$TQ_HOME`。
 - run、runner event、workspace metadata、workspace setup failure のための orchestrator SQLite table。
 - web-ui と tui が利用する issue-tracker summary API。

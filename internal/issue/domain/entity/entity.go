@@ -48,14 +48,6 @@ const (
 	CommentGeneral  CommentType = "general"
 )
 
-type WorkspaceStatus string
-
-const (
-	WorkspaceActive   WorkspaceStatus = "active"
-	WorkspaceInactive WorkspaceStatus = "inactive"
-	WorkspaceArchived WorkspaceStatus = "archived"
-)
-
 type Project struct {
 	ID          int64     `json:"id"`
 	Key         string    `json:"key"`
@@ -78,30 +70,6 @@ type UpdateProjectInput struct {
 	Name        *string `json:"name"`
 	Description *string `json:"description"`
 	Location    *string `json:"location"`
-}
-
-type Workspace struct {
-	ID        int64           `json:"id"`
-	ProjectID int64           `json:"projectId"`
-	Name      string          `json:"name"`
-	Path      string          `json:"path"`
-	Status    WorkspaceStatus `json:"status"`
-	CreatedAt time.Time       `json:"createdAt"`
-	UpdatedAt time.Time       `json:"updatedAt"`
-}
-
-type CreateWorkspaceInput struct {
-	ProjectID int64           `json:"projectId"`
-	Name      string          `json:"name"`
-	Path      string          `json:"path"`
-	Status    WorkspaceStatus `json:"status"`
-}
-
-type UpdateWorkspaceInput struct {
-	ProjectID *int64           `json:"projectId"`
-	Name      *string          `json:"name"`
-	Path      *string          `json:"path"`
-	Status    *WorkspaceStatus `json:"status"`
 }
 
 type Issue struct {
@@ -227,31 +195,6 @@ func NormalizeCreateProject(input CreateProjectInput) (CreateProjectInput, error
 	return input, nil
 }
 
-func NormalizeCreateWorkspace(input CreateWorkspaceInput) (CreateWorkspaceInput, error) {
-	if input.ProjectID <= 0 {
-		return input, errors.New("projectId is required")
-	}
-	if input.Name == "" {
-		return input, errors.New("name is required")
-	}
-	if runeCount(input.Name) > maxNameLength {
-		return input, errors.New("name must be 200 characters or fewer")
-	}
-	if input.Path == "" {
-		return input, errors.New("path is required")
-	}
-	if err := validateAbsolutePath("path", input.Path); err != nil {
-		return input, err
-	}
-	if input.Status == "" {
-		input.Status = WorkspaceActive
-	}
-	if !IsValidWorkspaceStatus(input.Status) {
-		return input, errors.New("status is invalid")
-	}
-	return input, nil
-}
-
 func NormalizeUpdateIssue(input UpdateIssueInput) (UpdateIssueInput, error) {
 	if input.Title != nil {
 		if *input.Title == "" {
@@ -300,29 +243,6 @@ func NormalizeUpdateProject(input UpdateProjectInput) (UpdateProjectInput, error
 		if err := validateAbsolutePath("location", *input.Location); err != nil {
 			return input, err
 		}
-	}
-	return input, nil
-}
-
-func NormalizeUpdateWorkspace(input UpdateWorkspaceInput) (UpdateWorkspaceInput, error) {
-	if input.ProjectID != nil && *input.ProjectID <= 0 {
-		return input, errors.New("projectId is required")
-	}
-	if input.Name != nil {
-		if *input.Name == "" {
-			return input, errors.New("name is required")
-		}
-		if runeCount(*input.Name) > maxNameLength {
-			return input, errors.New("name must be 200 characters or fewer")
-		}
-	}
-	if input.Path != nil {
-		if err := validateAbsolutePath("path", *input.Path); err != nil {
-			return input, err
-		}
-	}
-	if input.Status != nil && !IsValidWorkspaceStatus(*input.Status) {
-		return input, errors.New("status is invalid")
 	}
 	return input, nil
 }
@@ -382,15 +302,6 @@ func IsValidPriority(priority Priority) bool {
 func IsValidCommentType(commentType CommentType) bool {
 	switch commentType {
 	case CommentProgress, CommentBlocker, CommentHandoff, CommentGeneral:
-		return true
-	default:
-		return false
-	}
-}
-
-func IsValidWorkspaceStatus(status WorkspaceStatus) bool {
-	switch status {
-	case WorkspaceActive, WorkspaceInactive, WorkspaceArchived:
 		return true
 	default:
 		return false

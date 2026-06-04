@@ -73,7 +73,7 @@ Responsibilities:
 - Return issue states for orchestrator or tool reconciliation.
 - Serve the UI/TUI summary API.
 
-The issue-tracker is the source of truth for issue status, priority, title, description, assignee, comments, attachments, projects, and workspaces.
+The issue-tracker is the source of truth for issue status, priority, title, description, assignee, comments, attachments, and projects.
 Projects cannot be deleted while linked issues exist.
 
 ### orchestrator
@@ -122,7 +122,7 @@ The orchestrator no longer uses issue-tracker work queue or event receiver endpo
 
 ```text
 web-ui ─┐
-tui ────┼─ issue-tracker ── SQLite: issues, comments, attachments, projects, workspaces
+tui ────┼─ issue-tracker ── SQLite: issues, comments, attachments, projects
 tq ─────┘
                  │
                  └─ $TQ_HOME/system/data/attachments
@@ -166,7 +166,7 @@ The current implementation slice includes:
 - `cmd/issue-tracker`
 - `cmd/tq`
 - `cmd/orchestrator`
-- issue-tracker SQLite tables for issues, projects, and workspaces.
+- issue-tracker SQLite tables for issues and projects.
 - issue-tracker attachment metadata in SQLite and image bytes under `$TQ_HOME`.
 - orchestrator SQLite tables for runs, runner events, workspace metadata, and workspace setup failures.
 - issue-tracker summary API consumed by web-ui and tui.

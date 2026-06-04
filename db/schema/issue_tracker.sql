@@ -38,20 +38,6 @@ CREATE TABLE IF NOT EXISTS projects (
 
 CREATE INDEX IF NOT EXISTS projects_key_idx ON projects(key);
 
-CREATE TABLE IF NOT EXISTS workspaces (
-	id INTEGER PRIMARY KEY AUTOINCREMENT,
-	project_id INTEGER NOT NULL,
-	name TEXT NOT NULL,
-	path TEXT NOT NULL,
-	status TEXT NOT NULL,
-	created_at TEXT NOT NULL,
-	updated_at TEXT NOT NULL,
-	FOREIGN KEY(project_id) REFERENCES projects(id)
-);
-
-CREATE INDEX IF NOT EXISTS workspaces_project_id_idx ON workspaces(project_id);
-CREATE INDEX IF NOT EXISTS workspaces_status_idx ON workspaces(status);
-
 CREATE TABLE IF NOT EXISTS attachments (
 	id TEXT PRIMARY KEY,
 	entity_type TEXT NOT NULL,

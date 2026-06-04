@@ -124,65 +124,6 @@ func TestNormalizeUpdateProject(t *testing.T) {
 	}
 }
 
-func TestNormalizeCreateWorkspace(t *testing.T) {
-	t.Parallel()
-
-	path := t.TempDir()
-	tests := []struct {
-		name    string
-		input   CreateWorkspaceInput
-		wantErr bool
-	}{
-		{name: "valid", input: CreateWorkspaceInput{ProjectID: 1, Name: "Workspace", Path: path}},
-		{name: "missing project", input: CreateWorkspaceInput{Name: "Workspace", Path: path}, wantErr: true},
-		{name: "empty name", input: CreateWorkspaceInput{ProjectID: 1, Path: path}, wantErr: true},
-		{name: "name too long", input: CreateWorkspaceInput{ProjectID: 1, Name: strings.Repeat("x", 201), Path: path}, wantErr: true},
-		{name: "relative path", input: CreateWorkspaceInput{ProjectID: 1, Name: "Workspace", Path: "relative"}, wantErr: true},
-		{name: "nonexistent absolute path", input: CreateWorkspaceInput{ProjectID: 1, Name: "Workspace", Path: filepath.Join(path, "missing")}},
-		{name: "invalid status", input: CreateWorkspaceInput{ProjectID: 1, Name: "Workspace", Path: path, Status: WorkspaceStatus("unknown")}, wantErr: true},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			_, err := NormalizeCreateWorkspace(tt.input)
-			assertErr(t, err, tt.wantErr)
-		})
-	}
-}
-
-func TestNormalizeUpdateWorkspace(t *testing.T) {
-	t.Parallel()
-
-	path := t.TempDir()
-	projectID := int64(1)
-	invalidProjectID := int64(0)
-	name := "Workspace"
-	emptyName := ""
-	longName := strings.Repeat("x", 201)
-	relativePath := "relative"
-	missingPath := filepath.Join(path, "missing")
-	status := WorkspaceInactive
-	invalidStatus := WorkspaceStatus("unknown")
-	tests := []struct {
-		name    string
-		input   UpdateWorkspaceInput
-		wantErr bool
-	}{
-		{name: "valid", input: UpdateWorkspaceInput{ProjectID: &projectID, Name: &name, Path: &path, Status: &status}},
-		{name: "invalid project", input: UpdateWorkspaceInput{ProjectID: &invalidProjectID}, wantErr: true},
-		{name: "empty name", input: UpdateWorkspaceInput{Name: &emptyName}, wantErr: true},
-		{name: "name too long", input: UpdateWorkspaceInput{Name: &longName}, wantErr: true},
-		{name: "relative path", input: UpdateWorkspaceInput{Path: &relativePath}, wantErr: true},
-		{name: "nonexistent absolute path", input: UpdateWorkspaceInput{Path: &missingPath}},
-		{name: "invalid status", input: UpdateWorkspaceInput{Status: &invalidStatus}, wantErr: true},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			_, err := NormalizeUpdateWorkspace(tt.input)
-			assertErr(t, err, tt.wantErr)
-		})
-	}
-}
-
 func assertErr(t *testing.T, err error, wantErr bool) {
 	t.Helper()
 	if wantErr && err == nil {

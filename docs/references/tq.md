@@ -194,7 +194,7 @@ TQ_HOME=./.tasq go run ./cmd/tq service stop
 
 ### `project add`
 
-Register a local repository as a project and create its workspace record.
+Register a local repository as a project.
 
 ```sh
 make run-tq ARGS="project add ."
@@ -207,12 +207,11 @@ Flags:
 | Flag | Description |
 |---|---|
 | `--key KEY` | Project key. Defaults to a kebab-case key derived from the project directory name. |
-| `--workspace-name NAME` | Workspace name. Defaults to the project directory name. |
 
 Examples:
 
 ```sh
-make run-tq ARGS='project add --key tasq --workspace-name tasq .'
+make run-tq ARGS='project add --key tasq .'
 make run-tq ARGS='project add ../another-project'
 ```
 
@@ -285,4 +284,4 @@ general
 
 Project paths are stored as host-local absolute paths. This means `project add .` records the path as seen by the user on the host machine, not as a container-only runtime path such as `/workspace`.
 
-The issue-tracker API validates that project and workspace paths are absolute, but it does not check whether they exist on the API server filesystem. The `tq project add` client performs the local existence check before creating project records.
+The issue-tracker API validates that project paths are absolute, but it does not check whether they exist on the API server filesystem. The `tq project add` client performs the local existence check before creating project records.

@@ -53,6 +53,6 @@ Existing scripts or habits that addressed old Compose service names need to migr
 
 ## Relationship to ADR-0001
 
-ADR-0001 records the durable product model for project and workspace paths: they are host-local absolute paths, not container runtime paths. This ADR changes the default local development topology, but it does not replace that durable model.
+ADR-0001 records the durable product model for project paths: they are host-local absolute paths, not container runtime paths. This ADR changes the default local development topology, but it does not replace that durable model.
 
 The new dev-container workflow therefore needs a host-aware path strategy before project-path persistence commands become part of the default `make tq` flow. Until then, developers should treat project-path commands as a host-aware workflow rather than blindly persisting `/workspace`.

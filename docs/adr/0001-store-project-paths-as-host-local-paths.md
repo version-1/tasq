@@ -2,7 +2,7 @@
 
 ## Context
 
-Tasq stores projects and workspaces through the issue-tracker API. During local development, the issue-tracker often runs in Docker Compose while `tq` may run either on the host or inside a Compose helper container.
+Tasq stores projects through the issue-tracker API. During local development, the issue-tracker often runs in Docker Compose while `tq` may run either on the host or inside a Compose helper container.
 
 When both `tq` and issue-tracker run inside Compose, the repository is visible as `/workspace`. That path is valid for the containers, but it is not the user's real local project path. Persisting `/workspace` in project records leaks a development-runtime detail into user data and does not scale to multiple local projects unless every project is mounted into the same container filesystem.
 
@@ -10,7 +10,7 @@ For the product model, a project represents a repository on the user's machine. 
 
 ## Decision
 
-Persist `Project.Location` and `Workspace.Path` as host-local absolute paths.
+Persist `Project.Location` as a host-local absolute path.
 
 The `tq project add <path>` command resolves the path on the client host, checks that it exists locally, and sends the host-local absolute path to the issue-tracker API.
 

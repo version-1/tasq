@@ -2,7 +2,7 @@
 
 ## Context
 
-Tasq は issue-tracker API を通じて project と workspace を保存します。ローカル開発では、issue-tracker が Docker Compose で動き、`tq` はホスト上または Compose の helper container 内で実行される場合があります。
+Tasq は issue-tracker API を通じて project を保存します。ローカル開発では、issue-tracker が Docker Compose で動き、`tq` はホスト上または Compose の helper container 内で実行される場合があります。
 
 `tq` と issue-tracker の両方を Compose 内で実行すると、repository は `/workspace` として見えます。この path は container にとっては有効ですが、ユーザーの実際の local project path ではありません。project record に `/workspace` を永続化すると、開発 runtime の詳細が user data に漏れ、すべての project を同じ container filesystem に mount しない限り複数 local project の登録にも対応できません。
 
@@ -10,7 +10,7 @@ Tasq は issue-tracker API を通じて project と workspace を保存します
 
 ## Decision
 
-`Project.Location` と `Workspace.Path` は host-local absolute path として永続化します。
+`Project.Location` は host-local absolute path として永続化します。
 
 `tq project add <path>` command は client host 上で path を解決し、local に存在することを確認してから、host-local absolute path を issue-tracker API に送信します。
 

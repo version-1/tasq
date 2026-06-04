@@ -66,20 +66,6 @@ Attachment records live in SQLite, while file bytes are stored under `$TQ_HOME/s
 
 Projects cannot be deleted while linked issues exist.
 
-### Workspace
-
-| Field       | Go Type           | Required (Create) | Required (Update) | Default     | Constraints                                                        |
-|-------------|-------------------|--------------------|--------------------|-------------|--------------------------------------------------------------------|
-| ID          | `int64`           | auto               | path param         | autoincrement | `> 0`                                                            |
-| ProjectID   | `int64`           | yes                | optional (`*int64`)  | —          | `> 0`, referenced project must exist                              |
-| Name        | `string`          | yes                | optional (`*string`) | —          | min 1, max 200 chars                                              |
-| Path        | `string`          | yes                | optional (`*string`) | —          | absolute path (`/` prefix), max 1,000 chars, `os.Stat` directory existence check on set |
-| Status      | `WorkspaceStatus` | no                 | optional (`*WorkspaceStatus`) | `active` | enum: `active`, `inactive`, `archived`                       |
-| CreatedAt   | `time.Time`       | auto               | —                  | `now()`     | —                                                                  |
-| UpdatedAt   | `time.Time`       | auto               | auto               | `now()`     | —                                                                  |
-
----
-
 ## orchestrator
 
 ### Run

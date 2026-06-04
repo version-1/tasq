@@ -104,22 +104,6 @@ func (c *apiClient) deleteProject(ctx context.Context, id int64) error {
 	return c.doNoContent(ctx, http.MethodDelete, fmt.Sprintf("/api/v1/projects/%d", id))
 }
 
-func (c *apiClient) createWorkspace(ctx context.Context, input entity.CreateWorkspaceInput) (entity.Workspace, error) {
-	var workspace entity.Workspace
-	if err := c.do(ctx, http.MethodPost, "/api/v1/workspaces", input, &workspace); err != nil {
-		return entity.Workspace{}, err
-	}
-	return workspace, nil
-}
-
-func (c *apiClient) listWorkspaces(ctx context.Context) ([]entity.Workspace, error) {
-	var workspaces []entity.Workspace
-	if err := c.do(ctx, http.MethodGet, "/api/v1/workspaces", nil, &workspaces); err != nil {
-		return nil, err
-	}
-	return workspaces, nil
-}
-
 func (c *apiClient) checkProject(ctx context.Context, id int64, workflow string) (projectCheckResult, error) {
 	var result projectCheckResult
 	if err := c.doText(ctx, http.MethodPost, fmt.Sprintf("/api/v1/projects/%d/check", id), workflow, &result); err != nil {

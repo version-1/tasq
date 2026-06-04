@@ -645,7 +645,6 @@ func TestProjectAddCheckRemoveAgainstIssueTrackerAPI(t *testing.T) {
 		"--api-url", server.URL,
 		"project", "add",
 		"--key", "demo-project",
-		"--workspace-name", "demo",
 		projectRoot,
 	})
 	if code != 0 {
@@ -696,13 +695,6 @@ func TestProjectAddCheckRemoveAgainstIssueTrackerAPI(t *testing.T) {
 	}
 	if len(projects) != 0 {
 		t.Fatalf("projects after remove = %+v", projects)
-	}
-	workspaces, err := issueStore.Workspaces(ctx)
-	if err != nil {
-		t.Fatalf("list workspaces: %v", err)
-	}
-	if len(workspaces) != 0 {
-		t.Fatalf("workspaces after remove = %+v", workspaces)
 	}
 }
 

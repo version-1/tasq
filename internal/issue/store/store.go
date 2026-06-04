@@ -179,9 +179,6 @@ func (s *Store) DeleteProject(ctx context.Context, id int64) error {
 	if issueCount > 0 {
 		return errors.New("project has linked issues")
 	}
-	if _, err := tx.ExecContext(ctx, `DELETE FROM workspaces WHERE project_id = ?`, id); err != nil {
-		return fmt.Errorf("delete project workspaces: %w", err)
-	}
 	result, err := tx.ExecContext(ctx, `DELETE FROM projects WHERE id = ?`, id)
 	if err != nil {
 		return fmt.Errorf("delete project: %w", err)
@@ -197,123 +194,6 @@ func (s *Store) DeleteProject(ctx context.Context, id int64) error {
 		return err
 	}
 	tx = nil
-	return nil
-}
-
-func (s *Store) CreateWorkspace(ctx context.Context, input entity.CreateWorkspaceInput) (entity.Workspace, error) {
-	normalized, err := entity.NormalizeCreateWorkspace(input)
-	if err != nil {
-		return entity.Workspace{}, err
-	}
-	if _, err := s.Project(ctx, normalized.ProjectID); err != nil {
-		return entity.Workspace{}, err
-	}
-	now := nowString()
-	result, err := s.db.ExecContext(ctx, `INSERT INTO workspaces (
-		project_id, name, path, status, created_at, updated_at
-	) VALUES (?, ?, ?, ?, ?, ?)`,
-		normalized.ProjectID,
-		normalized.Name,
-		normalized.Path,
-		normalized.Status,
-		now,
-		now,
-	)
-	if err != nil {
-		return entity.Workspace{}, fmt.Errorf("create workspace: %w", err)
-	}
-	id, err := result.LastInsertId()
-	if err != nil {
-		return entity.Workspace{}, fmt.Errorf("read created workspace id: %w", err)
-	}
-	return s.Workspace(ctx, id)
-}
-
-func (s *Store) Workspaces(ctx context.Context) ([]entity.Workspace, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT `+workspaceColumns()+` FROM workspaces ORDER BY updated_at DESC, id DESC`)
-	if err != nil {
-		return nil, fmt.Errorf("list workspaces: %w", err)
-	}
-	defer rows.Close()
-
-	var workspaces []entity.Workspace
-	for rows.Next() {
-		item, err := scanWorkspace(rows)
-		if err != nil {
-			return nil, err
-		}
-		workspaces = append(workspaces, item)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate workspaces: %w", err)
-	}
-	return workspaces, nil
-}
-
-func (s *Store) Workspace(ctx context.Context, id int64) (entity.Workspace, error) {
-	row := s.db.QueryRowContext(ctx, `SELECT `+workspaceColumns()+` FROM workspaces WHERE id = ?`, id)
-	item, err := scanWorkspace(row)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return entity.Workspace{}, sql.ErrNoRows
-		}
-		return entity.Workspace{}, fmt.Errorf("read workspace: %w", err)
-	}
-	return item, nil
-}
-
-func (s *Store) UpdateWorkspace(ctx context.Context, id int64, input entity.UpdateWorkspaceInput) (entity.Workspace, error) {
-	normalized, err := entity.NormalizeUpdateWorkspace(input)
-	if err != nil {
-		return entity.Workspace{}, err
-	}
-	current, err := s.Workspace(ctx, id)
-	if err != nil {
-		return entity.Workspace{}, err
-	}
-	if normalized.ProjectID != nil {
-		if _, err := s.Project(ctx, *normalized.ProjectID); err != nil {
-			return entity.Workspace{}, err
-		}
-		current.ProjectID = *normalized.ProjectID
-	}
-	if normalized.Name != nil {
-		current.Name = *normalized.Name
-	}
-	if normalized.Path != nil {
-		current.Path = *normalized.Path
-	}
-	if normalized.Status != nil {
-		current.Status = *normalized.Status
-	}
-	_, err = s.db.ExecContext(ctx, `UPDATE workspaces SET
-		project_id = ?, name = ?, path = ?, status = ?, updated_at = ?
-		WHERE id = ?`,
-		current.ProjectID,
-		current.Name,
-		current.Path,
-		current.Status,
-		nowString(),
-		id,
-	)
-	if err != nil {
-		return entity.Workspace{}, fmt.Errorf("update workspace: %w", err)
-	}
-	return s.Workspace(ctx, id)
-}
-
-func (s *Store) DeleteWorkspace(ctx context.Context, id int64) error {
-	result, err := s.db.ExecContext(ctx, `DELETE FROM workspaces WHERE id = ?`, id)
-	if err != nil {
-		return fmt.Errorf("delete workspace: %w", err)
-	}
-	affected, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if affected == 0 {
-		return sql.ErrNoRows
-	}
 	return nil
 }
 
@@ -614,10 +494,6 @@ func normalizeCommentLimit(limit int) int {
 	return limit
 }
 
-func workspaceColumns() string {
-	return `id, project_id, name, path, status, created_at, updated_at`
-}
-
 func placeholders(count int) string {
 	return strings.TrimRight(strings.Repeat("?,", count), ",")
 }
@@ -800,27 +676,6 @@ func (s *Store) tableExists(ctx context.Context, table string) (bool, error) {
 		return false, fmt.Errorf("inspect %s table: %w", table, err)
 	}
 	return exists, nil
-}
-
-func scanWorkspace(row rowScanner) (entity.Workspace, error) {
-	var item entity.Workspace
-	var createdAt string
-	var updatedAt string
-	err := row.Scan(&item.ID, &item.ProjectID, &item.Name, &item.Path, &item.Status, &createdAt, &updatedAt)
-	if err != nil {
-		return entity.Workspace{}, err
-	}
-	parsedCreatedAt, err := parseTime(createdAt)
-	if err != nil {
-		return entity.Workspace{}, err
-	}
-	parsedUpdatedAt, err := parseTime(updatedAt)
-	if err != nil {
-		return entity.Workspace{}, err
-	}
-	item.CreatedAt = parsedCreatedAt
-	item.UpdatedAt = parsedUpdatedAt
-	return item, nil
 }
 
 func nowString() string {
