@@ -16,8 +16,7 @@ import (
 const workflowFileName = "WORKFLOW.md"
 
 type projectAddResult struct {
-	Project   entity.Project   `json:"project"`
-	Workspace entity.Workspace `json:"workspace"`
+	Project entity.Project `json:"project"`
 }
 
 type projectCheckResult struct {
@@ -63,7 +62,6 @@ func (a app) projectRemove(ctx context.Context, args []string, cfg config) error
 func (a app) projectAdd(ctx context.Context, args []string, cfg config) error {
 	fs := newFlagSet("project add")
 	key := fs.String("key", "", "project key")
-	workspaceName := fs.String("workspace-name", "", "workspace name")
 	if err := fs.Parse(args); err != nil {
 		return usageError(err.Error())
 	}
@@ -92,9 +90,6 @@ func (a app) projectAdd(ctx context.Context, args []string, cfg config) error {
 	if *key == "" {
 		*key = kebabKey(name)
 	}
-	if *workspaceName == "" {
-		*workspaceName = name
-	}
 	if *key == "" {
 		return usageError("key is required")
 	}
@@ -117,22 +112,13 @@ func (a app) projectAdd(ctx context.Context, args []string, cfg config) error {
 		}
 	}()
 
-	workspace, err := a.client.createWorkspace(ctx, entity.CreateWorkspaceInput{
-		ProjectID: project.ID,
-		Name:      *workspaceName,
-		Path:      projectRoot,
-	})
-	if err != nil {
-		return err
-	}
-
 	local, err := prepareProjectFiles(projectRoot)
 	if err != nil {
 		local.rollback()
 		return err
 	}
 	rollbackAPI = false
-	return writeProjectAddResult(a.stdout, cfg.output, projectAddResult{Project: project, Workspace: workspace})
+	return writeProjectAddResult(a.stdout, cfg.output, projectAddResult{Project: project})
 }
 
 func (a app) projectCheck(ctx context.Context, args []string, cfg config) error {
@@ -221,15 +207,6 @@ func (a app) ensureProjectAddDoesNotDuplicate(ctx context.Context, key string, l
 		}
 		if samePath(project.Location, location) {
 			return cliError{message: "project path already exists", code: 1}
-		}
-	}
-	workspaces, err := a.client.listWorkspaces(ctx)
-	if err != nil {
-		return err
-	}
-	for _, workspace := range workspaces {
-		if samePath(workspace.Path, location) {
-			return cliError{message: "workspace path already exists", code: 1}
 		}
 	}
 	return nil

@@ -144,8 +144,7 @@ func writeProjectAddResult(w io.Writer, format string, result projectAddResult) 
 		return writeJSON(w, result)
 	}
 	fmt.Fprintf(w, "Project: %s (%d)\n", result.Project.Key, result.Project.ID)
-	fmt.Fprintf(w, "Workspace: %s (%d)\n", result.Workspace.Name, result.Workspace.ID)
-	fmt.Fprintf(w, "Path: %s\n", result.Workspace.Path)
+	fmt.Fprintf(w, "Path: %s\n", result.Project.Location)
 	return nil
 }
 

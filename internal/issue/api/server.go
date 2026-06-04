@@ -40,11 +40,6 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("PATCH /api/v1/projects/{id}", s.updateProject)
 	mux.HandleFunc("DELETE /api/v1/projects/{id}", s.deleteProject)
 	mux.HandleFunc("POST /api/v1/projects/{id}/check", s.checkProject)
-	mux.HandleFunc("GET /api/v1/workspaces", s.workspaces)
-	mux.HandleFunc("POST /api/v1/workspaces", s.createWorkspace)
-	mux.HandleFunc("GET /api/v1/workspaces/{id}", s.workspace)
-	mux.HandleFunc("PATCH /api/v1/workspaces/{id}", s.updateWorkspace)
-	mux.HandleFunc("DELETE /api/v1/workspaces/{id}", s.deleteWorkspace)
 	mux.HandleFunc("GET /api/v1/issues", s.issues)
 	mux.HandleFunc("POST /api/v1/issues", s.createIssue)
 	mux.HandleFunc("POST /api/v1/issues/states", s.issueStates)
@@ -170,72 +165,6 @@ func checkWorkflowTQUsage(content string) projectCheckResult {
 		}
 	}
 	return projectCheckResult{Passed: false, Reason: "WORKFLOW.md does not document tq command usage"}
-}
-
-func (s *Server) workspaces(w http.ResponseWriter, r *http.Request) {
-	items, err := s.store.Workspaces(r.Context())
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, "workspaces.list.internal_error", err)
-		return
-	}
-	writeJSON(w, http.StatusOK, items)
-}
-
-func (s *Server) createWorkspace(w http.ResponseWriter, r *http.Request) {
-	var input entity.CreateWorkspaceInput
-	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		writeError(w, http.StatusBadRequest, "workspaces.create.invalid_request", err)
-		return
-	}
-	created, err := s.store.CreateWorkspace(r.Context(), input)
-	if err != nil {
-		writeStoreError(w, err, "workspaces.create", "workspace")
-		return
-	}
-	writeJSON(w, http.StatusCreated, created)
-}
-
-func (s *Server) workspace(w http.ResponseWriter, r *http.Request) {
-	id, ok := pathID(w, r, "workspace", "workspaces.get")
-	if !ok {
-		return
-	}
-	item, err := s.store.Workspace(r.Context(), id)
-	if err != nil {
-		writeStoreError(w, err, "workspaces.get", "workspace")
-		return
-	}
-	writeJSON(w, http.StatusOK, item)
-}
-
-func (s *Server) updateWorkspace(w http.ResponseWriter, r *http.Request) {
-	id, ok := pathID(w, r, "workspace", "workspaces.update")
-	if !ok {
-		return
-	}
-	var input entity.UpdateWorkspaceInput
-	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		writeError(w, http.StatusBadRequest, "workspaces.update.invalid_request", err)
-		return
-	}
-	updated, err := s.store.UpdateWorkspace(r.Context(), id, input)
-	if err != nil {
-		writeStoreError(w, err, "workspaces.update", "workspace")
-		return
-	}
-	writeJSON(w, http.StatusOK, updated)
-}
-
-func (s *Server) deleteWorkspace(w http.ResponseWriter, r *http.Request) {
-	id, ok := pathID(w, r, "workspace", "workspaces.delete")
-	if !ok {
-		return
-	}
-	if err := s.store.DeleteWorkspace(r.Context(), id); err != nil {
-		writeStoreError(w, err, "workspaces.delete", "workspace")
-		return
-	}
-	w.WriteHeader(http.StatusNoContent)
 }
 
 func (s *Server) issues(w http.ResponseWriter, r *http.Request) {

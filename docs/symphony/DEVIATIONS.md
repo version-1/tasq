@@ -10,7 +10,8 @@ Tasq does not implement the Linear tracker client described in Section 11 of the
 
 Instead, Tasq treats its local issue-tracker API as the tracker adapter boundary:
 
-- The issue-tracker owns issue state, project data, and workspace records.
+- The issue-tracker owns issue state and project data.
+- The orchestrator owns workspace records, metadata, and lifecycle behavior.
 - The issue-tracker exposes issue listing and issue-state query endpoints for tracker adapter reads.
 - The orchestrator keeps historical run and runner-event data in its own SQLite store.
 

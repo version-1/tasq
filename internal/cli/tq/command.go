@@ -564,7 +564,7 @@ func printProjectHelp(w io.Writer) {
 	fmt.Fprintln(w, "Usage: tq project <action> [flags]")
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "Actions:")
-	fmt.Fprintln(w, "  add      Add a project and workspace for a repository")
+	fmt.Fprintln(w, "  add      Add a project for a repository")
 	fmt.Fprintln(w, "  remove   Remove a project by key")
 	fmt.Fprintln(w, "  check    Check local project workflow files")
 	fmt.Fprintln(w, "  list     List projects")

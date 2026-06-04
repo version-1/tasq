@@ -194,7 +194,7 @@ TQ_HOME=./.tasq go run ./cmd/tq service stop
 
 ### `project add`
 
-Local repository を project として登録し、workspace record を作成します。
+Local repository を project として登録します。
 
 ```sh
 make run-tq ARGS="project add ."
@@ -207,12 +207,11 @@ Flags:
 | Flag | Description |
 |---|---|
 | `--key KEY` | Project key。省略時は project directory name から kebab-case key を生成します。 |
-| `--workspace-name NAME` | Workspace name。省略時は project directory name を使います。 |
 
 Examples:
 
 ```sh
-make run-tq ARGS='project add --key tasq --workspace-name tasq .'
+make run-tq ARGS='project add --key tasq .'
 make run-tq ARGS='project add ../another-project'
 ```
 
@@ -285,4 +284,4 @@ general
 
 Project path は host-local absolute path として保存されます。つまり `project add .` は、`/workspace` のような container-only runtime path ではなく、host machine 上でユーザーから見える path を記録します。
 
-Issue-tracker API は project path と workspace path が absolute path であることを検証しますが、API server filesystem 上に存在するかどうかは検証しません。`tq project add` client が、project record を作成する前に local existence check を行います。
+Issue-tracker API は project path が absolute path であることを検証しますが、API server filesystem 上に存在するかどうかは検証しません。`tq project add` client が、project record を作成する前に local existence check を行います。

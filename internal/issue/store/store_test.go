@@ -29,9 +29,6 @@ func TestOpenAppliesIssueTrackerSchema(t *testing.T) {
 		"comments_issue_id_idx",
 		"projects",
 		"projects_key_idx",
-		"workspaces",
-		"workspaces_project_id_idx",
-		"workspaces_status_idx",
 		"attachments",
 		"attachments_entity_idx",
 	} {
@@ -480,62 +477,6 @@ func TestProjectsReturnsEmptyArray(t *testing.T) {
 	}
 	if string(payload) != "[]" {
 		t.Fatalf("projects json = %s", payload)
-	}
-}
-
-func TestWorkspaceCRUD(t *testing.T) {
-	t.Parallel()
-
-	ctx := context.Background()
-	store, err := Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
-	if err != nil {
-		t.Fatalf("open store: %v", err)
-	}
-	defer store.Close()
-
-	project, err := store.CreateProject(ctx, entity.CreateProjectInput{Key: "API", Name: "API Backend", Location: t.TempDir()})
-	if err != nil {
-		t.Fatalf("create project: %v", err)
-	}
-	workspacePath := t.TempDir()
-	created, err := store.CreateWorkspace(ctx, entity.CreateWorkspaceInput{
-		ProjectID: project.ID,
-		Name:      "API Main",
-		Path:      workspacePath,
-	})
-	if err != nil {
-		t.Fatalf("create workspace: %v", err)
-	}
-	if created.Status != entity.WorkspaceActive {
-		t.Fatalf("created workspace status = %q", created.Status)
-	}
-
-	status := entity.WorkspaceInactive
-	updated, err := store.UpdateWorkspace(ctx, created.ID, entity.UpdateWorkspaceInput{Status: &status})
-	if err != nil {
-		t.Fatalf("update workspace: %v", err)
-	}
-	if updated.Status != entity.WorkspaceInactive {
-		t.Fatalf("updated workspace status = %q", updated.Status)
-	}
-
-	workspaces, err := store.Workspaces(ctx)
-	if err != nil {
-		t.Fatalf("list workspaces: %v", err)
-	}
-	if len(workspaces) != 1 {
-		t.Fatalf("workspace count = %d", len(workspaces))
-	}
-
-	if err := store.DeleteWorkspace(ctx, created.ID); err != nil {
-		t.Fatalf("delete workspace: %v", err)
-	}
-	workspaces, err = store.Workspaces(ctx)
-	if err != nil {
-		t.Fatalf("list workspaces after delete: %v", err)
-	}
-	if len(workspaces) != 0 {
-		t.Fatalf("workspace count after delete = %d", len(workspaces))
 	}
 }
 

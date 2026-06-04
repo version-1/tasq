@@ -1,7 +1,6 @@
 import {
   IssueStatus as IssueStatusValues,
   Priority as PriorityValues,
-  WorkspaceStatus as WorkspaceStatusValues,
   type Column,
   type Comment,
   type CommentListMeta,
@@ -14,13 +13,10 @@ import {
   type Priority,
   type Project,
   type Summary,
-  type Workspace,
-  type WorkspaceStatus,
 } from "@/lib/generated/issue-tracker";
 
 export const issueStatuses = Object.values(IssueStatusValues);
 export const priorities = Object.values(PriorityValues);
-export const workspaceStatuses = Object.values(WorkspaceStatusValues);
 
 export type {
   Column,
@@ -35,6 +31,4 @@ export type {
   Priority,
   Project,
   Summary,
-  Workspace,
-  WorkspaceStatus,
 };

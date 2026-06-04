@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import styles from "./index.module.css";
 
-type HeaderPage = "issues" | "agents" | "workspace" | "settings";
+type HeaderPage = "issues" | "agents" | "dashboard" | "settings";
 
 type HeaderProps = {
   activePage: HeaderPage;
@@ -15,7 +15,7 @@ type HeaderProps = {
 const pages = [
   { key: "issues", href: "/issues", titleKey: "header.board" },
   { key: "agents", href: "/agents", titleKey: "header.agents" },
-  { key: "workspace", href: "/workspace", titleKey: "header.workspace" },
+  { key: "dashboard", href: "/dashboard", titleKey: "header.dashboard" },
   { key: "settings", href: "/settings", titleKey: "header.settings" },
 ] as const;
 
@@ -102,8 +102,8 @@ function pageHeadingKey(page: Exclude<HeaderPage, "issues">): string {
   switch (page) {
     case "agents":
       return "header.agentRuns";
-    case "workspace":
-      return "header.workspace";
+    case "dashboard":
+      return "header.dashboard";
     case "settings":
       return "header.settings";
   }

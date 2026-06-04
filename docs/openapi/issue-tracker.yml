@@ -14,7 +14,6 @@ servers:
 tags:
   - name: Health
   - name: Projects
-  - name: Workspaces
   - name: Issues
   - name: Comments
   - name: Attachments
@@ -121,7 +120,7 @@ paths:
     delete:
       tags:
         - Projects
-      summary: Delete a project and its workspaces.
+      summary: Delete a project.
       responses:
         "204":
           description: Project deleted.
@@ -150,91 +149,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ProjectCheckResponse"
-        "400":
-          $ref: "#/components/responses/Error"
-        "404":
-          $ref: "#/components/responses/Error"
-  /api/v1/workspaces:
-    get:
-      tags:
-        - Workspaces
-      summary: List workspaces.
-      responses:
-        "200":
-          description: Workspace list.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WorkspaceListResponse"
-        "500":
-          $ref: "#/components/responses/Error"
-    post:
-      tags:
-        - Workspaces
-      summary: Create a workspace.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CreateWorkspaceInput"
-      responses:
-        "201":
-          description: Created workspace.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WorkspaceResponse"
-        "400":
-          $ref: "#/components/responses/Error"
-        "404":
-          $ref: "#/components/responses/Error"
-  /api/v1/workspaces/{id}:
-    parameters:
-      - $ref: "#/components/parameters/WorkspaceID"
-    get:
-      tags:
-        - Workspaces
-      summary: Get a workspace.
-      responses:
-        "200":
-          description: Workspace.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WorkspaceResponse"
-        "400":
-          $ref: "#/components/responses/Error"
-        "404":
-          $ref: "#/components/responses/Error"
-    patch:
-      tags:
-        - Workspaces
-      summary: Update a workspace.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UpdateWorkspaceInput"
-      responses:
-        "200":
-          description: Updated workspace.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WorkspaceResponse"
-        "400":
-          $ref: "#/components/responses/Error"
-        "404":
-          $ref: "#/components/responses/Error"
-    delete:
-      tags:
-        - Workspaces
-      summary: Delete a workspace.
-      responses:
-        "204":
-          description: Workspace deleted.
         "400":
           $ref: "#/components/responses/Error"
         "404":
@@ -544,14 +458,6 @@ components:
         type: integer
         format: int64
         minimum: 1
-    WorkspaceID:
-      name: id
-      in: path
-      required: true
-      schema:
-        type: integer
-        format: int64
-        minimum: 1
     IssueID:
       name: id
       in: path
@@ -664,12 +570,6 @@ components:
       enum:
         - issue
         - comment
-    WorkspaceStatus:
-      type: string
-      enum:
-        - active
-        - inactive
-        - archived
     Project:
       type: object
       required:
@@ -738,65 +638,6 @@ components:
           type: boolean
         reason:
           type: string
-    Workspace:
-      type: object
-      required:
-        - id
-        - projectId
-        - name
-        - path
-        - status
-        - createdAt
-        - updatedAt
-      properties:
-        id:
-          type: integer
-          format: int64
-        projectId:
-          type: integer
-          format: int64
-        name:
-          type: string
-        path:
-          type: string
-        status:
-          $ref: "#/components/schemas/WorkspaceStatus"
-        createdAt:
-          type: string
-          format: date-time
-        updatedAt:
-          type: string
-          format: date-time
-    CreateWorkspaceInput:
-      type: object
-      required:
-        - projectId
-        - name
-        - path
-      properties:
-        projectId:
-          type: integer
-          format: int64
-          minimum: 1
-        name:
-          type: string
-        path:
-          type: string
-        status:
-          $ref: "#/components/schemas/WorkspaceStatus"
-    UpdateWorkspaceInput:
-      type: object
-      properties:
-        projectId:
-          type: integer
-          format: int64
-          minimum: 1
-        name:
-          type: string
-        path:
-          type: string
-        status:
-          $ref: "#/components/schemas/WorkspaceStatus"
     Issue:
       type: object
       required:
@@ -1041,28 +882,6 @@ components:
       properties:
         data:
           $ref: "#/components/schemas/ProjectCheckResult"
-        meta:
-          $ref: "#/components/schemas/ApiMeta"
-    WorkspaceResponse:
-      type: object
-      required:
-        - data
-        - meta
-      properties:
-        data:
-          $ref: "#/components/schemas/Workspace"
-        meta:
-          $ref: "#/components/schemas/ApiMeta"
-    WorkspaceListResponse:
-      type: object
-      required:
-        - data
-        - meta
-      properties:
-        data:
-          type: array
-          items:
-            $ref: "#/components/schemas/Workspace"
         meta:
           $ref: "#/components/schemas/ApiMeta"
     IssueResponse:

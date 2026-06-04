@@ -1,6 +1,6 @@
 # Issue Tracker Workflow
 
-The issue-tracker is the user-facing API and the source of truth for issues, projects, workspaces, and issue summaries.
+The issue-tracker is the user-facing API and the source of truth for issues, projects, and issue summaries.
 
 Use this workflow when changing `cmd/issue-tracker`, `internal/issue`, `db/schema/issue_tracker.sql`, or the issue-tracker OpenAPI contract.
 

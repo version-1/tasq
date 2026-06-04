@@ -19,7 +19,7 @@ import { Header } from "./header";
 import { Sidebar } from "./sidebar";
 import styles from "./index.module.css";
 
-export type TasqPage = "issues" | "agents" | "workspace" | "settings";
+export type TasqPage = "issues" | "agents" | "dashboard" | "settings";
 
 type LoadState =
   | { kind: "loading" }
@@ -387,7 +387,7 @@ function firstIssueID(summary: Summary): number | null {
 
 function activePageFromPathname(pathname: string): TasqPage {
   const segment = pathname.split("/").filter(Boolean)[0];
-  if (segment === "agents" || segment === "workspace" || segment === "settings") {
+  if (segment === "agents" || segment === "dashboard" || segment === "settings") {
     return segment;
   }
   return "issues";

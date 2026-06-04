@@ -80,6 +80,20 @@ func TestErrorResponseEnvelope(t *testing.T) {
 	}
 }
 
+func TestWorkspaceRoutesAreNotRegistered(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer(t)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/workspaces", nil)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status = %d", rec.Code)
+	}
+}
+
 func TestNoContentResponseStaysEmpty(t *testing.T) {
 	t.Parallel()
 
