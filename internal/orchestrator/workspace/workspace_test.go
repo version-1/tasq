@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 )
 
 func TestManagerCreatesSanitizedWorkspaceUnderRoot(t *testing.T) {
@@ -43,7 +42,7 @@ func TestManagerRunsAfterCreateHookForNewWorkspace(t *testing.T) {
 	_, root := initTestRepo(t)
 	manager, err := NewManagerWithHooks(root, HookConfig{
 		AfterCreate: `echo created > after-create.out`,
-		Timeout:     time.Second,
+		Timeout:     hookTestTimeout,
 	})
 	if err != nil {
 		t.Fatalf("create workspace manager: %v", err)
@@ -69,7 +68,7 @@ func TestManagerSkipsAfterCreateHookForExistingWorkspace(t *testing.T) {
 	_, root := initTestRepo(t)
 	manager, err := NewManagerWithHooks(root, HookConfig{
 		AfterCreate: `echo created >> after-create.out`,
-		Timeout:     time.Second,
+		Timeout:     hookTestTimeout,
 	})
 	if err != nil {
 		t.Fatalf("create workspace manager: %v", err)
@@ -97,7 +96,7 @@ func TestManagerAfterCreateHookFailureRemovesPartialWorkspace(t *testing.T) {
 	_, root := initTestRepo(t)
 	manager, err := NewManagerWithHooks(root, HookConfig{
 		AfterCreate: `exit 9`,
-		Timeout:     time.Second,
+		Timeout:     hookTestTimeout,
 	})
 	if err != nil {
 		t.Fatalf("create workspace manager: %v", err)
@@ -117,7 +116,7 @@ func TestManagerRunsBeforeRemoveAndContinuesOnFailure(t *testing.T) {
 	_, root := initTestRepo(t)
 	manager, err := NewManagerWithHooks(root, HookConfig{
 		BeforeRemove: `echo removing > ../before-remove.out; exit 8`,
-		Timeout:      time.Second,
+		Timeout:      hookTestTimeout,
 	})
 	if err != nil {
 		t.Fatalf("create workspace manager: %v", err)

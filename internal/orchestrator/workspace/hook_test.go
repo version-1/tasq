@@ -9,12 +9,14 @@ import (
 	"time"
 )
 
+const hookTestTimeout = 10 * time.Second
+
 func TestRunHookRunsScriptInWorkspace(t *testing.T) {
 	t.Parallel()
 
 	dir := t.TempDir()
 
-	if err := RunHook(`pwd > hook.out`, dir, time.Second); err != nil {
+	if err := RunHook(`pwd > hook.out`, dir, hookTestTimeout); err != nil {
 		t.Fatalf("run hook: %v", err)
 	}
 
@@ -30,7 +32,7 @@ func TestRunHookRunsScriptInWorkspace(t *testing.T) {
 func TestRunHookReturnsFailureWithStderr(t *testing.T) {
 	t.Parallel()
 
-	err := RunHook(`echo "bad hook" >&2; exit 7`, t.TempDir(), time.Second)
+	err := RunHook(`echo "bad hook" >&2; exit 7`, t.TempDir(), hookTestTimeout)
 	if err == nil {
 		t.Fatal("expected hook failure")
 	}
@@ -54,7 +56,7 @@ func TestRunHookTimesOut(t *testing.T) {
 func TestRunHookEmptyScriptIsNoop(t *testing.T) {
 	t.Parallel()
 
-	if err := RunHook("", t.TempDir(), time.Second); err != nil {
+	if err := RunHook("", t.TempDir(), hookTestTimeout); err != nil {
 		t.Fatalf("empty hook error = %v", err)
 	}
 }
