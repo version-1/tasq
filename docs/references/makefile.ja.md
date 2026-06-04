@@ -16,6 +16,8 @@ Prefix guide と section 分けされた target 一覧は `make help` で確認�
 | `OPENAPI_PORT` | empty | OpenAPI UI の host port。empty の場合は Docker Compose が free port を割り当てます。 |
 | `WEB_PORT` | empty | Web UI の host port。empty の場合は Docker Compose が free port を割り当てます。 |
 | `WEB_ISSUE_TRACKER_URL` | empty | Web UI に渡す issue-tracker URL。empty の場合は Makefile が割り当て済み issue-tracker port を解決します。 |
+| `RELEASE_BRANCH` | `main` | Formal release target が要求する branch。 |
+| `RELEASE_REMOTE` | `origin` | Release tag を push する remote。 |
 | `AIR_VERSION` | `v1.52.3` | Go service を watch mode で動かす Air version。 |
 
 固定 port を使う例:
@@ -92,6 +94,15 @@ make run-logs
 |---|---|
 | `make dev-test` | dev container 内で `go test ./...`、Web dependency install、Web typecheck を実行します。 |
 | `make dev-build` | dev container 内で `go test ./...`、Web dependency install、Web production build を実行します。 |
+
+## Release Targets
+
+| Target | Purpose |
+|---|---|
+| `make prerelease` | `scripts/release.sh` 経由で prerelease tag を作成して push します。 |
+| `make release version=v0.1.1` | `scripts/release.sh` 経由で formal release tag を作成して push します。 |
+
+Tag、GitHub Actions、GoReleaser を含む全体の flow は [Deployment Flow](../design/deployment.ja.md) を参照してください。
 
 ## Authentication Targets
 

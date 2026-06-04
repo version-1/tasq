@@ -16,6 +16,8 @@ Use `make help` to print the prefix guide and sectioned target list generated fr
 | `OPENAPI_PORT` | empty | Host port for OpenAPI UI. Empty means Docker Compose assigns a free port. |
 | `WEB_PORT` | empty | Host port for Web UI. Empty means Docker Compose assigns a free port. |
 | `WEB_ISSUE_TRACKER_URL` | empty | Issue-tracker URL passed to the Web UI. Empty means the Makefile resolves the assigned issue-tracker port. |
+| `RELEASE_BRANCH` | `main` | Branch required by the formal release target. |
+| `RELEASE_REMOTE` | `origin` | Remote that receives release tags. |
 | `AIR_VERSION` | `v1.52.3` | Air version used to run Go services in watch mode. |
 
 Example with fixed ports:
@@ -92,6 +94,15 @@ make run-logs
 |---|---|
 | `make dev-test` | Run `go test ./...`, install Web dependencies, and run Web typecheck inside the dev container. |
 | `make dev-build` | Run `go test ./...`, install Web dependencies, and run the Web production build inside the dev container. |
+
+## Release Targets
+
+| Target | Purpose |
+|---|---|
+| `make prerelease` | Create and push a prerelease tag through `scripts/release.sh`. |
+| `make release version=v0.1.1` | Create and push a formal release tag through `scripts/release.sh`. |
+
+See [Deployment Flow](../design/deployment.md) for the full tag, GitHub Actions, and GoReleaser flow.
 
 ## Authentication Targets
 

@@ -15,7 +15,7 @@ Ask questions to clarify ambiguous instructions.
   - [docs/design/operations.md](docs/design/operations.md): local development environment, verification, and open decisions.
 - Symphony-related orchestration, workflow, workspace, agent-runner, tracker, and observability changes must comply with [docs/symphony/SPEC.md](docs/symphony/SPEC.md).
 - Do not change [docs/symphony/SPEC.md](docs/symphony/SPEC.md) to match Tasq-specific implementation differences. Record any intentional Tasq-vs-Symphony differences in [docs/symphony/DEVIATIONS.md](docs/symphony/DEVIATIONS.md) instead.
-- See [docs/schema.md](docs/schema.md) for entity field specifications and validation rules.
+- See [docs/design/schema.md](docs/design/schema.md) for entity field specifications and validation rules.
 - See [web/docs/design.md](web/docs/design.md) for Web UI structure and styling conventions.
 - All documents linked from AGENTS.md must also be written in English.
 - When a Japanese version of the same content is needed, create it as `*.ja.md` in the same location as the English version.

@@ -11,7 +11,7 @@ Local-first issue tracker and task orchestrator for managing executable work, as
 - TUI: Go terminal client for the same issue-tracker API.
 
 For the full architecture, see [docs/design.md](docs/design.md).
-For local configuration, see [docs/configuration.md](docs/configuration.md).
+For local configuration, see [docs/design/configuration.md](docs/design/configuration.md).
 
 ## Quick Start
 
@@ -68,6 +68,7 @@ make dev-build
 - [docs/development.md](docs/development.md): repository workflow, task flow, documentation update rules, and component workflow links.
 - [WORKFLOW.md](WORKFLOW.md): Symphony runtime workflow contract used by the orchestrator.
 - [docs/design.md](docs/design.md): system architecture and service boundaries.
+- [docs/design/deployment.md](docs/design/deployment.md): release tag creation, GitHub Actions, and GoReleaser deployment flow.
 - [docs/references/makefile.md](docs/references/makefile.md): Makefile targets, variables, and local development command reference.
 - [cmd/issue-tracker/WORKFLOW.md](cmd/issue-tracker/WORKFLOW.md): issue-tracker development workflow.
 - [cmd/orchestrator/WORKFLOW.md](cmd/orchestrator/WORKFLOW.md): orchestrator development workflow.

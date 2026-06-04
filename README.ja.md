@@ -11,7 +11,7 @@
 - TUI: 同じ issue-tracker API を使う Go terminal client です。
 
 Architecture 全体は [docs/design.md](docs/design.md) を参照してください。
-Local configuration は [docs/configuration.ja.md](docs/configuration.ja.md) を参照してください。
+Local configuration は [docs/design/configuration.ja.md](docs/design/configuration.ja.md) を参照してください。
 
 ## Quick Start
 
@@ -68,6 +68,7 @@ make dev-build
 - [docs/development.ja.md](docs/development.ja.md): repository workflow、task flow、documentation update rules、component workflow links。
 - [WORKFLOW.md](WORKFLOW.md): orchestrator が使う Symphony runtime workflow contract。
 - [docs/design.md](docs/design.md): system architecture と service boundaries。
+- [docs/design/deployment.ja.md](docs/design/deployment.ja.md): release tag 作成、GitHub Actions、GoReleaser の deployment flow。
 - [docs/references/makefile.ja.md](docs/references/makefile.ja.md): Makefile targets、variables、local development command reference。
 - [cmd/issue-tracker/WORKFLOW.md](cmd/issue-tracker/WORKFLOW.md): issue-tracker development workflow。
 - [cmd/orchestrator/WORKFLOW.md](cmd/orchestrator/WORKFLOW.md): orchestrator development workflow。

@@ -54,4 +54,4 @@ container 内で実行される runtime component には、明示的な path map
 
 `make tq` は host 上で `tq` を実行し、Compose issue-tracker には割り当てられた localhost port 経由で接続します。これにより、path resolution はユーザーの filesystem と揃いながら、Compose API service も利用できます。
 
-この validation boundary は `docs/schema.md` にも記載します。
+この validation boundary は `docs/design/schema.md` にも記載します。
