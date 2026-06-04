@@ -15,7 +15,12 @@ Prefix guide と section 分けされた target 一覧は `make help` で確認�
 | `ORCHESTRATOR_PORT` | empty | orchestrator の host port。empty の場合は Docker Compose が free port を割り当てます。 |
 | `OPENAPI_PORT` | empty | OpenAPI UI の host port。empty の場合は Docker Compose が free port を割り当てます。 |
 | `WEB_PORT` | empty | Web UI の host port。empty の場合は Docker Compose が free port を割り当てます。 |
-| `WEB_ISSUE_TRACKER_URL` | empty | Web UI に渡す issue-tracker URL。empty の場合は Makefile が割り当て済み issue-tracker port を解決します。 |
+| `WEB_ISSUE_TRACKER_URL` | empty | 互換性のため予約されています。Go Web server は browser build-time API origin ではなく proxy configuration を使います。 |
+| `RELEASE_BRANCH` | `main` | Formal release target が要求する branch。 |
+| `RELEASE_REMOTE` | `origin` | Release tag を push する remote。 |
+| `RELEASE_REPO` | `version-1/tasq` | Release asset から `tq` を install するときに使う GitHub repository。 |
+| `TQ_INSTALL_DIR` | `$HOME/.local/bin` | Release install targets が `tq` binary を配置する directory。 |
+| `TQ_INSTALL_NAME` | `tq` | Release install targets で install する command name。 |
 | `AIR_VERSION` | `v1.52.3` | Go service を watch mode で動かす Air version。 |
 
 固定 port を使う例:
@@ -74,7 +79,7 @@ make dc-exec CMD="go test ./internal/config"
 | `make run-tui` | dev container 内で TUI を interactive に実行します。 |
 | `make run-tq ARGS="..."` | service process を変更せず、起動済み dev container 内で installed `tq $(ARGS)` binary を実行します。 |
 | `make run-ps` | dev container 内で動いている dev process を表示します。 |
-| `make run-logs` | `.tmp/dev-logs/*.log` を follow します。 |
+| `make run-logs` | `$TQ_HOME/system/log/*.log` を follow します。 |
 
 よく使う例:
 
@@ -93,26 +98,49 @@ make run-logs
 | `make dev-test` | dev container 内で `go test ./...`、Web dependency install、Web typecheck を実行します。 |
 | `make dev-build` | dev container 内で `go test ./...`、Web dependency install、Web production build を実行します。 |
 
-## Codex Targets
+## Release Targets
+
+| Target | Purpose |
+|---|---|
+| `make prerelease` | `scripts/release.sh` 経由で prerelease tag を作成して push します。 |
+| `make release version=v0.1.1` | `scripts/release.sh` 経由で formal release tag を作成して push します。 |
+| `make install-tq` | latest formal release から `tq` を `$HOME/.local/bin` に install します。 |
+| `make install-tq version=v0.1.0` | specific release tag から `tq` を install します。 |
+| `make install-tq-prerelease` | latest prerelease から `tq` を install します。 |
+| `make install-tq-prerelease version=v0.1.0-pre.1` | specific prerelease tag から `tq` を install します。 |
+
+Tag、GitHub Actions、GoReleaser を含む全体の flow は [Deployment Flow](../design/deployment.ja.md) を参照してください。
+
+## Authentication Targets
 
 | Target | Purpose |
 |---|---|
 | `make dev-codex-login` | dev container 内で `codex login --device-auth` を実行し、credential を `codex-home` Docker volume に永続化します。 |
-| `make dev-codex-check` | dev container 内で Codex CLI と `codex app-server` が利用できることを確認します。 |
+| `make dev-codex-status` | dev container 内で Codex authentication status を表示します。 |
+| `make dev-gh-login` | dev container 内で `gh auth login` と `gh auth setup-git` を実行し、credential を `gh-config` Docker volume に永続化します。 |
+| `make dev-gh-status` | dev container 内で GitHub CLI authentication status を表示します。 |
 
-Container login では device auth を使います。通常の browser redirect は container 内の localhost callback に戻るため、host browser から到達できません。
+Container login では、browser redirect が container 内の localhost callback に戻り host browser から
+到達できない場合に device auth を使います。
+
+Authentication targets は既存の `dev` container 内で command を実行するだけです。Container の
+build や起動は行わないため、dev container がない場合は先に `make dev-up` を実行します。
 
 例:
 
 ```sh
 make dev-codex-login
-make dev-codex-check
+make dev-codex-status
+make dev-gh-login
+make dev-gh-status
 ```
 
 ## Operational Notes
 
 `dev` container は long-lived です。Service process は separate Compose service ではなく、`docker compose exec` で起動される通常の child process です。Process だけ止める場合は `make run-stop`、Compose services も止める場合は `make dev-down` を使います。
 
-Makefile は container 内 command を `codex` user として実行します。Container startup 時に、Go module cache、Go build cache、`cmd/web/frontend` 配下の Web `node_modules`、Codex credential 用の named volume が writable になるように準備します。
+Makefile は container 内 command を `codex` user として実行します。Container startup 時に、Go module
+cache、Go build cache、`cmd/web/frontend` 配下の Web `node_modules`、Codex credential、GitHub CLI credential 用の named
+volume が writable になるように準備します。
 
 Go Web server は browser API calls を container-local URL 経由で issue-tracker と orchestrator に proxy します。frontend code、proxy configuration、backend ports を変更した場合は `make run-web` で Web process を再起動してください。

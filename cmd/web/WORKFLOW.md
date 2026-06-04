@@ -12,7 +12,7 @@ Use this workflow when changing files under `cmd/web`.
 - Keep user-facing strings in `cmd/web/frontend/src/lib/i18n.ts`.
 - Keep feature-specific styles next to the owning component or route.
 
-See [docs/design.md](docs/design.md) for Web UI structure and styling conventions.
+See [docs/design/web.md](../../docs/design/web.md) for Web UI structure and styling conventions.
 
 ## Local Run
 
@@ -49,7 +49,7 @@ Do not manually edit `cmd/web/frontend/src/lib/generated`.
 
 1. Put route-owned UI under the route's `_components` directory.
 2. Move components to `cmd/web/frontend/src/components` only when they are genuinely shared.
-3. Use the component directory shape defined in `cmd/web/docs/design.md`.
+3. Use the component directory shape defined in `docs/design/web.md`.
 4. Keep translated display strings in `cmd/web/frontend/src/lib/i18n.ts`.
 5. Keep API-facing types imported through `cmd/web/frontend/src/lib/types.ts` unless a generated operation is required directly.
 
