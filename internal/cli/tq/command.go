@@ -69,6 +69,8 @@ func (a app) route(ctx context.Context, args []string, cfg config) error {
 		return a.routeProject(ctx, args[1:], cfg)
 	case "service":
 		return a.routeService(ctx, args[1:], cfg)
+	case "logs":
+		return a.routeLogs(ctx, args[1:], cfg)
 	default:
 		return usageError("unknown resource %q", resource)
 	}
@@ -531,6 +533,7 @@ func printRootHelp(w io.Writer) {
 	fmt.Fprintln(w, "  comment  add and list issue comments")
 	fmt.Fprintln(w, "  project  add, remove, check, and list projects")
 	fmt.Fprintln(w, "  service  start, stop, and inspect local services")
+	fmt.Fprintln(w, "  logs     show and follow service logs")
 	fmt.Fprintln(w, "  version  show version information")
 }
 
