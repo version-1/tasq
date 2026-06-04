@@ -1,0 +1,33 @@
+{
+  "name": "tasq-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "tsc -b && vite build",
+    "generate:api": "orval --config orval.config.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "i18next": "^26.3.0",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "react-i18next": "^17.0.8",
+    "react-markdown": "^10.1.0",
+    "react-router-dom": "^7.9.6",
+    "rehype-sanitize": "^6.0.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^5.1.1",
+    "vite": "^7.2.4",
+    "@types/node": "22.12.0",
+    "@types/react": "19.2.15",
+    "@types/react-dom": "19.2.3",
+    "orval": "^7.13.2",
+    "typescript": "5.6.3"
+  },
+  "overrides": {
+    "postcss": "8.5.15"
+  }
+}

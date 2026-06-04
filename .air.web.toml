@@ -1,0 +1,21 @@
+root = "."
+tmp_dir = ".tmp/air-web"
+
+[build]
+cmd = "cd cmd/web/frontend && npm install && npm run build && cd ../../.. && mkdir -p .tmp/air-web && rm -f .tmp/air-web/web && go build -o .tmp/air-web/web ./cmd/web"
+bin = "./.tmp/air-web/web"
+full_bin = "./.tmp/air-web/web -addr :3000 -tracker-url http://127.0.0.1:8080 -orchestrator-url http://127.0.0.1:8081"
+include_dir = ["cmd/web", "internal/config"]
+include_ext = ["css", "go", "html", "json", "mod", "sum", "ts", "tsx"]
+exclude_dir = [".git", ".tasq", ".tmp", ".worktrees", "cmd/web/frontend/dist", "cmd/web/frontend/node_modules"]
+exclude_regex = ["_test\\.go"]
+delay = 1000
+stop_on_error = true
+send_interrupt = true
+kill_delay = 500
+
+[log]
+time = true
+
+[misc]
+clean_on_exit = true

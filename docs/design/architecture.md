@@ -2,7 +2,7 @@
 
 Tasq is a local-first task system for managing issues and observing orchestrator run state.
 
-The current architecture separates issue management from orchestration. The issue-tracker owns issue state and the user-facing API. The orchestrator owns historical run state and optional runtime inspection. UI clients talk to the issue-tracker only.
+The current architecture separates issue management from orchestration. The issue-tracker owns issue state and the user-facing API. The orchestrator owns historical run state and optional runtime inspection. UI clients primarily talk to the issue-tracker. The Web UI server also exposes an orchestrator proxy path for future run-state views.
 
 ## Goals
 
@@ -23,16 +23,17 @@ The current architecture separates issue management from orchestration. The issu
 
 ### web-ui
 
-The web-ui is a Next.js client for issue operations.
+The web-ui is a Go-served Vite + React single-page app for issue operations.
 
 Responsibilities:
 
 - Request issue summaries from the issue-tracker.
 - Display issue status, priority, and assignee.
 - Move issues between issue statuses by calling the issue-tracker.
-- Avoid direct calls to the orchestrator.
+- Serve browser routes through SPA fallback.
+- Proxy `/tracker/*` to the issue-tracker and `/orchestrator/*` to the orchestrator.
 
-For Web UI structure and styling conventions, see [../../web/docs/design.md](../../web/docs/design.md).
+For Web UI structure and styling conventions, see [web.md](web.md).
 
 ### tui
 

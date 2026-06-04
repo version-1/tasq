@@ -15,7 +15,7 @@ Use `make help` to print the prefix guide and sectioned target list generated fr
 | `ORCHESTRATOR_PORT` | empty | Host port for orchestrator. Empty means Docker Compose assigns a free port. |
 | `OPENAPI_PORT` | empty | Host port for OpenAPI UI. Empty means Docker Compose assigns a free port. |
 | `WEB_PORT` | empty | Host port for Web UI. Empty means Docker Compose assigns a free port. |
-| `WEB_ISSUE_TRACKER_URL` | empty | Issue-tracker URL passed to the Web UI. Empty means the Makefile resolves the assigned issue-tracker port. |
+| `WEB_ISSUE_TRACKER_URL` | empty | Reserved for compatibility; the Go Web server uses proxy configuration instead of a browser build-time API origin. |
 | `RELEASE_BRANCH` | `main` | Branch required by the formal release target. |
 | `RELEASE_REMOTE` | `origin` | Remote that receives release tags. |
 | `RELEASE_REPO` | `version-1/tasq` | GitHub repository used when installing `tq` from release assets. |
@@ -69,7 +69,7 @@ Use `run-*` targets for processes and commands that run inside an already-runnin
 | Target | Purpose |
 |---|---|
 | `make run-all` | Start issue-tracker, orchestrator, and Web inside the running dev container. |
-| `make run-stop` | Stop Air and Next.js processes inside the dev container without stopping the container. |
+| `make run-stop` | Stop Air-managed service processes inside the dev container without stopping the container. |
 | `make run-issue-tracker` | Start only the issue-tracker process inside the running dev container. |
 | `make run-is` | Alias for `run-issue-tracker`. |
 | `make run-orchestrator` | Start issue-tracker, then start the orchestrator process. |
@@ -140,7 +140,7 @@ make dev-gh-status
 The `dev` container is long-lived. Service processes are ordinary child processes launched with `docker compose exec`; they are not separate Compose services. Use `make run-stop` to stop only those child processes, or `make dev-down` to stop the Compose services.
 
 The Makefile runs container commands as the `codex` user. At container startup, Compose prepares
-writable named volumes for Go module cache, Go build cache, Web `node_modules`, Codex credentials,
-and GitHub CLI credentials.
+writable named volumes for Go module cache, Go build cache, Web `node_modules` under
+`cmd/web/frontend`, Codex credentials, and GitHub CLI credentials.
 
-`NEXT_PUBLIC_ISSUE_TRACKER_URL` is resolved when the Web process starts. If the issue-tracker host port changes after Web has started, restart the Web process with `make run-web` or restart everything with `make dev-up`.
+The Go Web server proxies browser API calls to the issue-tracker and orchestrator over container-local URLs. Restart the Web process with `make run-web` after changing frontend code, proxy configuration, or backend ports.

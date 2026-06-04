@@ -69,4 +69,4 @@ Use the component-level workflow documents when working in a specific runtime ar
 
 - [Issue Tracker](../cmd/issue-tracker/WORKFLOW.md)
 - [Orchestrator](../cmd/orchestrator/WORKFLOW.md)
-- [Web UI](../web/WORKFLOW.md)
+- [Web UI](../cmd/web/WORKFLOW.md)

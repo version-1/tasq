@@ -148,13 +148,13 @@ dev-open: dev-check ## Open the Web UI and OpenAPI UI in a browser.
 dev-test: dev-check ## Run Go tests and Web UI typecheck in the dev container.
 	ISSUE_TRACKER_PORT=$(ISSUE_TRACKER_PORT) ORCHESTRATOR_PORT=$(ORCHESTRATOR_PORT) OPENAPI_PORT=$(OPENAPI_PORT) WEB_PORT=$(WEB_PORT) $(COMPOSE) up --build -d dev
 	$(MAKE) dc-ready
-	$(DEV_EXEC) sh -c 'go test ./... && cd web && npm install && npm run typecheck'
+	$(DEV_EXEC) sh -c 'go test ./... && cd cmd/web/frontend && npm install && npm run typecheck'
 
 .PHONY: dev-build
 dev-build: dev-check ## Run Go tests and the Web UI production build in the dev container.
 	ISSUE_TRACKER_PORT=$(ISSUE_TRACKER_PORT) ORCHESTRATOR_PORT=$(ORCHESTRATOR_PORT) OPENAPI_PORT=$(OPENAPI_PORT) WEB_PORT=$(WEB_PORT) $(COMPOSE) up --build -d dev
 	$(MAKE) dc-ready
-	$(DEV_EXEC) sh -c 'go test ./... && cd web && npm install && npm run build'
+	$(DEV_EXEC) sh -c 'go test ./... && cd cmd/web/frontend && npm install && npm run build'
 
 .PHONY: dev-codex-login
 dev-codex-login: dev-check ## Log in to Codex inside the dev container with device auth.
@@ -176,7 +176,7 @@ dev-gh-status: dev-check ## Check GitHub CLI authentication inside the dev conta
 dc-ready: dev-check ## Wait until the dev container tools and volumes are ready.
 	@attempt=1; \
 	while [ "$$attempt" -le 30 ]; do \
-		if $(DEV_EXEC_NO_TTY) sh -c 'test -x /usr/local/go/bin/go && test -w /go/pkg/mod && test -w /go/pkg/sumdb && test -w /home/codex/.cache/go-build && test -w /home/codex/.codex && test -w /home/codex/.config/gh && test -w /workspace/web/node_modules' >/dev/null 2>&1; then \
+		if $(DEV_EXEC_NO_TTY) sh -c 'test -x /usr/local/go/bin/go && test -w /go/pkg/mod && test -w /go/pkg/sumdb && test -w /home/codex/.cache/go-build && test -w /home/codex/.codex && test -w /home/codex/.config/gh && test -w /workspace/cmd/web/frontend/node_modules' >/dev/null 2>&1; then \
 			exit 0; \
 		fi; \
 		attempt=$$((attempt + 1)); \
@@ -208,12 +208,7 @@ run-all: dev-check ## Start issue-tracker, orchestrator, and Web inside the runn
 	$(DEV_EXEC_DETACHED) sh -c 'go mod download >>$(DEV_CONTAINER_LOG_DIR)/go-mod-download.log 2>&1; exec go run github.com/air-verse/air@$(AIR_VERSION) -c .air.issue-tracker.toml >>$(DEV_CONTAINER_LOG_DIR)/issue-tracker.log 2>&1'
 	$(MAKE) run-ready-issue-tracker
 	$(DEV_EXEC_DETACHED) sh -c 'sleep 1; exec go run github.com/air-verse/air@$(AIR_VERSION) -c .air.orchestrator.toml >>$(DEV_CONTAINER_LOG_DIR)/orchestrator.log 2>&1'
-	@web_issue_url="$(WEB_ISSUE_TRACKER_URL)"; \
-	if [ -z "$$web_issue_url" ]; then \
-		issue_port="$$($(COMPOSE) port dev 8080 | sed 's/.*://')"; \
-		web_issue_url="http://127.0.0.1:$$issue_port"; \
-	fi; \
-	$(DEV_EXEC_DETACHED) sh -c 'cd web && npm install >>$(DEV_CONTAINER_LOG_DIR)/web-install.log 2>&1 && exec env NEXT_PUBLIC_ISSUE_TRACKER_URL="'"$$web_issue_url"'" npm run dev -- --hostname 0.0.0.0 --port 3000 >>$(DEV_CONTAINER_LOG_DIR)/web.log 2>&1'
+	$(MAKE) run-web
 
 .PHONY: run-ready-issue-tracker
 run-ready-issue-tracker: dev-check
@@ -238,7 +233,7 @@ run-ensure-issue-tracker: dev-check
 
 .PHONY: run-stop
 run-stop: dev-check ## Stop dev processes inside the dev container without stopping the container.
-	-$(DEV_EXEC) sh -c 'pkill -f "air.*\\.air[.]issue-tracker[.]toml" 2>/dev/null || true; pkill -f "air.*\\.air[.]orchestrator[.]toml" 2>/dev/null || true; pkill -f "next dev.*--hostname 0[.]0[.]0[.]0.*--port 3000" 2>/dev/null || true'
+	-$(DEV_EXEC) sh -c 'pkill -f "air.*\\.air[.]issue-tracker[.]toml" 2>/dev/null || true; pkill -f "air.*\\.air[.]orchestrator[.]toml" 2>/dev/null || true; pkill -f "air.*\\.air[.]web[.]toml" 2>/dev/null || true'
 
 .PHONY: run-issue-tracker run-is
 run-issue-tracker: dev-check ## Start the issue-tracker process inside the running dev container.
@@ -254,14 +249,9 @@ run-orchestrator: run-ensure-issue-tracker ## Start the orchestrator process ins
 run-or: run-orchestrator ## Alias for run-orchestrator.
 
 .PHONY: run-web run-w
-run-web: run-ensure-issue-tracker ## Start the Next.js Web process inside the running dev container.
-	$(DEV_EXEC) sh -c 'mkdir -p $(DEV_CONTAINER_LOG_DIR); pkill -f "next dev.*--hostname 0[.]0[.]0[.]0.*--port 3000" 2>/dev/null || true'
-	@web_issue_url="$(WEB_ISSUE_TRACKER_URL)"; \
-	if [ -z "$$web_issue_url" ]; then \
-		issue_port="$$($(COMPOSE) port dev 8080 | sed 's/.*://')"; \
-		web_issue_url="http://127.0.0.1:$$issue_port"; \
-	fi; \
-	$(DEV_EXEC_DETACHED) sh -c 'cd web && npm install >>$(DEV_CONTAINER_LOG_DIR)/web-install.log 2>&1 && exec env NEXT_PUBLIC_ISSUE_TRACKER_URL="'"$$web_issue_url"'" npm run dev -- --hostname 0.0.0.0 --port 3000 >>$(DEV_CONTAINER_LOG_DIR)/web.log 2>&1'
+run-web: run-ensure-issue-tracker ## Start the Go Web process inside the running dev container.
+	$(DEV_EXEC) sh -c 'mkdir -p $(DEV_CONTAINER_LOG_DIR); pkill -f "air.*\\.air[.]web[.]toml" 2>/dev/null || true'
+	$(DEV_EXEC_DETACHED) sh -c 'exec go run github.com/air-verse/air@$(AIR_VERSION) -c .air.web.toml >>$(DEV_CONTAINER_LOG_DIR)/web.log 2>&1'
 run-w: run-web ## Alias for run-web.
 
 .PHONY: run-tui
@@ -274,7 +264,7 @@ run-tq: dev-check ## Run tq inside the running dev container. Example: make run-
 
 .PHONY: run-ps
 run-ps: dev-check ## Show dev processes running inside the dev container.
-	-$(DEV_EXEC) sh -c 'ps -ef | grep -E "air|issue-tracker|orchestrator|next" | grep -v grep || true'
+	-$(DEV_EXEC) sh -c 'ps -ef | grep -E "air|issue-tracker|orchestrator|cmd/web|air-web" | grep -v grep || true'
 
 .PHONY: run-logs
 run-logs: dev-check ## Follow dev process logs.

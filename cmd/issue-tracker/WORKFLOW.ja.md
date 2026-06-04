@@ -35,11 +35,11 @@ TQ_HOME=./.tasq go run ./cmd/issue-tracker -addr :37651
 3. `docs/openapi/issue-tracker.yml` を変更した場合は、Web UI API client を再生成します。
 
    ```sh
-   cd web
+   cd cmd/web/frontend
    npm run generate:api
    ```
 
-4. `web/lib/generated` 配下の generated files は手動編集しません。
+4. `cmd/web/frontend/src/lib/generated` 配下の generated files は手動編集しません。
 
 ## Verification
 

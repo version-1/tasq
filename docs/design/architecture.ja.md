@@ -2,7 +2,7 @@
 
 Tasq は、issue の管理と orchestrator run state の観測を行う local-first のタスクシステムです。
 
-現在のアーキテクチャでは、issue 管理と orchestration を分離します。issue-tracker は issue state と user-facing API を所有します。orchestrator は historical run state と optional runtime inspection を所有します。UI client は issue-tracker のみにアクセスします。
+現在のアーキテクチャでは、issue 管理と orchestration を分離します。issue-tracker は issue state と user-facing API を所有します。orchestrator は historical run state と optional runtime inspection を所有します。UI client は主に issue-tracker にアクセスします。Web UI server は future run-state views のために orchestrator proxy path も公開します。
 
 ## Goals
 
@@ -23,16 +23,17 @@ Tasq は、issue の管理と orchestrator run state の観測を行う local-fi
 
 ### web-ui
 
-web-ui は issue operation のための Next.js client です。
+web-ui は issue operation のための Go-served Vite + React single-page app です。
 
 Responsibilities:
 
 - issue-tracker から issue summary を取得する。
 - issue status、priority、assignee を表示する。
 - issue-tracker を呼び出して issue status 間の移動を行う。
-- orchestrator へ直接アクセスしない。
+- SPA fallback で browser routes を配信する。
+- `/tracker/*` を issue-tracker に、`/orchestrator/*` を orchestrator に proxy する。
 
-Web UI の構造と styling convention は [../../web/docs/design.md](../../web/docs/design.md) を参照してください。
+Web UI の構造と styling convention は [web.md](web.md) を参照してください。
 
 ### tui
 

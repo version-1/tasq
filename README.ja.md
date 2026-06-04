@@ -7,7 +7,7 @@
 - Issue Tracker: SQLite backed の Go REST API です。issues、comments、projects、workspaces、UI summaries を所有します。
 - Orchestrator: SQLite backed の Go service です。runtime inspection 用に run state と runner events を記録します。
 - `tq`: agent と workflow tool が issue-tracker API 経由で issue を作成、取得、一覧表示、更新するための Go CLI です。
-- Web UI: issue-tracker API 用の Next.js client です。
+- Web UI: issue-tracker API 用の Go-served Vite + React client です。
 - TUI: 同じ issue-tracker API を使う Go terminal client です。
 
 Architecture 全体は [docs/design.md](docs/design.md) を参照してください。
@@ -72,8 +72,8 @@ make dev-build
 - [docs/references/makefile.ja.md](docs/references/makefile.ja.md): Makefile targets、variables、local development command reference。
 - [cmd/issue-tracker/WORKFLOW.md](cmd/issue-tracker/WORKFLOW.md): issue-tracker development workflow。
 - [cmd/orchestrator/WORKFLOW.md](cmd/orchestrator/WORKFLOW.md): orchestrator development workflow。
-- [web/WORKFLOW.md](web/WORKFLOW.md): Web UI development workflow。
-- [web/docs/design.md](web/docs/design.md): Web UI structure と styling conventions。
+- [cmd/web/WORKFLOW.md](cmd/web/WORKFLOW.md): Web UI development workflow。
+- [docs/design/web.md](docs/design/web.md): Web UI structure と styling conventions。
 - [docs/openapi/issue-tracker.yml](docs/openapi/issue-tracker.yml): issue-tracker OpenAPI contract。
 - [docs/symphony/README.md](docs/symphony/README.md): Symphony documentation index。
 - [docs/symphony/SPEC.md](docs/symphony/SPEC.md): Symphony orchestration and runner specification。
@@ -84,9 +84,9 @@ English counterpart: [README.md](README.md).
 ## Notes
 
 - Runtime state と SQLite files は repository の `.tasq/` 配下に作成され、git からは無視されます。
-- Compose は Go module/build caches、`web/node_modules`、Codex login state、GitHub CLI login state を named Docker volumes に保存します。
+- Compose は Go module/build caches、`cmd/web/frontend/node_modules`、Codex login state、GitHub CLI login state を named Docker volumes に保存します。
 - Orchestrator は Symphony-oriented runtime settings と issue ごとの agent prompt を `WORKFLOW.md` から読みます。
-- Web UI を別 origin から配信する場合は、`NEXT_PUBLIC_ISSUE_TRACKER_URL` で issue-tracker API の origin を指定します。
+- Web UI は Go server の proxy paths `/tracker/*` と `/orchestrator/*` 経由で local backends を呼び出します。
 - `make run-tq` 経由で実行した `tq` は `$TQ_HOME/system/state.json` から issue-tracker API URL を解決します。
 - Codex を device auth で認証し、authentication を `codex-home` Docker volume に永続化するため、初回に `make dev-codex-login` を実行します。
 - GitHub CLI を認証し、Git が `gh` を HTTPS credential helper として使うよう設定し、credential を `gh-config` Docker volume に永続化するため、初回に `make dev-gh-login` を実行します。Dev container から push する場合は HTTPS Git remote を使います。

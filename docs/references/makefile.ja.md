@@ -15,7 +15,7 @@ Prefix guide と section 分けされた target 一覧は `make help` で確認�
 | `ORCHESTRATOR_PORT` | empty | orchestrator の host port。empty の場合は Docker Compose が free port を割り当てます。 |
 | `OPENAPI_PORT` | empty | OpenAPI UI の host port。empty の場合は Docker Compose が free port を割り当てます。 |
 | `WEB_PORT` | empty | Web UI の host port。empty の場合は Docker Compose が free port を割り当てます。 |
-| `WEB_ISSUE_TRACKER_URL` | empty | Web UI に渡す issue-tracker URL。empty の場合は Makefile が割り当て済み issue-tracker port を解決します。 |
+| `WEB_ISSUE_TRACKER_URL` | empty | 互換性のため予約されています。Go Web server は browser build-time API origin ではなく proxy configuration を使います。 |
 | `RELEASE_BRANCH` | `main` | Formal release target が要求する branch。 |
 | `RELEASE_REMOTE` | `origin` | Release tag を push する remote。 |
 | `RELEASE_REPO` | `version-1/tasq` | Release asset から `tq` を install するときに使う GitHub repository。 |
@@ -69,7 +69,7 @@ make dc-exec CMD="go test ./internal/config"
 | Target | Purpose |
 |---|---|
 | `make run-all` | 起動済み dev container 内で issue-tracker、orchestrator、Web を起動します。 |
-| `make run-stop` | container を停止せず、dev container 内の Air と Next.js process だけを停止します。 |
+| `make run-stop` | container を停止せず、dev container 内の Air-managed service processes だけを停止します。 |
 | `make run-issue-tracker` | 起動済み dev container 内で issue-tracker process だけを起動します。 |
 | `make run-is` | `run-issue-tracker` の alias です。 |
 | `make run-orchestrator` | issue-tracker を起動してから orchestrator process を起動します。 |
@@ -140,7 +140,7 @@ make dev-gh-status
 `dev` container は long-lived です。Service process は separate Compose service ではなく、`docker compose exec` で起動される通常の child process です。Process だけ止める場合は `make run-stop`、Compose services も止める場合は `make dev-down` を使います。
 
 Makefile は container 内 command を `codex` user として実行します。Container startup 時に、Go module
-cache、Go build cache、Web `node_modules`、Codex credential、GitHub CLI credential 用の named
+cache、Go build cache、`cmd/web/frontend` 配下の Web `node_modules`、Codex credential、GitHub CLI credential 用の named
 volume が writable になるように準備します。
 
-`NEXT_PUBLIC_ISSUE_TRACKER_URL` は Web process 起動時に解決されます。Web 起動後に issue-tracker の host port が変わった場合は、`make run-web` で Web process を再起動するか、`make dev-up` で全体を再起動してください。
+Go Web server は browser API calls を container-local URL 経由で issue-tracker と orchestrator に proxy します。frontend code、proxy configuration、backend ports を変更した場合は `make run-web` で Web process を再起動してください。

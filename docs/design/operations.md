@@ -4,7 +4,7 @@ This document covers the local development environment, verification commands, a
 
 ## Development Environment
 
-Docker Compose keeps local development in one long-lived `dev` container and a standalone OpenAPI UI container. The issue-tracker listens on container port `8080`, the orchestrator listens on container port `8081`, and the web-ui listens on container port `3000` inside `dev`.
+Docker Compose keeps local development in one long-lived `dev` container and a standalone OpenAPI UI container. The issue-tracker listens on container port `8080`, the orchestrator listens on container port `8081`, and the Go Web server listens on container port `3000` inside `dev`.
 
 For host-only operation on a personal machine, `tq service start` runs issue-tracker and orchestrator as background processes. It uses fixed local ports `37651` and `37652`, writes discovery state to `$TQ_HOME/system/state.json`, and appends logs under `$TQ_HOME/system/log/`.
 
@@ -35,7 +35,7 @@ go test ./...
 ```
 
 ```sh
-cd web
+cd cmd/web/frontend
 npm run typecheck
 npm run build
 ```
@@ -46,6 +46,8 @@ Manual verification:
 2. Create and update issues through the UI or `tq`.
 3. Confirm the issue-tracker summary reflects issue status changes.
 4. Confirm orchestrator runtime inspection is available through the printed orchestrator URL.
+
+The Web server proxies `/tracker/*` to the issue-tracker and `/orchestrator/*` to the orchestrator. In Compose, `make run-web` starts the Web server with backend URLs pointing at `127.0.0.1:8080` and `127.0.0.1:8081` inside the dev container.
 
 ## Open Decisions
 

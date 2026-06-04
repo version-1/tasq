@@ -9,4 +9,4 @@ Tasq design documentation is split by concern:
 - [Operations](design/operations.md): local development environment, verification, and open decisions.
 - [Deployment](design/deployment.md): release tag creation, GitHub Actions, and GoReleaser deployment flow.
 
-For Web UI structure and styling conventions, see [../web/docs/design.md](../web/docs/design.md).
+For Web UI structure and styling conventions, see [design/web.md](design/web.md).

@@ -35,11 +35,11 @@ TQ_HOME=./.tasq go run ./cmd/issue-tracker -addr :37651
 3. Regenerate the Web UI API client when `docs/openapi/issue-tracker.yml` changes:
 
    ```sh
-   cd web
+   cd cmd/web/frontend
    npm run generate:api
    ```
 
-4. Do not manually edit generated files under `web/lib/generated`.
+4. Do not manually edit generated files under `cmd/web/frontend/src/lib/generated`.
 
 ## Verification
 

@@ -9,4 +9,4 @@ Tasq design documentation は concern ごとに分割しています。
 - [Operations](design/operations.ja.md): local development environment、verification、open decision。
 - [Deployment](design/deployment.ja.md): release tag 作成、GitHub Actions、GoReleaser の deployment flow。
 
-Web UI の構造と styling convention は [../web/docs/design.md](../web/docs/design.md) を参照してください。
+Web UI の構造と styling convention は [design/web.md](design/web.md) を参照してください。
