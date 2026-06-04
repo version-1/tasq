@@ -181,6 +181,9 @@ func (d *Dispatcher) startRun(storedRun run.Run, task runner.Task) {
 	d.recordEvent(storedRun.RunID, "running", "runner started", "")
 
 	task.OnEvent = func(event runner.Event) {
+		if !shouldKeepRunnerEvent(event) {
+			return
+		}
 		logRunnerEvent(storedRun.RunID, event)
 		d.recordEvent(storedRun.RunID, event.EventType, event.Message, event.PayloadJSON)
 	}
@@ -271,13 +274,13 @@ func (d *Dispatcher) recordEvent(runID string, eventType string, message string,
 }
 
 func logRunnerEvent(runID string, event runner.Event) {
-	if !shouldLogRunnerEvent(event) {
+	if !shouldKeepRunnerEvent(event) {
 		return
 	}
 	log.Print(formatRunnerEventLog(runID, event))
 }
 
-func shouldLogRunnerEvent(event runner.Event) bool {
+func shouldKeepRunnerEvent(event runner.Event) bool {
 	return event.EventType != ignoredRunnerEventTypeAgentMessageDelta
 }
 
