@@ -8,13 +8,10 @@ services:
       - sh
       - -c
       - |
-        mkdir -p /home/codex/.codex /home/codex/.config/gh /home/codex/.cache/go-build /go/pkg/mod /go/pkg/sumdb /workspace/web/node_modules
+        mkdir -p /home/codex/.codex /home/codex/.cache/go-build /go/pkg/mod /go/pkg/sumdb /workspace/cmd/web/frontend/node_modules
         chown codex:codex /home/codex/.codex
-        chown codex:codex /home/codex/.config/gh
         find /home/codex/.codex -mindepth 1 -maxdepth 1 ! -name rules -exec chown -R codex:codex {} +
-        chown -R codex:codex /home/codex/.config /home/codex/.cache /go/pkg /workspace/web/node_modules
-        su codex -c 'git config --global user.name codex'
-        su codex -c 'git config --global user.email codex@example.local'
+        chown -R codex:codex /home/codex/.cache /go/pkg /workspace/cmd/web/frontend/node_modules
         go build -o /usr/local/bin/tq ./cmd/tq
         sleep infinity
     stdin_open: true
@@ -32,9 +29,8 @@ services:
       - .:/workspace
       - go-mod-cache:/go/pkg/mod
       - go-build-cache:/home/codex/.cache/go-build
-      - web-node-modules:/workspace/web/node_modules
+      - web-node-modules:/workspace/cmd/web/frontend/node_modules
       - codex-home:/home/codex/.codex
-      - gh-config:/home/codex/.config/gh
       - ./codex/rules:/home/codex/.codex/rules:ro
 
   openapi:
@@ -53,4 +49,3 @@ volumes:
   go-build-cache:
   web-node-modules:
   codex-home:
-  gh-config:

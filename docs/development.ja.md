@@ -69,4 +69,4 @@ Documentation を更新するときは、英語版の `.md` と日本語版の `
 
 - [Issue Tracker](../cmd/issue-tracker/WORKFLOW.ja.md)
 - [Orchestrator](../cmd/orchestrator/WORKFLOW.ja.md)
-- [Web UI](../web/WORKFLOW.ja.md)
+- [Web UI](../cmd/web/WORKFLOW.ja.md)

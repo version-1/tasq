@@ -16,11 +16,6 @@ Use `make help` to print the prefix guide and sectioned target list generated fr
 | `OPENAPI_PORT` | empty | Host port for OpenAPI UI. Empty means Docker Compose assigns a free port. |
 | `WEB_PORT` | empty | Host port for Web UI. Empty means Docker Compose assigns a free port. |
 | `WEB_ISSUE_TRACKER_URL` | empty | Issue-tracker URL passed to the Web UI. Empty means the Makefile resolves the assigned issue-tracker port. |
-| `RELEASE_BRANCH` | `main` | Branch required by the formal release target. |
-| `RELEASE_REMOTE` | `origin` | Remote that receives release tags. |
-| `RELEASE_REPO` | `version-1/tasq` | GitHub repository used when installing `tq` from release assets. |
-| `TQ_INSTALL_DIR` | `$HOME/.local/bin` | Directory where release install targets place the `tq` binary. |
-| `TQ_INSTALL_NAME` | `tq` | Installed command name for release install targets. |
 | `AIR_VERSION` | `v1.52.3` | Air version used to run Go services in watch mode. |
 
 Example with fixed ports:
@@ -69,7 +64,7 @@ Use `run-*` targets for processes and commands that run inside an already-runnin
 | Target | Purpose |
 |---|---|
 | `make run-all` | Start issue-tracker, orchestrator, and Web inside the running dev container. |
-| `make run-stop` | Stop Air and Next.js processes inside the dev container without stopping the container. |
+| `make run-stop` | Stop Air-managed service processes inside the dev container without stopping the container. |
 | `make run-issue-tracker` | Start only the issue-tracker process inside the running dev container. |
 | `make run-is` | Alias for `run-issue-tracker`. |
 | `make run-orchestrator` | Start issue-tracker, then start the orchestrator process. |
@@ -79,7 +74,7 @@ Use `run-*` targets for processes and commands that run inside an already-runnin
 | `make run-tui` | Run the TUI interactively inside the dev container. |
 | `make run-tq ARGS="..."` | Run the installed `tq $(ARGS)` binary inside the running dev container without changing service processes. |
 | `make run-ps` | Show dev processes running inside the dev container. |
-| `make run-logs` | Follow `$TQ_HOME/system/log/*.log`. |
+| `make run-logs` | Follow `.tmp/dev-logs/*.log`. |
 
 Useful examples:
 
@@ -98,49 +93,26 @@ make run-logs
 | `make dev-test` | Run `go test ./...`, install Web dependencies, and run Web typecheck inside the dev container. |
 | `make dev-build` | Run `go test ./...`, install Web dependencies, and run the Web production build inside the dev container. |
 
-## Release Targets
-
-| Target | Purpose |
-|---|---|
-| `make prerelease` | Create and push a prerelease tag through `scripts/release.sh`. |
-| `make release version=v0.1.1` | Create and push a formal release tag through `scripts/release.sh`. |
-| `make install-tq` | Install `tq` from the latest formal release into `$HOME/.local/bin`. |
-| `make install-tq version=v0.1.0` | Install `tq` from a specific release tag. |
-| `make install-tq-prerelease` | Install `tq` from the latest prerelease. |
-| `make install-tq-prerelease version=v0.1.0-pre.1` | Install `tq` from a specific prerelease tag. |
-
-See [Deployment Flow](../design/deployment.md) for the full tag, GitHub Actions, and GoReleaser flow.
-
-## Authentication Targets
+## Codex Targets
 
 | Target | Purpose |
 |---|---|
 | `make dev-codex-login` | Run `codex login --device-auth` inside the dev container and persist credentials in the `codex-home` Docker volume. |
-| `make dev-codex-status` | Show Codex authentication status inside the dev container. |
-| `make dev-gh-login` | Run `gh auth login` and `gh auth setup-git` inside the dev container, then persist credentials in the `gh-config` Docker volume. |
-| `make dev-gh-status` | Show GitHub CLI authentication status inside the dev container. |
+| `make dev-codex-check` | Confirm Codex CLI and `codex app-server` are available inside the dev container. |
 
-Use device auth for container logins when a browser redirect points to a localhost callback inside
-the container that is not reachable from the host browser.
-
-Authentication targets only execute commands in an existing `dev` container. They do not build or
-start the container; run `make dev-up` first when the dev container does not exist.
+Use device auth for container login because browser redirects to a localhost callback inside the container are not reachable from the host browser.
 
 Examples:
 
 ```sh
 make dev-codex-login
-make dev-codex-status
-make dev-gh-login
-make dev-gh-status
+make dev-codex-check
 ```
 
 ## Operational Notes
 
 The `dev` container is long-lived. Service processes are ordinary child processes launched with `docker compose exec`; they are not separate Compose services. Use `make run-stop` to stop only those child processes, or `make dev-down` to stop the Compose services.
 
-The Makefile runs container commands as the `codex` user. At container startup, Compose prepares
-writable named volumes for Go module cache, Go build cache, Web `node_modules`, Codex credentials,
-and GitHub CLI credentials.
+The Makefile runs container commands as the `codex` user. At container startup, Compose prepares writable named volumes for Go module cache, Go build cache, Web `node_modules` under `cmd/web/frontend`, and Codex credentials.
 
-`NEXT_PUBLIC_ISSUE_TRACKER_URL` is resolved when the Web process starts. If the issue-tracker host port changes after Web has started, restart the Web process with `make run-web` or restart everything with `make dev-up`.
+The Go Web server proxies browser API calls to the issue-tracker and orchestrator over container-local URLs. Restart the Web process with `make run-web` after changing frontend code, proxy configuration, or backend ports.

@@ -2,7 +2,7 @@
 
 Tasq は、issue の管理と orchestrator run state の観測を行う local-first のタスクシステムです。
 
-現在のアーキテクチャでは、issue 管理と orchestration を分離します。issue-tracker は issue state と user-facing API を所有します。orchestrator は historical run state と optional runtime inspection を所有します。UI client は issue-tracker のみにアクセスします。
+現在のアーキテクチャでは、issue 管理と orchestration を分離します。issue-tracker は issue state と user-facing API を所有します。orchestrator は historical run state と optional runtime inspection を所有します。UI client は主に issue-tracker にアクセスします。Web UI server は future run-state views のために orchestrator proxy path も公開します。
 
 ## Goals
 
@@ -23,16 +23,17 @@ Tasq は、issue の管理と orchestrator run state の観測を行う local-fi
 
 ### web-ui
 
-web-ui は issue operation のための Next.js client です。
+web-ui は issue operation のための Go-served Vite + React single-page app です。
 
 Responsibilities:
 
 - issue-tracker から issue summary を取得する。
 - issue status、priority、assignee を表示する。
 - issue-tracker を呼び出して issue status 間の移動を行う。
-- orchestrator へ直接アクセスしない。
+- SPA fallback で browser routes を配信する。
+- `/api/tracker/*` を issue-tracker に、`/api/orchestrator/*` を orchestrator に proxy する。
 
-Web UI の構造と styling convention は [../../web/docs/design.md](../../web/docs/design.md) を参照してください。
+Web UI の構造と styling convention は [../../cmd/web/docs/design.md](../../cmd/web/docs/design.md) を参照してください。
 
 ### tui
 
@@ -54,8 +55,7 @@ Responsibilities:
 - issue-tracker API 経由で issue を作成、取得、一覧表示、更新する。
 - issue description と comment 用の image attachment を upload する。
 - default では human-readable output を使い、tool use 向けに JSON output をサポートする。
-- issue-tracker API URL を `--api-url`、`TQ_API_URL`、`$TQ_HOME/system/state.json`、または `http://localhost:37651` から解決する。
-- `tq service` で host-local な issue-tracker と orchestrator process を管理する。
+- issue-tracker API URL を `--api-url`、`TQ_API_URL`、または `http://localhost:8080` から解決する。
 - command が失敗した場合、stderr に machine-readable JSON error を出し、non-zero exit code を返す。
 - orchestrator へ直接アクセスしない。
 

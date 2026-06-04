@@ -2,7 +2,7 @@
 
 Tasq is a local-first task system for managing issues and observing orchestrator run state.
 
-The current architecture separates issue management from orchestration. The issue-tracker owns issue state and the user-facing API. The orchestrator owns historical run state and optional runtime inspection. UI clients talk to the issue-tracker only.
+The current architecture separates issue management from orchestration. The issue-tracker owns issue state and the user-facing API. The orchestrator owns historical run state and optional runtime inspection. UI clients primarily talk to the issue-tracker. The Web UI server also exposes an orchestrator proxy path for future run-state views.
 
 ## Goals
 
@@ -23,16 +23,17 @@ The current architecture separates issue management from orchestration. The issu
 
 ### web-ui
 
-The web-ui is a Next.js client for issue operations.
+The web-ui is a Go-served Vite + React single-page app for issue operations.
 
 Responsibilities:
 
 - Request issue summaries from the issue-tracker.
 - Display issue status, priority, and assignee.
 - Move issues between issue statuses by calling the issue-tracker.
-- Avoid direct calls to the orchestrator.
+- Serve browser routes through SPA fallback.
+- Proxy `/api/tracker/*` to the issue-tracker and `/api/orchestrator/*` to the orchestrator.
 
-For Web UI structure and styling conventions, see [../../web/docs/design.md](../../web/docs/design.md).
+For Web UI structure and styling conventions, see [../../cmd/web/docs/design.md](../../cmd/web/docs/design.md).
 
 ### tui
 
@@ -54,8 +55,7 @@ Responsibilities:
 - Create, read, list, and update issues through the issue-tracker API.
 - Upload image attachments for issue descriptions and comments.
 - Support human-readable output by default and JSON output for tool use.
-- Resolve the issue-tracker API URL from `--api-url`, `TQ_API_URL`, `$TQ_HOME/system/state.json`, or `http://localhost:37651`.
-- Manage host-local issue-tracker and orchestrator processes through `tq service`.
+- Resolve the issue-tracker API URL from `--api-url`, `TQ_API_URL`, or `http://localhost:8080`.
 - Return machine-readable JSON errors on stderr and a non-zero exit code when a command fails.
 - Avoid direct calls to the orchestrator.
 
