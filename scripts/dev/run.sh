@@ -10,7 +10,7 @@ log_dir="$(dev_log_dir)"
 download_log="${log_dir}/go-mod-download.log"
 
 usage() {
-	echo "Usage: scripts/dev-run.sh <issue-tracker|orchestrator|web>" >&2
+	echo "Usage: scripts/dev/run.sh <issue-tracker|orchestrator|web>" >&2
 }
 
 if ! service_name="$(dev_service_name "$service")"; then

@@ -8,7 +8,7 @@ service="${1:-}"
 mode="${2:-wait}"
 
 if ! name="$(dev_service_name "$service")" || ! url="$(dev_service_health_url "$service")"; then
-	echo "Usage: scripts/dev-ready.sh <issue-tracker|web> [--check]" >&2
+	echo "Usage: scripts/dev/ready.sh <issue-tracker|web> [--check]" >&2
 	exit 2
 fi
 

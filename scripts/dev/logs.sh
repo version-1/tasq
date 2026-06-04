@@ -18,7 +18,7 @@ case "$service" in
 		;;
 	*)
 		if ! service_name="$(dev_service_name "$service")"; then
-			echo "Usage: scripts/dev-logs.sh [issue-tracker|tracker|orchestrator|web]" >&2
+			echo "Usage: scripts/dev/logs.sh [issue-tracker|tracker|orchestrator|web]" >&2
 			exit 2
 		fi
 		log_file="$log_dir/$(dev_service_log_file "$service_name")"
