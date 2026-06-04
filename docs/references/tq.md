@@ -21,7 +21,7 @@ TQ_HOME=./.tasq go run ./cmd/tq --api-url http://localhost:37651 issue list
 ## Global Options
 
 ```text
-tq [--api-url URL] [--output text|json] <resource> <action> [flags]
+tq [--api-url URL] [--output text|json] <resource|command> <action> [flags]
 ```
 
 | Option | Default | Description |
@@ -37,6 +37,17 @@ tq [--api-url URL] [--output text|json] <resource> <action> [flags]
 | `comment` | `add`, `list` |
 | `project` | `add`, `remove`, `check`, `list` |
 | `service` | `start`, `stop`, `status` |
+| `version` | show version information |
+
+## Version
+
+Print the `tq` version and the build commit.
+
+```sh
+tq version
+```
+
+Release builds installed from a versioned module or GitHub Release print the tag version when Go build metadata includes it. Local builds fall back to `dev`.
 
 ## Issues
 

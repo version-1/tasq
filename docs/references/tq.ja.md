@@ -21,7 +21,7 @@ TQ_HOME=./.tasq go run ./cmd/tq --api-url http://localhost:37651 issue list
 ## Global Options
 
 ```text
-tq [--api-url URL] [--output text|json] <resource> <action> [flags]
+tq [--api-url URL] [--output text|json] <resource|command> <action> [flags]
 ```
 
 | Option | Default | Description |
@@ -37,6 +37,17 @@ tq [--api-url URL] [--output text|json] <resource> <action> [flags]
 | `comment` | `add`, `list` |
 | `project` | `add`, `remove`, `check`, `list` |
 | `service` | `start`, `stop`, `status` |
+| `version` | version information を表示 |
+
+## Version
+
+`tq` の version と build commit を表示します。
+
+```sh
+tq version
+```
+
+Versioned module または GitHub Release から install した release build は、Go build metadata に含まれる tag version を表示します。Local build は `dev` に fallback します。
 
 ## Issues
 

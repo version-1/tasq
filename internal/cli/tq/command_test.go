@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -18,6 +19,39 @@ import (
 	"github.com/version-1/tasq/internal/issue/domain/entity"
 	"github.com/version-1/tasq/internal/issue/store"
 )
+
+func TestVersion(t *testing.T) {
+	version, commit := versionInfo()
+	want := fmt.Sprintf("tq %s (commit: %s)\n", version, commit)
+
+	stdout, stderr, code := runCLI(t, []string{"version"})
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr)
+	}
+	if stderr != "" {
+		t.Fatalf("expected empty stderr: %s", stderr)
+	}
+	if stdout != want {
+		t.Fatalf("stdout=%q, want %q", stdout, want)
+	}
+}
+
+func TestIsPseudoVersion(t *testing.T) {
+	tests := []struct {
+		version string
+		want    bool
+	}{
+		{version: "v0.1.0", want: false},
+		{version: "v0.1.0-rc.1", want: false},
+		{version: "v0.0.0-20260603232640-51f272dbd384", want: true},
+		{version: "v0.0.0-20260603232640-51f272dbd384+dirty", want: true},
+	}
+	for _, test := range tests {
+		if got := isPseudoVersion(test.version); got != test.want {
+			t.Fatalf("isPseudoVersion(%q)=%t, want %t", test.version, got, test.want)
+		}
+	}
+}
 
 func TestIssueListJSON(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
