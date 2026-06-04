@@ -28,5 +28,5 @@ function rewriteAttachmentURLs(content: string): string {
 }
 
 function issueTrackerURL(): string {
-  return ("/api/tracker").replace(/\/$/, "");
+  return ("/tracker").replace(/\/$/, "");
 }

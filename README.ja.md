@@ -86,7 +86,7 @@ English counterpart: [README.md](README.md).
 - Runtime state と SQLite files は repository の `.tasq/` 配下に作成され、git からは無視されます。
 - Compose は Go module/build caches、`cmd/web/frontend/node_modules`、Codex login state、GitHub CLI login state を named Docker volumes に保存します。
 - Orchestrator は Symphony-oriented runtime settings と issue ごとの agent prompt を `WORKFLOW.md` から読みます。
-- Web UI は Go server の proxy paths `/api/tracker/*` と `/api/orchestrator/*` 経由で local backends を呼び出します。
+- Web UI は Go server の proxy paths `/tracker/*` と `/orchestrator/*` 経由で local backends を呼び出します。
 - `make run-tq` 経由で実行した `tq` は `$TQ_HOME/system/state.json` から issue-tracker API URL を解決します。
 - Codex を device auth で認証し、authentication を `codex-home` Docker volume に永続化するため、初回に `make dev-codex-login` を実行します。
 - GitHub CLI を認証し、Git が `gh` を HTTPS credential helper として使うよう設定し、credential を `gh-config` Docker volume に永続化するため、初回に `make dev-gh-login` を実行します。Dev container から push する場合は HTTPS Git remote を使います。

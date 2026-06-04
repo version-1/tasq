@@ -6,7 +6,7 @@ export default defineConfig({
       target: "../../../docs/openapi/issue-tracker.yml",
     },
     output: {
-      baseUrl: "/api/tracker",
+      baseUrl: "/tracker",
       clean: true,
       client: "fetch",
       target: "src/lib/generated/issue-tracker.ts",

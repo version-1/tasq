@@ -31,7 +31,7 @@ Responsibilities:
 - issue status、priority、assignee を表示する。
 - issue-tracker を呼び出して issue status 間の移動を行う。
 - SPA fallback で browser routes を配信する。
-- `/api/tracker/*` を issue-tracker に、`/api/orchestrator/*` を orchestrator に proxy する。
+- `/tracker/*` を issue-tracker に、`/orchestrator/*` を orchestrator に proxy する。
 
 Web UI の構造と styling convention は [web.md](web.md) を参照してください。
 

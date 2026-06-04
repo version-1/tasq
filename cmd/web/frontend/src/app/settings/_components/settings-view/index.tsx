@@ -57,5 +57,5 @@ export function SettingsView({
 }
 
 function apiOriginLabel(): string {
-  return `${window.location.origin}/api/tracker`;
+  return `${window.location.origin}/tracker`;
 }

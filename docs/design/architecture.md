@@ -31,7 +31,7 @@ Responsibilities:
 - Display issue status, priority, and assignee.
 - Move issues between issue statuses by calling the issue-tracker.
 - Serve browser routes through SPA fallback.
-- Proxy `/api/tracker/*` to the issue-tracker and `/api/orchestrator/*` to the orchestrator.
+- Proxy `/tracker/*` to the issue-tracker and `/orchestrator/*` to the orchestrator.
 
 For Web UI structure and styling conventions, see [web.md](web.md).
 

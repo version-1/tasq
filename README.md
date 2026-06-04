@@ -86,7 +86,7 @@ Japanese counterpart: [README.ja.md](README.ja.md).
 - Runtime state and SQLite files are created under `.tasq/` in the repository and are ignored by git.
 - Compose stores Go module/build caches, `cmd/web/frontend/node_modules`, Codex login state, and GitHub CLI login state in named Docker volumes.
 - The orchestrator reads `WORKFLOW.md` for Symphony-oriented runtime settings and the per-issue agent prompt.
-- The Web UI calls local backends through the Go server proxy paths `/api/tracker/*` and `/api/orchestrator/*`.
+- The Web UI calls local backends through the Go server proxy paths `/tracker/*` and `/orchestrator/*`.
 - `tq` resolves the issue-tracker API URL from `$TQ_HOME/system/state.json` when run through `make run-tq`.
 - Run `make dev-codex-login` once to authenticate Codex with device auth and persist credentials in the `codex-home` Docker volume.
 - Run `make dev-gh-login` once to authenticate GitHub CLI, configure Git to use `gh` as its HTTPS credential helper, and persist credentials in the `gh-config` Docker volume. Use an HTTPS Git remote for pushes from the dev container.

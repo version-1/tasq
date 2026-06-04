@@ -42,8 +42,8 @@ func newMux(trackerURL string, orchestratorURL string) (http.Handler, error) {
 	}
 
 	mux := http.NewServeMux()
-	mux.Handle("/api/tracker/", reverseProxy("/api/tracker", trackerURL))
-	mux.Handle("/api/orchestrator/", reverseProxy("/api/orchestrator", orchestratorURL))
+	mux.Handle("/tracker/", reverseProxy("/tracker", trackerURL))
+	mux.Handle("/orchestrator/", reverseProxy("/orchestrator", orchestratorURL))
 	mux.Handle("/", spaHandler{assets: dist})
 	return mux, nil
 }

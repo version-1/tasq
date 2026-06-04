@@ -47,7 +47,7 @@ Manual verification:
 3. Confirm the issue-tracker summary reflects issue status changes.
 4. Confirm orchestrator runtime inspection is available through the printed orchestrator URL.
 
-The Web server proxies `/api/tracker/*` to the issue-tracker and `/api/orchestrator/*` to the orchestrator. In Compose, `make run-web` starts the Web server with backend URLs pointing at `127.0.0.1:8080` and `127.0.0.1:8081` inside the dev container.
+The Web server proxies `/tracker/*` to the issue-tracker and `/orchestrator/*` to the orchestrator. In Compose, `make run-web` starts the Web server with backend URLs pointing at `127.0.0.1:8080` and `127.0.0.1:8081` inside the dev container.
 
 ## Open Decisions
 

@@ -22,8 +22,8 @@ The Go server owns:
 
 - serving `cmd/web/frontend/dist` through `go:embed`
 - returning `index.html` for non-API SPA routes
-- proxying `/api/tracker/*` to the issue-tracker
-- proxying `/api/orchestrator/*` to the orchestrator
+- proxying `/tracker/*` to the issue-tracker
+- proxying `/orchestrator/*` to the orchestrator
 
 Do not add server-rendered UI behavior to `cmd/web`. If runtime configuration is needed, prefer explicit Go flags or proxy paths over build-time browser environment variables.
 
@@ -79,6 +79,8 @@ Keep user-facing UI text in `cmd/web/frontend/src/lib/i18n.ts`. Components shoul
 The frontend uses CSS Modules for component and page styling.
 
 Keep `cmd/web/frontend/src/app/globals.css` limited to global tokens and base element resets. Feature-specific styles must live next to the component that owns the markup.
+
+See [Web UI Color Palette](web-color-pallete.md) for global color tokens.
 
 Examples:
 

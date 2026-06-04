@@ -47,7 +47,7 @@ Manual verification:
 3. issue-tracker summary が issue status change を反映することを確認する。
 4. 表示された orchestrator URL で runtime inspection を確認する。
 
-Web server は `/api/tracker/*` を issue-tracker に、`/api/orchestrator/*` を orchestrator に proxy します。Compose では `make run-web` が dev container 内の `127.0.0.1:8080` と `127.0.0.1:8081` を backend URL として Web server を起動します。
+Web server は `/tracker/*` を issue-tracker に、`/orchestrator/*` を orchestrator に proxy します。Compose では `make run-web` が dev container 内の `127.0.0.1:8080` と `127.0.0.1:8081` を backend URL として Web server を起動します。
 
 ## Open Decisions
 

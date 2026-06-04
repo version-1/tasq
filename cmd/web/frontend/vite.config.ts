@@ -10,8 +10,8 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      "/api/tracker": "http://127.0.0.1:37653",
-      "/api/orchestrator": "http://127.0.0.1:37653",
+      "/tracker": "http://127.0.0.1:37653",
+      "/orchestrator": "http://127.0.0.1:37653",
     },
   },
 });

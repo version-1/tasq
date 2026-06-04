@@ -380,7 +380,7 @@ export const getGetApiV1HealthUrl = () => {
 
 
 
-  return `/api/tracker/api/v1/health`
+  return `/tracker/api/v1/health`
 }
 
 export const getApiV1Health = async ( options?: RequestInit): Promise<getApiV1HealthResponse> => {
@@ -429,7 +429,7 @@ export const getGetApiV1SummaryUrl = () => {
 
 
 
-  return `/api/tracker/api/v1/summary`
+  return `/tracker/api/v1/summary`
 }
 
 export const getApiV1Summary = async ( options?: RequestInit): Promise<getApiV1SummaryResponse> => {
@@ -478,7 +478,7 @@ export const getGetApiV1ProjectsUrl = () => {
 
 
 
-  return `/api/tracker/api/v1/projects`
+  return `/tracker/api/v1/projects`
 }
 
 export const getApiV1Projects = async ( options?: RequestInit): Promise<getApiV1ProjectsResponse> => {
@@ -527,7 +527,7 @@ export const getPostApiV1ProjectsUrl = () => {
 
 
 
-  return `/api/tracker/api/v1/projects`
+  return `/tracker/api/v1/projects`
 }
 
 export const postApiV1Projects = async (createProjectInput: CreateProjectInput, options?: RequestInit): Promise<postApiV1ProjectsResponse> => {
@@ -582,7 +582,7 @@ export const getGetApiV1ProjectsIdUrl = (id: number,) => {
 
 
 
-  return `/api/tracker/api/v1/projects/${id}`
+  return `/tracker/api/v1/projects/${id}`
 }
 
 export const getApiV1ProjectsId = async (id: number, options?: RequestInit): Promise<getApiV1ProjectsIdResponse> => {
@@ -636,7 +636,7 @@ export const getPatchApiV1ProjectsIdUrl = (id: number,) => {
 
 
 
-  return `/api/tracker/api/v1/projects/${id}`
+  return `/tracker/api/v1/projects/${id}`
 }
 
 export const patchApiV1ProjectsId = async (id: number,
@@ -692,7 +692,7 @@ export const getDeleteApiV1ProjectsIdUrl = (id: number,) => {
 
 
 
-  return `/api/tracker/api/v1/projects/${id}`
+  return `/tracker/api/v1/projects/${id}`
 }
 
 export const deleteApiV1ProjectsId = async (id: number, options?: RequestInit): Promise<deleteApiV1ProjectsIdResponse> => {
@@ -746,7 +746,7 @@ export const getPostApiV1ProjectsIdCheckUrl = (id: number,) => {
 
 
 
-  return `/api/tracker/api/v1/projects/${id}/check`
+  return `/tracker/api/v1/projects/${id}/check`
 }
 
 export const postApiV1ProjectsIdCheck = async (id: number,
@@ -797,7 +797,7 @@ export const getGetApiV1WorkspacesUrl = () => {
 
 
 
-  return `/api/tracker/api/v1/workspaces`
+  return `/tracker/api/v1/workspaces`
 }
 
 export const getApiV1Workspaces = async ( options?: RequestInit): Promise<getApiV1WorkspacesResponse> => {
@@ -851,7 +851,7 @@ export const getPostApiV1WorkspacesUrl = () => {
 
 
 
-  return `/api/tracker/api/v1/workspaces`
+  return `/tracker/api/v1/workspaces`
 }
 
 export const postApiV1Workspaces = async (createWorkspaceInput: CreateWorkspaceInput, options?: RequestInit): Promise<postApiV1WorkspacesResponse> => {
@@ -906,7 +906,7 @@ export const getGetApiV1WorkspacesIdUrl = (id: number,) => {
 
 
 
-  return `/api/tracker/api/v1/workspaces/${id}`
+  return `/tracker/api/v1/workspaces/${id}`
 }
 
 export const getApiV1WorkspacesId = async (id: number, options?: RequestInit): Promise<getApiV1WorkspacesIdResponse> => {
@@ -960,7 +960,7 @@ export const getPatchApiV1WorkspacesIdUrl = (id: number,) => {
 
 
 
-  return `/api/tracker/api/v1/workspaces/${id}`
+  return `/tracker/api/v1/workspaces/${id}`
 }
 
 export const patchApiV1WorkspacesId = async (id: number,
@@ -1016,7 +1016,7 @@ export const getDeleteApiV1WorkspacesIdUrl = (id: number,) => {
 
 
 
-  return `/api/tracker/api/v1/workspaces/${id}`
+  return `/tracker/api/v1/workspaces/${id}`
 }
 
 export const deleteApiV1WorkspacesId = async (id: number, options?: RequestInit): Promise<deleteApiV1WorkspacesIdResponse> => {
@@ -1077,7 +1077,7 @@ export const getGetApiV1IssuesUrl = (params?: GetApiV1IssuesParams,) => {
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0 ? `/api/tracker/api/v1/issues?${stringifiedParams}` : `/api/tracker/api/v1/issues`
+  return stringifiedParams.length > 0 ? `/tracker/api/v1/issues?${stringifiedParams}` : `/tracker/api/v1/issues`
 }
 
 export const getApiV1Issues = async (params?: GetApiV1IssuesParams, options?: RequestInit): Promise<getApiV1IssuesResponse> => {
@@ -1126,7 +1126,7 @@ export const getPostApiV1IssuesUrl = () => {
 
 
 
-  return `/api/tracker/api/v1/issues`
+  return `/tracker/api/v1/issues`
 }
 
 export const postApiV1Issues = async (createIssueInput: CreateIssueInput, options?: RequestInit): Promise<postApiV1IssuesResponse> => {
@@ -1181,7 +1181,7 @@ export const getPostApiV1IssuesStatesUrl = () => {
 
 
 
-  return `/api/tracker/api/v1/issues/states`
+  return `/tracker/api/v1/issues/states`
 }
 
 export const postApiV1IssuesStates = async (issueStatesInput: IssueStatesInput, options?: RequestInit): Promise<postApiV1IssuesStatesResponse> => {
@@ -1236,7 +1236,7 @@ export const getGetApiV1IssuesIdUrl = (id: number,) => {
 
 
 
-  return `/api/tracker/api/v1/issues/${id}`
+  return `/tracker/api/v1/issues/${id}`
 }
 
 export const getApiV1IssuesId = async (id: number, options?: RequestInit): Promise<getApiV1IssuesIdResponse> => {
@@ -1290,7 +1290,7 @@ export const getPatchApiV1IssuesIdUrl = (id: number,) => {
 
 
 
-  return `/api/tracker/api/v1/issues/${id}`
+  return `/tracker/api/v1/issues/${id}`
 }
 
 export const patchApiV1IssuesId = async (id: number,
@@ -1354,7 +1354,7 @@ export const getGetApiV1IssuesIssueIdCommentsUrl = (issueId: number,
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0 ? `/api/tracker/api/v1/issues/${issueId}/comments?${stringifiedParams}` : `/api/tracker/api/v1/issues/${issueId}/comments`
+  return stringifiedParams.length > 0 ? `/tracker/api/v1/issues/${issueId}/comments?${stringifiedParams}` : `/tracker/api/v1/issues/${issueId}/comments`
 }
 
 export const getApiV1IssuesIssueIdComments = async (issueId: number,
@@ -1409,7 +1409,7 @@ export const getPostApiV1IssuesIssueIdCommentsUrl = (issueId: number,) => {
 
 
 
-  return `/api/tracker/api/v1/issues/${issueId}/comments`
+  return `/tracker/api/v1/issues/${issueId}/comments`
 }
 
 export const postApiV1IssuesIssueIdComments = async (issueId: number,
@@ -1465,7 +1465,7 @@ export const getPatchApiV1CommentsIdUrl = (id: number,) => {
 
 
 
-  return `/api/tracker/api/v1/comments/${id}`
+  return `/tracker/api/v1/comments/${id}`
 }
 
 export const patchApiV1CommentsId = async (id: number,
@@ -1523,7 +1523,7 @@ export const getGetApiV1AttachmentsUrl = (params: GetApiV1AttachmentsParams,) =>
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0 ? `/api/tracker/api/v1/attachments?${stringifiedParams}` : `/api/tracker/api/v1/attachments`
+  return stringifiedParams.length > 0 ? `/tracker/api/v1/attachments?${stringifiedParams}` : `/tracker/api/v1/attachments`
 }
 
 export const getApiV1Attachments = async (params: GetApiV1AttachmentsParams, options?: RequestInit): Promise<getApiV1AttachmentsResponse> => {
@@ -1577,7 +1577,7 @@ export const getPostApiV1AttachmentsUrl = () => {
 
 
 
-  return `/api/tracker/api/v1/attachments`
+  return `/tracker/api/v1/attachments`
 }
 
 export const postApiV1Attachments = async (postApiV1AttachmentsBody: PostApiV1AttachmentsBody, options?: RequestInit): Promise<postApiV1AttachmentsResponse> => {
@@ -1631,7 +1631,7 @@ export const getGetApiV1AttachmentsIdContentUrl = (id: string,) => {
 
 
 
-  return `/api/tracker/api/v1/attachments/${id}/content`
+  return `/tracker/api/v1/attachments/${id}/content`
 }
 
 export const getApiV1AttachmentsIdContent = async (id: string, options?: RequestInit): Promise<getApiV1AttachmentsIdContentResponse> => {
@@ -1685,7 +1685,7 @@ export const getDeleteApiV1AttachmentsIdUrl = (id: string,) => {
 
 
 
-  return `/api/tracker/api/v1/attachments/${id}`
+  return `/tracker/api/v1/attachments/${id}`
 }
 
 export const deleteApiV1AttachmentsId = async (id: string, options?: RequestInit): Promise<deleteApiV1AttachmentsIdResponse> => {
