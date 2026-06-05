@@ -96,7 +96,7 @@ dev-openapi: dev-check ## Start only the OpenAPI UI Compose service and print as
 
 .PHONY: dev-ports
 dev-ports: dev-check ## Show assigned local URLs for dev services.
-	@COMPOSE="$(COMPOSE)" scripts/dev-ports.sh
+	@COMPOSE="$(COMPOSE)" scripts/dev/ports.sh
 
 .PHONY: dev-open
 dev-open: dev-check ## Open the Web UI and OpenAPI UI in a browser.
@@ -178,18 +178,18 @@ dc-exec: dev-check ## Run CMD in the running dev container. Example: make dc-exe
 .PHONY: run-all
 run-all: dev-check ## Start issue-tracker, orchestrator, and Web inside the running dev container.
 	$(MAKE) run-stop
-	$(DEV_EXEC) env AIR_VERSION="$(AIR_VERSION)" scripts/dev-run.sh issue-tracker
+	$(DEV_EXEC) env AIR_VERSION="$(AIR_VERSION)" scripts/dev/run.sh issue-tracker
 	$(MAKE) run-ready-issue-tracker
-	$(DEV_EXEC) env AIR_VERSION="$(AIR_VERSION)" scripts/dev-run.sh orchestrator
+	$(DEV_EXEC) env AIR_VERSION="$(AIR_VERSION)" scripts/dev/run.sh orchestrator
 	$(MAKE) run-web
 
 .PHONY: run-ready-issue-tracker
 run-ready-issue-tracker: dev-check
-	@$(DEV_EXEC_NO_TTY) scripts/dev-ready.sh issue-tracker
+	@$(DEV_EXEC_NO_TTY) scripts/dev/ready.sh issue-tracker
 
 .PHONY: run-ensure-issue-tracker
 run-ensure-issue-tracker: dev-check
-	@if $(DEV_EXEC_NO_TTY) scripts/dev-ready.sh issue-tracker --check >/dev/null 2>&1; then \
+	@if $(DEV_EXEC_NO_TTY) scripts/dev/ready.sh issue-tracker --check >/dev/null 2>&1; then \
 		:; \
 	else \
 		$(MAKE) run-issue-tracker; \
@@ -197,22 +197,22 @@ run-ensure-issue-tracker: dev-check
 
 .PHONY: run-stop
 run-stop: dev-check ## Stop dev processes inside the dev container without stopping the container.
-	-$(DEV_EXEC) scripts/dev-stop.sh
+	-$(DEV_EXEC) scripts/dev/stop.sh
 
 .PHONY: run-issue-tracker run-is
 run-issue-tracker: dev-check ## Start the issue-tracker process inside the running dev container.
-	$(DEV_EXEC) env AIR_VERSION="$(AIR_VERSION)" scripts/dev-run.sh issue-tracker
+	$(DEV_EXEC) env AIR_VERSION="$(AIR_VERSION)" scripts/dev/run.sh issue-tracker
 	$(MAKE) run-ready-issue-tracker
 run-is: run-issue-tracker ## Alias for run-issue-tracker.
 
 .PHONY: run-orchestrator run-or
 run-orchestrator: run-ensure-issue-tracker ## Start the orchestrator process inside the running dev container.
-	$(DEV_EXEC) env AIR_VERSION="$(AIR_VERSION)" scripts/dev-run.sh orchestrator
+	$(DEV_EXEC) env AIR_VERSION="$(AIR_VERSION)" scripts/dev/run.sh orchestrator
 run-or: run-orchestrator ## Alias for run-orchestrator.
 
 .PHONY: run-web run-w
 run-web: run-ensure-issue-tracker ## Start the Go Web process inside the running dev container.
-	$(DEV_EXEC) env AIR_VERSION="$(AIR_VERSION)" scripts/dev-run.sh web
+	$(DEV_EXEC) env AIR_VERSION="$(AIR_VERSION)" scripts/dev/run.sh web
 run-w: run-web ## Alias for run-web.
 
 .PHONY: run-tui
@@ -225,8 +225,8 @@ run-tq: dev-check ## Run tq inside the running dev container. Example: make run-
 
 .PHONY: run-ps
 run-ps: dev-check ## Show dev processes running inside the dev container.
-	-$(DEV_EXEC) scripts/dev-ps.sh
+	-$(DEV_EXEC) scripts/dev/ps.sh
 
 .PHONY: run-logs
 run-logs: dev-check ## Follow dev process logs.
-	@TQ_HOME="$(TQ_HOME)" scripts/dev-logs.sh $(SERVICE)
+	@TQ_HOME="$(TQ_HOME)" scripts/dev/logs.sh $(SERVICE)
