@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -67,6 +69,8 @@ func (a app) route(ctx context.Context, args []string, cfg config) error {
 		return a.routeComment(ctx, args[1:], cfg)
 	case "project":
 		return a.routeProject(ctx, args[1:], cfg)
+	case "web":
+		return a.web(args[1:])
 	case "service":
 		return a.routeService(ctx, args[1:], cfg)
 	case "logs":
@@ -74,6 +78,49 @@ func (a app) route(ctx context.Context, args []string, cfg config) error {
 	default:
 		return usageError("unknown resource %q", resource)
 	}
+}
+
+func (a app) web(args []string) error {
+	if len(args) != 0 {
+		return usageError("usage: tq web")
+	}
+	state, err := tqconfig.ReadState()
+	if err != nil {
+		return err
+	}
+	if state.Web == nil || !processAlive(state.Web.PID) {
+		return errors.New("web UI is not running; run `tq service start` first")
+	}
+	webURL, ok, err := tqconfig.WebURLFromState()
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return errors.New("web UI is not running; run `tq service start` first")
+	}
+	if err := openBrowser(webURL); err != nil {
+		return fmt.Errorf("open browser: %w", err)
+	}
+	fmt.Fprintf(a.stdout, "Opening %s\n", webURL)
+	return nil
+}
+
+func openBrowser(url string) error {
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "darwin":
+		cmd = exec.Command("open", url)
+	case "linux":
+		cmd = exec.Command("xdg-open", url)
+	case "windows":
+		cmd = exec.Command("cmd", "/c", "start", "", url)
+	default:
+		return fmt.Errorf("unsupported OS %q", runtime.GOOS)
+	}
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+	return cmd.Process.Release()
 }
 
 func (a app) routeProject(ctx context.Context, args []string, cfg config) error {
@@ -532,6 +579,7 @@ func printRootHelp(w io.Writer) {
 	fmt.Fprintln(w, "  issue    create, get, list, update, and shortcut issue actions")
 	fmt.Fprintln(w, "  comment  add and list issue comments")
 	fmt.Fprintln(w, "  project  add, remove, check, and list projects")
+	fmt.Fprintln(w, "  web      open the running Web UI in the default browser")
 	fmt.Fprintln(w, "  service  start, stop, and inspect local services")
 	fmt.Fprintln(w, "  logs     show and follow service logs")
 	fmt.Fprintln(w, "  version  show version information")
