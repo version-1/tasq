@@ -26,6 +26,25 @@ CLI commands:
 
 `make dev-up` starts the OpenAPI UI and launches the issue-tracker, orchestrator, and web-ui inside the `dev` container. Runtime state is stored under `$TQ_HOME`, which defaults to `/workspace/.tasq` inside the container. `make dev-codex-login` uses device auth and persists Codex authentication in the `codex-home` Docker volume.
 
+## Autonomous Approval Boundary
+
+Tasq should run agents in an autonomous environment where routine repository work can proceed without a human in the loop, while requests that cross the documented safety boundary still become Codex `requestApproval` events.
+
+The target posture is not to eliminate approvals. The target is to make approvals meaningful. Basic inspection, local edits inside the issue workspace, and normal verification commands should run inside the configured sandbox. Broader commands, filesystem access outside the workspace, credential access, network access, and other host-affecting actions should remain outside the autonomous boundary and surface as approval-required work.
+
+For local development, the baseline environment is:
+
+- Run Codex app-server inside the Tasq `dev` container.
+- Start Codex with the documented workspace-write sandbox posture from [ADR-0006](../adr/0006-run-app-server-with-workspace-write-sandbox.md).
+- Keep Codex authentication and personal state in the `codex-home` Docker volume, not in the repository.
+- Mount repository-managed Codex rules read-only from `codex/rules/`.
+- Keep Tasq runtime state under `$TQ_HOME`, separate from Codex credentials.
+- Treat command-execution and file-change `requestApproval` events according to [ADR-0005](../adr/0005-block-issues-for-app-server-approval-decisions.md): cancel the request, fail the run with `approval_required`, and block the issue with the request details.
+
+This gives Tasq a safe unattended default: the agent can make progress within the container and workspace boundary, but Tasq does not silently approve actions that require a wider trust decision.
+
+Operators should review blocked issues out of band. If a request is acceptable, the operator can change the environment, add a narrower rule, or retry the issue after making an explicit approval decision. Tasq should not convert a blocked approval into success unless the requested action actually ran under a documented policy.
+
 ## Verification
 
 Current verification commands:
