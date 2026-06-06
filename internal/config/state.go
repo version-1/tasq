@@ -70,6 +70,17 @@ func IssueTrackerURLFromState() (string, bool, error) {
 	return serviceURL(state.IssueTracker.Addr), true, nil
 }
 
+func WebURLFromState() (string, bool, error) {
+	state, err := ReadState()
+	if err != nil {
+		return "", false, err
+	}
+	if state.Web == nil || strings.TrimSpace(state.Web.Addr) == "" {
+		return "", false, nil
+	}
+	return serviceURL(state.Web.Addr), true, nil
+}
+
 func readStateFile(path string) (State, error) {
 	raw, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
