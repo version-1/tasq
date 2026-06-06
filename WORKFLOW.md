@@ -49,14 +49,3 @@ directories.
 5. Commit the change and create or update a pull request.
 6. Leave a progress or handoff comment on the issue.
 7. Move the issue to `review` when the pull request is ready for human review.
-
-Use `tq` to keep the issue tracker synchronized:
-
-```sh
-tq issue update {{ issue.id }} --status in_progress
-tq comment add {{ issue.id }} --type progress --body "Started work."
-tq issue update {{ issue.id }} --status review
-```
-
-Run the installed `tq` binary from `PATH`. Do not use `go run ./cmd/tq` for
-tracker synchronization.

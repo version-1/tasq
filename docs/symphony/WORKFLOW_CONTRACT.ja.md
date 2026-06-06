@@ -9,6 +9,8 @@ front matter パーサは YAML を使用し、以下の Tasq 固有フィール�
 ## サポートされるフィールド
 
 ```yaml
+tasq:
+  task_work_prompt: true
 polling:
   interval_ms: 30000
 workspace:
@@ -37,6 +39,10 @@ hooks:
     echo "before workspace cleanup"
   timeout_ms: 60000
 ```
+
+`tasq.task_work_prompt` は、orchestrator が rendered agent prompt の先頭に追加する Tasq の
+default task-work instructions を制御します。省略時の default は `true` です。workflow template が
+独自の issue-tracker synchronization instructions を提供する場合にのみ `false` に設定してください。
 
 `workspace.root` の相対パスは、選択された workflow ファイルからの相対パスとして解決されます。
 path フィールドでは環境変数の間接参照と `~` 展開がサポートされています。
@@ -67,6 +73,9 @@ front matter は YAML なので、multiline hook scripts には literal block sc
 
 front matter の閉じ `---` 以降がすべてプロンプトテンプレートです。orchestrator は agent attempt ごとに
 1 回レンダリングし、結果を coding agent への最初のメッセージとして送信します。
+`tasq.task_work_prompt` が省略されているか `true` の場合、orchestrator は template variable expansion
+の前に default `tq` issue-tracker synchronization instructions を先頭へ追加します。そのため
+`{{ issue.id }}` などの変数は default instructions と workflow template の両方で展開されます。
 
 ### 利用可能な変数
 
@@ -86,16 +95,13 @@ front matter の閉じ `---` 以降がすべてプロンプトテンプレート
 
 #### Issue ステータス更新
 
-agent は `tq` CLI を通じて issue ステータスを更新します。runtime 環境に `tq` が `PATH` 上にあり、
-`TQ_API_URL` が issue-tracker のエンドポイントに設定されている必要があります。
+デフォルトでは、Tasq は agent に `tq` CLI で progress comment と issue status update を行うように
+指示する instructions を注入します。runtime 環境に `tq` が `PATH` 上にあり、`TQ_API_URL` が
+issue-tracker のエンドポイントに設定されている必要があります。
 
-プロンプトテンプレートでの指示例:
-
-```
-作業完了後、issue ステータスを更新してください:
-
-  tq issue update {{ issue.id }} -status review
-```
+workflow authors は通常、これらの `tq` instructions を prompt template で繰り返す必要はありません。
+`tasq.task_work_prompt` を `false` に設定した場合、workflow template 側で同等の issue-tracker
+synchronization guidance を提供する責任があります。
 
 #### 成果物
 

@@ -14,6 +14,8 @@ func TestLoadParsesFrontMatter(t *testing.T) {
 	if err := os.WriteFile(path, []byte(`---
 polling:
   interval_ms: 1200
+tasq:
+  task_work_prompt: false
 tracker:
   kind: linear
   endpoint: https://linear.example/graphql
@@ -75,6 +77,9 @@ Work on {{ issue.title }}.
 	}
 	if workflow.Config.TrackerKind != "linear" {
 		t.Fatalf("tracker kind = %q", workflow.Config.TrackerKind)
+	}
+	if workflow.Config.Tasq.TaskWorkPrompt == nil || *workflow.Config.Tasq.TaskWorkPrompt {
+		t.Fatalf("task work prompt = %v, want false", workflow.Config.Tasq.TaskWorkPrompt)
 	}
 	if workflow.Config.TrackerEndpoint != "https://linear.example/graphql" {
 		t.Fatalf("tracker endpoint = %q", workflow.Config.TrackerEndpoint)
@@ -188,8 +193,31 @@ func TestLoadDefaultsTrackerAndCodexExtensionFields(t *testing.T) {
 	if len(workflow.Config.MaxConcurrentRunsByState) != 0 {
 		t.Fatalf("max concurrent by state = %+v", workflow.Config.MaxConcurrentRunsByState)
 	}
+	if workflow.Config.Tasq.TaskWorkPrompt != nil {
+		t.Fatalf("task work prompt = %v, want nil default", workflow.Config.Tasq.TaskWorkPrompt)
+	}
 	if workflow.Config.CodexApprovalPolicy != "" || workflow.Config.CodexThreadSandbox != "" || workflow.Config.CodexTurnSandboxPolicy != "" {
 		t.Fatalf("codex pass-through fields = %q/%q/%q", workflow.Config.CodexApprovalPolicy, workflow.Config.CodexThreadSandbox, workflow.Config.CodexTurnSandboxPolicy)
+	}
+}
+
+func TestLoadRejectsInvalidTasqTaskWorkPrompt(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "WORKFLOW.md")
+	if err := os.WriteFile(path, []byte(`---
+tasq:
+  task_work_prompt: maybe
+---
+Prompt
+`), 0o644); err != nil {
+		t.Fatalf("write workflow: %v", err)
+	}
+
+	_, err := Load(path)
+	if err == nil || !strings.Contains(err.Error(), "workflow_parse_error: tasq.task_work_prompt") {
+		t.Fatalf("error = %v", err)
 	}
 }
 

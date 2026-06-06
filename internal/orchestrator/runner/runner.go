@@ -29,6 +29,7 @@ type Task struct {
 	RunID          string
 	Workspace      workspace.Workspace
 	PromptTemplate string
+	TaskWorkPrompt *bool
 	MaxTurns       int
 	ContinueTurns  bool
 	Command        string
@@ -425,10 +426,24 @@ func notificationMatches(raw json.RawMessage, threadID string, turnID string) bo
 var templateVariablePattern = regexp.MustCompile(`{{\s*([^{}]+?)\s*}}`)
 var templateNamePattern = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*$`)
 
+const defaultTaskWorkPrompt = "Use `tq` to keep the issue tracker synchronized:\n" +
+	"\n" +
+	"```sh\n" +
+	"tq issue update {{ issue.id }} --status in_progress\n" +
+	"tq comment add {{ issue.id }} --type progress --body \"Started work.\"\n" +
+	"tq issue update {{ issue.id }} --status review\n" +
+	"```\n" +
+	"\n" +
+	"Run the installed `tq` binary from `PATH`. Do not use `go run ./cmd/tq` for\n" +
+	"tracker synchronization."
+
 func renderPrompt(task Task) (string, error) {
 	prompt := task.PromptTemplate
 	if prompt == "" {
 		prompt = "Work on issue {{ issue.id }}: {{ issue.title }}\n\n{{ issue.description }}"
+	}
+	if shouldInjectTaskWorkPrompt(task.TaskWorkPrompt) {
+		prompt = defaultTaskWorkPrompt + "\n\n" + prompt
 	}
 	if strings.Count(prompt, "{{") != strings.Count(prompt, "}}") {
 		return "", errors.New("template_parse_error: unbalanced template delimiters")
@@ -466,6 +481,10 @@ func renderPrompt(task Task) (string, error) {
 		return "", renderErr
 	}
 	return rendered, nil
+}
+
+func shouldInjectTaskWorkPrompt(taskWorkPrompt *bool) bool {
+	return taskWorkPrompt == nil || *taskWorkPrompt
 }
 
 func templateVariables(task Task) map[string]string {

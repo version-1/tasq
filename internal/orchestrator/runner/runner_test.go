@@ -137,6 +137,7 @@ func TestRenderPromptSubstitutesIssueFields(t *testing.T) {
 	updatedAt := time.Date(2026, 1, 3, 3, 4, 5, 0, time.UTC)
 	prompt, err := renderPrompt(Task{
 		PromptTemplate: "{{ issue.id }} {{ issue.title }} {{ issue.description }} {{ issue.status }} {{ issue.priority }} {{ issue.assignee }} {{ issue.created_at }} {{ issue.updated_at }} {{ attempt }}",
+		TaskWorkPrompt: boolPtr(false),
 		Attempt:        2,
 		Issue: entity.Issue{
 			ID:          7,
@@ -171,6 +172,7 @@ func TestRenderPromptUsesZeroAttemptForFirstAttempt(t *testing.T) {
 
 	prompt, err := renderPrompt(Task{
 		PromptTemplate: "{{ attempt }}",
+		TaskWorkPrompt: boolPtr(false),
 		Attempt:        1,
 	})
 	if err != nil {
@@ -201,4 +203,48 @@ func TestRenderPromptRejectsUnknownVariableAndFilter(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestRenderPromptInjectsTaskWorkPromptByDefault(t *testing.T) {
+	t.Parallel()
+
+	prompt, err := renderPrompt(Task{
+		PromptTemplate: "Work on {{ issue.title }}.",
+		Issue: entity.Issue{
+			ID:    7,
+			Title: "Runner task",
+		},
+	})
+	if err != nil {
+		t.Fatalf("render prompt: %v", err)
+	}
+	if !strings.HasPrefix(prompt, "Use `tq` to keep the issue tracker synchronized:") {
+		t.Fatalf("prompt did not start with task work prompt: %q", prompt)
+	}
+	if !strings.Contains(prompt, "tq issue update 7 --status in_progress") {
+		t.Fatalf("prompt did not render injected issue ID: %q", prompt)
+	}
+	if !strings.Contains(prompt, "\n\nWork on Runner task.") {
+		t.Fatalf("prompt missing workflow template: %q", prompt)
+	}
+}
+
+func TestRenderPromptSkipsTaskWorkPromptWhenDisabled(t *testing.T) {
+	t.Parallel()
+
+	prompt, err := renderPrompt(Task{
+		PromptTemplate: "Work on {{ issue.id }}.",
+		TaskWorkPrompt: boolPtr(false),
+		Issue:          entity.Issue{ID: 7},
+	})
+	if err != nil {
+		t.Fatalf("render prompt: %v", err)
+	}
+	if prompt != "Work on 7." {
+		t.Fatalf("prompt = %q", prompt)
+	}
+}
+
+func boolPtr(value bool) *bool {
+	return &value
 }
