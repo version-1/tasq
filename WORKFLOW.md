@@ -35,6 +35,10 @@ Attempt: {{ attempt }}
 
 Follow the development workflow in [docs/development.md](docs/development.md).
 Read the component workflow document for the area you change before editing.
+Write agent plan files, pull request summary drafts, and other temporary
+scratch files under the repository `.tmp/` directory. Do not place these
+temporary artifacts under `~/codex`, `$CODEX_HOME`, or other external home
+directories.
 
 ## Required Flow
 
