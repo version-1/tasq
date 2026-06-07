@@ -1,0 +1,20 @@
+.metaItem {
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+
+.metaItem dt,
+.metaItem dd {
+  margin: 0;
+}
+
+.metaItem dt {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.metaItem dd {
+  font-weight: 700;
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+}
