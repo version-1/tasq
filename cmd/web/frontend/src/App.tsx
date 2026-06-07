@@ -4,7 +4,9 @@ import DashboardPage from "./app/dashboard/page";
 import IssueDetailRoute from "./app/issues/[id]/page";
 import IssuesPage from "./app/issues/page";
 import SettingsPage from "./app/settings/page";
-import { DashboardLayout, Layout, ProjectsLayout } from "./components/layout";
+import { DefaultLayout } from "./components/layout/default";
+import { Layout } from "./components/layout";
+import { ProjectLayout } from "./components/layout/project";
 
 export function App() {
   return (
@@ -13,27 +15,27 @@ export function App() {
         <Route path="/" element={<Navigate to="/issues" replace />} />
         <Route
           path="/issues"
-          element={<ProjectsLayout><IssuesPage /></ProjectsLayout>}
+          element={<ProjectLayout><IssuesPage /></ProjectLayout>}
         />
         <Route
           path="/projects/:projectKey/issues"
-          element={<ProjectsLayout><IssuesPage /></ProjectsLayout>}
+          element={<ProjectLayout><IssuesPage /></ProjectLayout>}
         />
         <Route
           path="/issues/:id"
-          element={<ProjectsLayout><IssueDetailRoute /></ProjectsLayout>}
+          element={<ProjectLayout><IssueDetailRoute /></ProjectLayout>}
         />
         <Route
           path="/agents"
-          element={<ProjectsLayout><AgentsPage /></ProjectsLayout>}
+          element={<ProjectLayout><AgentsPage /></ProjectLayout>}
         />
         <Route
           path="/dashboard"
-          element={<DashboardLayout><DashboardPage /></DashboardLayout>}
+          element={<DefaultLayout><DashboardPage /></DefaultLayout>}
         />
         <Route
           path="/settings"
-          element={<ProjectsLayout><SettingsPage /></ProjectsLayout>}
+          element={<ProjectLayout><SettingsPage /></ProjectLayout>}
         />
         <Route path="*" element={<Navigate to="/issues" replace />} />
       </Routes>

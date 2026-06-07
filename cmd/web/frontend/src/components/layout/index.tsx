@@ -22,12 +22,12 @@ import styles from "./index.module.css";
 export type TasqPage = "issues" | "agents" | "dashboard" | "settings";
 type IssueScope = { kind: "all" } | { kind: "project"; projectKey: string };
 
-type LoadState =
+export type LoadState =
   | { kind: "loading" }
   | { kind: "ready"; projects: Project[]; summary: Summary }
   | { kind: "error"; message: string };
 
-type LayoutData = {
+export type LayoutData = {
   summary: Summary;
   issues: IssueSummary[];
   selectedIssue: IssueSummary | null;
@@ -40,7 +40,7 @@ type LayoutData = {
   onStatusChange: (id: number, status: IssueStatus) => Promise<void>;
 };
 
-type LayoutShellData = {
+export type LayoutShellData = {
   activePage: TasqPage;
   activeProject: Project | null;
   addIssueState: AddIssueDialogState;
@@ -209,29 +209,6 @@ export function Layout({ children }: { children: ReactNode }) {
   );
 }
 
-export function ProjectsLayout({ children }: { children: ReactNode }) {
-  const shellData = useLayoutShellData();
-
-  return (
-    <ShellLayout
-      shellData={shellData}
-      showViewNavigation={!shellData.isIssueDetailPage}
-    >
-      {children}
-    </ShellLayout>
-  );
-}
-
-export function DashboardLayout({ children }: { children: ReactNode }) {
-  const shellData = useLayoutShellData();
-
-  return (
-    <ShellLayout shellData={shellData} showViewNavigation={false}>
-      {children}
-    </ShellLayout>
-  );
-}
-
 export function useLayoutData(): LayoutData {
   const layoutData = useContext(layoutDataContext);
   if (!layoutData) {
@@ -240,7 +217,7 @@ export function useLayoutData(): LayoutData {
   return layoutData;
 }
 
-function useLayoutShellData(): LayoutShellData {
+export function useLayoutShellData(): LayoutShellData {
   const shellData = useContext(layoutShellContext);
   if (!shellData) {
     throw new Error(i18n.t("layout.useLayoutDataError"));
@@ -248,7 +225,7 @@ function useLayoutShellData(): LayoutShellData {
   return shellData;
 }
 
-function ShellLayout({
+export function ShellLayout({
   children,
   shellData,
   showViewNavigation,
