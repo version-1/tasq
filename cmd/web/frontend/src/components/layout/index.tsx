@@ -9,11 +9,12 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { createPortal } from "react-dom";
+import { modalIDs } from "@/constants";
+import { ModalSlot } from "@/components/modal";
 import { createIssue, fetchProjects, fetchSummary, updateIssueStatus } from "@/lib/api";
 import "@/lib/i18n";
 import { i18n, type SupportedLanguage } from "@/lib/i18n";
-import { modalIDs, type ModalController, useModalState } from "@/lib/modal";
+import { type ModalController, useModalState } from "@/lib/modal";
 import type { CreateIssueInput, IssueStatus, IssueSummary, Project, Summary } from "@/lib/types";
 import { AddIssueDialog } from "./add-issue-dialog";
 import { Header } from "./header";
@@ -251,7 +252,6 @@ export function ShellLayout({
   showViewNavigation: boolean;
 }) {
   const { t } = useTranslation();
-  const [modalSlotElement, setModalSlotElement] = useState<HTMLDivElement | null>(null);
 
   return (
     <div className={styles.appFrame}>
@@ -269,8 +269,7 @@ export function ShellLayout({
           showViewNavigation={showViewNavigation}
         />
 
-        <div ref={setModalSlotElement} />
-        {modalSlotElement ? createPortal(renderModal(shellData), modalSlotElement) : null}
+        <ModalSlot>{renderModal(shellData)}</ModalSlot>
 
         {shellData.notice ? <p className={styles.notice}>{shellData.notice}</p> : null}
 

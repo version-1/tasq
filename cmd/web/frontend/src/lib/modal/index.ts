@@ -1,8 +1,5 @@
 import { useCallback, useState } from "react";
-
-export const modalIDs = {
-  addIssue: "addIssue",
-} as const;
+import { modalIDs } from "@/constants";
 
 export type ModalID = (typeof modalIDs)[keyof typeof modalIDs];
 
