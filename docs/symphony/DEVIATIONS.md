@@ -17,6 +17,44 @@ Instead, Tasq treats its local issue-tracker API as the tracker adapter boundary
 
 This keeps external tracker integrations out of the orchestrator and preserves the repository's existing service boundary.
 
+## Schema Contract
+
+Tasq's persisted schema is intentionally not a direct implementation of the Symphony normalized
+domain model. The canonical Tasq field contract is documented in
+[../design/schema.md](../design/schema.md).
+
+Issue-tracker differences:
+
+- Tasq issues use a local numeric `id` as the stable tracker ID and expose `issue-<ID>` as the
+  orchestrator-facing identifier convention.
+- Issues are owned by a local `project_id` and expose `project_key` from the referenced Project.
+  Symphony's `tracker.project_slug` is a query scope for an external tracker, not a persisted
+  Project entity.
+- Issue `description` is stored as a non-null Markdown string with `""` as the empty value, rather
+  than a nullable string.
+- Issue `status` is a Tasq enum (`backlog`, `ready`, `in_progress`, `review`, `done`, `blocked`,
+  `failed`) instead of arbitrary tracker state names such as Linear workflow states.
+- Issue `priority` is a Tasq enum (`low`, `normal`, `high`, `urgent`) instead of Symphony's
+  normalized integer-or-null priority.
+- Tasq does not persist Symphony issue fields such as `branch_name`, `url`, `labels`, or
+  `blocked_by` in the issue row. Blocking and PR metadata can be represented in issue text,
+  comments, workflow policy, or future first-class fields when needed.
+- Comments and image attachments are first-class issue-tracker records. They are Tasq API features,
+  not Symphony core-domain entities.
+
+Orchestrator persistence differences:
+
+- Symphony treats scheduling state as authoritative in memory and does not require a persistent
+  database for restart recovery. Tasq additionally persists run attempts, runner events, workspace
+  metadata, and workspace setup failures in SQLite for operator visibility and local recovery.
+- Tasq run records store `run_id`, numeric `issue_id`, `status`, `workspace`, `attempt`, `error`,
+  and `orchestrator_id`. They are a persisted audit and reconciliation surface for run attempts,
+  not the full live session state described by Symphony.
+- Tasq runner events store `event_type`, `message`, optional JSON payload, and occurrence time as an
+  append-only observability log.
+- Tasq workspace metadata records include cleanup bookkeeping fields managed by store methods. These
+  fields support worktree lifecycle cleanup and are not exposed as workflow input contract fields.
+
 ## Workspace Key
 
 Symphony derives workspace keys from `issue.identifier`, such as `MT-649`.
