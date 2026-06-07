@@ -15,6 +15,7 @@ import (
 
 	"github.com/version-1/tasq/internal/issue/domain/entity"
 	"github.com/version-1/tasq/internal/issue/store"
+	"gopkg.in/yaml.v3"
 )
 
 type Server struct {
@@ -164,7 +165,29 @@ func checkWorkflowTQUsage(content string) projectCheckResult {
 			return projectCheckResult{Passed: true, Reason: "WORKFLOW.md documents tq command usage"}
 		}
 	}
+	if !workflowDisablesTaskWorkPrompt(content) {
+		return projectCheckResult{Passed: true, Reason: "WORKFLOW.md uses the default tq task work prompt"}
+	}
 	return projectCheckResult{Passed: false, Reason: "WORKFLOW.md does not document tq command usage"}
+}
+
+func workflowDisablesTaskWorkPrompt(content string) bool {
+	if !strings.HasPrefix(content, "---\n") {
+		return false
+	}
+	frontMatter, _, ok := strings.Cut(strings.TrimPrefix(content, "---\n"), "\n---")
+	if !ok {
+		return false
+	}
+	var parsed struct {
+		Tasq struct {
+			TaskWorkPrompt *bool `yaml:"task_work_prompt"`
+		} `yaml:"tasq"`
+	}
+	if err := yaml.Unmarshal([]byte(frontMatter), &parsed); err != nil {
+		return false
+	}
+	return parsed.Tasq.TaskWorkPrompt != nil && !*parsed.Tasq.TaskWorkPrompt
 }
 
 func (s *Server) issues(w http.ResponseWriter, r *http.Request) {

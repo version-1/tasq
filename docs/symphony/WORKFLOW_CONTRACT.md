@@ -9,6 +9,8 @@ ignored for forward compatibility.
 ## Supported Fields
 
 ```yaml
+tasq:
+  task_work_prompt: true
 polling:
   interval_ms: 30000
 workspace:
@@ -37,6 +39,10 @@ hooks:
     echo "before workspace cleanup"
   timeout_ms: 60000
 ```
+
+`tasq.task_work_prompt` controls the default Tasq task-work instructions that the orchestrator
+prepends to the rendered agent prompt. It defaults to `true` when omitted. Set it to `false` only
+when the workflow template provides its own issue-tracker synchronization instructions.
 
 Relative `workspace.root` values resolve relative to the selected workflow file. Environment
 variable indirection and `~` expansion are supported for path fields.
@@ -68,6 +74,9 @@ Because front matter is YAML, multiline hook scripts can use literal block scala
 
 Everything after the closing `---` of the front matter is the prompt template. The orchestrator
 renders it once per agent attempt and sends the result as the initial message to the coding agent.
+When `tasq.task_work_prompt` is omitted or `true`, the orchestrator prepends the default `tq`
+issue-tracker synchronization instructions before template variable expansion, so variables such as
+`{{ issue.id }}` are rendered inside both the default instructions and the workflow template.
 
 ### Available Variables
 
@@ -88,16 +97,13 @@ interacting with the issue-tracker.
 
 #### Issue Status Updates
 
-The agent updates issue status through the `tq` CLI. The runtime environment must have `tq` on
-`PATH` and `TQ_API_URL` set to the issue-tracker endpoint.
+By default, Tasq injects instructions that tell the agent to use the `tq` CLI for progress comments
+and issue status updates. The runtime environment must have `tq` on `PATH` and `TQ_API_URL` set to
+the issue-tracker endpoint.
 
-Example instruction in a prompt template:
-
-```
-When work is complete, update the issue status:
-
-  tq issue update {{ issue.id }} -status review
-```
+Workflow authors normally do not need to repeat these `tq` instructions in the prompt template. If
+`tasq.task_work_prompt` is set to `false`, the workflow template is responsible for providing
+equivalent issue-tracker synchronization guidance.
 
 #### Deliverables
 

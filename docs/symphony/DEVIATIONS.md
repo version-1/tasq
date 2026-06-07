@@ -17,6 +17,66 @@ Instead, Tasq treats its local issue-tracker API as the tracker adapter boundary
 
 This keeps external tracker integrations out of the orchestrator and preserves the repository's existing service boundary.
 
+## Workflow Front Matter Contract
+
+Tasq's `WORKFLOW.md` front matter is intentionally a smaller, Tasq-specific contract layered on top
+of the Symphony front matter schema. The canonical Tasq workflow contract is documented in
+[WORKFLOW_CONTRACT.md](WORKFLOW_CONTRACT.md). The table below maps the Symphony `SPEC.md` fields to
+Tasq front matter behavior.
+
+| Top-level key | Child field | Symphony Support | Tasq Support | Tasq Extension | Tasq front matter / behavior |
+| --- | --- | --- | --- | --- | --- |
+| `tracker` | `kind` | ✓ | ✓ | × | Current orchestration reads from the local issue-tracker API instead of a Linear client. |
+|  | `endpoint` | ✓ | ✓ | × | Parsed for partial compatibility with the Symphony tracker shape. |
+|  | `api_key` | ✓ | ✓ | × | Supports `$VAR` resolution. |
+|  | `project_slug` | ✓ | ✓ | × | Required only when `tracker.kind` is set. |
+|  | `active_states` | ✓ | ✓ | × | Tasq dispatch eligibility is driven by local issue-tracker states. |
+|  | `terminal_states` | ✓ | ✓ | × | Tasq cleanup/reconciliation uses local issue-tracker states. |
+| `polling` | `interval_ms` | ✓ | ✓ | × | Orchestrator polling interval. |
+| `workspace` | `root` | ✓ | ✓ | × | Resolved relative to the selected `WORKFLOW.md`; must be inside the target Git repository for worktree management. |
+|  | `source` | × | × | × | Tasq creates Git worktrees under `workspace.root` instead. |
+| `hooks` | `after_create` | ✓ | ✓ | × | Runs through `bash -lc` in the issue workspace only for newly created workspaces. |
+|  | `before_run` | ✓ | ✓ | × | Runs before each agent attempt. |
+|  | `after_run` | ✓ | ✓ | × | Runs after each agent attempt; failures are logged and ignored. |
+|  | `before_remove` | ✓ | ✓ | × | Runs before workspace cleanup when the workspace directory exists; failures are logged and cleanup continues. |
+|  | `timeout_ms` | ✓ | ✓ | × | Applies to all workspace hooks and must be positive. |
+| `agent` | `max_concurrent_agents` | ✓ | ✓ | × | Global concurrent run limit. |
+|  | `max_turns` | ✓ | ✓ | × | Maximum Codex turns for one run; continuation turns still require `agent.continuation_turns_enabled`. |
+|  | `max_retry_backoff_ms` | ✓ | ✓ | × | Retry backoff cap. |
+|  | `max_concurrent_agents_by_state` | ✓ | ✓ | × | Normalized map; usefulness depends on the local issue-tracker state model. |
+|  | `continuation_turns_enabled` | × | ✓ | ✓ | Gates continuation turns even when `agent.max_turns` is greater than one. |
+|  | `max_retry_attempts` | × | ✓ | ✓ | Sets the number of run retry attempts. |
+| `codex` | `command` | ✓ | ✓ | × | Repository root `WORKFLOW.md` uses `codex --sandbox workspace-write app-server`. |
+|  | `approval_policy` | ✓ | ✓ | × | Repository root `WORKFLOW.md` does not set it. |
+|  | `thread_sandbox` | ✓ | ✓ | × | Repository root `WORKFLOW.md` does not set it. |
+|  | `turn_sandbox_policy` | ✓ | ✓ | × | Repository root `WORKFLOW.md` does not set it. |
+|  | `turn_timeout_ms` | ✓ | ✓ | × | Codex turn timeout. |
+|  | `read_timeout_ms` | ✓ | ✓ | × | Codex app-server read timeout. |
+|  | `stall_timeout_ms` | ✓ | ✓ | × | Tasq validates it as positive. |
+| `server` | `port` | ✓ | ✓ | × | Optional HTTP extension port; CLI `--port` can override it. |
+| `tasq` | `task_work_prompt` | × | ✓ | ✓ | Controls whether the orchestrator prepends default `tq` issue-tracker synchronization instructions to the rendered prompt. |
+
+Table notes:
+
+- `Symphony Support` means the field is defined by `SPEC.md` as a core field or documented extension field.
+- `Tasq Support` means Tasq parses or implements the field in its `WORKFLOW.md` front matter contract.
+- `Tasq Extension` means the field is Tasq-specific and is not part of the Symphony core schema.
+- `tracker.kind` is required for Symphony dispatch. Tasq parses it, but local dispatch does not use it.
+- Symphony allows `codex.stall_timeout_ms <= 0` to disable stall detection. Tasq validates this field as positive.
+
+Intentional differences from Symphony:
+
+- `WORKFLOW.md` is loaded once at orchestrator process startup. Dynamic watch/reload and runtime
+  re-application of changed settings are deferred.
+- Unknown front matter fields are ignored for forward compatibility.
+- `workspace.source` is not supported. Tasq creates issue workspaces with Git worktrees under
+  `workspace.root`.
+- Large transcript artifact paths and observability sinks are not configurable through workflow
+  front matter; Tasq records runner progress, workspace metadata, workspace setup failures, and
+  cleanup state in the orchestrator SQLite database.
+- The local `tq project check` command validates the front matter fields required by Tasq's default
+  project template rather than the full Symphony schema.
+
 ## Workspace Key
 
 Symphony derives workspace keys from `issue.identifier`, such as `MT-649`.

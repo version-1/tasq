@@ -119,7 +119,7 @@ func TestNoContentResponseStaysEmpty(t *testing.T) {
 	}
 }
 
-func TestProjectCheckReportsTQUsage(t *testing.T) {
+func TestProjectCheckPassesWithDefaultTaskWorkPrompt(t *testing.T) {
 	t.Parallel()
 
 	server := newTestServer(t)
@@ -131,7 +131,7 @@ func TestProjectCheckReportsTQUsage(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create project: %v", err)
 	}
-	body := bytes.NewBufferString("Use `tq issue update {{ issue.id }} --status review` when work is complete.")
+	body := bytes.NewBufferString("---\nagent:\n  max_turns: 3\n---\nWork on {{ issue.id }}.")
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/projects/"+stringID(project.ID)+"/check", body)
 	req.Header.Set("Content-Type", "text/plain")
 	rec := httptest.NewRecorder()
@@ -152,6 +152,42 @@ func TestProjectCheckReportsTQUsage(t *testing.T) {
 	}
 	if !payload.Data.Passed {
 		t.Fatalf("expected check to pass: %+v", payload.Data)
+	}
+}
+
+func TestProjectCheckFailsWhenTaskWorkPromptDisabledWithoutTQUsage(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer(t)
+	project, err := server.store.CreateProject(context.Background(), entity.CreateProjectInput{
+		Key:      "project-api",
+		Name:     "Project API",
+		Location: t.TempDir(),
+	})
+	if err != nil {
+		t.Fatalf("create project: %v", err)
+	}
+	body := bytes.NewBufferString("---\ntasq:\n  task_work_prompt: false\n---\nWork on {{ issue.id }}.")
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/projects/"+stringID(project.ID)+"/check", body)
+	req.Header.Set("Content-Type", "text/plain")
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d body=%s", rec.Code, rec.Body.String())
+	}
+	var payload struct {
+		Data struct {
+			Passed bool   `json:"passed"`
+			Reason string `json:"reason"`
+		} `json:"data"`
+	}
+	if err := json.NewDecoder(rec.Body).Decode(&payload); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if payload.Data.Passed {
+		t.Fatalf("expected check to fail: %+v", payload.Data)
 	}
 }
 

@@ -19,6 +19,7 @@ type Definition struct {
 }
 
 type Config struct {
+	Tasq                     TasqConfig
 	PollInterval             time.Duration
 	TrackerKind              string
 	TrackerEndpoint          string
@@ -46,6 +47,10 @@ type Config struct {
 	HookAfterRun             string
 	HookBeforeRemove         string
 	HookTimeout              time.Duration
+}
+
+type TasqConfig struct {
+	TaskWorkPrompt *bool
 }
 
 func Load(path string) (Definition, error) {
@@ -120,6 +125,9 @@ func splitFrontMatter(rest string) (string, string, bool) {
 }
 
 type frontMatterConfig struct {
+	Tasq struct {
+		TaskWorkPrompt configScalar `yaml:"task_work_prompt"`
+	} `yaml:"tasq"`
 	Tracker struct {
 		Kind           configScalar      `yaml:"kind"`
 		Endpoint       configScalar      `yaml:"endpoint"`
@@ -233,6 +241,13 @@ func applyFrontMatter(config *Config, raw []byte, workflowDir string) error {
 }
 
 func applyWorkflowYAML(config *Config, frontMatter frontMatterConfig) error {
+	if frontMatter.Tasq.TaskWorkPrompt.Set {
+		parsed, err := parseBool(frontMatter.Tasq.TaskWorkPrompt.Value)
+		if err != nil {
+			return fmt.Errorf("workflow_parse_error: tasq.task_work_prompt: %w", err)
+		}
+		config.Tasq.TaskWorkPrompt = &parsed
+	}
 	if frontMatter.Tracker.Kind.Set {
 		config.TrackerKind = frontMatter.Tracker.Kind.Value
 	}

@@ -422,19 +422,5 @@ codex:
   turn_timeout_ms: 3600000
   stall_timeout_ms: 300000
 ---
-
-Use tq commands to keep issue tracker state synchronized.
-
-When starting work:
-
-  tq issue update {{ issue.id }} --status in_progress
-
-When work is ready for review:
-
-  tq issue update {{ issue.id }} --status review
-
-Leave progress or handoff notes with:
-
-  tq comment add {{ issue.id }} --type progress --body "Progress note"
 `
 }

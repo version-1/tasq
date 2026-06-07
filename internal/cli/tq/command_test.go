@@ -653,7 +653,7 @@ func TestProjectAddCheckRemoveAgainstIssueTrackerAPI(t *testing.T) {
 	if !strings.Contains(stdout, "Project: demo-project") {
 		t.Fatalf("unexpected add stdout: %s", stdout)
 	}
-	assertFileContains(t, filepath.Join(projectRoot, "WORKFLOW.md"), "tq issue update")
+	assertFileContains(t, filepath.Join(projectRoot, "WORKFLOW.md"), "codex app-server")
 	assertFileContains(t, filepath.Join(projectRoot, ".gitignore"), ".worktrees")
 
 	stdout, stderr, code = runCLI(t, []string{"--api-url", server.URL, "project", "check", "demo-project"})

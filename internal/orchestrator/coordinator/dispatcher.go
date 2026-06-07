@@ -211,6 +211,7 @@ func (d *Dispatcher) taskForRun(storedRun run.Run, issue entity.Issue) runner.Ta
 		RunID:          storedRun.RunID,
 		Workspace:      workspace.Workspace{Path: storedRun.Workspace, WorkspaceKey: issueIdentifier(storedRun.IssueID)},
 		PromptTemplate: d.promptTemplate,
+		TaskWorkPrompt: d.workflowConfig.Tasq.TaskWorkPrompt,
 		MaxTurns:       d.workflowConfig.MaxTurns,
 		ContinueTurns:  d.workflowConfig.ContinuationTurns,
 		Command:        d.workflowConfig.CodexCommand,
