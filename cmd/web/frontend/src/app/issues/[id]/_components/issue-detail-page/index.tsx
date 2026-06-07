@@ -4,9 +4,12 @@ import { Link, useParams } from "react-router-dom";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { fetchComments, fetchIssue, updateIssueStatus } from "@/lib/api";
-import { issueStatuses } from "@/lib/types";
 import type { Comment, Issue, IssueStatus } from "@/lib/types";
-import { Markdown } from "../../../_components/markdown";
+import { CommentList } from "./comment-list";
+import { IssueDescription } from "./issue-description";
+import { IssueHeader } from "./issue-header";
+import { PanelMessage } from "./panel-message";
+import { StatusActions } from "./status-actions";
 import styles from "./index.module.css";
 
 const commentPageSize = 20;
@@ -134,167 +137,7 @@ export function IssueDetailPage() {
   );
 }
 
-function IssueHeader({ issue }: { issue: Issue }) {
-  const { t } = useTranslation();
-
-  return (
-    <header className={styles.header}>
-      <div className={styles.titleBlock}>
-        <p className={styles.issueID}>#{issue.id}</p>
-        <h2>{issue.title}</h2>
-      </div>
-      <div className={styles.badges}>
-        <span className={styles.statusBadge}>{t(`statuses.${issue.status}`)}</span>
-        <span className={priorityClassName(issue.priority)}>{t(`priorities.${issue.priority}`)}</span>
-      </div>
-      <dl className={styles.metaGrid}>
-        <MetaItem label={t("issues.detail.project")} value={issue.projectKey} />
-        <MetaItem label={t("issues.assignee")} value={issue.assignee || t("issues.unassigned")} />
-        <MetaItem label={t("issues.detailPage.createdAt")} value={formatDateTime(issue.createdAt)} />
-        <MetaItem label={t("issues.detailPage.updatedAt")} value={formatDateTime(issue.updatedAt)} />
-      </dl>
-    </header>
-  );
-}
-
-function StatusActions({
-  currentStatus,
-  disabled,
-  onStatusChange,
-}: {
-  currentStatus: IssueStatus;
-  disabled: boolean;
-  onStatusChange: (status: IssueStatus) => Promise<void>;
-}) {
-  const { t } = useTranslation();
-
-  return (
-    <section className={styles.section} aria-labelledby="issue-status-actions">
-      <div className={styles.sectionHeader}>
-        <h3 id="issue-status-actions">{t("issues.detailPage.statusActions")}</h3>
-      </div>
-      <div className={styles.actions}>
-        {issueStatuses.map((status) => (
-          <button
-            key={status}
-            type="button"
-            onClick={() => void onStatusChange(status)}
-            disabled={disabled || status === currentStatus}
-          >
-            {t(`statuses.${status}`)}
-          </button>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function IssueDescription({ issue }: { issue: Issue }) {
-  const { t } = useTranslation();
-
-  return (
-    <section className={styles.section} aria-labelledby="issue-description">
-      <div className={styles.sectionHeader}>
-        <h3 id="issue-description">{t("issues.detailPage.description")}</h3>
-      </div>
-      <Markdown
-        className={styles.markdown}
-        content={issue.description}
-        emptyText={t("issues.noDescription")}
-      />
-    </section>
-  );
-}
-
-function CommentList({
-  comments,
-  error,
-  hasMore,
-  isLoading,
-  onLoadMore,
-}: {
-  comments: Comment[];
-  error: string;
-  hasMore: boolean;
-  isLoading: boolean;
-  onLoadMore: () => void;
-}) {
-  const { t } = useTranslation();
-
-  return (
-    <section className={styles.section} aria-labelledby="issue-comments">
-      <div className={styles.sectionHeader}>
-        <h3 id="issue-comments">{t("issues.detailPage.comments")}</h3>
-        <span>{t("issues.detailPage.commentCount", { count: comments.length })}</span>
-      </div>
-      {comments.length === 0 && !isLoading ? (
-        <p className={styles.emptyText}>{t("issues.detailPage.noComments")}</p>
-      ) : null}
-      <div className={styles.commentList}>
-        {comments.map((comment) => (
-          <article key={comment.id} className={styles.comment}>
-            <div className={styles.commentHeader}>
-              <div>
-                <strong>{comment.author}</strong>
-                <span>{t(`comments.types.${comment.type}`)}</span>
-              </div>
-              <time dateTime={comment.createdAt}>{formatDateTime(comment.createdAt)}</time>
-            </div>
-            <Markdown
-              className={styles.markdown}
-              content={comment.body}
-              emptyText={t("issues.detailPage.emptyComment")}
-            />
-          </article>
-        ))}
-      </div>
-      {error ? <p className={styles.errorText}>{error}</p> : null}
-      {hasMore ? (
-        <button type="button" onClick={onLoadMore} disabled={isLoading}>
-          {isLoading ? t("issues.detailPage.loadingComments") : t("issues.detailPage.loadMore")}
-        </button>
-      ) : null}
-    </section>
-  );
-}
-
-function MetaItem({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <dt>{label}</dt>
-      <dd>{value}</dd>
-    </div>
-  );
-}
-
-function PanelMessage({ title, detail }: { title: string; detail?: string }) {
-  return (
-    <section className={styles.section}>
-      <h2>{title}</h2>
-      {detail ? <p className={styles.errorText}>{detail}</p> : null}
-    </section>
-  );
-}
-
 function parseIssueID(value: string | undefined): number | null {
   const id = value ? Number.parseInt(value, 10) : Number.NaN;
   return Number.isSafeInteger(id) && id > 0 ? id : null;
-}
-
-function formatDateTime(value: string): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(date);
-}
-
-function priorityClassName(priority: Issue["priority"]): string {
-  if (priority === "high" || priority === "urgent") {
-    return `${styles.priorityBadge} ${styles.warningPriority}`;
-  }
-  return styles.priorityBadge;
 }
