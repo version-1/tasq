@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import type { IssueStatus, IssueSummary } from "@/lib/types";
 import { issueStatuses } from "@/lib/types";
@@ -8,20 +9,20 @@ type IssueStatusChangeHandler = (id: number, status: IssueStatus) => Promise<voi
 
 export function IssueCard({
   issue,
-  onSelect,
   onStatusChange,
+  readonly = false,
 }: {
   issue: IssueSummary;
-  onSelect: () => void;
   onStatusChange: IssueStatusChangeHandler;
+  readonly?: boolean;
 }) {
   const { t } = useTranslation();
 
   return (
     <article className={styles.taskCard}>
-      <button type="button" className={styles.taskTitle} onClick={onSelect}>
+      <Link className={styles.taskTitle} to={`/issues/${issue.id}`}>
         #{issue.id} {issue.title}
-      </button>
+      </Link>
       <Markdown
         className={styles.cardMarkdown}
         content={issue.description}
@@ -34,6 +35,7 @@ export function IssueCard({
       </div>
       <select
         aria-label={t("issues.moveLabel", { title: issue.title })}
+        disabled={readonly}
         value={issue.status}
         onChange={(event) =>
           void onStatusChange(issue.id, event.target.value as IssueStatus)

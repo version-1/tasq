@@ -7,12 +7,10 @@ import styles from "./index.module.css";
 
 export function IssueBoard({
   summary,
-  onSelectIssue,
   onAddIssue,
   onStatusChange,
 }: {
   summary: Summary;
-  onSelectIssue: (issueID: number) => void;
   onAddIssue: (status?: IssueStatus) => void;
   onStatusChange: StatusChangeHandler;
 }) {
@@ -51,7 +49,6 @@ export function IssueBoard({
                   <IssueCard
                     key={issue.id}
                     issue={issue}
-                    onSelect={() => onSelectIssue(issue.id)}
                     onStatusChange={onStatusChange}
                   />
                 ))

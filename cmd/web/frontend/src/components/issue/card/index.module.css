@@ -9,14 +9,23 @@
 
 .taskCard p,
 .cardMarkdown {
+  --card-body-line-height: 1.45;
+  --card-body-text-size: 13px;
+
   color: var(--muted);
-  font-size: 13px;
-  line-height: 1.45;
+  font-size: var(--card-body-text-size);
+  height: 57px;
+  line-height: var(--card-body-line-height);
   margin-bottom: 12px;
+  overflow: hidden;
 }
 
 .cardMarkdown p {
+  display: -webkit-box;
   margin: 0 0 12px;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
 }
 
 .cardMarkdown img {
@@ -43,6 +52,7 @@
   margin-bottom: 8px;
   padding: 0;
   text-align: left;
+  text-decoration: none;
 }
 
 .metaRow {
