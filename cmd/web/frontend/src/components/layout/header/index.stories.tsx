@@ -19,13 +19,6 @@ type Story = StoryObj<typeof meta>;
 
 export const Issues: Story = {};
 
-export const Agents: Story = {
-  args: {
-    activePage: "agents",
-    issueCount: 8,
-  },
-};
-
 export const Loading: Story = {
   args: {
     issueCount: null,

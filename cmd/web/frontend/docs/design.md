@@ -6,7 +6,7 @@ This document defines local structure rules for the React/Vite frontend under `c
 
 Routes are declared manually in `src/App.tsx` with `react-router-dom`.
 
-Use path parameters for resource detail pages. For example, issue details use `/issues/:id` and the source files live under `src/app/issues/[id]/`.
+Use path parameters for scoped resource pages and detail pages. Issue lists use `/issues` for all projects and `/projects/:projectKey/issues` for a single project. Issue details use `/issues/:id` and the source files live under `src/app/issues/[id]/`.
 
 ## Component Placement
 

@@ -4,11 +4,12 @@ import type { Project } from "@/lib/types";
 import styles from "./index.module.css";
 
 type SidebarProps = {
+  activePage: "issues" | "dashboard" | "settings";
   activeProjectID: number | null;
   projects: Project[];
 };
 
-export function Sidebar({ activeProjectID, projects }: SidebarProps) {
+export function Sidebar({ activePage, activeProjectID, projects }: SidebarProps) {
   const { t } = useTranslation();
 
   return (
@@ -17,15 +18,25 @@ export function Sidebar({ activeProjectID, projects }: SidebarProps) {
         tasq
       </Link>
 
+      <nav className={styles.primaryNavigation} aria-label={t("sidebar.primaryNavigation")}>
+        <Link
+          className={activePage === "dashboard" ? `${styles.projectItem} ${styles.active}` : styles.projectItem}
+          to="/dashboard"
+        >
+          <span className={`${styles.projectDot} ${activePage === "dashboard" ? styles.active : styles.muted}`} aria-hidden="true" />
+          {t("header.dashboard")}
+        </Link>
+      </nav>
+
       <section className={styles.projects} aria-labelledby="sidebar-projects-heading">
         <div className={styles.sectionHeader}>
           <h2 id="sidebar-projects-heading">{t("sidebar.projects")}</h2>
           <button type="button" aria-label={t("sidebar.addProject")}>＋</button>
         </div>
         <div className={styles.projectList}>
-          <button
+          <Link
             className={activeProjectID === null ? `${styles.projectItem} ${styles.active}` : styles.projectItem}
-            type="button"
+            to="/issues"
           >
             <span
               className={`${styles.projectDot} ${activeProjectID === null ? styles.active : styles.hollow}`}
@@ -33,14 +44,14 @@ export function Sidebar({ activeProjectID, projects }: SidebarProps) {
             />
             {t("sidebar.allProjects")}
             {activeProjectID === null ? <span className={styles.projectMore} aria-hidden="true">···</span> : null}
-          </button>
+          </Link>
           {projects.map((project) => {
             const isActive = project.id === activeProjectID;
             return (
-              <button
+              <Link
                 key={project.id}
                 className={isActive ? `${styles.projectItem} ${styles.active}` : styles.projectItem}
-                type="button"
+                to={`/projects/${encodeURIComponent(project.key)}/issues`}
               >
                 <span
                   className={`${styles.projectDot} ${isActive ? styles.active : styles.muted}`}
@@ -48,7 +59,7 @@ export function Sidebar({ activeProjectID, projects }: SidebarProps) {
                 />
                 {project.name}
                 {isActive ? <span className={styles.projectMore} aria-hidden="true">···</span> : null}
-              </button>
+              </Link>
             );
           })}
         </div>

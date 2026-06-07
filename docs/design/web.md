@@ -7,9 +7,9 @@ The Web UI is a Vite + React + TypeScript single-page app served by `cmd/web`. T
 User-facing views are split by React Router routes:
 
 - `/issues`
-- `/issues/detail`
-- `/agents`
-- `/workspace`
+- `/projects/:projectKey/issues`
+- `/issues/:id`
+- `/dashboard`
 - `/settings`
 
 The root `/` route redirects to `/issues`.
@@ -48,7 +48,6 @@ Common components that are intentionally shared by multiple routes belong under 
 Page-specific components live under the owning route's `_components` directory:
 
 - Issue page components belong in `cmd/web/frontend/src/app/issues/_components`.
-- Agent page components belong in `cmd/web/frontend/src/app/agents/_components`.
 - Workspace page components belong in `cmd/web/frontend/src/app/workspace/_components`.
 - Settings page components belong in `cmd/web/frontend/src/app/settings/_components`.
 
@@ -86,6 +85,5 @@ Examples:
 
 - `cmd/web/frontend/src/components/layout/index.module.css`
 - `cmd/web/frontend/src/app/issues/_components/issues-view/index.module.css`
-- `cmd/web/frontend/src/app/agents/_components/agents-view/index.module.css`
 
 Do not add feature-specific class selectors to `cmd/web/frontend/src/app/globals.css`.

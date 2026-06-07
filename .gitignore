@@ -85,8 +85,6 @@ out
 .nuxt
 dist
 .output
-!cmd/web/frontend/dist/
-!cmd/web/frontend/dist/**
 
 # Gatsby files
 .cache/

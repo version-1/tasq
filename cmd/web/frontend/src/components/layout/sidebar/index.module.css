@@ -22,6 +22,11 @@
   gap: 4px;
 }
 
+.primaryNavigation {
+  display: grid;
+  gap: 4px;
+}
+
 .settingsLink,
 .projectItem {
   align-items: center;
@@ -63,14 +68,6 @@
   background: transparent;
   color: var(--dark-gray);
   padding: 4px;
-}
-
-.projectItem {
-  border: 0;
-  background: transparent;
-  justify-content: flex-start;
-  position: relative;
-  width: 100%;
 }
 
 .projectDot {
