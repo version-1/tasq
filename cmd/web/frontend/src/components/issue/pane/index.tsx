@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import type { IssueStatus, IssueSummary } from "@/lib/types";
 import { issueStatuses } from "@/lib/types";
-import { Markdown } from "@/app/issues/_components/markdown";
+import { Markdown } from "@/components/issue/markdown";
 import styles from "./index.module.css";
 
 type IssueStatusChangeHandler = (id: number, status: IssueStatus) => Promise<void>;

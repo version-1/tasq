@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import type { Issue } from "@/lib/types";
-import { Markdown } from "../../../../_components/markdown";
+import { Markdown } from "@/components/issue/markdown";
 import styles from "./index.module.css";
 
 export function IssueDescription({ issue }: { issue: Issue }) {
