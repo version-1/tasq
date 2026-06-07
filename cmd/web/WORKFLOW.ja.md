@@ -33,6 +33,17 @@ cd ../../..
 go run ./cmd/web
 ```
 
+Issue-tracker や orchestrator を起動しない frontend standalone development:
+
+```sh
+cd cmd/web/frontend
+npm run dev:mock
+```
+
+`dev:mock` は `VITE_MSW=true` を設定し、
+`cmd/web/frontend/public/mockServiceWorker.js` の browser MSW worker を起動します。
+Mock data は in-memory で、page reload 時に reset されます。
+
 ## API Generation
 
 Issue-tracker API client は `docs/openapi/issue-tracker.yml` から生成します。
