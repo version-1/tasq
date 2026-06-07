@@ -20,31 +20,23 @@ export function Sidebar({ activePage, activeProjectID, projects }: SidebarProps)
 
       <nav className={styles.primaryNavigation} aria-label={t("sidebar.primaryNavigation")}>
         <Link
-          className={activePage === "dashboard" ? `${styles.projectItem} ${styles.active}` : styles.projectItem}
+          className={activePage === "dashboard" ? `${styles.navItem} ${styles.active}` : styles.navItem}
           to="/dashboard"
         >
-          <span className={`${styles.projectDot} ${activePage === "dashboard" ? styles.active : styles.muted}`} aria-hidden="true" />
+          <span className={styles.navIcon} aria-hidden="true">▦</span>
           {t("header.dashboard")}
+        </Link>
+        <Link
+          className={activePage === "issues" && activeProjectID === null ? `${styles.navItem} ${styles.active}` : styles.navItem}
+          to="/issues"
+        >
+          <span className={styles.navIcon} aria-hidden="true">□</span>
+          {t("sidebar.projects")}
         </Link>
       </nav>
 
-      <section className={styles.projects} aria-labelledby="sidebar-projects-heading">
-        <div className={styles.sectionHeader}>
-          <h2 id="sidebar-projects-heading">{t("sidebar.projects")}</h2>
-          <button type="button" aria-label={t("sidebar.addProject")}>＋</button>
-        </div>
+      <section className={styles.projects} aria-label={t("sidebar.projects")}>
         <div className={styles.projectList}>
-          <Link
-            className={activeProjectID === null ? `${styles.projectItem} ${styles.active}` : styles.projectItem}
-            to="/issues"
-          >
-            <span
-              className={`${styles.projectDot} ${activeProjectID === null ? styles.active : styles.hollow}`}
-              aria-hidden="true"
-            />
-            {t("sidebar.allProjects")}
-            {activeProjectID === null ? <span className={styles.projectMore} aria-hidden="true">···</span> : null}
-          </Link>
           {projects.map((project) => {
             const isActive = project.id === activeProjectID;
             return (
@@ -53,10 +45,6 @@ export function Sidebar({ activePage, activeProjectID, projects }: SidebarProps)
                 className={isActive ? `${styles.projectItem} ${styles.active}` : styles.projectItem}
                 to={`/projects/${encodeURIComponent(project.key)}/issues`}
               >
-                <span
-                  className={`${styles.projectDot} ${isActive ? styles.active : styles.muted}`}
-                  aria-hidden="true"
-                />
                 {project.name}
                 {isActive ? <span className={styles.projectMore} aria-hidden="true">···</span> : null}
               </Link>
