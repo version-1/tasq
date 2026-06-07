@@ -17,43 +17,43 @@ Instead, Tasq treats its local issue-tracker API as the tracker adapter boundary
 
 This keeps external tracker integrations out of the orchestrator and preserves the repository's existing service boundary.
 
-## Schema Contract
+## Workflow Front Matter Contract
 
-Tasq's persisted schema is intentionally not a direct implementation of the Symphony normalized
-domain model. The canonical Tasq field contract is documented in
-[../design/schema.md](../design/schema.md).
+Tasq's `WORKFLOW.md` front matter is intentionally a smaller, Tasq-specific subset of the Symphony
+front matter schema. The canonical Tasq workflow contract is documented in
+[WORKFLOW_CONTRACT.md](WORKFLOW_CONTRACT.md).
 
-Issue-tracker differences:
+Supported Tasq fields:
 
-- Tasq issues use a local numeric `id` as the stable tracker ID and expose `issue-<ID>` as the
-  orchestrator-facing identifier convention.
-- Issues are owned by a local `project_id` and expose `project_key` from the referenced Project.
-  Symphony's `tracker.project_slug` is a query scope for an external tracker, not a persisted
-  Project entity.
-- Issue `description` is stored as a non-null Markdown string with `""` as the empty value, rather
-  than a nullable string.
-- Issue `status` is a Tasq enum (`backlog`, `ready`, `in_progress`, `review`, `done`, `blocked`,
-  `failed`) instead of arbitrary tracker state names such as Linear workflow states.
-- Issue `priority` is a Tasq enum (`low`, `normal`, `high`, `urgent`) instead of Symphony's
-  normalized integer-or-null priority.
-- Tasq does not persist Symphony issue fields such as `branch_name`, `url`, `labels`, or
-  `blocked_by` in the issue row. Blocking and PR metadata can be represented in issue text,
-  comments, workflow policy, or future first-class fields when needed.
-- Comments and image attachments are first-class issue-tracker records. They are Tasq API features,
-  not Symphony core-domain entities.
+- `tasq.task_work_prompt` is a Tasq extension that controls whether the orchestrator prepends the
+  default `tq` issue-tracker synchronization instructions to the rendered prompt.
+- `polling.interval_ms`, `workspace.root`, `agent.max_concurrent_agents`, `agent.max_turns`,
+  `agent.continuation_turns_enabled`, `agent.max_retry_attempts`,
+  `agent.max_retry_backoff_ms`, `codex.command`, `codex.read_timeout_ms`,
+  `codex.turn_timeout_ms`, `codex.stall_timeout_ms`, `server.port`, and workspace lifecycle
+  `hooks` are supported.
+- `hooks.after_create`, `hooks.before_run`, `hooks.after_run`, `hooks.before_remove`, and
+  `hooks.timeout_ms` are supported. Hook scripts run through `bash -lc` with the issue workspace as
+  the working directory.
+- `tracker.*` fields are still parsed for partial Symphony compatibility, but the current Tasq
+  orchestrator reads work from the local issue-tracker API instead of using the Linear tracker
+  client described by Symphony.
+- Codex pass-through fields (`codex.approval_policy`, `codex.thread_sandbox`, and
+  `codex.turn_sandbox_policy`) are parsed but are not part of the root `WORKFLOW.md` template used
+  by this repository today.
 
-Orchestrator persistence differences:
+Intentional differences from Symphony:
 
-- Symphony treats scheduling state as authoritative in memory and does not require a persistent
-  database for restart recovery. Tasq additionally persists run attempts, runner events, workspace
-  metadata, and workspace setup failures in SQLite for operator visibility and local recovery.
-- Tasq run records store `run_id`, numeric `issue_id`, `status`, `workspace`, `attempt`, `error`,
-  and `orchestrator_id`. They are a persisted audit and reconciliation surface for run attempts,
-  not the full live session state described by Symphony.
-- Tasq runner events store `event_type`, `message`, optional JSON payload, and occurrence time as an
-  append-only observability log.
-- Tasq workspace metadata records include cleanup bookkeeping fields managed by store methods. These
-  fields support worktree lifecycle cleanup and are not exposed as workflow input contract fields.
+- `WORKFLOW.md` is loaded once at orchestrator process startup. Dynamic watch/reload and runtime
+  re-application of changed settings are deferred.
+- Unknown front matter fields are ignored for forward compatibility.
+- `workspace.source` is not supported. Tasq creates issue workspaces with Git worktrees under
+  `workspace.root`.
+- Large transcript artifact paths and observability sinks are not configurable through workflow
+  front matter; Tasq records runner progress, workspace metadata, workspace setup failures, and
+  cleanup state in the orchestrator SQLite database.
+- The local `tq project check` command validates the front matter fields required by Tasq's default
+  project template rather than the full Symphony schema.
 
 ## Workspace Key
 
