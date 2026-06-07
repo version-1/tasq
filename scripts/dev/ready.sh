@@ -18,7 +18,8 @@ if [ "$mode" = "--check" ]; then
 fi
 
 attempt=1
-while [ "$attempt" -le 30 ]; do
+max_attempts="${DEV_READY_ATTEMPTS:-120}"
+while [ "$attempt" -le "$max_attempts" ]; do
 	if curl -fsS "$url" >/dev/null 2>&1; then
 		exit 0
 	fi
