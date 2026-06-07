@@ -10,12 +10,6 @@ export type SupportedLanguage = (typeof supportedLanguages)[number];
 const resources = {
   ja: {
     translation: {
-      agents: {
-        empty: "まだエージェント実行はありません",
-        issueLabel: "Issue #{{id}}",
-        title: "エージェント実行",
-        workspacePending: "workspace 未確定",
-      },
       addIssue: {
         cancel: "キャンセル",
         close: "閉じる",
@@ -52,8 +46,6 @@ const resources = {
       },
       header: {
         addTask: "タスクを追加",
-        agentRuns: "エージェント実行",
-        agents: "エージェント",
         board: "ボード",
         breadcrumb: "パンくずリスト",
         commandKey: "⌘ K",
@@ -198,12 +190,6 @@ const resources = {
   },
   en: {
     translation: {
-      agents: {
-        empty: "No orchestrator runs yet",
-        issueLabel: "Issue #{{id}}",
-        title: "Agent Runs",
-        workspacePending: "workspace pending",
-      },
       addIssue: {
         cancel: "Cancel",
         close: "Close",
@@ -240,8 +226,6 @@ const resources = {
       },
       header: {
         addTask: "Add task",
-        agentRuns: "Agent Runs",
-        agents: "Agents",
         board: "Board",
         breadcrumb: "Breadcrumb",
         commandKey: "⌘ K",

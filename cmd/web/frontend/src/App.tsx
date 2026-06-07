@@ -1,5 +1,4 @@
 import { Navigate, Route, Routes } from "react-router-dom";
-import AgentsPage from "./app/agents/page";
 import DashboardPage from "./app/dashboard/page";
 import IssueDetailRoute from "./app/issues/[id]/page";
 import IssuesPage from "./app/issues/page";
@@ -24,10 +23,6 @@ export function App() {
         <Route
           path="/issues/:id"
           element={<ProjectLayout><IssueDetailRoute /></ProjectLayout>}
-        />
-        <Route
-          path="/agents"
-          element={<ProjectLayout><AgentsPage /></ProjectLayout>}
         />
         <Route
           path="/dashboard"

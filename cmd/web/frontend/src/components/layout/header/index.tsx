@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Breadcrumb } from "./breadcrumb";
 import styles from "./index.module.css";
 
-type HeaderPage = "issues" | "agents" | "dashboard" | "settings";
+type HeaderPage = "issues" | "dashboard" | "settings";
 
 type HeaderProps = {
   activePage: HeaderPage;
@@ -16,7 +16,6 @@ type HeaderProps = {
 
 const pages = [
   { key: "issues", href: "/issues", titleKey: "header.board" },
-  { key: "agents", href: "/agents", titleKey: "header.agents" },
   { key: "settings", href: "/settings", titleKey: "header.settings" },
 ] as const;
 
@@ -111,8 +110,6 @@ export function Header({
 
 function pageHeadingKey(page: Exclude<HeaderPage, "issues">): string {
   switch (page) {
-    case "agents":
-      return "header.agentRuns";
     case "dashboard":
       return "header.dashboard";
     case "settings":

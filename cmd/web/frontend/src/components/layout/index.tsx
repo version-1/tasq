@@ -19,7 +19,7 @@ import { PanelMessage } from "./panel-message";
 import { Sidebar } from "./sidebar";
 import styles from "./index.module.css";
 
-export type TasqPage = "issues" | "agents" | "dashboard" | "settings";
+export type TasqPage = "issues" | "dashboard" | "settings";
 type IssueScope = { kind: "all" } | { kind: "project"; projectKey: string };
 
 export type LoadState =
@@ -301,7 +301,7 @@ function emptySummary(summary: Summary): Summary {
 
 function activePageFromPathname(pathname: string): TasqPage {
   const segment = pathname.split("/").filter(Boolean)[0];
-  if (segment === "agents" || segment === "dashboard" || segment === "settings") {
+  if (segment === "dashboard" || segment === "settings") {
     return segment;
   }
   return "issues";

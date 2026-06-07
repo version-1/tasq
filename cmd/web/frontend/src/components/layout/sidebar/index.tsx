@@ -4,7 +4,7 @@ import type { Project } from "@/lib/types";
 import styles from "./index.module.css";
 
 type SidebarProps = {
-  activePage: "issues" | "agents" | "dashboard" | "settings";
+  activePage: "issues" | "dashboard" | "settings";
   activeProjectID: number | null;
   projects: Project[];
 };
