@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { Breadcrumb } from "./breadcrumb";
 import styles from "./index.module.css";
 
 type HeaderPage = "issues" | "agents" | "dashboard" | "settings";
@@ -32,14 +33,7 @@ export function Header({
   return (
     <header className={styles.header}>
       <div className={styles.utilityRow}>
-        <div className={styles.breadcrumb} aria-label={t("header.breadcrumb")}>
-          <span>{t("header.project")}</span>
-          <span aria-hidden="true">/</span>
-          <button className={styles.projectSwitch} type="button">
-            {displayedProjectName}
-            <span aria-hidden="true">⌄</span>
-          </button>
-        </div>
+        <Breadcrumb projectName={displayedProjectName} />
 
         <div className={styles.globalActions}>
           <label className={styles.search}>

@@ -1,0 +1,18 @@
+.breadcrumb {
+  align-items: center;
+  color: var(--medium-gray);
+  display: flex;
+  font-size: 14px;
+  gap: 12px;
+}
+
+.projectSwitch {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  color: var(--primary-black);
+  display: inline-flex;
+  gap: 8px;
+  padding: 6px 8px;
+}
