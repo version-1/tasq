@@ -16,7 +16,6 @@ import "@/lib/i18n";
 import { i18n, type SupportedLanguage } from "@/lib/i18n";
 import { type ModalController, useModalState } from "@/lib/modal";
 import type { CreateIssueInput, IssueStatus, IssueSummary, Project, Summary } from "@/lib/types";
-import { AddIssueDialog } from "./add-issue-dialog";
 import { Header } from "./header";
 import { PanelMessage } from "./panel-message";
 import { Sidebar } from "./sidebar";
@@ -269,7 +268,7 @@ export function ShellLayout({
           showViewNavigation={showViewNavigation}
         />
 
-        <ModalSlot>{renderModal(shellData)}</ModalSlot>
+        <ModalSlot shellData={shellData} />
 
         {shellData.notice ? <p className={styles.notice}>{shellData.notice}</p> : null}
 
@@ -285,22 +284,6 @@ export function ShellLayout({
       </main>
     </div>
   );
-}
-
-function renderModal(shellData: LayoutShellData): ReactNode {
-  if (shellData.modal.activeModalID === modalIDs.addIssue) {
-    return (
-      <AddIssueDialog
-        error={shellData.addIssueError}
-        initialStatus={shellData.addIssueInitialStatus}
-        project={shellData.activeProject}
-        onCancel={shellData.onCloseModal}
-        onSubmit={shellData.onCreateIssue}
-      />
-    );
-  }
-
-  return null;
 }
 
 function firstIssueID(summary: Summary): number | null {
