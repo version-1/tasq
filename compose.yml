@@ -13,6 +13,11 @@ services:
         chown codex:codex /home/codex/.config/gh
         find /home/codex/.codex -mindepth 1 -maxdepth 1 ! -name rules -exec chown -R codex:codex {} +
         chown -R codex:codex /home/codex/.config /home/codex/.cache /go/pkg /workspace/cmd/web/frontend/node_modules
+        if [ -f /workspace/.git ] && [ -n "$$DEV_WORKTREE_DIR" ] && [ -n "$$DEV_GIT_COMMON_DIR" ]; then
+          mkdir -p "$$(dirname "$$DEV_WORKTREE_DIR")" "$$(dirname "$$DEV_GIT_COMMON_DIR")"
+          ln -sfn /workspace "$$DEV_WORKTREE_DIR"
+          ln -sfn /workspace/.host-git-common "$$DEV_GIT_COMMON_DIR"
+        fi
         su codex -c 'git config --global user.name codex'
         su codex -c 'git config --global user.email codex@example.local'
         go build -o /usr/local/bin/tq ./cmd/tq
@@ -24,12 +29,15 @@ services:
     environment:
       TQ_HOME: /workspace/.tasq
       CODEX_HOME: /home/codex/.codex
+      DEV_WORKTREE_DIR: ${DEV_WORKTREE_DIR:-}
+      DEV_GIT_COMMON_DIR: ${DEV_GIT_COMMON_DIR:-}
     ports:
       - "127.0.0.1:${ISSUE_TRACKER_PORT:-}:8080"
       - "127.0.0.1:${ORCHESTRATOR_PORT:-}:8081"
       - "127.0.0.1:${WEB_PORT:-}:3000"
     volumes:
       - .:/workspace
+      - ${DEV_GIT_COMMON_DIR:-.git}:/workspace/.host-git-common
       - go-mod-cache:/go/pkg/mod
       - go-build-cache:/home/codex/.cache/go-build
       - web-node-modules:/workspace/cmd/web/frontend/node_modules
