@@ -7,6 +7,7 @@
     "dev": "vite --host 0.0.0.0",
     "build": "tsc -b && vite build",
     "generate:api": "orval --config orval.config.ts",
+    "storybook": "storybook dev -p 6006 --host 0.0.0.0",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -19,13 +20,15 @@
     "rehype-sanitize": "^6.0.0"
   },
   "devDependencies": {
-    "@vitejs/plugin-react": "^5.1.1",
-    "vite": "^7.2.4",
+    "@storybook/react-vite": "^10.4.2",
     "@types/node": "22.12.0",
     "@types/react": "19.2.15",
     "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "^5.1.1",
     "orval": "^7.13.2",
-    "typescript": "5.6.3"
+    "storybook": "^10.4.2",
+    "typescript": "5.6.3",
+    "vite": "^7.2.4"
   },
   "overrides": {
     "postcss": "8.5.15"
