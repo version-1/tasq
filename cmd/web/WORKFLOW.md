@@ -33,6 +33,17 @@ cd ../../..
 go run ./cmd/web
 ```
 
+Frontend standalone development without issue-tracker or orchestrator:
+
+```sh
+cd cmd/web/frontend
+npm run dev:mock
+```
+
+`dev:mock` sets `VITE_MSW=true` and starts the browser MSW worker from
+`cmd/web/frontend/public/mockServiceWorker.js`. Mock data is in-memory and resets
+when the page reloads.
+
 ## API Generation
 
 The issue-tracker API client is generated from `docs/openapi/issue-tracker.yml`.

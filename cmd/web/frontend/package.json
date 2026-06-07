@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
+    "dev:mock": "VITE_MSW=true vite --host 0.0.0.0",
     "build": "tsc -b && vite build",
     "generate:api": "orval --config orval.config.ts",
     "storybook": "storybook dev -p 6006 --host 0.0.0.0",
@@ -25,6 +26,7 @@
     "@types/react": "19.2.15",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "^5.1.1",
+    "msw": "^2.14.6",
     "orval": "^7.13.2",
     "storybook": "^10.4.2",
     "typescript": "5.6.3",
@@ -32,5 +34,10 @@
   },
   "overrides": {
     "postcss": "8.5.15"
+  },
+  "msw": {
+    "workerDirectory": [
+      "public"
+    ]
   }
 }
