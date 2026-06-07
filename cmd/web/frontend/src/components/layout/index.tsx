@@ -10,12 +10,13 @@ import {
   type ReactNode,
 } from "react";
 import { modalIDs } from "@/constants";
-import { ModalSlot } from "@/components/modal";
+import { ModalOutlet } from "@/components/modal";
 import { createIssue, fetchProjects, fetchSummary, updateIssueStatus } from "@/lib/api";
 import "@/lib/i18n";
 import { i18n, type SupportedLanguage } from "@/lib/i18n";
-import { type ModalController, useModalState } from "@/lib/modal";
+import { ModalProvider, useModal } from "@/lib/modal";
 import type { CreateIssueInput, IssueStatus, IssueSummary, Project, Summary } from "@/lib/types";
+import { AddIssueDialog } from "./add-issue-dialog";
 import { Header } from "./header";
 import { PanelMessage } from "./panel-message";
 import { Sidebar } from "./sidebar";
@@ -51,7 +52,6 @@ export type LayoutShellData = {
   issues: IssueSummary[];
   layoutData: LayoutData | null;
   loadState: LoadState;
-  modal: ModalController;
   notice: string;
   projects: Project[];
   summary: Summary | null;
@@ -67,6 +67,14 @@ const layoutShellContext = createContext<LayoutShellData | null>(null);
 const defaultRefreshIntervalMs = 3000;
 
 export function Layout({ children }: { children: ReactNode }) {
+  return (
+    <ModalProvider>
+      <LayoutContent>{children}</LayoutContent>
+    </ModalProvider>
+  );
+}
+
+function LayoutContent({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
   const { pathname } = useLocation();
   const activePage = activePageFromPathname(pathname);
@@ -79,7 +87,7 @@ export function Layout({ children }: { children: ReactNode }) {
   const [addIssueError, setAddIssueError] = useState("");
   const [refreshIntervalMs, setRefreshIntervalMs] = useState(defaultRefreshIntervalMs);
   const [language, setLanguage] = useState<SupportedLanguage>(i18n.language === "en" ? "en" : "ja");
-  const modal = useModalState();
+  const modal = useModal();
 
   useEffect(() => {
     const stored = window.localStorage.getItem("tasq.refreshIntervalMs");
@@ -208,7 +216,6 @@ export function Layout({ children }: { children: ReactNode }) {
     issues,
     layoutData,
     loadState,
-    modal,
     notice,
     projects,
     summary,
@@ -268,7 +275,9 @@ export function ShellLayout({
           showViewNavigation={showViewNavigation}
         />
 
-        <ModalSlot shellData={shellData} />
+        <ModalOutlet>
+          <LayoutModalContent shellData={shellData} />
+        </ModalOutlet>
 
         {shellData.notice ? <p className={styles.notice}>{shellData.notice}</p> : null}
 
@@ -284,6 +293,24 @@ export function ShellLayout({
       </main>
     </div>
   );
+}
+
+function LayoutModalContent({ shellData }: { shellData: LayoutShellData }) {
+  const modal = useModal();
+
+  if (modal.activeModalID === modalIDs.addIssue) {
+    return (
+      <AddIssueDialog
+        error={shellData.addIssueError}
+        initialStatus={shellData.addIssueInitialStatus}
+        project={shellData.activeProject}
+        onCancel={shellData.onCloseModal}
+        onSubmit={shellData.onCreateIssue}
+      />
+    );
+  }
+
+  return null;
 }
 
 function firstIssueID(summary: Summary): number | null {
