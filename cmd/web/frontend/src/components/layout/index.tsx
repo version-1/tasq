@@ -20,6 +20,7 @@ import { Sidebar } from "./sidebar";
 import styles from "./index.module.css";
 
 export type TasqPage = "issues" | "agents" | "dashboard" | "settings";
+type IssueScope = { kind: "all" } | { kind: "project"; projectKey: string };
 
 type LoadState =
   | { kind: "loading" }
@@ -47,6 +48,7 @@ export function Layout({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
   const { pathname } = useLocation();
   const activePage = activePageFromPathname(pathname);
+  const issueScope = issueScopeFromPathname(pathname);
   const isIssueDetailPage = /^\/issues\/\d+$/.test(pathname);
   const [loadState, setLoadState] = useState<LoadState>({ kind: "loading" });
   const [selectedIssueID, setSelectedIssueID] = useState<number | null>(null);
@@ -88,9 +90,23 @@ export function Layout({ children }: { children: ReactNode }) {
     return () => window.clearInterval(id);
   }, [load, refreshIntervalMs]);
 
-  const summary = loadState.kind === "ready" ? loadState.summary : null;
+  const loadedSummary = loadState.kind === "ready" ? loadState.summary : null;
   const projects = loadState.kind === "ready" ? loadState.projects : [];
-  const activeProject = projects[0] ?? null;
+  const isProjectIssueScope = issueScope.kind === "project";
+  const scopedProject =
+    isProjectIssueScope
+      ? projects.find((project) => project.key === issueScope.projectKey) ?? null
+      : null;
+  const activeProject = isProjectIssueScope
+    ? scopedProject
+    : activePage === "issues"
+      ? null
+      : projects[0] ?? null;
+  const summary = useMemo(() => {
+    if (!loadedSummary) return null;
+    if (!isProjectIssueScope) return loadedSummary;
+    return scopedProject ? filterSummaryByProject(loadedSummary, scopedProject.id) : emptySummary(loadedSummary);
+  }, [isProjectIssueScope, loadedSummary, scopedProject]);
   const issues = useMemo(() => {
     if (!summary) return [];
     return summary.columns.flatMap((column) => column.issues);
@@ -157,7 +173,7 @@ export function Layout({ children }: { children: ReactNode }) {
       <main className={styles.shell}>
         <Header
           activePage={activePage}
-          projectName={activeProject?.name ?? null}
+          projectName={issueScopeTitle(issueScope, activeProject?.name ?? null, t("sidebar.allProjects"))}
           issueCount={summary ? issues.length : null}
           onAddTask={() => setAddIssueState({ kind: "open", initialStatus: "backlog" })}
           showViewNavigation={!isIssueDetailPage}
@@ -198,10 +214,45 @@ function firstIssueID(summary: Summary): number | null {
   return summary.columns.flatMap((column) => column.issues)[0]?.id ?? null;
 }
 
+function filterSummaryByProject(summary: Summary, projectID: number): Summary {
+  return {
+    ...summary,
+    columns: summary.columns.map((column) => ({
+      ...column,
+      issues: column.issues.filter((issue) => issue.projectId === projectID),
+    })),
+  };
+}
+
+function emptySummary(summary: Summary): Summary {
+  return {
+    ...summary,
+    columns: summary.columns.map((column) => ({
+      ...column,
+      issues: [],
+    })),
+  };
+}
+
 function activePageFromPathname(pathname: string): TasqPage {
   const segment = pathname.split("/").filter(Boolean)[0];
   if (segment === "agents" || segment === "dashboard" || segment === "settings") {
     return segment;
   }
   return "issues";
+}
+
+function issueScopeFromPathname(pathname: string): IssueScope {
+  const match = /^\/projects\/([^/]+)\/issues\/?$/.exec(pathname);
+  if (!match) {
+    return { kind: "all" };
+  }
+  return { kind: "project", projectKey: decodeURIComponent(match[1]) };
+}
+
+function issueScopeTitle(issueScope: IssueScope, activeProjectName: string | null, allProjectsTitle: string): string | null {
+  if (issueScope.kind === "project") {
+    return activeProjectName ?? issueScope.projectKey;
+  }
+  return activeProjectName ?? allProjectsTitle;
 }

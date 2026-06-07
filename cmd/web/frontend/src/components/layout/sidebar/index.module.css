@@ -65,14 +65,6 @@
   padding: 4px;
 }
 
-.projectItem {
-  border: 0;
-  background: transparent;
-  justify-content: flex-start;
-  position: relative;
-  width: 100%;
-}
-
 .projectDot {
   background: var(--medium-gray);
   border-radius: 999px;

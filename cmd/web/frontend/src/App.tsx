@@ -12,6 +12,7 @@ export function App() {
       <Routes>
         <Route path="/" element={<Navigate to="/issues" replace />} />
         <Route path="/issues" element={<IssuesPage />} />
+        <Route path="/projects/:projectKey/issues" element={<IssuesPage />} />
         <Route path="/issues/:id" element={<IssueDetailRoute />} />
         <Route path="/agents" element={<AgentsPage />} />
         <Route path="/dashboard" element={<DashboardPage />} />

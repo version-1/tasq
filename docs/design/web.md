@@ -7,9 +7,10 @@ The Web UI is a Vite + React + TypeScript single-page app served by `cmd/web`. T
 User-facing views are split by React Router routes:
 
 - `/issues`
-- `/issues/detail`
+- `/projects/:projectKey/issues`
+- `/issues/:id`
 - `/agents`
-- `/workspace`
+- `/dashboard`
 - `/settings`
 
 The root `/` route redirects to `/issues`.
