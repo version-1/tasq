@@ -6,10 +6,6 @@ import styles from "./index.module.css";
 
 const defaultAddIssuePriority: Priority = "normal";
 
-export type AddIssueDialogState =
-  | { kind: "closed" }
-  | { kind: "open"; initialStatus: IssueStatus; error?: string };
-
 type AddIssueFormValues = {
   title: string;
   description: string;
@@ -19,33 +15,28 @@ type AddIssueFormValues = {
 };
 
 export function AddIssueDialog({
+  error,
+  initialStatus,
   project,
-  state,
   onCancel,
   onSubmit,
 }: {
+  error: string;
+  initialStatus: IssueStatus;
   project: Project | null;
-  state: AddIssueDialogState;
   onCancel: () => void;
   onSubmit: (input: CreateIssueInput) => Promise<void>;
 }) {
   const { t } = useTranslation();
-  const initialStatus = state.kind === "open" ? state.initialStatus : "backlog";
   const [values, setValues] = useState<AddIssueFormValues>(() => initialAddIssueValues(initialStatus));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationError, setValidationError] = useState("");
 
   useEffect(() => {
-    if (state.kind === "open") {
-      setValues(initialAddIssueValues(state.initialStatus));
-      setValidationError("");
-      setIsSubmitting(false);
-    }
-  }, [state.kind, initialStatus]);
-
-  if (state.kind === "closed") {
-    return null;
-  }
+    setValues(initialAddIssueValues(initialStatus));
+    setValidationError("");
+    setIsSubmitting(false);
+  }, [initialStatus]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -65,7 +56,7 @@ export function AddIssueDialog({
     setIsSubmitting(false);
   }
 
-  const errorMessage = validationError || state.error || "";
+  const errorMessage = validationError || error;
 
   return (
     <div className={styles.dialogBackdrop} role="presentation">

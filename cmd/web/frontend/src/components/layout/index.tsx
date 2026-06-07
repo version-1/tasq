@@ -9,11 +9,14 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { modalIDs } from "@/constants";
+import { ModalOutlet } from "@/components/modal";
 import { createIssue, fetchProjects, fetchSummary, updateIssueStatus } from "@/lib/api";
 import "@/lib/i18n";
 import { i18n, type SupportedLanguage } from "@/lib/i18n";
+import { ModalProvider, useModal } from "@/lib/modal";
 import type { CreateIssueInput, IssueStatus, IssueSummary, Project, Summary } from "@/lib/types";
-import { AddIssueDialog, type AddIssueDialogState } from "./add-issue-dialog";
+import { AddIssueDialog } from "./add-issue-dialog";
 import { Header } from "./header";
 import { PanelMessage } from "./panel-message";
 import { Sidebar } from "./sidebar";
@@ -43,7 +46,8 @@ export type LayoutData = {
 export type LayoutShellData = {
   activePage: TasqPage;
   activeProject: Project | null;
-  addIssueState: AddIssueDialogState;
+  addIssueError: string;
+  addIssueInitialStatus: IssueStatus;
   isIssueDetailPage: boolean;
   issues: IssueSummary[];
   layoutData: LayoutData | null;
@@ -53,7 +57,7 @@ export type LayoutShellData = {
   summary: Summary | null;
   title: string | null;
   onAddIssue: (status?: IssueStatus) => void;
-  onCancelAddIssue: () => void;
+  onCloseModal: () => void;
   onCreateIssue: (input: CreateIssueInput) => Promise<void>;
 };
 
@@ -63,6 +67,14 @@ const layoutShellContext = createContext<LayoutShellData | null>(null);
 const defaultRefreshIntervalMs = 3000;
 
 export function Layout({ children }: { children: ReactNode }) {
+  return (
+    <ModalProvider>
+      <LayoutContent>{children}</LayoutContent>
+    </ModalProvider>
+  );
+}
+
+function LayoutContent({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
   const { pathname } = useLocation();
   const activePage = activePageFromPathname(pathname);
@@ -71,9 +83,11 @@ export function Layout({ children }: { children: ReactNode }) {
   const [loadState, setLoadState] = useState<LoadState>({ kind: "loading" });
   const [selectedIssueID, setSelectedIssueID] = useState<number | null>(null);
   const [notice, setNotice] = useState("");
-  const [addIssueState, setAddIssueState] = useState<AddIssueDialogState>({ kind: "closed" });
+  const [addIssueInitialStatus, setAddIssueInitialStatus] = useState<IssueStatus>("backlog");
+  const [addIssueError, setAddIssueError] = useState("");
   const [refreshIntervalMs, setRefreshIntervalMs] = useState(defaultRefreshIntervalMs);
   const [language, setLanguage] = useState<SupportedLanguage>(i18n.language === "en" ? "en" : "ja");
+  const modal = useModal();
 
   useEffect(() => {
     const stored = window.localStorage.getItem("tasq.refreshIntervalMs");
@@ -148,14 +162,22 @@ export function Layout({ children }: { children: ReactNode }) {
       const created = await createIssue(input);
       await load();
       setSelectedIssueID(created.id);
-      setAddIssueState({ kind: "closed" });
+      setAddIssueError("");
+      modal.closeModal();
     } catch (error) {
-      setAddIssueState((current) => ({
-        kind: "open",
-        initialStatus: current.kind === "open" ? current.initialStatus : "backlog",
-        error: error instanceof Error ? error.message : t("layout.failedToCreateIssue"),
-      }));
+      setAddIssueError(error instanceof Error ? error.message : t("layout.failedToCreateIssue"));
     }
+  }
+
+  function handleAddIssue(status?: IssueStatus) {
+    setAddIssueInitialStatus(status ?? "backlog");
+    setAddIssueError("");
+    modal.openModal(modalIDs.addIssue);
+  }
+
+  function handleCloseModal() {
+    setAddIssueError("");
+    modal.closeModal();
   }
 
   function handleRefreshIntervalChange(nextIntervalMs: number) {
@@ -180,7 +202,7 @@ export function Layout({ children }: { children: ReactNode }) {
         onRefreshIntervalChange: handleRefreshIntervalChange,
         onLanguageChange: handleLanguageChange,
         onSelectIssue: setSelectedIssueID,
-        onAddIssue: (status) => setAddIssueState({ kind: "open", initialStatus: status ?? "backlog" }),
+        onAddIssue: handleAddIssue,
         onStatusChange: handleStatusChange,
       }
     : null;
@@ -188,7 +210,8 @@ export function Layout({ children }: { children: ReactNode }) {
   const shellData: LayoutShellData = {
     activePage,
     activeProject,
-    addIssueState,
+    addIssueError,
+    addIssueInitialStatus,
     isIssueDetailPage,
     issues,
     layoutData,
@@ -197,8 +220,8 @@ export function Layout({ children }: { children: ReactNode }) {
     projects,
     summary,
     title: issueScopeTitle(issueScope, activeProject?.name ?? null, t("sidebar.allProjects")),
-    onAddIssue: (status) => setAddIssueState({ kind: "open", initialStatus: status ?? "backlog" }),
-    onCancelAddIssue: () => setAddIssueState({ kind: "closed" }),
+    onAddIssue: handleAddIssue,
+    onCloseModal: handleCloseModal,
     onCreateIssue: handleCreateIssue,
   };
 
@@ -252,12 +275,9 @@ export function ShellLayout({
           showViewNavigation={showViewNavigation}
         />
 
-        <AddIssueDialog
-          project={shellData.activeProject}
-          state={shellData.addIssueState}
-          onCancel={shellData.onCancelAddIssue}
-          onSubmit={shellData.onCreateIssue}
-        />
+        <ModalOutlet>
+          <LayoutModalContent shellData={shellData} />
+        </ModalOutlet>
 
         {shellData.notice ? <p className={styles.notice}>{shellData.notice}</p> : null}
 
@@ -273,6 +293,24 @@ export function ShellLayout({
       </main>
     </div>
   );
+}
+
+function LayoutModalContent({ shellData }: { shellData: LayoutShellData }) {
+  const modal = useModal();
+
+  if (modal.activeModalID === modalIDs.addIssue) {
+    return (
+      <AddIssueDialog
+        error={shellData.addIssueError}
+        initialStatus={shellData.addIssueInitialStatus}
+        project={shellData.activeProject}
+        onCancel={shellData.onCloseModal}
+        onSubmit={shellData.onCreateIssue}
+      />
+    );
+  }
+
+  return null;
 }
 
 function firstIssueID(summary: Summary): number | null {
