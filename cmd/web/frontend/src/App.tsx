@@ -4,19 +4,37 @@ import DashboardPage from "./app/dashboard/page";
 import IssueDetailRoute from "./app/issues/[id]/page";
 import IssuesPage from "./app/issues/page";
 import SettingsPage from "./app/settings/page";
-import { Layout } from "./components/layout";
+import { DashboardLayout, Layout, ProjectsLayout } from "./components/layout";
 
 export function App() {
   return (
     <Layout>
       <Routes>
         <Route path="/" element={<Navigate to="/issues" replace />} />
-        <Route path="/issues" element={<IssuesPage />} />
-        <Route path="/projects/:projectKey/issues" element={<IssuesPage />} />
-        <Route path="/issues/:id" element={<IssueDetailRoute />} />
-        <Route path="/agents" element={<AgentsPage />} />
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
+        <Route
+          path="/issues"
+          element={<ProjectsLayout><IssuesPage /></ProjectsLayout>}
+        />
+        <Route
+          path="/projects/:projectKey/issues"
+          element={<ProjectsLayout><IssuesPage /></ProjectsLayout>}
+        />
+        <Route
+          path="/issues/:id"
+          element={<ProjectsLayout><IssueDetailRoute /></ProjectsLayout>}
+        />
+        <Route
+          path="/agents"
+          element={<ProjectsLayout><AgentsPage /></ProjectsLayout>}
+        />
+        <Route
+          path="/dashboard"
+          element={<DashboardLayout><DashboardPage /></DashboardLayout>}
+        />
+        <Route
+          path="/settings"
+          element={<ProjectsLayout><SettingsPage /></ProjectsLayout>}
+        />
         <Route path="*" element={<Navigate to="/issues" replace />} />
       </Routes>
     </Layout>

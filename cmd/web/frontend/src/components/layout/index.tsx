@@ -40,7 +40,25 @@ type LayoutData = {
   onStatusChange: (id: number, status: IssueStatus) => Promise<void>;
 };
 
+type LayoutShellData = {
+  activePage: TasqPage;
+  activeProject: Project | null;
+  addIssueState: AddIssueDialogState;
+  isIssueDetailPage: boolean;
+  issues: IssueSummary[];
+  layoutData: LayoutData | null;
+  loadState: LoadState;
+  notice: string;
+  projects: Project[];
+  summary: Summary | null;
+  title: string | null;
+  onAddIssue: (status?: IssueStatus) => void;
+  onCancelAddIssue: () => void;
+  onCreateIssue: (input: CreateIssueInput) => Promise<void>;
+};
+
 const layoutDataContext = createContext<LayoutData | null>(null);
+const layoutShellContext = createContext<LayoutShellData | null>(null);
 
 const defaultRefreshIntervalMs = 3000;
 
@@ -167,38 +185,50 @@ export function Layout({ children }: { children: ReactNode }) {
       }
     : null;
 
+  const shellData: LayoutShellData = {
+    activePage,
+    activeProject,
+    addIssueState,
+    isIssueDetailPage,
+    issues,
+    layoutData,
+    loadState,
+    notice,
+    projects,
+    summary,
+    title: issueScopeTitle(issueScope, activeProject?.name ?? null, t("sidebar.allProjects")),
+    onAddIssue: (status) => setAddIssueState({ kind: "open", initialStatus: status ?? "backlog" }),
+    onCancelAddIssue: () => setAddIssueState({ kind: "closed" }),
+    onCreateIssue: handleCreateIssue,
+  };
+
   return (
-    <div className={styles.appFrame}>
-      <Sidebar activePage={activePage} activeProjectID={activeProject?.id ?? null} projects={projects} />
-      <main className={styles.shell}>
-        <Header
-          activePage={activePage}
-          projectName={issueScopeTitle(issueScope, activeProject?.name ?? null, t("sidebar.allProjects"))}
-          issueCount={summary ? issues.length : null}
-          onAddTask={() => setAddIssueState({ kind: "open", initialStatus: "backlog" })}
-          showViewNavigation={!isIssueDetailPage && activePage !== "dashboard"}
-        />
+    <layoutShellContext.Provider value={shellData}>
+      {children}
+    </layoutShellContext.Provider>
+  );
+}
 
-        <AddIssueDialog
-          project={activeProject}
-          state={addIssueState}
-          onCancel={() => setAddIssueState({ kind: "closed" })}
-          onSubmit={handleCreateIssue}
-        />
+export function ProjectsLayout({ children }: { children: ReactNode }) {
+  const shellData = useLayoutShellData();
 
-        {notice ? <p className={styles.notice}>{notice}</p> : null}
+  return (
+    <ShellLayout
+      shellData={shellData}
+      showViewNavigation={!shellData.isIssueDetailPage}
+    >
+      {children}
+    </ShellLayout>
+  );
+}
 
-        {loadState.kind === "loading" ? <PanelMessage title={t("layout.loading")} /> : null}
-        {loadState.kind === "error" ? (
-          <PanelMessage title={t("layout.apiUnavailable")} detail={loadState.message} />
-        ) : null}
-        {layoutData ? (
-          <layoutDataContext.Provider value={layoutData}>
-            {children}
-          </layoutDataContext.Provider>
-        ) : null}
-      </main>
-    </div>
+export function DashboardLayout({ children }: { children: ReactNode }) {
+  const shellData = useLayoutShellData();
+
+  return (
+    <ShellLayout shellData={shellData} showViewNavigation={false}>
+      {children}
+    </ShellLayout>
   );
 }
 
@@ -208,6 +238,64 @@ export function useLayoutData(): LayoutData {
     throw new Error(i18n.t("layout.useLayoutDataError"));
   }
   return layoutData;
+}
+
+function useLayoutShellData(): LayoutShellData {
+  const shellData = useContext(layoutShellContext);
+  if (!shellData) {
+    throw new Error(i18n.t("layout.useLayoutDataError"));
+  }
+  return shellData;
+}
+
+function ShellLayout({
+  children,
+  shellData,
+  showViewNavigation,
+}: {
+  children: ReactNode;
+  shellData: LayoutShellData;
+  showViewNavigation: boolean;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <div className={styles.appFrame}>
+      <Sidebar
+        activePage={shellData.activePage}
+        activeProjectID={shellData.activeProject?.id ?? null}
+        projects={shellData.projects}
+      />
+      <main className={styles.shell}>
+        <Header
+          activePage={shellData.activePage}
+          projectName={shellData.title}
+          issueCount={shellData.summary ? shellData.issues.length : null}
+          onAddTask={() => shellData.onAddIssue("backlog")}
+          showViewNavigation={showViewNavigation}
+        />
+
+        <AddIssueDialog
+          project={shellData.activeProject}
+          state={shellData.addIssueState}
+          onCancel={shellData.onCancelAddIssue}
+          onSubmit={shellData.onCreateIssue}
+        />
+
+        {shellData.notice ? <p className={styles.notice}>{shellData.notice}</p> : null}
+
+        {shellData.loadState.kind === "loading" ? <PanelMessage title={t("layout.loading")} /> : null}
+        {shellData.loadState.kind === "error" ? (
+          <PanelMessage title={t("layout.apiUnavailable")} detail={shellData.loadState.message} />
+        ) : null}
+        {shellData.layoutData ? (
+          <layoutDataContext.Provider value={shellData.layoutData}>
+            {children}
+          </layoutDataContext.Provider>
+        ) : null}
+      </main>
+    </div>
+  );
 }
 
 function firstIssueID(summary: Summary): number | null {
