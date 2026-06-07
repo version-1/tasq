@@ -1,0 +1,102 @@
+.board {
+  display: grid;
+  gap: 0;
+  grid-template-columns: repeat(4, minmax(260px, 1fr));
+  overflow-x: auto;
+  padding-bottom: 12px;
+}
+
+.column {
+  background: transparent;
+  border-left: 1px solid var(--light-gray);
+  min-height: 64vh;
+  padding: 14px;
+}
+
+.column:first-child {
+  border-left: 0;
+}
+
+.columnHeader {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.columnTitle {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+}
+
+.columnHeader h2 {
+  color: var(--primary-black);
+  font-size: 16px;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.columnTitle span:not(.reviewIcon) {
+  align-items: center;
+  background: var(--extra-light-gray);
+  border-radius: 999px;
+  color: var(--muted);
+  display: inline-flex;
+  font-size: 12px;
+  height: 24px;
+  justify-content: center;
+  min-width: 24px;
+  padding: 0 8px;
+}
+
+.reviewIcon {
+  align-items: center;
+  border: 1px solid var(--primary-black);
+  border-radius: 999px;
+  display: inline-flex;
+  height: 18px;
+  justify-content: center;
+  width: 18px;
+}
+
+.columnActions {
+  display: flex;
+  gap: 8px;
+}
+
+.columnActions button {
+  background: transparent;
+  border: 0;
+  color: var(--primary-black);
+  padding: 4px;
+}
+
+.taskList {
+  display: grid;
+  gap: 10px;
+}
+
+.addTaskButton {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: var(--primary-black);
+  display: inline-flex;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 8px 10px;
+}
+
+.empty {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+@media (max-width: 900px) {
+  .board {
+    grid-template-columns: repeat(4, minmax(260px, 82vw));
+  }
+}

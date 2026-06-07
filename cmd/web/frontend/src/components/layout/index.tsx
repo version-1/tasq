@@ -60,7 +60,7 @@ export function Layout({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
   const { pathname } = useLocation();
   const activePage = activePageFromPathname(pathname);
-  const isIssueDetailPage = pathname === "/issues/detail";
+  const isIssueDetailPage = /^\/issues\/\d+$/.test(pathname);
   const [loadState, setLoadState] = useState<LoadState>({ kind: "loading" });
   const [selectedIssueID, setSelectedIssueID] = useState<number | null>(null);
   const [notice, setNotice] = useState("");

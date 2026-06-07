@@ -1,7 +1,6 @@
 "use client";
 
-import { Link } from "react-router-dom";
-import { useSearchParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { fetchComments, fetchIssue, updateIssueStatus } from "@/lib/api";
@@ -19,8 +18,8 @@ type IssueLoadState =
 
 export function IssueDetailPage() {
   const { t } = useTranslation();
-  const [searchParams] = useSearchParams();
-  const issueID = parseIssueID(searchParams.get("id"));
+  const { id } = useParams();
+  const issueID = parseIssueID(id);
   const [issueState, setIssueState] = useState<IssueLoadState>({ kind: "loading" });
   const [comments, setComments] = useState<Comment[]>([]);
   const [nextCursor, setNextCursor] = useState<number | null>(null);
@@ -277,7 +276,7 @@ function PanelMessage({ title, detail }: { title: string; detail?: string }) {
   );
 }
 
-function parseIssueID(value: string | null): number | null {
+function parseIssueID(value: string | undefined): number | null {
   const id = value ? Number.parseInt(value, 10) : Number.NaN;
   return Number.isSafeInteger(id) && id > 0 ? id : null;
 }

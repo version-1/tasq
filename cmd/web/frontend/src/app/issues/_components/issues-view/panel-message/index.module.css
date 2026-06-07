@@ -1,0 +1,8 @@
+.widePanel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 8%);
+  max-width: 960px;
+  padding: 12px;
+}

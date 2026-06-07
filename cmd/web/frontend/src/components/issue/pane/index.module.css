@@ -1,0 +1,92 @@
+.detailLayout {
+  position: absolute;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.widePanel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 8%);
+  max-width: 960px;
+  padding: 12px;
+}
+
+.description {
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.description p {
+  margin: 0 0 12px;
+}
+
+.description img {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  display: block;
+  height: auto;
+  margin-top: 8px;
+  max-width: 100%;
+}
+
+.description a {
+  color: var(--primary-black);
+  overflow-wrap: anywhere;
+}
+
+.detailLink {
+  color: var(--primary-black);
+  display: inline-flex;
+  font-size: 14px;
+  font-weight: 700;
+  margin-top: 12px;
+  text-decoration: none;
+}
+
+.detailLink:hover {
+  text-decoration: underline;
+}
+
+.detailList {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 18px 0;
+}
+
+.detailList div {
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+
+.detailList dt,
+.detailList dd {
+  margin: 0;
+}
+
+.detailList dt {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.detailList dd {
+  font-weight: 700;
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+}
+
+.actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@media (max-width: 900px) {
+  .detailList {
+    grid-template-columns: 1fr;
+  }
+}
