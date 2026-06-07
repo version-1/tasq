@@ -17,6 +17,7 @@ Ask questions to clarify ambiguous instructions.
 - Do not change [docs/symphony/SPEC.md](docs/symphony/SPEC.md) to match Tasq-specific implementation differences. Record any intentional Tasq-vs-Symphony differences in [docs/symphony/DEVIATIONS.md](docs/symphony/DEVIATIONS.md) instead.
 - See [docs/design/schema.md](docs/design/schema.md) for entity field specifications and validation rules.
 - See [docs/design/web.md](docs/design/web.md) for Web UI structure and styling conventions.
+- See [cmd/web/frontend/docs/design.md](cmd/web/frontend/docs/design.md) for frontend routing and component placement rules.
 - All documents linked from AGENTS.md must also be written in English.
 - When a Japanese version of the same content is needed, create it as `*.ja.md` in the same location as the English version.
 - Keep the English and Japanese versions synchronized.

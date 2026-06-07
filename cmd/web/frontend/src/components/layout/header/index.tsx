@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { HeaderButton } from "./button";
 import styles from "./index.module.css";
 
 type HeaderPage = "issues" | "agents" | "dashboard" | "settings";
@@ -63,13 +64,7 @@ export function Header({
 
         <div className={styles.statusStrip}>
           <span>{issueCount === null ? t("header.loading") : t("header.issueCount", { count: issueCount })}</span>
-          <button className={styles.primaryButton} type="button" onClick={onAddTask}>
-            <span aria-hidden="true">＋</span>
-            {t("header.addTask")}
-          </button>
-          <button className={styles.splitButton} type="button" aria-label={t("header.taskOptions")}>
-            ⌄
-          </button>
+          <HeaderButton onAddTask={onAddTask} />
         </div>
       </div>
 

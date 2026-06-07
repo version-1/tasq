@@ -1,0 +1,22 @@
+.primaryButton,
+.splitButton {
+  background: var(--primary-black);
+  border-color: var(--primary-black);
+  color: var(--white);
+  height: 40px;
+}
+
+.primaryButton {
+  align-items: center;
+  border-radius: 6px 0 0 6px;
+  display: inline-flex;
+  gap: 8px;
+  padding: 0 16px;
+}
+
+.splitButton {
+  border-left-color: var(--dark-gray);
+  border-radius: 0 6px 6px 0;
+  margin-left: -8px;
+  width: 40px;
+}

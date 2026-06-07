@@ -1,0 +1,98 @@
+.taskCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 8%);
+  min-height: 108px;
+  padding: 12px;
+}
+
+.taskCard p,
+.cardMarkdown {
+  --card-body-line-height: 1.45;
+  --card-body-text-size: 13px;
+
+  color: var(--muted);
+  font-size: var(--card-body-text-size);
+  height: 57px;
+  line-height: var(--card-body-line-height);
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+
+.cardMarkdown p {
+  display: -webkit-box;
+  margin: 0 0 12px;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.cardMarkdown img {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  display: block;
+  height: auto;
+  margin-top: 8px;
+  max-width: 100%;
+}
+
+.cardMarkdown a {
+  color: var(--primary-black);
+  overflow-wrap: anywhere;
+}
+
+.taskTitle {
+  background: transparent;
+  border: 0;
+  color: var(--text);
+  display: block;
+  font-weight: 700;
+  line-height: 1.35;
+  margin-bottom: 8px;
+  padding: 0;
+  text-align: left;
+  text-decoration: none;
+}
+
+.metaRow {
+  align-items: center;
+  color: var(--muted);
+  display: flex;
+  font-size: 12px;
+  gap: 8px;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.priority {
+  background: var(--extra-light-gray);
+  border-radius: 999px;
+  color: var(--dark-gray);
+  padding: 3px 8px;
+}
+
+.projectKey {
+  background: #eef6f8;
+  border-radius: 6px;
+  color: #14636f;
+  font-weight: 700;
+  max-width: 120px;
+  overflow: hidden;
+  padding: 3px 6px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.warningPriority {
+  background: #fff2cc;
+  color: var(--warning);
+}
+
+.taskCard select {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px;
+  width: 100%;
+}
