@@ -19,11 +19,14 @@ if ! service_name="$(dev_service_name "$service")"; then
 fi
 config="$(dev_service_air_config "$service_name")"
 log_file="${log_dir}/$(dev_service_log_file "$service_name")"
+run_dir="$(dev_run_dir)"
+pid_file="$(dev_service_pid_file "$service_name")"
 delay="$(dev_service_start_delay "$service_name")"
 
-mkdir -p "$log_dir" /workspace/.tmp
+mkdir -p "$log_dir" "$run_dir" /workspace/.tmp
 pattern="$(dev_service_air_pattern "$service_name")"
 pkill -f "$pattern" 2>/dev/null || true
+rm -f "$pid_file"
 
 if dev_service_needs_mod_download "$service_name"; then
 	go mod download >>"$download_log" 2>&1
@@ -39,3 +42,4 @@ nohup sh -c '
 	fi
 	exec go run github.com/air-verse/air@"$air_version" -c "$config" >>"$log_file" 2>&1
 ' sh "$delay" "$air_version" "$config" "$log_file" >/dev/null 2>&1 &
+echo "$!" >"$pid_file"
