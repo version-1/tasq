@@ -36,6 +36,7 @@ const meta = {
   title: "Layout/Sidebar",
   component: Sidebar,
   args: {
+    activePage: "issues",
     activeProjectID: 1,
     projects,
   },
@@ -49,6 +50,14 @@ export const ActiveProject: Story = {};
 
 export const AllProjects: Story = {
   args: {
+    activePage: "issues",
+    activeProjectID: null,
+  },
+};
+
+export const Dashboard: Story = {
+  args: {
+    activePage: "dashboard",
     activeProjectID: null,
   },
 };

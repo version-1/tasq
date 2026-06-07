@@ -4,11 +4,12 @@ import type { Project } from "@/lib/types";
 import styles from "./index.module.css";
 
 type SidebarProps = {
+  activePage: "issues" | "agents" | "dashboard" | "settings";
   activeProjectID: number | null;
   projects: Project[];
 };
 
-export function Sidebar({ activeProjectID, projects }: SidebarProps) {
+export function Sidebar({ activePage, activeProjectID, projects }: SidebarProps) {
   const { t } = useTranslation();
 
   return (
@@ -16,6 +17,16 @@ export function Sidebar({ activeProjectID, projects }: SidebarProps) {
       <Link className={styles.brand} to="/issues" aria-label={t("sidebar.home")}>
         tasq
       </Link>
+
+      <nav className={styles.primaryNavigation} aria-label={t("sidebar.primaryNavigation")}>
+        <Link
+          className={activePage === "dashboard" ? `${styles.projectItem} ${styles.active}` : styles.projectItem}
+          to="/dashboard"
+        >
+          <span className={`${styles.projectDot} ${activePage === "dashboard" ? styles.active : styles.muted}`} aria-hidden="true" />
+          {t("header.dashboard")}
+        </Link>
+      </nav>
 
       <section className={styles.projects} aria-labelledby="sidebar-projects-heading">
         <div className={styles.sectionHeader}>

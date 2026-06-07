@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { HeaderButton } from "./button";
+import { Button } from "@/components/ui/button";
 import styles from "./index.module.css";
 
 type HeaderPage = "issues" | "agents" | "dashboard" | "settings";
@@ -16,7 +16,6 @@ type HeaderProps = {
 const pages = [
   { key: "issues", href: "/issues", titleKey: "header.board" },
   { key: "agents", href: "/agents", titleKey: "header.agents" },
-  { key: "dashboard", href: "/dashboard", titleKey: "header.dashboard" },
   { key: "settings", href: "/settings", titleKey: "header.settings" },
 ] as const;
 
@@ -48,7 +47,11 @@ export function Header({
             <input type="search" placeholder={t("header.searchPlaceholder")} />
             <kbd>{t("header.commandKey")}</kbd>
           </label>
-          <button className={styles.notificationButton} type="button" aria-label={t("header.notifications")}>
+          <button
+            className={styles.notificationButton}
+            type="button"
+            aria-label={t("header.notifications")}
+          >
             ♡
           </button>
         </div>
@@ -56,15 +59,30 @@ export function Header({
 
       <div className={styles.titleRow}>
         <div className={styles.titleGroup}>
-          <h1>{activePage === "issues" ? displayedProjectName : t(pageHeadingKey(activePage))}</h1>
-          <button className={styles.moreButton} type="button" aria-label={t("header.moreProjectActions")}>
+          <h1>
+            {activePage === "issues"
+              ? displayedProjectName
+              : t(pageHeadingKey(activePage))}
+          </h1>
+          <button
+            className={styles.moreButton}
+            type="button"
+            aria-label={t("header.moreProjectActions")}
+          >
             ···
           </button>
         </div>
 
         <div className={styles.statusStrip}>
-          <span>{issueCount === null ? t("header.loading") : t("header.issueCount", { count: issueCount })}</span>
-          <HeaderButton onAddTask={onAddTask} />
+          <span>
+            {issueCount === null
+              ? t("header.loading")
+              : t("header.issueCount", { count: issueCount })}
+          </span>
+          <Button onClick={onAddTask}>
+            <span aria-hidden="true">＋</span>
+            {t("header.addTask")}
+          </Button>
         </div>
       </div>
 
@@ -74,7 +92,11 @@ export function Header({
             {pages.map((page) => (
               <Link
                 key={page.key}
-                className={activePage === page.key ? `${styles.tab} ${styles.active}` : styles.tab}
+                className={
+                  activePage === page.key
+                    ? `${styles.tab} ${styles.active}`
+                    : styles.tab
+                }
                 to={page.href}
               >
                 {t(page.titleKey)}

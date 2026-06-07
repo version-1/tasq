@@ -169,14 +169,14 @@ export function Layout({ children }: { children: ReactNode }) {
 
   return (
     <div className={styles.appFrame}>
-      <Sidebar activeProjectID={activeProject?.id ?? null} projects={projects} />
+      <Sidebar activePage={activePage} activeProjectID={activeProject?.id ?? null} projects={projects} />
       <main className={styles.shell}>
         <Header
           activePage={activePage}
           projectName={issueScopeTitle(issueScope, activeProject?.name ?? null, t("sidebar.allProjects"))}
           issueCount={summary ? issues.length : null}
           onAddTask={() => setAddIssueState({ kind: "open", initialStatus: "backlog" })}
-          showViewNavigation={!isIssueDetailPage}
+          showViewNavigation={!isIssueDetailPage && activePage !== "dashboard"}
         />
 
         <AddIssueDialog

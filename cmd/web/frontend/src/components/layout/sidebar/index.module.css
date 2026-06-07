@@ -22,6 +22,11 @@
   gap: 4px;
 }
 
+.primaryNavigation {
+  display: grid;
+  gap: 4px;
+}
+
 .settingsLink,
 .projectItem {
   align-items: center;
