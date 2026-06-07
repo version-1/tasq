@@ -149,6 +149,7 @@ const resources = {
         accountMenu: "アカウントメニュー",
         addProject: "プロジェクトを追加",
         allProjects: "すべてのプロジェクト",
+        projectsTitle: "プロジェクト",
         apiBackend: "API Backend",
         archive: "アーカイブ",
         board: "ボード",
@@ -329,6 +330,7 @@ const resources = {
         accountMenu: "Account menu",
         addProject: "Add project",
         allProjects: "All projects",
+        projectsTitle: "Projects",
         apiBackend: "API Backend",
         archive: "Archive",
         board: "Board",
@@ -383,7 +385,9 @@ function initialLanguage(): SupportedLanguage {
   return navigator.language.toLowerCase().startsWith("en") ? "en" : "ja";
 }
 
-export function isSupportedLanguage(value: string | null): value is SupportedLanguage {
+export function isSupportedLanguage(
+  value: string | null,
+): value is SupportedLanguage {
   return value === "ja" || value === "en";
 }
 
