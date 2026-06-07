@@ -125,13 +125,13 @@ dev-open: dev-check ## Open the Web UI and OpenAPI UI in a browser.
 dev-test: dev-check ## Run Go tests and Web UI typecheck in the dev container.
 	$(COMPOSE_GIT_ENV) ISSUE_TRACKER_PORT=$(ISSUE_TRACKER_PORT) ORCHESTRATOR_PORT=$(ORCHESTRATOR_PORT) OPENAPI_PORT=$(OPENAPI_PORT) WEB_PORT=$(WEB_PORT) $(COMPOSE) up --build -d dev
 	$(MAKE) dc-ready
-	$(DEV_EXEC) sh -c 'go test ./... && cd cmd/web/frontend && npm install && npm run typecheck'
+	$(DEV_EXEC) sh -c 'cd cmd/web/frontend && npm install && npm run build && npm run typecheck && cd ../../.. && go test ./...'
 
 .PHONY: dev-build
 dev-build: dev-check ## Run Go tests and the Web UI production build in the dev container.
 	$(COMPOSE_GIT_ENV) ISSUE_TRACKER_PORT=$(ISSUE_TRACKER_PORT) ORCHESTRATOR_PORT=$(ORCHESTRATOR_PORT) OPENAPI_PORT=$(OPENAPI_PORT) WEB_PORT=$(WEB_PORT) $(COMPOSE) up --build -d dev
 	$(MAKE) dc-ready
-	$(DEV_EXEC) sh -c 'go test ./... && cd cmd/web/frontend && npm install && npm run build'
+	$(DEV_EXEC) sh -c 'cd cmd/web/frontend && npm install && npm run build && cd ../../.. && go test ./...'
 
 .PHONY: dev-codex-login
 dev-codex-login: dev-check ## Log in to Codex inside the dev container with device auth.

@@ -41,8 +41,23 @@ jobs:
           go-version-file: go.mod
           cache: true
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: cmd/web/frontend/package-lock.json
+
       - name: Download Go modules
         run: go mod download
+
+      - name: Install Web dependencies
+        working-directory: cmd/web/frontend
+        run: npm ci
+
+      - name: Build embedded Web assets
+        working-directory: cmd/web/frontend
+        run: npm run build
 
       - name: Test Go packages
         run: go test $(go list ./... | grep -Ev '^github.com/version-1/tasq/(cmd/tq|internal/cli/tq)$')
