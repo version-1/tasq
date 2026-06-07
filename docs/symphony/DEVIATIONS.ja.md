@@ -23,28 +23,42 @@ Tasq は Symphony specification の Section 11 で説明されている Linear t
 
 ## Workflow Front Matter Contract
 
-Tasq の `WORKFLOW.md` front matter は、Symphony front matter schema の小さな Tasq-specific subset
-として意図的に定義されています。Tasq の canonical workflow contract は
-[WORKFLOW_CONTRACT.md](WORKFLOW_CONTRACT.md) に記録されています。
+Tasq の `WORKFLOW.md` front matter は、Symphony front matter schema の上に重ねた小さな
+Tasq-specific contract として意図的に定義されています。Tasq の canonical workflow contract は
+[WORKFLOW_CONTRACT.md](WORKFLOW_CONTRACT.md) に記録されています。次の表は、Symphony `SPEC.md`
+の fields と Tasq front matter behavior の対応を示します。
 
-Tasq がサポートする fields:
-
-- `tasq.task_work_prompt` は Tasq extension です。orchestrator が rendered prompt の前に default `tq`
-  issue-tracker synchronization instructions を付与するかを制御します。
-- `polling.interval_ms`、`workspace.root`、`agent.max_concurrent_agents`、`agent.max_turns`、
-  `agent.continuation_turns_enabled`、`agent.max_retry_attempts`、
-  `agent.max_retry_backoff_ms`、`codex.command`、`codex.read_timeout_ms`、
-  `codex.turn_timeout_ms`、`codex.stall_timeout_ms`、`server.port`、workspace lifecycle
-  `hooks` をサポートします。
-- `hooks.after_create`、`hooks.before_run`、`hooks.after_run`、`hooks.before_remove`、
-  `hooks.timeout_ms` をサポートします。Hook scripts は issue workspace を working directory として
-  `bash -lc` 経由で実行されます。
-- `tracker.*` fields は partial Symphony compatibility のために parse されます。ただし現在の Tasq
-  orchestrator は、Symphony が説明する Linear tracker client ではなく local issue-tracker API から work
-  を読み取ります。
-- Codex pass-through fields (`codex.approval_policy`、`codex.thread_sandbox`、
-  `codex.turn_sandbox_policy`) は parse されますが、この repository の現在の root `WORKFLOW.md`
-  template では使われていません。
+| Top-level key | Child field | `SPEC.md` support | Tasq support | Tasq front matter / behavior |
+| --- | --- | --- | --- | --- |
+| `tracker` | `kind` | Core field。Symphony dispatch では必須です。 | Parsed, not used for dispatch。 | 現在の orchestration は Linear client ではなく local issue-tracker API から読み取ります。 |
+| `tracker` | `endpoint` | Core field。 | Parsed, not used by the local tracker path。 | Symphony tracker shape との partial compatibility のために parse されます。 |
+| `tracker` | `api_key` | Core field。Linear dispatch では `$VAR` resolution 後に必須です。 | Parsed, not used by the local tracker path。 | `$VAR` resolution をサポートします。 |
+| `tracker` | `project_slug` | Core field。`tracker.kind` が `linear` の場合に必須です。 | Parsed, not used by the local tracker path。 | `tracker.kind` が設定された場合のみ必須です。 |
+| `tracker` | `active_states` | Core field。 | Parsed, not authoritative。 | Tasq の dispatch eligibility は local issue-tracker states によって決まります。 |
+| `tracker` | `terminal_states` | Core field。 | Parsed, not authoritative。 | Tasq の cleanup/reconciliation は local issue-tracker states を使います。 |
+| `polling` | `interval_ms` | Core field。 | Supported。 | Orchestrator polling interval です。 |
+| `workspace` | `root` | Core field。 | Supported with Tasq constraint。 | 選択された `WORKFLOW.md` からの相対 path として解決され、worktree management のため target Git repository の内側である必要があります。 |
+| `workspace` | `source` | 現在の core table には含まれません。Workspace population design で参照されます。 | Not supported。 | Tasq は代わりに `workspace.root` 配下に Git worktree を作成します。 |
+| `hooks` | `after_create` | Core field。 | Supported。 | 新規作成された workspace に対してのみ、issue workspace 内で `bash -lc` 経由で実行されます。 |
+| `hooks` | `before_run` | Core field。 | Supported。 | 各 agent attempt の前に実行されます。 |
+| `hooks` | `after_run` | Core field。 | Supported。 | 各 agent attempt 後に実行され、失敗は log されて無視されます。 |
+| `hooks` | `before_remove` | Core field。 | Supported。 | workspace directory が存在する場合に cleanup 前に実行され、失敗は log され cleanup は継続します。 |
+| `hooks` | `timeout_ms` | Core field。 | Supported。 | すべての workspace hooks に適用され、正の値である必要があります。 |
+| `agent` | `max_concurrent_agents` | Core field。 | Supported。 | Global concurrent run limit です。 |
+| `agent` | `max_turns` | Core field。 | Supported with Tasq gate。 | 1 run の最大 Codex turns です。Continuation turns には `agent.continuation_turns_enabled` も必要です。 |
+| `agent` | `max_retry_backoff_ms` | Core field。 | Supported。 | Retry backoff cap です。 |
+| `agent` | `max_concurrent_agents_by_state` | Core field。 | Parsed。 | 正規化された map です。意味を持つかは local issue-tracker state model に依存します。 |
+| `agent` | `continuation_turns_enabled` | `SPEC.md` core schema ではサポートされません。 | Tasq extension。 | `agent.max_turns` が 1 より大きい場合でも continuation turns を gate します。 |
+| `agent` | `max_retry_attempts` | `SPEC.md` core schema ではサポートされません。 | Tasq extension。 | Run retry attempts の回数を設定します。 |
+| `codex` | `command` | Core field。 | Supported。 | repository root の `WORKFLOW.md` は `codex --sandbox workspace-write app-server` を使います。 |
+| `codex` | `approval_policy` | Core Codex pass-through field。 | Parsed, optional。 | repository root の `WORKFLOW.md` では設定されていません。 |
+| `codex` | `thread_sandbox` | Core Codex pass-through field。 | Parsed, optional。 | repository root の `WORKFLOW.md` では設定されていません。 |
+| `codex` | `turn_sandbox_policy` | Core Codex pass-through field。 | Parsed, optional。 | repository root の `WORKFLOW.md` では設定されていません。 |
+| `codex` | `turn_timeout_ms` | Core field。 | Supported。 | Codex turn timeout です。 |
+| `codex` | `read_timeout_ms` | Core field。 | Supported。 | Codex app-server read timeout です。 |
+| `codex` | `stall_timeout_ms` | Core field。Symphony では `<= 0` によって stall detection を無効化できます。 | Supported with stricter validation。 | Tasq は正の値として検証します。 |
+| `server` | `port` | Supported extension field。 | Supported extension。 | Optional HTTP extension port です。CLI `--port` で override できます。 |
+| `tasq` | `task_work_prompt` | `SPEC.md` core schema ではサポートされません。 | Tasq extension。 | orchestrator が rendered prompt の前に default `tq` issue-tracker synchronization instructions を付与するかを制御します。 |
 
 Symphony との差分:
 

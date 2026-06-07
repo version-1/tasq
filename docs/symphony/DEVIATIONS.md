@@ -19,28 +19,42 @@ This keeps external tracker integrations out of the orchestrator and preserves t
 
 ## Workflow Front Matter Contract
 
-Tasq's `WORKFLOW.md` front matter is intentionally a smaller, Tasq-specific subset of the Symphony
-front matter schema. The canonical Tasq workflow contract is documented in
-[WORKFLOW_CONTRACT.md](WORKFLOW_CONTRACT.md).
+Tasq's `WORKFLOW.md` front matter is intentionally a smaller, Tasq-specific contract layered on top
+of the Symphony front matter schema. The canonical Tasq workflow contract is documented in
+[WORKFLOW_CONTRACT.md](WORKFLOW_CONTRACT.md). The table below maps the Symphony `SPEC.md` fields to
+Tasq front matter behavior.
 
-Supported Tasq fields:
-
-- `tasq.task_work_prompt` is a Tasq extension that controls whether the orchestrator prepends the
-  default `tq` issue-tracker synchronization instructions to the rendered prompt.
-- `polling.interval_ms`, `workspace.root`, `agent.max_concurrent_agents`, `agent.max_turns`,
-  `agent.continuation_turns_enabled`, `agent.max_retry_attempts`,
-  `agent.max_retry_backoff_ms`, `codex.command`, `codex.read_timeout_ms`,
-  `codex.turn_timeout_ms`, `codex.stall_timeout_ms`, `server.port`, and workspace lifecycle
-  `hooks` are supported.
-- `hooks.after_create`, `hooks.before_run`, `hooks.after_run`, `hooks.before_remove`, and
-  `hooks.timeout_ms` are supported. Hook scripts run through `bash -lc` with the issue workspace as
-  the working directory.
-- `tracker.*` fields are still parsed for partial Symphony compatibility, but the current Tasq
-  orchestrator reads work from the local issue-tracker API instead of using the Linear tracker
-  client described by Symphony.
-- Codex pass-through fields (`codex.approval_policy`, `codex.thread_sandbox`, and
-  `codex.turn_sandbox_policy`) are parsed but are not part of the root `WORKFLOW.md` template used
-  by this repository today.
+| Top-level key | Child field | `SPEC.md` support | Tasq support | Tasq front matter / behavior |
+| --- | --- | --- | --- | --- |
+| `tracker` | `kind` | Core field; required for Symphony dispatch. | Parsed, not used for dispatch. | Current orchestration reads from the local issue-tracker API instead of a Linear client. |
+| `tracker` | `endpoint` | Core field. | Parsed, not used by the local tracker path. | Parsed for partial compatibility with the Symphony tracker shape. |
+| `tracker` | `api_key` | Core field; required for Linear dispatch after `$VAR` resolution. | Parsed, not used by the local tracker path. | Supports `$VAR` resolution. |
+| `tracker` | `project_slug` | Core field; required when `tracker.kind` is `linear`. | Parsed, not used by the local tracker path. | Required only when `tracker.kind` is set. |
+| `tracker` | `active_states` | Core field. | Parsed, not authoritative. | Tasq dispatch eligibility is driven by local issue-tracker states. |
+| `tracker` | `terminal_states` | Core field. | Parsed, not authoritative. | Tasq cleanup/reconciliation uses local issue-tracker states. |
+| `polling` | `interval_ms` | Core field. | Supported. | Orchestrator polling interval. |
+| `workspace` | `root` | Core field. | Supported with Tasq constraint. | Resolved relative to the selected `WORKFLOW.md`; must be inside the target Git repository for worktree management. |
+| `workspace` | `source` | Not in the current core table; referenced by workspace population designs. | Not supported. | Tasq creates Git worktrees under `workspace.root` instead. |
+| `hooks` | `after_create` | Core field. | Supported. | Runs through `bash -lc` in the issue workspace only for newly created workspaces. |
+| `hooks` | `before_run` | Core field. | Supported. | Runs before each agent attempt. |
+| `hooks` | `after_run` | Core field. | Supported. | Runs after each agent attempt; failures are logged and ignored. |
+| `hooks` | `before_remove` | Core field. | Supported. | Runs before workspace cleanup when the workspace directory exists; failures are logged and cleanup continues. |
+| `hooks` | `timeout_ms` | Core field. | Supported. | Applies to all workspace hooks and must be positive. |
+| `agent` | `max_concurrent_agents` | Core field. | Supported. | Global concurrent run limit. |
+| `agent` | `max_turns` | Core field. | Supported with Tasq gate. | Maximum Codex turns for one run; continuation turns still require `agent.continuation_turns_enabled`. |
+| `agent` | `max_retry_backoff_ms` | Core field. | Supported. | Retry backoff cap. |
+| `agent` | `max_concurrent_agents_by_state` | Core field. | Parsed. | Normalized map; usefulness depends on the local issue-tracker state model. |
+| `agent` | `continuation_turns_enabled` | Not supported by `SPEC.md` core schema. | Tasq extension. | Gates continuation turns even when `agent.max_turns` is greater than one. |
+| `agent` | `max_retry_attempts` | Not supported by `SPEC.md` core schema. | Tasq extension. | Sets the number of run retry attempts. |
+| `codex` | `command` | Core field. | Supported. | Repository root `WORKFLOW.md` uses `codex --sandbox workspace-write app-server`. |
+| `codex` | `approval_policy` | Core Codex pass-through field. | Parsed, optional. | Repository root `WORKFLOW.md` does not set it. |
+| `codex` | `thread_sandbox` | Core Codex pass-through field. | Parsed, optional. | Repository root `WORKFLOW.md` does not set it. |
+| `codex` | `turn_sandbox_policy` | Core Codex pass-through field. | Parsed, optional. | Repository root `WORKFLOW.md` does not set it. |
+| `codex` | `turn_timeout_ms` | Core field. | Supported. | Codex turn timeout. |
+| `codex` | `read_timeout_ms` | Core field. | Supported. | Codex app-server read timeout. |
+| `codex` | `stall_timeout_ms` | Core field; `<= 0` disables stall detection in Symphony. | Supported with stricter validation. | Tasq validates it as positive. |
+| `server` | `port` | Supported extension field. | Supported extension. | Optional HTTP extension port; CLI `--port` can override it. |
+| `tasq` | `task_work_prompt` | Not supported by `SPEC.md` core schema. | Tasq extension. | Controls whether the orchestrator prepends default `tq` issue-tracker synchronization instructions to the rendered prompt. |
 
 Intentional differences from Symphony:
 
