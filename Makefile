@@ -6,6 +6,9 @@ ORCHESTRATOR_PORT ?=
 OPENAPI_PORT ?=
 WEB_PORT ?=
 WEB_ISSUE_TRACKER_URL ?=
+DEV_WORKTREE_DIR ?= $(CURDIR)
+DEV_GIT_COMMON_DIR ?= $(shell git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)
+COMPOSE_GIT_ENV = DEV_WORKTREE_DIR="$(DEV_WORKTREE_DIR)" DEV_GIT_COMMON_DIR="$(DEV_GIT_COMMON_DIR)"
 RELEASE_BRANCH ?= main
 RELEASE_REMOTE ?= origin
 RELEASE_REPO ?= version-1/tasq
@@ -64,7 +67,7 @@ dev-check:
 
 .PHONY: dev-up
 dev-up: dev-check ## Start the dev environment and print assigned URLs.
-	ISSUE_TRACKER_PORT=$(ISSUE_TRACKER_PORT) ORCHESTRATOR_PORT=$(ORCHESTRATOR_PORT) OPENAPI_PORT=$(OPENAPI_PORT) WEB_PORT=$(WEB_PORT) $(COMPOSE) up --build -d dev openapi
+	$(COMPOSE_GIT_ENV) ISSUE_TRACKER_PORT=$(ISSUE_TRACKER_PORT) ORCHESTRATOR_PORT=$(ORCHESTRATOR_PORT) OPENAPI_PORT=$(OPENAPI_PORT) WEB_PORT=$(WEB_PORT) $(COMPOSE) up --build -d dev openapi
 	$(MAKE) dc-ready
 	$(MAKE) run-all
 	$(MAKE) dev-ports
@@ -120,13 +123,13 @@ dev-open: dev-check ## Open the Web UI and OpenAPI UI in a browser.
 
 .PHONY: dev-test
 dev-test: dev-check ## Run Go tests and Web UI typecheck in the dev container.
-	ISSUE_TRACKER_PORT=$(ISSUE_TRACKER_PORT) ORCHESTRATOR_PORT=$(ORCHESTRATOR_PORT) OPENAPI_PORT=$(OPENAPI_PORT) WEB_PORT=$(WEB_PORT) $(COMPOSE) up --build -d dev
+	$(COMPOSE_GIT_ENV) ISSUE_TRACKER_PORT=$(ISSUE_TRACKER_PORT) ORCHESTRATOR_PORT=$(ORCHESTRATOR_PORT) OPENAPI_PORT=$(OPENAPI_PORT) WEB_PORT=$(WEB_PORT) $(COMPOSE) up --build -d dev
 	$(MAKE) dc-ready
 	$(DEV_EXEC) sh -c 'go test ./... && cd cmd/web/frontend && npm install && npm run typecheck'
 
 .PHONY: dev-build
 dev-build: dev-check ## Run Go tests and the Web UI production build in the dev container.
-	ISSUE_TRACKER_PORT=$(ISSUE_TRACKER_PORT) ORCHESTRATOR_PORT=$(ORCHESTRATOR_PORT) OPENAPI_PORT=$(OPENAPI_PORT) WEB_PORT=$(WEB_PORT) $(COMPOSE) up --build -d dev
+	$(COMPOSE_GIT_ENV) ISSUE_TRACKER_PORT=$(ISSUE_TRACKER_PORT) ORCHESTRATOR_PORT=$(ORCHESTRATOR_PORT) OPENAPI_PORT=$(OPENAPI_PORT) WEB_PORT=$(WEB_PORT) $(COMPOSE) up --build -d dev
 	$(MAKE) dc-ready
 	$(DEV_EXEC) sh -c 'go test ./... && cd cmd/web/frontend && npm install && npm run build'
 

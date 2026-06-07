@@ -2,7 +2,7 @@
 set -eu
 
 script_dir="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
-. "$script_dir/dev-lib.sh"
+. "$script_dir/lib.sh"
 
 service="${1:-}"
 mode="${2:-wait}"
@@ -18,7 +18,8 @@ if [ "$mode" = "--check" ]; then
 fi
 
 attempt=1
-while [ "$attempt" -le 30 ]; do
+max_attempts="${DEV_READY_ATTEMPTS:-120}"
+while [ "$attempt" -le "$max_attempts" ]; do
 	if curl -fsS "$url" >/dev/null 2>&1; then
 		exit 0
 	fi
