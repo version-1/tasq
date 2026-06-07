@@ -1,9 +1,10 @@
 Codex session details for issue 5
 
 Thread ID: 019e9f7f-ebb3-77f2-af4b-81dcf37f89e7
-Session ID: unavailable in the current Codex process environment
+Turn ID: 019e9f7f-ebfe-7571-8c05-fe8ff52e935b
+Session ID: 019e9f7f-ebb3-77f2-af4b-81dcf37f89e7-019e9f7f-ebfe-7571-8c05-fe8ff52e935b
 
 Notes:
 - CODEX_THREAD_ID is available in the process environment.
-- No CODEX_SESSION_ID or turn identifier is available in the process environment.
-- Tasq's Symphony specification defines session_id as <thread_id>-<turn_id>, so the session id cannot be reconstructed without the current turn id.
+- Turn ID was found in the orchestrator runner logs for this Codex turn.
+- Tasq's Symphony specification defines session_id as <thread_id>-<turn_id>.
