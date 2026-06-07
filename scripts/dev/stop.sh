@@ -11,6 +11,15 @@ stop_one() {
 		echo "unknown service: $1" >&2
 		return 2
 	fi
+	pid_file="$(dev_service_pid_file "$service_name")"
+	pkill -f "scripts/dev/ready[.]sh ${service_name}" 2>/dev/null || true
+	if [ -f "$pid_file" ]; then
+		pid="$(cat "$pid_file")"
+		if [ -n "$pid" ]; then
+			kill "$pid" 2>/dev/null || true
+		fi
+		rm -f "$pid_file"
+	fi
 	pkill -f "$(dev_service_air_pattern "$service_name")" 2>/dev/null || true
 }
 
