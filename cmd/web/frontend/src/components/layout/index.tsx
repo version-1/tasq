@@ -18,7 +18,7 @@ import { ModalProvider, useModal } from "@/lib/modal";
 import type { CreateIssueInput, CreateProjectInput, IssueStatus, IssueSummary, Project, Summary } from "@/lib/types";
 import { AddIssueDialog } from "./add-issue-dialog";
 import { AddProjectDialog } from "./add-project-dialog";
-import { Header, type HeaderPageLink } from "./header";
+import { Header } from "./header";
 import { PanelMessage } from "./panel-message";
 import { Sidebar } from "./sidebar";
 import styles from "./index.module.css";
@@ -278,14 +278,12 @@ export function useLayoutShellData(): LayoutShellData {
 
 export function ShellLayout({
   children,
-  pages,
   shellData,
-  showViewNavigation,
+  showViewNavigation = true,
 }: {
   children: ReactNode;
-  pages: readonly HeaderPageLink[];
   shellData: LayoutShellData;
-  showViewNavigation: boolean;
+  showViewNavigation?: boolean;
 }) {
   const { t } = useTranslation();
 
@@ -303,7 +301,6 @@ export function ShellLayout({
           projectName={shellData.title}
           issueCount={shellData.summary ? shellData.issues.length : null}
           onAddTask={() => shellData.onAddIssue("backlog")}
-          pages={pages}
           showViewNavigation={showViewNavigation}
         />
 

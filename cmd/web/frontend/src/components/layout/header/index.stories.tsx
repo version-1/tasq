@@ -1,17 +1,27 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { TabsProvider } from "@/context/tabs";
 import { Header } from "./index";
 
 const meta = {
   title: "Layout/Header",
   component: Header,
+  decorators: [
+    (Story) => (
+      <TabsProvider
+        activeKey="issues"
+        pages={[
+          { key: "issues", href: "/issues", titleKey: "header.board" },
+          { key: "settings", href: "/settings", titleKey: "header.settings" },
+        ]}
+      >
+        <Story />
+      </TabsProvider>
+    ),
+  ],
   args: {
     activePage: "issues",
     projectName: "Product Website",
     issueCount: 24,
-    pages: [
-      { key: "issues", href: "/issues", titleKey: "header.board" },
-      { key: "settings", href: "/settings", titleKey: "header.settings" },
-    ],
     showViewNavigation: true,
     onAddTask: () => undefined,
   },

@@ -1,23 +1,17 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { useTabs } from "@/context/tabs";
 import { Breadcrumb } from "./breadcrumb";
 import styles from "./index.module.css";
 
 export type HeaderPage = "issues" | "dashboard" | "settings";
-
-export type HeaderPageLink = {
-  href: string;
-  key: HeaderPage;
-  titleKey: string;
-};
 
 type HeaderProps = {
   activePage: HeaderPage;
   projectName: string | null;
   issueCount: number | null;
   onAddTask: () => void;
-  pages: readonly HeaderPageLink[];
   showViewNavigation?: boolean;
   showAddTaskButton?: boolean;
 };
@@ -26,11 +20,11 @@ export function Header({
   activePage,
   projectName,
   onAddTask,
-  pages,
   showViewNavigation = true,
   showAddTaskButton = true,
 }: HeaderProps) {
   const { t } = useTranslation();
+  const tabs = useTabs();
   const displayedProjectName = projectName ?? t("header.projectName");
 
   return (
@@ -66,14 +60,14 @@ export function Header({
         ) : null}
       </div>
 
-      {showViewNavigation ? (
+      {showViewNavigation && tabs.pages.length > 0 ? (
         <div className={styles.viewRow}>
           <nav className={styles.tabs} aria-label={t("header.views")}>
-            {pages.map((page) => (
+            {tabs.pages.map((page) => (
               <Link
                 key={page.key}
                 className={
-                  activePage === page.key
+                  tabs.activeKey === page.key
                     ? `${styles.tab} ${styles.active}`
                     : styles.tab
                 }
@@ -83,7 +77,6 @@ export function Header({
               </Link>
             ))}
           </nav>
-
         </div>
       ) : null}
     </header>

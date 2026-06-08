@@ -6,23 +6,23 @@ import IssueDetailRoute from "./app/issues/[id]/page";
 import IssuesPage from "./app/issues/page";
 import SettingsPage from "./app/settings/page";
 import { DefaultLayout } from "./components/layout/default";
-import type { HeaderPageLink } from "./components/layout/header";
 import { Layout } from "./components/layout";
 import { ProjectLayout } from "./components/layout/project";
+import { TabsProvider, type TabPageLink } from "./context/tabs";
 
 const projectHeaderPages = [
   { key: "issues", href: "/issues", titleKey: "header.board" },
   { key: "settings", href: "/settings", titleKey: "header.settings" },
-] satisfies readonly HeaderPageLink[];
+] satisfies readonly TabPageLink[];
 
 const issueHeaderPages = [
-  { key: "detail", href: "/issues/", titleKey: "issues.detailPage.detailTab" },
+  { key: "detail", href: "/issues/:id", titleKey: "issues.detailPage.detailTab" },
   {
     key: "conversations",
-    href: "/issues/{id}/conversations",
+    href: "/issues/:id/conversations",
     titleKey: "issues.detailPage.conversationTab",
   },
-] satisfies readonly HeaderPageLink[];
+] satisfies readonly TabPageLink[];
 
 export function App() {
   return (
@@ -32,57 +32,71 @@ export function App() {
         <Route
           path="/issues"
           element={
-            <ProjectLayout pages={projectHeaderPages}>
-              <IssuesPage />
-            </ProjectLayout>
+            <TabsProvider activeKey="issues" pages={projectHeaderPages}>
+              <ProjectLayout>
+                <IssuesPage />
+              </ProjectLayout>
+            </TabsProvider>
           }
         />
         <Route
           path="/projects/:projectKey/issues"
           element={
-            <ProjectLayout pages={projectHeaderPages}>
-              <IssuesPage />
-            </ProjectLayout>
+            <TabsProvider activeKey="issues" pages={projectHeaderPages}>
+              <ProjectLayout>
+                <IssuesPage />
+              </ProjectLayout>
+            </TabsProvider>
           }
         />
         <Route
           path="/issues/:id"
           element={
-            <IssueDetailLayout pages={issueHeaderPages}>
-              <IssueDetailRoute />
-            </IssueDetailLayout>
+            <TabsProvider activeKey="detail" pages={issueHeaderPages}>
+              <IssueDetailLayout>
+                <IssueDetailRoute />
+              </IssueDetailLayout>
+            </TabsProvider>
           }
         />
         <Route
           path="/issues/:id/conversations"
           element={
-            <IssueDetailLayout pages={issueHeaderPages}>
-              <ConversationRoute />
-            </IssueDetailLayout>
+            <TabsProvider activeKey="conversations" pages={issueHeaderPages}>
+              <IssueDetailLayout>
+                <ConversationRoute />
+              </IssueDetailLayout>
+            </TabsProvider>
           }
         />
         <Route
           path="/issues/:id/runs/:runId/conversations"
           element={
-            <IssueDetailLayout pages={issueHeaderPages}>
-              <ConversationRoute />
-            </IssueDetailLayout>
+            <TabsProvider activeKey="conversations" pages={issueHeaderPages}>
+              <IssueDetailLayout>
+                <ConversationRoute />
+              </IssueDetailLayout>
+            </TabsProvider>
           }
         />
         <Route
           path="/dashboard"
           element={
-            <DefaultLayout pages={[]}>
-              <DashboardPage />
-            </DefaultLayout>
+            <TabsProvider>
+              <DefaultLayout>
+                <DashboardPage />
+              </DefaultLayout>
+            </TabsProvider>
           }
         />
         <Route
           path="/settings"
           element={
-            <DefaultLayout pages={[]}>
-              <SettingsPage />
-            </DefaultLayout>
+            <TabsProvider>
+              <DefaultLayout>
+                <SettingsPage />
+              </DefaultLayout>
+            </TabsProvider>
           }
         />
         <Route path="*" element={<Navigate to="/issues" replace />} />
