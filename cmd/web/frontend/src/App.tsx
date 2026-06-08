@@ -15,7 +15,7 @@ export function App() {
         <Route path="/" element={<Navigate to="/issues" replace />} />
         <Route
           path="/issues"
-          element={<DefaultLayout><IssuesPage /></DefaultLayout>}
+          element={<ProjectLayout><IssuesPage /></ProjectLayout>}
         />
         <Route
           path="/projects/:projectKey/issues"
