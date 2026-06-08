@@ -1,6 +1,7 @@
 import { http, HttpResponse } from "msw";
 import type {
   CreateIssueInput,
+  CreateProjectInput,
   ErrorResponse,
   IssueStatesInput,
   IssueStatus,
@@ -10,6 +11,7 @@ import {
   buildSummary,
   createComment,
   createIssue,
+  createProject,
   getIssue,
   listComments,
   listIssueStates,
@@ -31,6 +33,17 @@ export const handlers = [
 
   http.get(`${apiBase}/projects`, () => {
     return jsonOk(listProjects());
+  }),
+
+  http.post(`${apiBase}/projects`, async ({ request }) => {
+    const input = await request.json() as CreateProjectInput;
+    const project = createProject(input);
+
+    if (!project) {
+      return jsonError("projects.create.invalid_input", "Project name, key, and location are required.", 400);
+    }
+
+    return jsonOk(project, 201);
   }),
 
   http.get(`${apiBase}/issues`, ({ request }) => {

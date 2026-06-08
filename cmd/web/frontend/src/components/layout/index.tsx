@@ -1,4 +1,4 @@
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   createContext,
@@ -11,12 +11,13 @@ import {
 } from "react";
 import { modalIDs } from "@/constants";
 import { ModalOutlet } from "@/components/modal";
-import { createIssue, fetchProjects, fetchSummary, updateIssueStatus } from "@/lib/api";
+import { createIssue, createProject, fetchProjects, fetchSummary, updateIssueStatus } from "@/lib/api";
 import "@/lib/i18n";
 import { i18n, type SupportedLanguage } from "@/lib/i18n";
 import { ModalProvider, useModal } from "@/lib/modal";
-import type { CreateIssueInput, IssueStatus, IssueSummary, Project, Summary } from "@/lib/types";
+import type { CreateIssueInput, CreateProjectInput, IssueStatus, IssueSummary, Project, Summary } from "@/lib/types";
 import { AddIssueDialog } from "./add-issue-dialog";
+import { AddProjectDialog } from "./add-project-dialog";
 import { Header } from "./header";
 import { PanelMessage } from "./panel-message";
 import { Sidebar } from "./sidebar";
@@ -48,6 +49,7 @@ export type LayoutShellData = {
   activeProject: Project | null;
   addIssueError: string;
   addIssueInitialStatus: IssueStatus;
+  addProjectError: string;
   isIssueDetailPage: boolean;
   issues: IssueSummary[];
   layoutData: LayoutData | null;
@@ -57,8 +59,10 @@ export type LayoutShellData = {
   summary: Summary | null;
   title: string | null;
   onAddIssue: (status?: IssueStatus) => void;
+  onAddProject: () => void;
   onCloseModal: () => void;
   onCreateIssue: (input: CreateIssueInput) => Promise<void>;
+  onCreateProject: (input: CreateProjectInput) => Promise<void>;
 };
 
 const layoutDataContext = createContext<LayoutData | null>(null);
@@ -77,6 +81,7 @@ export function Layout({ children }: { children: ReactNode }) {
 function LayoutContent({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const activePage = activePageFromPathname(pathname);
   const issueScope = issueScopeFromPathname(pathname);
   const isIssueDetailPage = /^\/issues\/\d+$/.test(pathname);
@@ -85,6 +90,7 @@ function LayoutContent({ children }: { children: ReactNode }) {
   const [notice, setNotice] = useState("");
   const [addIssueInitialStatus, setAddIssueInitialStatus] = useState<IssueStatus>("backlog");
   const [addIssueError, setAddIssueError] = useState("");
+  const [addProjectError, setAddProjectError] = useState("");
   const [refreshIntervalMs, setRefreshIntervalMs] = useState(defaultRefreshIntervalMs);
   const [language, setLanguage] = useState<SupportedLanguage>(i18n.language === "en" ? "en" : "ja");
   const modal = useModal();
@@ -169,14 +175,33 @@ function LayoutContent({ children }: { children: ReactNode }) {
     }
   }
 
+  async function handleCreateProject(input: CreateProjectInput) {
+    setNotice("");
+    try {
+      const created = await createProject(input);
+      await load();
+      setAddProjectError("");
+      modal.closeModal();
+      void navigate(`/projects/${encodeURIComponent(created.key)}/issues`);
+    } catch (error) {
+      setAddProjectError(error instanceof Error ? error.message : t("layout.failedToCreateProject"));
+    }
+  }
+
   function handleAddIssue(status?: IssueStatus) {
     setAddIssueInitialStatus(status ?? "backlog");
     setAddIssueError("");
     modal.openModal(modalIDs.addIssue);
   }
 
+  function handleAddProject() {
+    setAddProjectError("");
+    modal.openModal(modalIDs.addProject);
+  }
+
   function handleCloseModal() {
     setAddIssueError("");
+    setAddProjectError("");
     modal.closeModal();
   }
 
@@ -212,6 +237,7 @@ function LayoutContent({ children }: { children: ReactNode }) {
     activeProject,
     addIssueError,
     addIssueInitialStatus,
+    addProjectError,
     isIssueDetailPage,
     issues,
     layoutData,
@@ -221,8 +247,10 @@ function LayoutContent({ children }: { children: ReactNode }) {
     summary,
     title: issueScopeTitle(issueScope, activeProject?.name ?? null, t("sidebar.allProjects")),
     onAddIssue: handleAddIssue,
+    onAddProject: handleAddProject,
     onCloseModal: handleCloseModal,
     onCreateIssue: handleCreateIssue,
+    onCreateProject: handleCreateProject,
   };
 
   return (
@@ -264,6 +292,7 @@ export function ShellLayout({
       <Sidebar
         activePage={shellData.activePage}
         activeProjectID={shellData.activeProject?.id ?? null}
+        onAddProject={shellData.onAddProject}
         projects={shellData.projects}
       />
       <main className={styles.shell}>
@@ -306,6 +335,16 @@ function LayoutModalContent({ shellData }: { shellData: LayoutShellData }) {
         project={shellData.activeProject}
         onCancel={shellData.onCloseModal}
         onSubmit={shellData.onCreateIssue}
+      />
+    );
+  }
+
+  if (modal.activeModalID === modalIDs.addProject) {
+    return (
+      <AddProjectDialog
+        error={shellData.addProjectError}
+        onCancel={shellData.onCloseModal}
+        onSubmit={shellData.onCreateProject}
       />
     );
   }

@@ -7,11 +7,13 @@ type SidebarProps = {
   activePage: "issues" | "dashboard" | "settings";
   activeProjectID: number | null;
   projects: Project[];
+  onAddProject: () => void;
 };
 
 export function Sidebar({
   activePage,
   activeProjectID,
+  onAddProject,
   projects,
 }: SidebarProps) {
   const { t } = useTranslation();
@@ -61,6 +63,15 @@ export function Sidebar({
       <section className={styles.projects} aria-label={t("sidebar.projects")}>
         <div className={styles.sectionHeader}>
           <span>{t("sidebar.projectsTitle")}</span>
+          <button
+            className={styles.addProjectButton}
+            type="button"
+            aria-label={t("sidebar.addProject")}
+            title={t("sidebar.addProject")}
+            onClick={onAddProject}
+          >
+            +
+          </button>
         </div>
         <div className={styles.projectList}>
           {projects.map((project) => {
