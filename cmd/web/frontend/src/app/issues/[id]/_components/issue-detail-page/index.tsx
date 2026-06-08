@@ -3,12 +3,18 @@
 import { Link, useParams } from "react-router-dom";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { fetchComments, fetchIssue, updateIssueStatus } from "@/lib/api";
-import type { Comment, Issue, IssueStatus } from "@/lib/types";
+import {
+  fetchComments,
+  fetchIssue,
+  fetchOrchestratorIssueRuntime,
+  updateIssueStatus,
+} from "@/lib/api";
+import type { Comment, Issue, IssueStatus, OrchestratorIssueRun } from "@/lib/types";
 import { CommentList } from "./comment-list";
 import { IssueDescription } from "./issue-description";
 import { IssueHeader } from "./issue-header";
 import { PanelMessage } from "./panel-message";
+import { RunsSection } from "./runs-section";
 import { StatusActions } from "./status-actions";
 import styles from "./index.module.css";
 
@@ -28,6 +34,9 @@ export function IssueDetailPage() {
   const [nextCursor, setNextCursor] = useState<number | null>(null);
   const [commentsError, setCommentsError] = useState("");
   const [isLoadingComments, setIsLoadingComments] = useState(false);
+  const [runs, setRuns] = useState<OrchestratorIssueRun[]>([]);
+  const [runsError, setRunsError] = useState("");
+  const [isLoadingRuns, setIsLoadingRuns] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   const loadIssue = useCallback(async () => {
@@ -69,6 +78,24 @@ export function IssueDetailPage() {
     [issueID, t],
   );
 
+  const loadRuns = useCallback(async () => {
+    if (!issueID) return;
+
+    setIsLoadingRuns(true);
+    setRunsError("");
+    try {
+      const runtime = await fetchOrchestratorIssueRuntime(issueID);
+      setRuns(runtime.runs);
+    } catch (error) {
+      setRunsError(
+        error instanceof Error ? error.message : t("issues.detailPage.failedToLoadRuns"),
+      );
+      setRuns([]);
+    } finally {
+      setIsLoadingRuns(false);
+    }
+  }, [issueID, t]);
+
   useEffect(() => {
     void loadIssue();
   }, [loadIssue]);
@@ -79,6 +106,12 @@ export function IssueDetailPage() {
     setCommentsError("");
     void loadComments();
   }, [loadComments]);
+
+  useEffect(() => {
+    setRuns([]);
+    setRunsError("");
+    void loadRuns();
+  }, [loadRuns]);
 
   async function handleStatusChange(status: IssueStatus) {
     if (issueState.kind !== "ready" || issueState.issue.status === status) return;
@@ -122,6 +155,12 @@ export function IssueDetailPage() {
             currentStatus={issueState.issue.status}
             disabled={isUpdatingStatus}
             onStatusChange={handleStatusChange}
+          />
+          <RunsSection
+            issueID={issueState.issue.id}
+            error={runsError}
+            isLoading={isLoadingRuns}
+            runs={runs}
           />
           <IssueDescription issue={issueState.issue} />
           <CommentList

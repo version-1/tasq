@@ -89,6 +89,17 @@ func TestStoreQueriesActiveRunsAndLatestRunByIssueID(t *testing.T) {
 	if _, err := store.RunByIssueID(ctx, 99); !errors.Is(err, sql.ErrNoRows) {
 		t.Fatalf("missing issue error = %v, want sql.ErrNoRows", err)
 	}
+
+	runsForIssue, err := store.RunsByIssueID(ctx, 2)
+	if err != nil {
+		t.Fatalf("runs by issue id: %v", err)
+	}
+	if len(runsForIssue) != 2 {
+		t.Fatalf("runs for issue = %+v", runsForIssue)
+	}
+	if runsForIssue[0].RunID != latestForIssue.RunID || runsForIssue[1].RunID != running.RunID {
+		t.Fatalf("runs order = %+v", runsForIssue)
+	}
 }
 
 func TestStoreRecordsRunnerEventAndWorkspaceMetadata(t *testing.T) {
@@ -101,15 +112,31 @@ func TestStoreRecordsRunnerEventAndWorkspaceMetadata(t *testing.T) {
 	}
 	defer store.Close()
 
-	if err := store.RecordRunnerEvent(ctx, "run-1", "turn/completed", "done", `{"ok":true}`); err != nil {
+	if err := store.RecordRunnerEvent(ctx, "run-1", "turn_completed", "done", `{"ok":true}`); err != nil {
 		t.Fatalf("record runner event: %v", err)
+	}
+	if err := store.RecordRunnerEvent(ctx, "run-1", "running", "runner started", ""); err != nil {
+		t.Fatalf("record running event: %v", err)
+	}
+	if err := store.RecordRunnerEvent(ctx, "run-1", "debug", "ignore", ""); err != nil {
+		t.Fatalf("record debug event: %v", err)
 	}
 	events, err := store.RunnerEvents(ctx, "run-1", 10)
 	if err != nil {
 		t.Fatalf("list runner events: %v", err)
 	}
-	if len(events) != 1 || events[0].EventType != "turn/completed" || events[0].PayloadJSON != `{"ok":true}` {
+	if len(events) != 3 || events[0].EventType != "turn_completed" || events[0].PayloadJSON != `{"ok":true}` {
 		t.Fatalf("events = %+v", events)
+	}
+	conversationEvents, err := store.ConversationEvents(ctx, "run-1")
+	if err != nil {
+		t.Fatalf("conversation events: %v", err)
+	}
+	if len(conversationEvents) != 2 {
+		t.Fatalf("conversation events = %+v", conversationEvents)
+	}
+	if conversationEvents[0].EventType != "turn_completed" || conversationEvents[1].EventType != "running" {
+		t.Fatalf("conversation event order = %+v", conversationEvents)
 	}
 
 	if err := store.UpsertWorkspaceMetadata(ctx, WorkspaceMetadataInput{

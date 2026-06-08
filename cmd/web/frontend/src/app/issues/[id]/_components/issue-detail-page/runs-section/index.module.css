@@ -1,0 +1,81 @@
+.section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 8%);
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+}
+
+.sectionHeader {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.sectionHeader h3 {
+  color: var(--primary-black);
+  font-size: 16px;
+  margin: 0;
+}
+
+.muted,
+.error {
+  font-size: 14px;
+  margin: 0;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.error {
+  color: var(--danger);
+}
+
+.runList {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  overflow: hidden;
+}
+
+.runRow {
+  align-items: center;
+  color: var(--text);
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(0, 1.5fr) minmax(160px, 0.8fr) minmax(160px, 0.8fr);
+  padding: 12px 14px;
+  text-decoration: none;
+}
+
+.runRow + .runRow {
+  border-top: 1px solid var(--border);
+}
+
+.runRow:hover {
+  background: var(--extra-light-gray);
+}
+
+.runID {
+  color: var(--primary-black);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.runMeta,
+.runTime {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+@media (max-width: 720px) {
+  .runRow {
+    align-items: start;
+    grid-template-columns: 1fr;
+  }
+}
