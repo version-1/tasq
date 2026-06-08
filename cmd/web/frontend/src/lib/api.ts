@@ -13,6 +13,7 @@ import {
   type Project,
   type Summary,
 } from "@/lib/generated/issue-tracker";
+import type { OrchestratorState } from "@/lib/types";
 
 type ApiResponse<T> = {
   data: ApiEnvelope<T> | ErrorResponse;
@@ -58,6 +59,10 @@ export function updateIssueStatus(id: number, status: IssueStatus): Promise<Issu
   return unwrapResponse(patchApiV1IssuesId(id, { status }, noStore));
 }
 
+export function fetchOrchestratorState(): Promise<OrchestratorState> {
+  return fetchOrchestrator<OrchestratorState>("/api/v1/state");
+}
+
 async function unwrapResponse<T>(response: Promise<ApiResponse<T>>): Promise<T> {
   const resolved = await response;
   if (resolved.status >= 400) {
@@ -76,4 +81,17 @@ async function unwrapEnvelope<T extends ApiEnvelope<unknown>>(
     throw new Error(`${payload.error.code}: ${payload.error.message}`);
   }
   return resolved.data as T;
+}
+
+async function fetchOrchestrator<T>(path: string): Promise<T> {
+  const response = await fetch(`/orchestrator${path}`, noStore);
+  const text = await response.text();
+  const payload = text ? JSON.parse(text) : {};
+  if (!response.ok) {
+    const error = payload as { error?: { code?: string; message?: string } };
+    const code = error.error?.code ?? "orchestrator_error";
+    const message = error.error?.message ?? "orchestrator request failed";
+    throw new Error(`${code}: ${message}`);
+  }
+  return payload as T;
 }

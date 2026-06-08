@@ -1,60 +1,209 @@
-.panelGrid {
+.dashboard {
   display: grid;
   gap: 18px;
 }
 
-.widePanel {
-  background: var(--white);
-  border: 1px solid var(--light-gray);
+.header,
+.panel,
+.metricCard,
+.compactMetricCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 24px;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 8%);
 }
 
-.widePanel h2 {
+.header {
+  padding: 20px 22px;
+}
+
+.title {
   color: var(--primary-black);
-  font-size: 20px;
-  margin: 0 0 20px;
+  font-size: 22px;
+  margin: 0;
+}
+
+.syncText {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 8px 0 0;
 }
 
 .metricGrid {
   display: grid;
   gap: 14px;
-  grid-template-columns: repeat(4, minmax(120px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   margin: 0;
 }
 
-.metricGrid div {
-  background: var(--extra-light-gray);
-  border-radius: 8px;
+.metricCard,
+.compactMetricCard {
+  display: grid;
+  gap: 8px;
+  min-height: 108px;
   padding: 16px;
 }
 
-.metricGrid dt {
-  color: var(--medium-gray);
+.metricLabel {
+  color: var(--muted);
   font-size: 13px;
+  margin: 0;
 }
 
-.metricGrid dd {
+.metricValue,
+.compactMetricValue {
+  align-self: end;
   color: var(--primary-black);
-  font-size: 28px;
+  font-size: 30px;
   font-weight: 700;
-  margin: 8px 0 0;
+  line-height: 1;
+  margin: 0;
 }
 
-.generatedAt {
-  color: var(--medium-gray);
+.detailGrid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.panel {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  padding: 18px;
+}
+
+.panelHeader {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.panelTitle {
+  color: var(--primary-black);
+  font-size: 16px;
+  margin: 0;
+}
+
+.panelMeta {
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.distributionList {
+  display: grid;
+  gap: 14px;
+}
+
+.distributionRow {
+  display: grid;
+  gap: 6px;
+}
+
+.distributionMeta {
+  align-items: center;
+  color: var(--text);
+  display: flex;
   font-size: 13px;
-  margin: 20px 0 0;
+  gap: 12px;
+  justify-content: space-between;
 }
 
-@media (max-width: 900px) {
-  .metricGrid {
-    grid-template-columns: repeat(2, minmax(120px, 1fr));
+.barTrack {
+  background: var(--extra-light-gray);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  block-size: 10px;
+  overflow: hidden;
+}
+
+.barFill {
+  background: var(--primary-black);
+  block-size: 100%;
+  display: block;
+}
+
+.tokenGrid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+}
+
+.compactMetricCard {
+  background: var(--extra-light-gray);
+  box-shadow: none;
+  min-height: 96px;
+}
+
+.compactMetricValue {
+  font-size: 24px;
+}
+
+.emptyMessage,
+.errorMessage {
+  font-size: 14px;
+  margin: 0;
+}
+
+.emptyMessage {
+  color: var(--muted);
+}
+
+.errorMessage {
+  color: var(--danger);
+}
+
+.tableWrap {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: auto;
+}
+
+.runTable {
+  border-collapse: collapse;
+  inline-size: 100%;
+  min-inline-size: 680px;
+}
+
+.tableHeadCell,
+.tableCell {
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  padding: 10px 12px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.tableHeadCell {
+  background: var(--extra-light-gray);
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.tableCell {
+  color: var(--text);
+}
+
+@media (max-width: 1060px) {
+  .metricGrid,
+  .detailGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 560px) {
-  .metricGrid {
+@media (max-width: 720px) {
+  .metricGrid,
+  .detailGrid,
+  .tokenGrid {
     grid-template-columns: 1fr;
+  }
+
+  .panelHeader {
+    align-items: start;
+    flex-direction: column;
+    gap: 6px;
   }
 }
