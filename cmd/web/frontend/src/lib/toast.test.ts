@@ -72,6 +72,18 @@ describe("toast store", () => {
     expect(listener).toHaveBeenLastCalledWith([]);
   });
 
+  it("dismisses a toast manually", async () => {
+    const toastStore = await loadToastModule();
+    const { changes, unsubscribe } = collectToastChanges(toastStore);
+    const toast = toastStore.addToast({ type: "success", message: "Saved" });
+
+    toastStore.dismissToast(toast.id);
+
+    expect(changes.at(-1)).toEqual([]);
+
+    unsubscribe();
+  });
+
   it("automatically removes success toasts after 3 seconds", async () => {
     const toastStore = await loadToastModule();
     const { changes, unsubscribe } = collectToastChanges(toastStore);

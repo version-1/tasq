@@ -1,0 +1,82 @@
+.stack {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  display: grid;
+  gap: 10px;
+  width: min(360px, calc(100vw - 32px));
+  pointer-events: none;
+}
+
+.toast {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 32px;
+  gap: 12px;
+  align-items: start;
+  border: 1px solid var(--border);
+  border-left-width: 4px;
+  border-radius: 6px;
+  background: var(--surface);
+  box-shadow: 0 12px 30px rgb(10 10 10 / 12%);
+  color: var(--text);
+  padding: 12px;
+  pointer-events: auto;
+}
+
+.success {
+  border-left-color: var(--ok);
+}
+
+.error {
+  border-left-color: var(--danger);
+}
+
+.content {
+  min-width: 0;
+}
+
+.title,
+.message {
+  margin: 0;
+}
+
+.title {
+  color: var(--primary-black);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.message {
+  color: var(--dark-gray);
+  font-size: 14px;
+  line-height: 1.45;
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+}
+
+.dismiss {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--medium-gray);
+  height: 32px;
+  padding: 0;
+  width: 32px;
+}
+
+.dismiss:hover {
+  background: var(--extra-light-gray);
+  color: var(--primary-black);
+}
+
+@media (max-width: 900px) {
+  .stack {
+    top: 12px;
+    right: 12px;
+    width: min(360px, calc(100vw - 24px));
+  }
+}
