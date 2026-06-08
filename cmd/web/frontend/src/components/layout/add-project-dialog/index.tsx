@@ -1,4 +1,4 @@
-import { useState, type ChangeEvent, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import type { CreateProjectInput } from "@/lib/types";
 import styles from "./index.module.css";
@@ -24,17 +24,15 @@ export function AddProjectDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationError, setValidationError] = useState("");
 
-  function handleLocationChange(event: ChangeEvent<HTMLInputElement>) {
-    const selectedLocation = projectLocationFromFiles(event.currentTarget.files);
-    if (!selectedLocation) {
-      return;
-    }
+  async function handleChooseDirectory() {
+    const selectedDirectory = await chooseProjectDirectory();
+    if (!selectedDirectory) return;
 
     setValues({
       ...values,
-      key: values.key || toProjectKey(selectedLocation.name),
-      location: selectedLocation.location,
-      name: values.name || toProjectName(selectedLocation.name),
+      key: values.key || toProjectKey(selectedDirectory.name),
+      location: values.location || selectedDirectory.name,
+      name: values.name || toProjectName(selectedDirectory.name),
     });
   }
 
@@ -84,14 +82,15 @@ export function AddProjectDialog({
 
           <label className={styles.field}>
             <span>{t("addProject.fields.location")}</span>
-            <input
+            <button
               aria-label={t("addProject.fields.chooseDirectory")}
+              className={styles.directoryButton}
+              type="button"
               autoFocus
-              className={styles.fileInput}
-              type="file"
-              onChange={handleLocationChange}
-              {...directoryPickerAttributes}
-            />
+              onClick={() => void handleChooseDirectory()}
+            >
+              {t("addProject.fields.chooseDirectory")}
+            </button>
             <span className={styles.selectedLocation}>
               {values.location || t("addProject.placeholders.directory")}
             </span>
@@ -154,11 +153,6 @@ const initialAddProjectValues: AddProjectFormValues = {
   location: "",
 };
 
-const directoryPickerAttributes = {
-  directory: "",
-  webkitdirectory: "",
-};
-
 function toCreateProjectInput(values: AddProjectFormValues): CreateProjectInput {
   return {
     key: values.key.trim(),
@@ -169,26 +163,26 @@ function toCreateProjectInput(values: AddProjectFormValues): CreateProjectInput 
 }
 
 type SelectedProjectLocation = {
-  location: string;
   name: string;
 };
 
-function projectLocationFromFiles(files: FileList | null): SelectedProjectLocation | null {
-  const selectedFile = files?.[0];
-  if (!selectedFile) {
-    return null;
-  }
-
-  const relativePath = selectedFile.webkitRelativePath || selectedFile.name;
-  const location = relativePath.split("/").filter(Boolean)[0] ?? "";
-  if (!location) {
-    return null;
-  }
-
-  return {
-    location,
-    name: location,
+async function chooseProjectDirectory(): Promise<SelectedProjectLocation | null> {
+  const picker = window as Window & {
+    showDirectoryPicker?: () => Promise<{ name: string }>;
   };
+  if (!picker.showDirectoryPicker) {
+    return null;
+  }
+
+  try {
+    const directory = await picker.showDirectoryPicker();
+    if (!directory.name) {
+      return null;
+    }
+    return { name: directory.name };
+  } catch {
+    return null;
+  }
 }
 
 function isAbsoluteLocation(location: string): boolean {

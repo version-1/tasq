@@ -4,6 +4,10 @@ import { describe, expect, it, vi } from "vitest";
 import type { CreateProjectInput } from "@/lib/types";
 import { AddProjectDialog } from "./index";
 
+type TestWindow = Window & {
+  showDirectoryPicker?: () => Promise<{ name: string }>;
+};
+
 function renderAddProjectDialog({
   error = "",
   onCancel = vi.fn(),
@@ -22,13 +26,10 @@ describe("AddProjectDialog", () => {
   it("submits trimmed project values", async () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn<(_: CreateProjectInput) => Promise<void>>().mockResolvedValue(undefined);
+    mockDirectoryPicker("product-website");
     renderAddProjectDialog({ onSubmit });
-    const file = new File([""], "README.md", { type: "text/markdown" });
-    Object.defineProperty(file, "webkitRelativePath", {
-      value: "product-website/README.md",
-    });
 
-    await user.upload(screen.getByLabelText("Choose directory"), file);
+    await user.click(screen.getByRole("button", { name: "Choose directory" }));
     await user.clear(screen.getByLabelText("Location"));
     await user.type(screen.getByLabelText("Location"), "/workspace/product-website");
     await user.clear(screen.getByLabelText("Name"));
@@ -47,13 +48,10 @@ describe("AddProjectDialog", () => {
 
   it("fills key and name from the selected directory", async () => {
     const user = userEvent.setup();
+    mockDirectoryPicker("agent_docs");
     renderAddProjectDialog();
-    const file = new File([""], "index.ts", { type: "text/typescript" });
-    Object.defineProperty(file, "webkitRelativePath", {
-      value: "agent_docs/index.ts",
-    });
 
-    await user.upload(screen.getByLabelText("Choose directory"), file);
+    await user.click(screen.getByRole("button", { name: "Choose directory" }));
 
     expect(screen.getByLabelText("Key")).toHaveValue("agent-docs");
     expect(screen.getByLabelText("Location")).toHaveValue("agent_docs");
@@ -75,13 +73,10 @@ describe("AddProjectDialog", () => {
   it("requires an absolute project location", async () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn<(_: CreateProjectInput) => Promise<void>>().mockResolvedValue(undefined);
+    mockDirectoryPicker("agent-docs");
     renderAddProjectDialog({ onSubmit });
-    const file = new File([""], "index.ts", { type: "text/typescript" });
-    Object.defineProperty(file, "webkitRelativePath", {
-      value: "agent-docs/index.ts",
-    });
 
-    await user.upload(screen.getByLabelText("Choose directory"), file);
+    await user.click(screen.getByRole("button", { name: "Choose directory" }));
     await user.click(screen.getByRole("button", { name: "Add" }));
 
     expect(screen.getByText("Enter an absolute project location")).toBeTruthy();
@@ -98,3 +93,10 @@ describe("AddProjectDialog", () => {
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
 });
+
+function mockDirectoryPicker(name: string) {
+  Object.defineProperty(window as TestWindow, "showDirectoryPicker", {
+    configurable: true,
+    value: vi.fn().mockResolvedValue({ name }),
+  });
+}

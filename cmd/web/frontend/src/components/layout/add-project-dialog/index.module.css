@@ -64,8 +64,15 @@
   width: 100%;
 }
 
-.field .fileInput {
-  padding: 8px 10px;
+.directoryButton {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--primary-black);
+  font: inherit;
+  font-weight: 400;
+  padding: 10px;
+  text-align: left;
+  width: 100%;
 }
 
 .selectedLocation {
