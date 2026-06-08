@@ -16,6 +16,7 @@ import (
 
 type Tracker interface {
 	Issue(ctx context.Context, id int64) (entity.Issue, error)
+	Project(ctx context.Context, id int64) (entity.Project, error)
 	IssuesByStates(ctx context.Context, states []string) ([]entity.Issue, error)
 }
 
@@ -29,7 +30,7 @@ type Store interface {
 }
 
 type WorkspaceManager interface {
-	CreateForIssue(identifier string) (workspace.Workspace, error)
+	CreateForIssueInProjectLocation(identifier string, projectLocation string) (workspace.Workspace, error)
 }
 
 type Poller struct {
@@ -166,7 +167,11 @@ func (p *Poller) runPoll(ctx context.Context, reason string) {
 
 func (p *Poller) queueIssue(ctx context.Context, issue entity.Issue) (run.Run, error) {
 	identifier := issueIdentifier(issue.ID)
-	workspaceInfo, err := p.workspaces.CreateForIssue(identifier)
+	project, err := p.tracker.Project(ctx, issue.ProjectID)
+	if err != nil {
+		return run.Run{}, fmt.Errorf("fetch project %d for %s: %w", issue.ProjectID, identifier, err)
+	}
+	workspaceInfo, err := p.workspaces.CreateForIssueInProjectLocation(identifier, project.Location)
 	if err != nil {
 		_ = p.store.RecordWorkspaceSetupFailure(ctx, issue.ID, identifier, "", err.Error())
 		return run.Run{}, fmt.Errorf("create workspace for %s: %w", identifier, err)

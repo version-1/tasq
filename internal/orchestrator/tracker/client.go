@@ -32,6 +32,14 @@ func (c *Client) Issue(ctx context.Context, id int64) (entity.Issue, error) {
 	return output, nil
 }
 
+func (c *Client) Project(ctx context.Context, id int64) (entity.Project, error) {
+	var output entity.Project
+	if err := c.request(ctx, http.MethodGet, fmt.Sprintf("/api/v1/projects/%d", id), nil, &output); err != nil {
+		return entity.Project{}, err
+	}
+	return output, nil
+}
+
 func (c *Client) UpdateIssue(ctx context.Context, id int64, input entity.UpdateIssueInput) (entity.Issue, error) {
 	var output entity.Issue
 	if err := c.request(ctx, http.MethodPatch, fmt.Sprintf("/api/v1/issues/%d", id), input, &output); err != nil {

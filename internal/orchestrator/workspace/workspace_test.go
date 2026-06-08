@@ -31,8 +31,32 @@ func TestManagerCreatesSanitizedWorkspaceUnderRoot(t *testing.T) {
 	if _, err := os.Stat(workspace.Path); err != nil {
 		t.Fatalf("stat workspace: %v", err)
 	}
-	if filepath.Dir(workspace.Path) != root {
-		t.Fatalf("workspace path = %q, root = %q", workspace.Path, root)
+	if filepath.Dir(workspace.Path) != manager.Root() {
+		t.Fatalf("workspace path = %q, root = %q", workspace.Path, manager.Root())
+	}
+}
+
+func TestManagerCreatesWorkspaceUnderProjectLocation(t *testing.T) {
+	t.Parallel()
+
+	_, root := initTestRepo(t)
+	manager, err := NewManager(root)
+	if err != nil {
+		t.Fatalf("create workspace manager: %v", err)
+	}
+	projectRoot, _ := initTestRepo(t)
+
+	workspace, err := manager.CreateForIssueInProjectLocation("TASK-11", projectRoot)
+	if err != nil {
+		t.Fatalf("create project workspace: %v", err)
+	}
+
+	wantPath := filepath.Join(canonicalTestPath(t, projectRoot), ".worktrees", "TASK-11")
+	if workspace.Path != wantPath {
+		t.Fatalf("workspace path = %q, want %q", workspace.Path, wantPath)
+	}
+	if _, err := os.Stat(filepath.Join(workspace.Path, ".git")); err != nil {
+		t.Fatalf("worktree git file missing: %v", err)
 	}
 }
 
@@ -259,6 +283,15 @@ func initTestRepo(t *testing.T) (string, string) {
 		t.Fatalf("create workspace root: %v", err)
 	}
 	return repoRoot, workspaceRoot
+}
+
+func canonicalTestPath(t *testing.T, path string) string {
+	t.Helper()
+	cleanPath, err := filepath.EvalSymlinks(path)
+	if err != nil {
+		t.Fatalf("canonicalize test path %q: %v", path, err)
+	}
+	return filepath.Clean(cleanPath)
 }
 
 func gitCommand(t *testing.T, dir string, args ...string) string {

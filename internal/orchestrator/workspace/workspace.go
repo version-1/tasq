@@ -38,12 +38,19 @@ func NewManagerWithHooks(root string, hooks HookConfig) (*Manager, error) {
 	if err := os.MkdirAll(cleanRoot, 0o755); err != nil {
 		return nil, fmt.Errorf("create workspace root: %w", err)
 	}
+	cleanRoot, err = canonicalPath(cleanRoot)
+	if err != nil {
+		return nil, fmt.Errorf("canonicalize workspace root: %w", err)
+	}
 	manager := &Manager{root: cleanRoot, hooks: hooks}
 	repoRoot, err := manager.gitExec("rev-parse", "--show-toplevel")
 	if err != nil {
 		return nil, fmt.Errorf("resolve workspace git repository: %w", err)
 	}
-	manager.repoRoot = filepath.Clean(strings.TrimSpace(repoRoot))
+	manager.repoRoot, err = canonicalPath(strings.TrimSpace(repoRoot))
+	if err != nil {
+		return nil, fmt.Errorf("canonicalize workspace git repository: %w", err)
+	}
 	return manager, nil
 }
 
@@ -96,6 +103,18 @@ func (m *Manager) CreateForIssue(identifier string) (Workspace, error) {
 	return Workspace{Path: path, WorkspaceKey: key, CreatedNow: createdNow}, nil
 }
 
+func (m *Manager) CreateForIssueInProjectLocation(identifier string, projectLocation string) (Workspace, error) {
+	root, err := m.rootForProjectLocation(projectLocation)
+	if err != nil {
+		return Workspace{}, err
+	}
+	manager, err := NewManagerWithHooks(root, m.hooks)
+	if err != nil {
+		return Workspace{}, err
+	}
+	return manager.CreateForIssue(identifier)
+}
+
 func (m *Manager) RemoveForIssue(identifier string) error {
 	key := sanitizeKey(identifier)
 	if key == "" {
@@ -141,6 +160,28 @@ func (m *Manager) validatePath(path string) error {
 	return nil
 }
 
+func (m *Manager) rootForProjectLocation(projectLocation string) (string, error) {
+	if projectLocation == "" {
+		return "", fmt.Errorf("project location is required")
+	}
+	relRoot, err := filepath.Rel(m.repoRoot, m.root)
+	if err != nil {
+		return "", fmt.Errorf("resolve workspace root relative to repository: %w", err)
+	}
+	if relRoot == ".." || strings.HasPrefix(relRoot, ".."+string(filepath.Separator)) {
+		return "", fmt.Errorf("workspace root must be inside repository root: %s", m.root)
+	}
+	absProjectLocation, err := filepath.Abs(projectLocation)
+	if err != nil {
+		return "", fmt.Errorf("resolve project location: %w", err)
+	}
+	cleanProjectLocation, err := canonicalPath(absProjectLocation)
+	if err != nil {
+		return "", fmt.Errorf("canonicalize project location: %w", err)
+	}
+	return filepath.Join(cleanProjectLocation, relRoot), nil
+}
+
 func (m *Manager) removeWorktree(path string) error {
 	if _, err := m.gitExec("worktree", "remove", "--force", path); err == nil {
 		return nil
@@ -179,6 +220,14 @@ func (m *Manager) gitRootForCommand() string {
 		return m.repoRoot
 	}
 	return m.root
+}
+
+func canonicalPath(path string) (string, error) {
+	resolved, err := filepath.EvalSymlinks(path)
+	if err != nil {
+		return "", err
+	}
+	return filepath.Clean(resolved), nil
 }
 
 func workspaceBranch(key string) string {
