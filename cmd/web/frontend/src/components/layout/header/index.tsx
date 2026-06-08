@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { IconProxy, type IconProxyName } from "@/components/ui/icon-proxy";
 import { Breadcrumb } from "./breadcrumb";
 import styles from "./index.module.css";
 
@@ -19,6 +20,12 @@ const pages = [
   { key: "issues", href: "/issues", titleKey: "header.board" },
   { key: "settings", href: "/settings", titleKey: "header.settings" },
 ] as const;
+
+const viewActions = [
+  { icon: "filter", titleKey: "header.filter" },
+  { icon: "arrow-up-down", titleKey: "header.sort" },
+  { icon: "layout-grid", titleKey: "header.view" },
+] satisfies Array<{ icon: IconProxyName; titleKey: string }>;
 
 export function Header({
   activePage,
@@ -82,9 +89,12 @@ export function Header({
           </nav>
 
           <div className={styles.viewActions}>
-            <button type="button">{t("header.filter")}</button>
-            <button type="button">{t("header.sort")}</button>
-            <button type="button">{t("header.view")}</button>
+            {viewActions.map((action) => (
+              <button key={action.titleKey} type="button">
+                <IconProxy name={action.icon} size={15} />
+                {t(action.titleKey)}
+              </button>
+            ))}
           </div>
         </div>
       ) : null}

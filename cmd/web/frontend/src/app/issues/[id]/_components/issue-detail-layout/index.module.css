@@ -18,18 +18,17 @@
 
 .tabs {
   align-items: center;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--light-gray);
   display: flex;
-  gap: 4px;
+  gap: 34px;
 }
 
 .tab {
-  border-bottom: 2px solid transparent;
-  color: var(--muted);
+  border: 0;
+  color: var(--medium-gray);
   font-size: 14px;
   font-weight: 700;
-  margin-bottom: -1px;
-  padding: 10px 14px;
+  padding: 0 0 18px;
   text-decoration: none;
 }
 
@@ -38,7 +37,7 @@
 }
 
 .activeTab {
-  border-bottom-color: var(--primary-black);
+  box-shadow: inset 0 -2px 0 var(--primary-black);
   color: var(--primary-black);
 }
 

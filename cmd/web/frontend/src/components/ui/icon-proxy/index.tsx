@@ -1,6 +1,9 @@
 import {
+  ArrowUpDown,
   ChevronDown,
   Ellipsis,
+  Filter,
+  LayoutGrid,
   LayoutDashboard,
   Plus,
   Settings,
@@ -9,8 +12,11 @@ import {
 } from "lucide-react";
 
 const icons = {
+  "arrow-up-down": ArrowUpDown,
   "chevron-down": ChevronDown,
   ellipsis: Ellipsis,
+  filter: Filter,
+  "layout-grid": LayoutGrid,
   "layout-dashboard": LayoutDashboard,
   plus: Plus,
   settings: Settings,

@@ -129,7 +129,10 @@
 }
 
 .viewActions button {
+  align-items: center;
   color: var(--dark-gray);
+  display: flex;
+  gap: 6px;
   padding: 0;
 }
 
