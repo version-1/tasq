@@ -16,11 +16,13 @@ import {
   type Summary,
 } from "@/lib/generated/issue-tracker";
 import {
+  getApiV1State,
   getApiV1IssueIdentifier,
   getApiV1IssueIdentifierRunsRunIdConversations,
   type ConversationResponse,
   type ErrorResponse as OrchestratorErrorResponse,
   type IssueRuntimeResponse,
+  type StateResponse,
 } from "@/lib/generated/orchestrator";
 
 type ApiResponse<T> = {
@@ -69,6 +71,10 @@ export function createProject(input: CreateProjectInput): Promise<Project> {
 
 export function updateIssueStatus(id: number, status: IssueStatus): Promise<Issue> {
   return unwrapResponse(patchApiV1IssuesId(id, { status }, noStore));
+}
+
+export function fetchOrchestratorState(): Promise<StateResponse> {
+  return unwrapOrchestratorResponse(getApiV1State(noStore));
 }
 
 export function fetchOrchestratorIssueRuntime(

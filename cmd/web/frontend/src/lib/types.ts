@@ -20,13 +20,19 @@ import type {
   ConversationResponse,
   IssueRunSummary,
   IssueRuntimeResponse,
+  RunSummary,
   RunState,
+  StateResponse,
+  TokenSummary,
 } from "@/lib/generated/orchestrator";
 
 export const issueStatuses = Object.values(IssueStatusValues);
 export const priorities = Object.values(PriorityValues);
 
 export type OrchestratorRunStatus = RunState;
+export type OrchestratorTokenSummary = TokenSummary;
+export type OrchestratorRunSummary = RunSummary;
+export type OrchestratorState = StateResponse;
 export type OrchestratorIssueRun = IssueRunSummary;
 export type OrchestratorIssueRuntime = IssueRuntimeResponse;
 export type OrchestratorConversationEvent = ConversationEvent;
