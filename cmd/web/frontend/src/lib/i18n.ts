@@ -243,49 +243,134 @@ const resources = {
       toast: {
         dismiss: "閉じる",
         error: {
-          comments: {
+          attachments: {
+            content: {
+              file_not_found: "添付ファイルを読み込めません",
+              invalid_input: "添付ファイルの読み込み条件が不正です",
+              not_found: "添付ファイルが見つかりません",
+              storage_unavailable: "添付ファイルストレージを利用できません",
+            },
+            create: {
+              entity_not_found: "添付先が見つかりません",
+              file_required: "添付ファイルを選択してください",
+              invalid_file: "添付ファイルを読み込めません",
+              invalid_file_type: "添付できるファイル形式ではありません",
+              invalid_input: "添付ファイルの入力内容が不正です",
+              invalid_request: "添付ファイルの追加リクエストが不正です",
+              storage_error: "添付ファイルを保存できません",
+              storage_unavailable: "添付ファイルストレージを利用できません",
+            },
+            delete: {
+              invalid_input: "添付ファイルの削除条件が不正です",
+              not_found: "添付ファイルが見つかりません",
+              storage_unavailable: "添付ファイルストレージを利用できません",
+            },
             list: {
+              invalid_input: "添付ファイルの読み込み条件が不正です",
+            },
+          },
+          comments: {
+            create: {
+              invalid_id: "コメント対象の Issue ID が不正です",
+              invalid_input: "コメントの入力内容が不正です",
+              invalid_request: "コメントの追加リクエストが不正です",
+              issue_not_found: "コメント対象の Issue が見つかりません",
+            },
+            list: {
+              invalid_id: "コメント対象の Issue ID が不正です",
               invalid_input: "コメントの読み込み条件が不正です",
               issue_not_found: "コメント対象の Issue が見つかりません",
             },
+            update: {
+              invalid_id: "コメント ID が不正です",
+              invalid_input: "コメントの更新内容が不正です",
+              invalid_request: "コメントの更新リクエストが不正です",
+              not_found: "コメントが見つかりません",
+            },
           },
+          conversation_query_failed: "会話履歴を読み込めません",
+          invalid_issue_identifier: "Issue 識別子が不正です",
+          invalid_run_id: "Run ID が不正です",
+          issue_not_found: "Issue が見つかりません",
+          issue_query_failed: "Issue の実行情報を読み込めません",
           issues: {
             create: {
               invalid_input: "Issue の入力内容が不正です",
               invalid_request: "Issue の作成リクエストが不正です",
+            },
+            get: {
+              invalid_id: "Issue ID が不正です",
+              invalid_input: "Issue の読み込み条件が不正です",
+              not_found: "Issue が見つかりません",
             },
             list: {
               internal_error: "Issue 一覧を読み込めません",
               invalid_project_id: "Project ID が不正です",
               invalid_states: "ステータス指定が不正です",
             },
+            states: {
+              internal_error: "Issue ステータスを読み込めません",
+              invalid_request: "Issue ステータスの取得リクエストが不正です",
+            },
             update: {
+              invalid_id: "Issue ID が不正です",
+              invalid_input: "Issue の更新内容が不正です",
               invalid_request: "Issue の更新リクエストが不正です",
+              not_found: "Issue が見つかりません",
             },
           },
           orchestrator_error: "Orchestrator API に接続できません",
           projects: {
+            check: {
+              invalid_id: "Project ID が不正です",
+              invalid_input: "Project の確認条件が不正です",
+              invalid_request: "Project の確認リクエストが不正です",
+              not_found: "Project が見つかりません",
+            },
             create: {
               invalid_input: "Project の入力内容が不正です",
               invalid_request: "Project の作成リクエストが不正です",
             },
+            delete: {
+              invalid_id: "Project ID が不正です",
+              invalid_input: "Project の削除条件が不正です",
+              not_found: "Project が見つかりません",
+            },
+            get: {
+              invalid_id: "Project ID が不正です",
+              invalid_input: "Project の読み込み条件が不正です",
+              not_found: "Project が見つかりません",
+            },
             list: {
               internal_error: "Project 一覧を読み込めません",
             },
+            update: {
+              invalid_id: "Project ID が不正です",
+              invalid_input: "Project の更新内容が不正です",
+              invalid_request: "Project の更新リクエストが不正です",
+              not_found: "Project が見つかりません",
+            },
           },
+          refresh_unavailable: "更新リクエストを利用できません",
+          run_not_found: "Run が見つかりません",
           summary: {
             get: {
               internal_error: "Summary を読み込めません",
             },
           },
+          state_query_failed: "実行状態を読み込めません",
           title: "エラー",
         },
         region: "通知",
         success: {
+          created: "作成しました",
+          deleted: "削除しました",
           issueCreated: "Issue を作成しました",
           issueStatusUpdated: "Issue のステータスを更新しました",
           projectCreated: "Project を作成しました",
+          saved: "保存しました",
           title: "完了",
+          updated: "更新しました",
         },
       },
     },
@@ -525,49 +610,134 @@ const resources = {
       toast: {
         dismiss: "Dismiss",
         error: {
-          comments: {
+          attachments: {
+            content: {
+              file_not_found: "Could not load the attachment file",
+              invalid_input: "Attachment content request is invalid",
+              not_found: "Attachment not found",
+              storage_unavailable: "Attachment storage is unavailable",
+            },
+            create: {
+              entity_not_found: "Attachment target was not found",
+              file_required: "Choose a file to attach",
+              invalid_file: "Could not read the attachment file",
+              invalid_file_type: "This file type cannot be attached",
+              invalid_input: "Attachment input is invalid",
+              invalid_request: "Attachment upload request is invalid",
+              storage_error: "Could not save the attachment",
+              storage_unavailable: "Attachment storage is unavailable",
+            },
+            delete: {
+              invalid_input: "Attachment delete request is invalid",
+              not_found: "Attachment not found",
+              storage_unavailable: "Attachment storage is unavailable",
+            },
             list: {
+              invalid_input: "Attachment request parameters are invalid",
+            },
+          },
+          comments: {
+            create: {
+              invalid_id: "Comment issue ID is invalid",
+              invalid_input: "Comment input is invalid",
+              invalid_request: "Comment creation request is invalid",
+              issue_not_found: "The issue for this comment was not found",
+            },
+            list: {
+              invalid_id: "Comment issue ID is invalid",
               invalid_input: "Comment request parameters are invalid",
               issue_not_found: "The issue for these comments was not found",
             },
+            update: {
+              invalid_id: "Comment ID is invalid",
+              invalid_input: "Comment update input is invalid",
+              invalid_request: "Comment update request is invalid",
+              not_found: "Comment not found",
+            },
           },
+          conversation_query_failed: "Could not load the conversation",
+          invalid_issue_identifier: "Issue identifier is invalid",
+          invalid_run_id: "Run ID is invalid",
+          issue_not_found: "Issue not found",
+          issue_query_failed: "Could not load issue runtime details",
           issues: {
             create: {
               invalid_input: "Issue input is invalid",
               invalid_request: "Issue creation request is invalid",
+            },
+            get: {
+              invalid_id: "Issue ID is invalid",
+              invalid_input: "Issue request is invalid",
+              not_found: "Issue not found",
             },
             list: {
               internal_error: "Could not load issues",
               invalid_project_id: "Project ID is invalid",
               invalid_states: "Status filter is invalid",
             },
+            states: {
+              internal_error: "Could not load issue statuses",
+              invalid_request: "Issue status request is invalid",
+            },
             update: {
+              invalid_id: "Issue ID is invalid",
+              invalid_input: "Issue update input is invalid",
               invalid_request: "Issue update request is invalid",
+              not_found: "Issue not found",
             },
           },
           orchestrator_error: "Could not reach the orchestrator API",
           projects: {
+            check: {
+              invalid_id: "Project ID is invalid",
+              invalid_input: "Project check input is invalid",
+              invalid_request: "Project check request is invalid",
+              not_found: "Project not found",
+            },
             create: {
               invalid_input: "Project input is invalid",
               invalid_request: "Project creation request is invalid",
             },
+            delete: {
+              invalid_id: "Project ID is invalid",
+              invalid_input: "Project delete request is invalid",
+              not_found: "Project not found",
+            },
+            get: {
+              invalid_id: "Project ID is invalid",
+              invalid_input: "Project request is invalid",
+              not_found: "Project not found",
+            },
             list: {
               internal_error: "Could not load projects",
             },
+            update: {
+              invalid_id: "Project ID is invalid",
+              invalid_input: "Project update input is invalid",
+              invalid_request: "Project update request is invalid",
+              not_found: "Project not found",
+            },
           },
+          refresh_unavailable: "Refresh is unavailable",
+          run_not_found: "Run not found",
           summary: {
             get: {
               internal_error: "Could not load the summary",
             },
           },
+          state_query_failed: "Could not load runtime state",
           title: "Error",
         },
         region: "Notifications",
         success: {
+          created: "Created",
+          deleted: "Deleted",
           issueCreated: "Issue created",
           issueStatusUpdated: "Issue status updated",
           projectCreated: "Project created",
+          saved: "Saved",
           title: "Done",
+          updated: "Updated",
         },
       },
     },
