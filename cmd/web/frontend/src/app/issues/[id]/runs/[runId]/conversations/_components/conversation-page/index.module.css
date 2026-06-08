@@ -1,19 +1,6 @@
 .page {
   display: grid;
   gap: 16px;
-  max-width: 1040px;
-}
-
-.backLink {
-  color: var(--primary-black);
-  font-size: 14px;
-  font-weight: 700;
-  text-decoration: none;
-  width: fit-content;
-}
-
-.backLink:hover {
-  text-decoration: underline;
 }
 
 .header {

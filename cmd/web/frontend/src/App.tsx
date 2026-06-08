@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import DashboardPage from "./app/dashboard/page";
-import ConversationRoute from "./app/issues/[id]/runs/[runId]/conversations/page";
+import { IssueDetailLayout } from "./app/issues/[id]/_components/issue-detail-layout";
+import ConversationRoute from "./app/issues/[id]/conversations/page";
 import IssueDetailRoute from "./app/issues/[id]/page";
 import IssuesPage from "./app/issues/page";
 import SettingsPage from "./app/settings/page";
@@ -23,11 +24,15 @@ export function App() {
         />
         <Route
           path="/issues/:id"
-          element={<DefaultLayout><IssueDetailRoute /></DefaultLayout>}
+          element={<IssueDetailLayout><IssueDetailRoute /></IssueDetailLayout>}
+        />
+        <Route
+          path="/issues/:id/conversations"
+          element={<IssueDetailLayout><ConversationRoute /></IssueDetailLayout>}
         />
         <Route
           path="/issues/:id/runs/:runId/conversations"
-          element={<DefaultLayout><ConversationRoute /></DefaultLayout>}
+          element={<IssueDetailLayout><ConversationRoute /></IssueDetailLayout>}
         />
         <Route
           path="/dashboard"
