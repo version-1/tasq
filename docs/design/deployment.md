@@ -19,14 +19,17 @@ Use prereleases for validation builds that should not be treated as formal stabl
 
 ```sh
 make prerelease
+make prerelease version=v0.3.0
 ```
 
 The prerelease target:
 
 - requires a clean working tree;
-- finds the latest reachable formal SemVer tag such as `v0.1.0`;
-- falls back to `v0.0.0` when no formal tag exists;
-- creates a tag in the form `v0.1.0-dev.YYYYMMDDTHHmm.<short-sha>`;
+- accepts an optional `version` value in `vX.Y.Z` format to use as the prerelease base;
+- rejects suffixed or invalid `version` values;
+- when `version` is omitted, finds the latest reachable formal SemVer tag such as `v0.1.0`;
+- when `version` is omitted and no formal tag exists, falls back to `v0.0.0`;
+- creates a tag in the form `v0.3.0-dev.YYYYMMDDTHHmm.<short-sha>`;
 - pushes the tag to `origin`.
 
 GoReleaser has `release.prerelease: auto`, so tags with a SemVer prerelease segment such as `-dev...` become GitHub prereleases.
@@ -88,7 +91,10 @@ make help
 make release
 make release version=0.1.1
 make release version=v0.1.1-beta
+make prerelease version=0.3.0
+make prerelease version=v0.3.0-dev.20260608T0000.abc1234
 make -n prerelease
+make -n prerelease version=v0.3.0
 make -n release version=v0.1.1
 ```
 

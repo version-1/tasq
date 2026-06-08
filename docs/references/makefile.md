@@ -103,6 +103,7 @@ make run-logs
 | Target | Purpose |
 |---|---|
 | `make prerelease` | Create and push a prerelease tag through `scripts/release.sh`. |
+| `make prerelease version=v0.3.0` | Create and push a prerelease tag based on a specific formal version. |
 | `make release version=v0.1.1` | Create and push a formal release tag through `scripts/release.sh`. |
 | `make install-tq` | Install `tq` from the latest formal release into `$HOME/.local/bin`. |
 | `make install-tq version=v0.1.0` | Install `tq` from a specific release tag. |
