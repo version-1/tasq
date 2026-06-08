@@ -19,14 +19,17 @@ Prerelease は、formal stable release として扱わない validation build �
 
 ```sh
 make prerelease
+make prerelease version=v0.3.0
 ```
 
 `prerelease` target は次を行います。
 
 - clean working tree を要求します。
-- `v0.1.0` のような reachable な最新 formal SemVer tag を探します。
-- formal tag がない場合は `v0.0.0` に fallback します。
-- `v0.1.0-dev.YYYYMMDDTHHmm.<short-sha>` 形式の tag を作成します。
+- prerelease base として使う任意の `version` を `vX.Y.Z` 形式で受け付けます。
+- suffix 付きまたは不正な `version` は拒否します。
+- `version` を省略した場合は、`v0.1.0` のような reachable な最新 formal SemVer tag を探します。
+- `version` を省略し、formal tag がない場合は `v0.0.0` に fallback します。
+- `v0.3.0-dev.YYYYMMDDTHHmm.<short-sha>` 形式の tag を作成します。
 - tag を `origin` に push します。
 
 GoReleaser には `release.prerelease: auto` を設定しています。そのため、`-dev...` のような SemVer prerelease segment を含む tag は GitHub prerelease になります。
@@ -88,7 +91,10 @@ make help
 make release
 make release version=0.1.1
 make release version=v0.1.1-beta
+make prerelease version=0.3.0
+make prerelease version=v0.3.0-dev.20260608T0000.abc1234
 make -n prerelease
+make -n prerelease version=v0.3.0
 make -n release version=v0.1.1
 ```
 

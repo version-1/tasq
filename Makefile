@@ -39,8 +39,8 @@ help: ## Show target prefixes and available targets.
 	@awk 'BEGIN {FS = ":.*## "}; /^(prerelease|release|install-tq|install-tq-prerelease):.*## / {printf "%-28s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 .PHONY: prerelease
-prerelease: ## Create and push a prerelease tag from the latest formal release.
-	@RELEASE_REMOTE="$(RELEASE_REMOTE)" sh scripts/release.sh prerelease
+prerelease: ## Create and push a prerelease tag. Usage: make prerelease [version=v0.1.1]
+	@RELEASE_REMOTE="$(RELEASE_REMOTE)" sh scripts/release.sh prerelease "$(version)"
 
 .PHONY: release
 release: ## Create and push a formal release tag. Usage: make release version=v0.1.1

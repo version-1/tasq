@@ -103,6 +103,7 @@ make run-logs
 | Target | Purpose |
 |---|---|
 | `make prerelease` | `scripts/release.sh` 経由で prerelease tag を作成して push します。 |
+| `make prerelease version=v0.3.0` | specific formal version を base にした prerelease tag を作成して push します。 |
 | `make release version=v0.1.1` | `scripts/release.sh` 経由で formal release tag を作成して push します。 |
 | `make install-tq` | latest formal release から `tq` を `$HOME/.local/bin` に install します。 |
 | `make install-tq version=v0.1.0` | specific release tag から `tq` を install します。 |
