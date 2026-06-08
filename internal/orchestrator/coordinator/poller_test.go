@@ -54,6 +54,44 @@ func TestPollQueuesReadyIssues(t *testing.T) {
 	}
 }
 
+func TestPollQueuesWorkspaceUnderIssueProjectLocation(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store := openTestStore(t)
+	manager := newTestWorkspaceManager(t)
+	projectLocation := newTestProjectRepo(t)
+	tracker := newFakeTracker([]entity.Issue{
+		{ID: 42, ProjectID: 7, ProjectKey: "OTHER", Status: entity.StatusReady, Title: "Build in project repo"},
+	})
+	tracker.setProject(entity.Project{
+		ID:       7,
+		Key:      "OTHER",
+		Name:     "Other project",
+		Location: projectLocation,
+	})
+	poller := newTestPollerWithTracker(t, store, manager, tracker)
+
+	if err := poller.Poll(ctx); err != nil {
+		t.Fatalf("poll: %v", err)
+	}
+
+	runs, err := store.ActiveRuns(ctx)
+	if err != nil {
+		t.Fatalf("active runs: %v", err)
+	}
+	if len(runs) != 1 {
+		t.Fatalf("runs = %+v", runs)
+	}
+	wantWorkspace := filepath.Join(canonicalTestPath(t, projectLocation), ".worktrees", "issue-42")
+	if runs[0].Workspace != wantWorkspace {
+		t.Fatalf("workspace = %q, want %q", runs[0].Workspace, wantWorkspace)
+	}
+	if _, err := os.Stat(filepath.Join(runs[0].Workspace, ".git")); err != nil {
+		t.Fatalf("workspace git file missing: %v", err)
+	}
+}
+
 func TestPollSkipsIssuesWithActiveRuns(t *testing.T) {
 	t.Parallel()
 
@@ -125,6 +163,7 @@ func TestPollQueuesAndDispatchesInSameCycle(t *testing.T) {
 	manager := newTestWorkspaceManager(t)
 	testRunner := &recordingRunner{result: runner.Result{Status: run.StatusSucceeded}}
 	tracker := newFakeTracker([]entity.Issue{{ID: 42, Status: entity.StatusReady, Title: "Build dispatch"}})
+	tracker.setProjectLocation(1, manager.RepoRoot())
 	dispatcher := newTestDispatcherWithTracker(t, store, testRunner, tracker, 2)
 	poller, err := NewPoller(PollerConfig{
 		Tracker:        tracker,
@@ -164,6 +203,7 @@ func TestPollFailedDispatchBlocksIssueAndSkipsNextPoll(t *testing.T) {
 	manager := newTestWorkspaceManager(t)
 	testRunner := &recordingRunner{result: runner.Result{Status: run.StatusFailed, Error: "codex command not found"}}
 	tracker := newFakeTracker([]entity.Issue{{ID: 42, Status: entity.StatusReady, Title: "Build dispatch"}})
+	tracker.setProjectLocation(1, manager.RepoRoot())
 	dispatcher := newTestDispatcherWithTracker(t, store, testRunner, tracker, 2)
 	poller, err := NewPoller(PollerConfig{
 		Tracker:        tracker,
@@ -204,16 +244,30 @@ func TestPollFailedDispatchBlocksIssueAndSkipsNextPoll(t *testing.T) {
 type fakeTracker struct {
 	mu       sync.Mutex
 	issues   map[int64]entity.Issue
+	projects map[int64]entity.Project
 	comments map[int64][]entity.Comment
 }
 
 func newFakeTracker(issues []entity.Issue) *fakeTracker {
 	tracker := &fakeTracker{
 		issues:   make(map[int64]entity.Issue, len(issues)),
+		projects: make(map[int64]entity.Project),
 		comments: make(map[int64][]entity.Comment),
 	}
 	for _, issue := range issues {
+		if issue.ProjectID == 0 {
+			issue.ProjectID = 1
+		}
+		if issue.ProjectKey == "" {
+			issue.ProjectKey = "TEST"
+		}
 		tracker.issues[issue.ID] = issue
+		if _, ok := tracker.projects[issue.ProjectID]; !ok {
+			tracker.projects[issue.ProjectID] = entity.Project{
+				ID:  issue.ProjectID,
+				Key: issue.ProjectKey,
+			}
+		}
 	}
 	return tracker
 }
@@ -226,6 +280,16 @@ func (t *fakeTracker) Issue(ctx context.Context, id int64) (entity.Issue, error)
 		return issue, nil
 	}
 	return entity.Issue{}, sql.ErrNoRows
+}
+
+func (t *fakeTracker) Project(ctx context.Context, id int64) (entity.Project, error) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	project, ok := t.projects[id]
+	if ok {
+		return project, nil
+	}
+	return entity.Project{}, sql.ErrNoRows
 }
 
 func (t *fakeTracker) IssuesByStates(ctx context.Context, states []string) ([]entity.Issue, error) {
@@ -246,6 +310,24 @@ func (t *fakeTracker) IssuesByStates(ctx context.Context, states []string) ([]en
 		}
 	}
 	return output, nil
+}
+
+func (t *fakeTracker) setProject(project entity.Project) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	t.projects[project.ID] = project
+}
+
+func (t *fakeTracker) setProjectLocation(id int64, location string) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	project := t.projects[id]
+	project.ID = id
+	if project.Key == "" {
+		project.Key = "TEST"
+	}
+	project.Location = location
+	t.projects[id] = project
 }
 
 func (t *fakeTracker) UpdateIssue(ctx context.Context, id int64, input entity.UpdateIssueInput) (entity.Issue, error) {
@@ -314,6 +396,21 @@ func openTestStore(t *testing.T) *runstore.Store {
 
 func newTestWorkspaceManager(t *testing.T) *workspace.Manager {
 	t.Helper()
+	repoRoot := initTestGitRepo(t)
+	manager, err := workspace.NewManager(filepath.Join(repoRoot, ".worktrees"))
+	if err != nil {
+		t.Fatalf("new workspace manager: %v", err)
+	}
+	return manager
+}
+
+func newTestProjectRepo(t *testing.T) string {
+	t.Helper()
+	return initTestGitRepo(t)
+}
+
+func initTestGitRepo(t *testing.T) string {
+	t.Helper()
 	repoRoot := t.TempDir()
 	gitCommand(t, repoRoot, "init")
 	gitCommand(t, repoRoot, "config", "user.email", "test@example.com")
@@ -323,11 +420,16 @@ func newTestWorkspaceManager(t *testing.T) *workspace.Manager {
 	}
 	gitCommand(t, repoRoot, "add", "README.md")
 	gitCommand(t, repoRoot, "commit", "-m", "initial commit")
-	manager, err := workspace.NewManager(filepath.Join(repoRoot, ".worktrees"))
+	return repoRoot
+}
+
+func canonicalTestPath(t *testing.T, path string) string {
+	t.Helper()
+	cleanPath, err := filepath.EvalSymlinks(path)
 	if err != nil {
-		t.Fatalf("new workspace manager: %v", err)
+		t.Fatalf("canonicalize test path %q: %v", path, err)
 	}
-	return manager
+	return filepath.Clean(cleanPath)
 }
 
 func gitCommand(t *testing.T, dir string, args ...string) string {
@@ -342,8 +444,15 @@ func gitCommand(t *testing.T, dir string, args ...string) string {
 
 func newTestPoller(t *testing.T, store *runstore.Store, manager *workspace.Manager, issues []entity.Issue) *Poller {
 	t.Helper()
+	tracker := newFakeTracker(issues)
+	tracker.setProjectLocation(1, manager.RepoRoot())
+	return newTestPollerWithTracker(t, store, manager, tracker)
+}
+
+func newTestPollerWithTracker(t *testing.T, store *runstore.Store, manager *workspace.Manager, tracker *fakeTracker) *Poller {
+	t.Helper()
 	poller, err := NewPoller(PollerConfig{
-		Tracker:        newFakeTracker(issues),
+		Tracker:        tracker,
 		Store:          store,
 		Workspaces:     manager,
 		Interval:       time.Minute,

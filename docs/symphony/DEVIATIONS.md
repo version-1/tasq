@@ -133,12 +133,14 @@ Rationale:
 - The coding agent needs the per-issue workspace to be a Git repository root.
 - Copying files without `.git` makes repository inspection commands observe a different Git root and
   can cause edits to target the parent repository instead of the issue workspace.
-- A worktree preserves Git metadata while keeping the workspace path deterministic under
-  `workspace.root`.
+- A worktree preserves Git metadata while keeping the workspace path deterministic under the
+  issue project's `Project.Location` plus the configured relative `workspace.root`.
 
 The `workspace.source` workflow field is intentionally not supported. `workspace.root` must be
-inside the target Git repository so the workspace manager can resolve the repository with
-`git rev-parse --show-toplevel`.
+inside the orchestrator project's Git repository so the workspace manager can resolve the relative
+workspace-root suffix. For each dispatched issue, Tasq resolves `Issue.ProjectID` through the local
+issue-tracker API and creates the worktree under the referenced project's location using that same
+relative suffix, for example `<Project.Location>/.worktrees/agents/issue-42`.
 
 Workspace branches use `agent/<workspace-key>`, for example `agent/issue-42`. Cleanup uses
 `git worktree remove --force`, deletes the corresponding local branch best-effort, and runs

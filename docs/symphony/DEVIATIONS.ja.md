@@ -137,11 +137,14 @@ orchestrator workspaces を作成します。
 - coding agent には per-issue workspace が Git repository root である必要があります。
 - `.git` なしで files を copy すると、repository inspection commands が別の Git root を観測し、edits
   が issue workspace ではなく parent repository を対象にする可能性があります。
-- worktree は Git metadata を維持しつつ、`workspace.root` 配下の deterministic workspace path を保ちます。
+- worktree は Git metadata を維持しつつ、issue project の `Project.Location` と configured relative
+  `workspace.root` 配下の deterministic workspace path を保ちます。
 
 `workspace.source` workflow field は意図的にサポートされません。Workspace manager が
-`git rev-parse --show-toplevel` で repository を解決できるように、`workspace.root` は target Git
-repository の内側でなければなりません。
+relative workspace-root suffix を解決できるように、`workspace.root` は orchestrator project の Git
+repository の内側でなければなりません。Tasq は dispatched issue ごとに `Issue.ProjectID` を local
+issue-tracker API で解決し、同じ relative suffix を使って referenced project location 配下に worktree
+を作成します。例: `<Project.Location>/.worktrees/agents/issue-42`。
 
 Workspace branches は `agent/<workspace-key>` を使います。例: `agent/issue-42`。Cleanup は
 `git worktree remove --force` を使い、対応する local branch を best-effort で削除し、orchestrator
