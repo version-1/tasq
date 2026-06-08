@@ -11,6 +11,7 @@ import {
 } from "react";
 import { modalIDs } from "@/constants";
 import { ModalOutlet } from "@/components/modal";
+import { PanelMessage } from "@/components/ui/pannel-message";
 import { ToastStack } from "@/components/ui/toast";
 import { createIssue, createProject, fetchProjects, fetchSummary, updateIssueStatus } from "@/lib/api";
 import "@/lib/i18n";
@@ -21,7 +22,6 @@ import type { CreateIssueInput, CreateProjectInput, IssueStatus, IssueSummary, P
 import { AddIssueDialog } from "./add-issue-dialog";
 import { AddProjectDialog } from "./add-project-dialog";
 import { Header } from "./header";
-import { PanelMessage } from "./panel-message";
 import { Sidebar } from "./sidebar";
 import styles from "./index.module.css";
 

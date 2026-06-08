@@ -2,9 +2,10 @@ import { useTranslation } from "react-i18next";
 import { IssueCard } from "@/components/issue/card";
 import { IconProxy, type IconProxyName } from "@/components/ui/icon-proxy";
 import type { IssueStatus, Summary } from "@/lib/types";
-import type { StatusChangeHandler } from "../types";
 import { boardColumns } from "./board-columns";
 import styles from "./index.module.css";
+
+type StatusChangeHandler = (id: number, status: IssueStatus) => Promise<void>;
 
 const boardActions = [
   { icon: "filter", titleKey: "issues.board.filter" },
