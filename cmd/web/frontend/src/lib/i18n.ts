@@ -242,6 +242,44 @@ const resources = {
         ready: "Ready",
         review: "Review",
       },
+      toast: {
+        error: {
+          comments: {
+            list: {
+              invalid_input: "コメントの読み込み条件が不正です",
+              issue_not_found: "コメント対象の Issue が見つかりません",
+            },
+          },
+          issues: {
+            create: {
+              invalid_input: "Issue の入力内容が不正です",
+              invalid_request: "Issue の作成リクエストが不正です",
+            },
+            list: {
+              internal_error: "Issue 一覧を読み込めません",
+              invalid_project_id: "Project ID が不正です",
+              invalid_states: "ステータス指定が不正です",
+            },
+            update: {
+              invalid_request: "Issue の更新リクエストが不正です",
+            },
+          },
+          projects: {
+            create: {
+              invalid_input: "Project の入力内容が不正です",
+              invalid_request: "Project の作成リクエストが不正です",
+            },
+            list: {
+              internal_error: "Project 一覧を読み込めません",
+            },
+          },
+          summary: {
+            get: {
+              internal_error: "Summary を読み込めません",
+            },
+          },
+        },
+      },
     },
   },
   en: {
@@ -477,6 +515,44 @@ const resources = {
         in_progress: "In Progress",
         ready: "Ready",
         review: "Review",
+      },
+      toast: {
+        error: {
+          comments: {
+            list: {
+              invalid_input: "Comment request parameters are invalid",
+              issue_not_found: "The issue for these comments was not found",
+            },
+          },
+          issues: {
+            create: {
+              invalid_input: "Issue input is invalid",
+              invalid_request: "Issue creation request is invalid",
+            },
+            list: {
+              internal_error: "Could not load issues",
+              invalid_project_id: "Project ID is invalid",
+              invalid_states: "Status filter is invalid",
+            },
+            update: {
+              invalid_request: "Issue update request is invalid",
+            },
+          },
+          projects: {
+            create: {
+              invalid_input: "Project input is invalid",
+              invalid_request: "Project creation request is invalid",
+            },
+            list: {
+              internal_error: "Could not load projects",
+            },
+          },
+          summary: {
+            get: {
+              internal_error: "Could not load the summary",
+            },
+          },
+        },
       },
     },
   },

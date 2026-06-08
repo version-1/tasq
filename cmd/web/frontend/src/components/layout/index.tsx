@@ -165,7 +165,7 @@ function LayoutContent({ children }: { children: ReactNode }) {
   async function handleCreateIssue(input: CreateIssueInput) {
     setNotice("");
     try {
-      const created = await createIssue(input);
+      const created = await createIssue(input, { silent: true });
       await load();
       setSelectedIssueID(created.id);
       setAddIssueError("");
@@ -178,7 +178,7 @@ function LayoutContent({ children }: { children: ReactNode }) {
   async function handleCreateProject(input: CreateProjectInput) {
     setNotice("");
     try {
-      const created = await createProject(input);
+      const created = await createProject(input, { silent: true });
       await load();
       setAddProjectError("");
       modal.closeModal();
