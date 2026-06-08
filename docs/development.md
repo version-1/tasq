@@ -51,7 +51,19 @@ Use the GitHub CLI (`gh`) for GitHub operations such as viewing pull requests, c
 
 ## API Generation
 
-Use `generate:api` for API generation.
+Use `generate:api` for frontend API client generation.
+
+Generated Web UI API clients cover these services:
+
+- Issue Tracker: `docs/openapi/issue-tracker.yml` to `cmd/web/frontend/src/lib/generated/issue-tracker.ts`.
+- Orchestrator: `docs/openapi/orchestrator.yml` to `cmd/web/frontend/src/lib/generated/orchestrator.ts`.
+
+When changing an API contract, update these artifacts in the same change:
+
+1. The owning service OpenAPI document under `docs/openapi`.
+2. The generated Web UI API clients by running `npm run generate:api` from `cmd/web/frontend`.
+
+Also update MSW handlers and fixtures under `cmd/web/frontend/src/mocks` when the changed endpoint is used by standalone frontend development.
 
 ## Documentation Updates
 

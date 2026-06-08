@@ -51,7 +51,19 @@ Pull Request の確認、作成、状態確認などの GitHub 操作には GitH
 
 ## API 生成
 
-API 生成には `generate:api` を使います。
+Frontend API client の生成には `generate:api` を使います。
+
+Generated Web UI API clients は、次の service を対象にします。
+
+- Issue Tracker: `docs/openapi/issue-tracker.yml` から `cmd/web/frontend/src/lib/generated/issue-tracker.ts` を生成します。
+- Orchestrator: `docs/openapi/orchestrator.yml` から `cmd/web/frontend/src/lib/generated/orchestrator.ts` を生成します。
+
+API contract を変更するときは、同じ変更内で次の artifacts を更新します。
+
+1. `docs/openapi` 配下の owning service OpenAPI document。
+2. `cmd/web/frontend` で `npm run generate:api` を実行して生成する Web UI API clients。
+
+変更した endpoint が standalone frontend development で使われる場合は、`cmd/web/frontend/src/mocks` 配下の MSW handlers と fixtures も更新します。
 
 ## Documentation Updates
 

@@ -9,6 +9,11 @@ import type {
   Summary,
   UpdateIssueInput,
 } from "@/lib/generated/issue-tracker";
+import type {
+  ConversationResponse,
+  IssueRuntimeResponse,
+  RunState,
+} from "@/lib/generated/orchestrator";
 import { commentFixtures } from "./fixtures/comments";
 import { issueFixtures } from "./fixtures/issues";
 import { projectFixtures } from "./fixtures/projects";
@@ -145,6 +150,93 @@ export function buildSummary(): Summary {
     })),
     generatedAt: new Date().toISOString(),
   };
+}
+
+export function buildOrchestratorIssueRuntime(issueID: number): IssueRuntimeResponse | null {
+  const issue = issues.find((candidate) => candidate.id === issueID);
+  if (!issue) {
+    return null;
+  }
+
+  const runs = buildIssueRuns(issue);
+  return {
+    issue_identifier: `issue-${issue.id}`,
+    issue_id: String(issue.id),
+    status: runs[0]?.status ?? "queued",
+    workspace: {
+      path: `/tmp/tasq/workspaces/issue-${issue.id}`,
+    },
+    attempts: {
+      restart_count: Math.max(runs.length - 1, 0),
+      current_retry_attempt: runs[0]?.attempt ?? 0,
+    },
+    runs,
+    running: null,
+    retry: null,
+    logs: {
+      codex_session_logs: [],
+    },
+    recent_events: [
+      {
+        at: issue.updatedAt,
+        event: runs[0]?.status ?? "queued",
+        message: `mock run ${runs[0]?.run_id ?? "pending"}`,
+      },
+    ],
+    last_error: null,
+    tracked: {},
+  };
+}
+
+export function getOrchestratorConversation(
+  issueID: number,
+  runID: string,
+): ConversationResponse | null {
+  const issue = issues.find((candidate) => candidate.id === issueID);
+  if (!issue || !buildIssueRuns(issue).some((run) => run.run_id === runID)) {
+    return null;
+  }
+
+  return {
+    issue_identifier: `issue-${issue.id}`,
+    issue_id: String(issue.id),
+    run_id: runID,
+    events: [
+      {
+        at: issue.createdAt,
+        event: "running",
+        message: "mock runner started",
+        payload_json: "",
+      },
+      {
+        at: issue.updatedAt,
+        event: "turn_completed",
+        message: "turn_id=mock-turn-1",
+        payload_json: JSON.stringify({
+          aggregatedOutput: `## ${issue.title}\n\nMock conversation output for ${runID}.`,
+        }),
+      },
+      {
+        at: issue.updatedAt,
+        event: "succeeded",
+        message: "mock runner completed",
+        payload_json: "",
+      },
+    ],
+  };
+}
+
+function buildIssueRuns(issue: Issue): IssueRuntimeResponse["runs"] {
+  const status: RunState = issue.status === "done" ? "succeeded" : "running";
+  return [
+    {
+      run_id: `run-${issue.id}-latest`,
+      status,
+      attempt: 1,
+      created_at: issue.createdAt,
+      updated_at: issue.updatedAt,
+    },
+  ];
 }
 
 function definedFields<T extends object>(input: T): Partial<T> {

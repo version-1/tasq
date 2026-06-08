@@ -8,7 +8,7 @@ Web UI は Vite + React + TypeScript の single-page app を embed する Go HTT
 
 - Go server は static asset serving、SPA fallback、API reverse proxying を担当します。
 - Browser UI code は `cmd/web/frontend/src` 配下に置きます。
-- Generated issue-tracker API files は `cmd/web/frontend/src/lib/generated` 配下で再生成可能に保ちます。
+- Generated issue-tracker と orchestrator API files は `cmd/web/frontend/src/lib/generated` 配下で再生成可能に保ちます。
 - User-facing strings は `cmd/web/frontend/src/lib/i18n.ts` に置きます。
 - Feature-specific styles は owning component または route の近くに置きます。
 
@@ -47,14 +47,16 @@ Mock data は in-memory で、page reload 時に reset されます。
 ## API Generation
 
 Issue-tracker API client は `docs/openapi/issue-tracker.yml` から生成します。
+Orchestrator API client は `docs/openapi/orchestrator.yml` から生成します。
 
-OpenAPI document を変更したら、`cmd/web/frontend` から次を実行します。
+いずれかの OpenAPI document を変更したら、`cmd/web/frontend` から次を実行します。
 
 ```sh
 npm run generate:api
 ```
 
 `cmd/web/frontend/src/lib/generated` は手動編集しません。
+変更した endpoint が standalone frontend development で使われる場合は、`cmd/web/frontend/src/mocks` 配下の MSW handlers と fixtures も更新します。
 
 ## Component Flow
 
