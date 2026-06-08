@@ -23,20 +23,39 @@ describe("AddProjectDialog", () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn<(_: CreateProjectInput) => Promise<void>>().mockResolvedValue(undefined);
     renderAddProjectDialog({ onSubmit });
+    const file = new File([""], "README.md", { type: "text/markdown" });
+    Object.defineProperty(file, "webkitRelativePath", {
+      value: "product-website/README.md",
+    });
 
+    await user.upload(screen.getByLabelText("Location"), file);
+    await user.clear(screen.getByLabelText("Name"));
     await user.type(screen.getByLabelText("Name"), "  Product Website  ");
-    await user.type(screen.getByLabelText("Key"), "  product-web  ");
-    await user.type(screen.getByLabelText("Location"), "  /workspace/product-web  ");
     await user.type(screen.getByLabelText("Description"), "  Customer-facing site  ");
     await user.click(screen.getByRole("button", { name: "Add" }));
 
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
     expect(onSubmit).toHaveBeenCalledWith({
       description: "Customer-facing site",
-      key: "product-web",
-      location: "/workspace/product-web",
+      key: "product-website",
+      location: "product-website",
       name: "Product Website",
     });
+  });
+
+  it("fills key and name from the selected directory", async () => {
+    const user = userEvent.setup();
+    renderAddProjectDialog();
+    const file = new File([""], "index.ts", { type: "text/typescript" });
+    Object.defineProperty(file, "webkitRelativePath", {
+      value: "agent_docs/index.ts",
+    });
+
+    await user.upload(screen.getByLabelText("Location"), file);
+
+    expect(screen.getByLabelText("Key")).toHaveValue("agent-docs");
+    expect(screen.getByLabelText("Name")).toHaveValue("Agent Docs");
+    expect(screen.getByText("agent_docs")).toBeTruthy();
   });
 
   it("shows validation errors without submitting", async () => {
@@ -46,7 +65,7 @@ describe("AddProjectDialog", () => {
 
     await user.click(screen.getByRole("button", { name: "Add" }));
 
-    expect(screen.getByText("Enter a project name")).toBeTruthy();
+    expect(screen.getByText("Enter a project location")).toBeTruthy();
     expect(onSubmit).not.toHaveBeenCalled();
   });
 

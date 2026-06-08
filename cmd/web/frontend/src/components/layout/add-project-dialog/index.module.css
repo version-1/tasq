@@ -64,6 +64,19 @@
   width: 100%;
 }
 
+.field .fileInput {
+  padding: 8px 10px;
+}
+
+.selectedLocation {
+  color: var(--medium-gray);
+  font-size: 12px;
+  font-weight: 400;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .field textarea {
   resize: vertical;
 }

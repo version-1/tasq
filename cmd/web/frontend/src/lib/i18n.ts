@@ -50,7 +50,7 @@ const resources = {
         placeholders: {
           description: "プロジェクトの目的や補足",
           key: "product-web",
-          location: "/workspace/product-web",
+          location: "ディレクトリを選択してください",
           name: "Product Website",
         },
         saving: "追加中...",
@@ -256,7 +256,7 @@ const resources = {
         placeholders: {
           description: "Project purpose or notes",
           key: "product-web",
-          location: "/workspace/product-web",
+          location: "Choose a directory",
           name: "Product Website",
         },
         saving: "Adding...",

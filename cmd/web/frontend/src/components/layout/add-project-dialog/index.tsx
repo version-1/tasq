@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useState, type ChangeEvent, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import type { CreateProjectInput } from "@/lib/types";
 import styles from "./index.module.css";
@@ -24,19 +24,33 @@ export function AddProjectDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationError, setValidationError] = useState("");
 
+  function handleLocationChange(event: ChangeEvent<HTMLInputElement>) {
+    const selectedLocation = projectLocationFromFiles(event.currentTarget.files);
+    if (!selectedLocation) {
+      return;
+    }
+
+    setValues({
+      ...values,
+      key: values.key || toProjectKey(selectedLocation.name),
+      location: selectedLocation.location,
+      name: values.name || toProjectName(selectedLocation.name),
+    });
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const input = toCreateProjectInput(values);
-    if (!input.name) {
-      setValidationError(t("addProject.errors.nameRequired"));
+    if (!input.location) {
+      setValidationError(t("addProject.errors.locationRequired"));
       return;
     }
     if (!input.key) {
       setValidationError(t("addProject.errors.keyRequired"));
       return;
     }
-    if (!input.location) {
-      setValidationError(t("addProject.errors.locationRequired"));
+    if (!input.name) {
+      setValidationError(t("addProject.errors.nameRequired"));
       return;
     }
 
@@ -65,13 +79,18 @@ export function AddProjectDialog({
           </div>
 
           <label className={styles.field}>
-            <span>{t("addProject.fields.name")}</span>
+            <span>{t("addProject.fields.location")}</span>
             <input
+              aria-label={t("addProject.fields.location")}
               autoFocus
-              value={values.name}
-              onChange={(event) => setValues({ ...values, name: event.target.value })}
-              placeholder={t("addProject.placeholders.name")}
+              className={styles.fileInput}
+              type="file"
+              onChange={handleLocationChange}
+              {...directoryPickerAttributes}
             />
+            <span className={styles.selectedLocation}>
+              {values.location || t("addProject.placeholders.location")}
+            </span>
           </label>
 
           <label className={styles.field}>
@@ -84,11 +103,11 @@ export function AddProjectDialog({
           </label>
 
           <label className={styles.field}>
-            <span>{t("addProject.fields.location")}</span>
+            <span>{t("addProject.fields.name")}</span>
             <input
-              value={values.location}
-              onChange={(event) => setValues({ ...values, location: event.target.value })}
-              placeholder={t("addProject.placeholders.location")}
+              value={values.name}
+              onChange={(event) => setValues({ ...values, name: event.target.value })}
+              placeholder={t("addProject.placeholders.name")}
             />
           </label>
 
@@ -125,6 +144,11 @@ const initialAddProjectValues: AddProjectFormValues = {
   location: "",
 };
 
+const directoryPickerAttributes = {
+  directory: "",
+  webkitdirectory: "",
+};
+
 function toCreateProjectInput(values: AddProjectFormValues): CreateProjectInput {
   return {
     key: values.key.trim(),
@@ -132,4 +156,45 @@ function toCreateProjectInput(values: AddProjectFormValues): CreateProjectInput 
     description: values.description.trim() || undefined,
     location: values.location.trim(),
   };
+}
+
+type SelectedProjectLocation = {
+  location: string;
+  name: string;
+};
+
+function projectLocationFromFiles(files: FileList | null): SelectedProjectLocation | null {
+  const selectedFile = files?.[0];
+  if (!selectedFile) {
+    return null;
+  }
+
+  const relativePath = selectedFile.webkitRelativePath || selectedFile.name;
+  const location = relativePath.split("/").filter(Boolean)[0] ?? "";
+  if (!location) {
+    return null;
+  }
+
+  return {
+    location,
+    name: location,
+  };
+}
+
+function toProjectKey(name: string): string {
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 64);
+}
+
+function toProjectName(name: string): string {
+  return name
+    .trim()
+    .split(/[-_\s]+/)
+    .filter(Boolean)
+    .map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
+    .join(" ");
 }
