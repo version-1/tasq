@@ -15,7 +15,7 @@ export function App() {
         <Route path="/" element={<Navigate to="/issues" replace />} />
         <Route
           path="/issues"
-          element={<ProjectLayout><IssuesPage /></ProjectLayout>}
+          element={<DefaultLayout><IssuesPage /></DefaultLayout>}
         />
         <Route
           path="/projects/:projectKey/issues"
@@ -23,11 +23,11 @@ export function App() {
         />
         <Route
           path="/issues/:id"
-          element={<ProjectLayout><IssueDetailRoute /></ProjectLayout>}
+          element={<DefaultLayout><IssueDetailRoute /></DefaultLayout>}
         />
         <Route
           path="/issues/:id/runs/:runId/conversations"
-          element={<ProjectLayout><ConversationRoute /></ProjectLayout>}
+          element={<DefaultLayout><ConversationRoute /></DefaultLayout>}
         />
         <Route
           path="/dashboard"
