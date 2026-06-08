@@ -54,9 +54,9 @@ describe("AddProjectDialog", () => {
     await user.click(screen.getByRole("button", { name: "Choose directory" }));
 
     expect(screen.getByLabelText("Key")).toHaveValue("agent-docs");
-    expect(screen.getByLabelText("Location")).toHaveValue("agent_docs");
+    expect(screen.getByLabelText("Location")).toHaveValue("");
     expect(screen.getByLabelText("Name")).toHaveValue("Agent Docs");
-    expect(screen.getByText("agent_docs")).toBeTruthy();
+    expect(screen.getByText("Selected: agent_docs")).toBeTruthy();
   });
 
   it("shows validation errors without submitting", async () => {
@@ -77,6 +77,20 @@ describe("AddProjectDialog", () => {
     renderAddProjectDialog({ onSubmit });
 
     await user.click(screen.getByRole("button", { name: "Choose directory" }));
+    await user.click(screen.getByRole("button", { name: "Add" }));
+
+    expect(screen.getByText("Enter a project location")).toBeTruthy();
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it("requires the typed project location to be absolute", async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn<(_: CreateProjectInput) => Promise<void>>().mockResolvedValue(undefined);
+    renderAddProjectDialog({ onSubmit });
+
+    await user.type(screen.getByLabelText("Location"), "relative/path");
+    await user.type(screen.getByLabelText("Key"), "relative-path");
+    await user.type(screen.getByLabelText("Name"), "Relative Path");
     await user.click(screen.getByRole("button", { name: "Add" }));
 
     expect(screen.getByText("Enter an absolute project location")).toBeTruthy();

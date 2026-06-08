@@ -21,6 +21,7 @@ export function AddProjectDialog({
 }) {
   const { t } = useTranslation();
   const [values, setValues] = useState<AddProjectFormValues>(initialAddProjectValues);
+  const [selectedDirectoryName, setSelectedDirectoryName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationError, setValidationError] = useState("");
 
@@ -28,10 +29,10 @@ export function AddProjectDialog({
     const selectedDirectory = await chooseProjectDirectory();
     if (!selectedDirectory) return;
 
+    setSelectedDirectoryName(selectedDirectory.name);
     setValues({
       ...values,
       key: values.key || toProjectKey(selectedDirectory.name),
-      location: values.location || selectedDirectory.name,
       name: values.name || toProjectName(selectedDirectory.name),
     });
   }
@@ -92,7 +93,9 @@ export function AddProjectDialog({
               {t("addProject.fields.chooseDirectory")}
             </button>
             <span className={styles.selectedLocation}>
-              {values.location || t("addProject.placeholders.directory")}
+              {selectedDirectoryName
+                ? t("addProject.selectedDirectory", { name: selectedDirectoryName })
+                : t("addProject.placeholders.directory")}
             </span>
             <input
               aria-label={t("addProject.fields.location")}
