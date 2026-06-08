@@ -79,15 +79,15 @@ async function resolveConversation(
   selectedRunID: string | null,
 ): Promise<OrchestratorConversation | null> {
   if (selectedRunID) {
-    return fetchOrchestratorConversation(issueID, selectedRunID);
+    return fetchOrchestratorConversation(issueID, selectedRunID, { silent: true });
   }
 
-  const runtime = await fetchOrchestratorIssueRuntime(issueID);
+  const runtime = await fetchOrchestratorIssueRuntime(issueID, { silent: true });
   const latestRun = runtime.runs[0];
   if (!latestRun) {
     return null;
   }
-  return fetchOrchestratorConversation(issueID, latestRun.run_id);
+  return fetchOrchestratorConversation(issueID, latestRun.run_id, { silent: true });
 }
 
 function ConversationEvents({ events }: { events: OrchestratorConversationEvent[] }) {
