@@ -77,6 +77,30 @@ paths:
           $ref: "#/components/responses/Error"
         "500":
           $ref: "#/components/responses/Error"
+  /api/v1/{issue_identifier}/runs/{run_id}/conversations:
+    parameters:
+      - $ref: "#/components/parameters/IssueIdentifier"
+      - $ref: "#/components/parameters/RunID"
+    get:
+      tags:
+        - Runtime Debug
+      summary: Get conversation events for one run.
+      description: |
+        Returns chronological run status transition events and `turn_completed`
+        events for a run that belongs to the requested issue identifier.
+      responses:
+        "200":
+          description: Conversation events for the run.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConversationResponse"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
 components:
   parameters:
     IssueIdentifier:
@@ -88,6 +112,15 @@ components:
         type: string
         pattern: "^issue-[1-9][0-9]*$"
         example: issue-42
+    RunID:
+      name: run_id
+      in: path
+      required: true
+      description: Orchestrator run identifier.
+      schema:
+        type: string
+        minLength: 1
+        example: run_123abc
   responses:
     Error:
       description: Error response.
@@ -254,6 +287,29 @@ components:
         current_retry_attempt:
           type: integer
           minimum: 0
+    IssueRunSummary:
+      type: object
+      required:
+        - run_id
+        - status
+        - attempt
+        - created_at
+        - updated_at
+      properties:
+        run_id:
+          type: string
+          example: run_123abc
+        status:
+          $ref: "#/components/schemas/RunState"
+        attempt:
+          type: integer
+          minimum: 0
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
     LogsSummary:
       type: object
       required:
@@ -286,6 +342,7 @@ components:
         - status
         - workspace
         - attempts
+        - runs
         - running
         - retry
         - logs
@@ -305,6 +362,10 @@ components:
           $ref: "#/components/schemas/WorkspaceRuntime"
         attempts:
           $ref: "#/components/schemas/AttemptSummary"
+        runs:
+          type: array
+          items:
+            $ref: "#/components/schemas/IssueRunSummary"
         running:
           oneOf:
             - $ref: "#/components/schemas/RunSummary"
@@ -327,6 +388,52 @@ components:
         tracked:
           type: object
           additionalProperties: true
+    ConversationEvent:
+      type: object
+      required:
+        - at
+        - event
+        - message
+        - payload_json
+      properties:
+        at:
+          type: string
+          format: date-time
+        event:
+          type: string
+          enum:
+            - turn_completed
+            - running
+            - succeeded
+            - failed
+            - cancelled
+        message:
+          type: string
+          example: turn_id=turn-1
+        payload_json:
+          type: string
+          description: Raw JSON payload from the runner event. `turn_completed` payloads may contain aggregatedOutput.
+    ConversationResponse:
+      type: object
+      required:
+        - issue_identifier
+        - issue_id
+        - run_id
+        - events
+      properties:
+        issue_identifier:
+          type: string
+          example: issue-42
+        issue_id:
+          type: string
+          example: "42"
+        run_id:
+          type: string
+          example: run_123abc
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConversationEvent"
     RefreshResponse:
       type: object
       required:

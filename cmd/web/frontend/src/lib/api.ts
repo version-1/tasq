@@ -13,6 +13,10 @@ import {
   type Project,
   type Summary,
 } from "@/lib/generated/issue-tracker";
+import type {
+  OrchestratorConversation as OrchestratorConversationPayload,
+  OrchestratorIssueRuntime as OrchestratorIssueRuntimePayload,
+} from "@/lib/types";
 
 type ApiResponse<T> = {
   data: ApiEnvelope<T> | ErrorResponse;
@@ -58,6 +62,21 @@ export function updateIssueStatus(id: number, status: IssueStatus): Promise<Issu
   return unwrapResponse(patchApiV1IssuesId(id, { status }, noStore));
 }
 
+export function fetchOrchestratorIssueRuntime(
+  issueID: number,
+): Promise<OrchestratorIssueRuntimePayload> {
+  return fetchOrchestrator<OrchestratorIssueRuntimePayload>(`/api/v1/issue-${issueID}`);
+}
+
+export function fetchOrchestratorConversation(
+  issueID: number,
+  runID: string,
+): Promise<OrchestratorConversationPayload> {
+  return fetchOrchestrator<OrchestratorConversationPayload>(
+    `/api/v1/issue-${issueID}/runs/${encodeURIComponent(runID)}/conversations`,
+  );
+}
+
 async function unwrapResponse<T>(response: Promise<ApiResponse<T>>): Promise<T> {
   const resolved = await response;
   if (resolved.status >= 400) {
@@ -76,4 +95,16 @@ async function unwrapEnvelope<T extends ApiEnvelope<unknown>>(
     throw new Error(`${payload.error.code}: ${payload.error.message}`);
   }
   return resolved.data as T;
+}
+
+async function fetchOrchestrator<T>(path: string): Promise<T> {
+  const response = await fetch(`/orchestrator${path}`, noStore);
+  const payload = await response.json();
+  if (!response.ok) {
+    const error = payload as { error?: { code?: string; message?: string } };
+    const code = error.error?.code ?? "orchestrator_error";
+    const message = error.error?.message ?? "orchestrator request failed";
+    throw new Error(`${code}: ${message}`);
+  }
+  return payload as T;
 }
