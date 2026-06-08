@@ -3,6 +3,7 @@
 import { useParams } from "react-router-dom";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { toast } from "@/lib/toast";
 import {
   fetchComments,
   fetchIssue,
@@ -47,7 +48,7 @@ export function IssueDetailPage() {
 
     setIssueState({ kind: "loading" });
     try {
-      const issue = await fetchIssue(issueID);
+      const issue = await fetchIssue(issueID, { silent: true });
       setIssueState({ kind: "ready", issue });
     } catch (error) {
       setIssueState({
@@ -64,7 +65,7 @@ export function IssueDetailPage() {
       setIsLoadingComments(true);
       setCommentsError("");
       try {
-        const page = await fetchComments(issueID, cursor, commentPageSize);
+        const page = await fetchComments(issueID, cursor, commentPageSize, { silent: true });
         setComments((current) => (cursor ? [...current, ...page.data] : page.data));
         setNextCursor(page.meta.nextCursor);
       } catch (error) {
@@ -84,7 +85,7 @@ export function IssueDetailPage() {
     setIsLoadingRuns(true);
     setRunsError("");
     try {
-      const runtime = await fetchOrchestratorIssueRuntime(issueID);
+      const runtime = await fetchOrchestratorIssueRuntime(issueID, { silent: true });
       setRuns(runtime.runs);
     } catch (error) {
       setRunsError(
@@ -120,6 +121,7 @@ export function IssueDetailPage() {
     try {
       const issue = await updateIssueStatus(issueState.issue.id, status);
       setIssueState({ kind: "ready", issue });
+      toast.success({ message: t("toast.success.issueStatusUpdated") });
     } catch (error) {
       setIssueState({
         kind: "error",

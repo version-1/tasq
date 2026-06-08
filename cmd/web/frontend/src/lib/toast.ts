@@ -52,7 +52,7 @@ export function subscribe(listener: ToastListener): () => void {
   };
 }
 
-function removeToast(id: string): void {
+export function removeToast(id: string): void {
   const timer = timers.get(id);
   if (timer) {
     clearTimeout(timer);
@@ -68,14 +68,56 @@ function removeToast(id: string): void {
   notifyListeners();
 }
 
+export function clearToasts(): void {
+  timers.forEach((timer) => {
+    clearTimeout(timer);
+  });
+  timers.clear();
+  toasts = [];
+  notifyListeners();
+}
+
+export function getToastsSnapshot(): readonly Toast[] {
+  return [...toasts];
+}
+
+export const toastStore = {
+  subscribe(listener: () => void): () => void {
+    return subscribe(listener);
+  },
+  getSnapshot(): readonly Toast[] {
+    return getToastsSnapshot();
+  },
+  dismiss(id: string): void {
+    removeToast(id);
+  },
+  error(input: { readonly message: string }): Toast {
+    return addToast({ type: "error", message: input.message });
+  },
+  success(input: { readonly message: string }): Toast {
+    return addToast({ type: "success", message: input.message });
+  },
+  clear(): void {
+    clearToasts();
+  },
+};
+
+export const toast = {
+  error(input: { readonly message: string }): Toast {
+    return toastStore.error(input);
+  },
+  success(input: { readonly message: string }): Toast {
+    return toastStore.success(input);
+  },
+  dismiss(id: string): void {
+    toastStore.dismiss(id);
+  },
+};
+
 function createToastID(): string {
   const id = `toast-${nextToastID}`;
   nextToastID += 1;
   return id;
-}
-
-function getToastsSnapshot(): readonly Toast[] {
-  return [...toasts];
 }
 
 function notifyListeners(): void {

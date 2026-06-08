@@ -11,10 +11,12 @@ import {
 } from "react";
 import { modalIDs } from "@/constants";
 import { ModalOutlet } from "@/components/modal";
+import { ToastStack } from "@/components/ui/toast";
 import { createIssue, createProject, fetchProjects, fetchSummary, updateIssueStatus } from "@/lib/api";
 import "@/lib/i18n";
 import { i18n, type SupportedLanguage } from "@/lib/i18n";
 import { ModalProvider, useModal } from "@/lib/modal";
+import { toast } from "@/lib/toast";
 import type { CreateIssueInput, CreateProjectInput, IssueStatus, IssueSummary, Project, Summary } from "@/lib/types";
 import { AddIssueDialog } from "./add-issue-dialog";
 import { AddProjectDialog } from "./add-project-dialog";
@@ -69,6 +71,9 @@ const layoutDataContext = createContext<LayoutData | null>(null);
 const layoutShellContext = createContext<LayoutShellData | null>(null);
 
 const defaultRefreshIntervalMs = 3000;
+type LoadOptions = {
+  silent?: boolean;
+};
 
 export function Layout({ children }: { children: ReactNode }) {
   return (
@@ -107,21 +112,29 @@ function LayoutContent({ children }: { children: ReactNode }) {
     document.documentElement.lang = language;
   }, [language]);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (options?: LoadOptions) => {
     try {
-      const [summary, projects] = await Promise.all([fetchSummary(), fetchProjects()]);
+      const [summary, projects] = await Promise.all([
+        fetchSummary(options),
+        fetchProjects(options),
+      ]);
       setLoadState({ kind: "ready", projects, summary });
       setSelectedIssueID((current) => current ?? firstIssueID(summary));
     } catch (error) {
-      setLoadState({
-        kind: "error",
-        message: error instanceof Error ? error.message : t("layout.failedToLoadSummary"),
+      setLoadState((current) => {
+        if (!options?.silent && current.kind === "ready") {
+          return current;
+        }
+        return {
+          kind: "error",
+          message: error instanceof Error ? error.message : t("layout.failedToLoadSummary"),
+        };
       });
     }
   }, [t]);
 
   useEffect(() => {
-    void load();
+    void load({ silent: true });
     const id = window.setInterval(() => {
       void load();
     }, refreshIntervalMs);
@@ -157,6 +170,7 @@ function LayoutContent({ children }: { children: ReactNode }) {
     try {
       await updateIssueStatus(id, status);
       await load();
+      toast.success({ message: t("toast.success.issueStatusUpdated") });
     } catch (error) {
       setNotice(error instanceof Error ? error.message : t("layout.failedToUpdateIssue"));
     }
@@ -165,11 +179,12 @@ function LayoutContent({ children }: { children: ReactNode }) {
   async function handleCreateIssue(input: CreateIssueInput) {
     setNotice("");
     try {
-      const created = await createIssue(input);
-      await load();
+      const created = await createIssue(input, { silent: true });
+      await load({ silent: true });
       setSelectedIssueID(created.id);
       setAddIssueError("");
       modal.closeModal();
+      toast.success({ message: t("toast.success.issueCreated") });
     } catch (error) {
       setAddIssueError(error instanceof Error ? error.message : t("layout.failedToCreateIssue"));
     }
@@ -178,11 +193,12 @@ function LayoutContent({ children }: { children: ReactNode }) {
   async function handleCreateProject(input: CreateProjectInput) {
     setNotice("");
     try {
-      const created = await createProject(input);
-      await load();
+      const created = await createProject(input, { silent: true });
+      await load({ silent: true });
       setAddProjectError("");
       modal.closeModal();
       void navigate(`/projects/${encodeURIComponent(created.key)}/issues`);
+      toast.success({ message: t("toast.success.projectCreated") });
     } catch (error) {
       setAddProjectError(error instanceof Error ? error.message : t("layout.failedToCreateProject"));
     }
@@ -256,6 +272,7 @@ function LayoutContent({ children }: { children: ReactNode }) {
   return (
     <layoutShellContext.Provider value={shellData}>
       {children}
+      <ToastStack />
     </layoutShellContext.Provider>
   );
 }
