@@ -2,16 +2,19 @@ import { http, HttpResponse } from "msw";
 import type {
   CreateIssueInput,
   CreateProjectInput,
-  ErrorResponse,
+  ErrorResponse as IssueTrackerErrorResponse,
   IssueStatesInput,
   IssueStatus,
   UpdateIssueInput,
 } from "@/lib/generated/issue-tracker";
+import type { ErrorResponse as OrchestratorErrorResponse } from "@/lib/generated/orchestrator";
 import {
+  buildOrchestratorIssueRuntime,
   buildSummary,
   createComment,
   createIssue,
   createProject,
+  getOrchestratorConversation,
   getIssue,
   listComments,
   listIssueStates,
@@ -21,6 +24,7 @@ import {
 } from "./state";
 
 const apiBase = "/tracker/api/v1";
+const orchestratorBase = "/orchestrator/api/v1";
 
 export const handlers = [
   http.get(`${apiBase}/health`, () => {
@@ -118,6 +122,38 @@ export const handlers = [
 
     return jsonOk(comment, 201);
   }),
+
+  http.get(`${orchestratorBase}/:issueIdentifier`, ({ params }) => {
+    const issueID = issueIDFromIdentifier(params.issueIdentifier);
+    if (!issueID) {
+      return orchestratorError("invalid_issue_identifier", "issue identifier must use issue-<id>", 400);
+    }
+
+    const runtime = buildOrchestratorIssueRuntime(issueID);
+    if (!runtime) {
+      return orchestratorError("issue_not_found", `Issue ${issueID} was not found.`, 404);
+    }
+
+    return HttpResponse.json(runtime);
+  }),
+
+  http.get(`${orchestratorBase}/:issueIdentifier/runs/:runId/conversations`, ({ params }) => {
+    const issueID = issueIDFromIdentifier(params.issueIdentifier);
+    const runID = stringParam(params.runId);
+    if (!issueID) {
+      return orchestratorError("invalid_issue_identifier", "issue identifier must use issue-<id>", 400);
+    }
+    if (!runID) {
+      return orchestratorError("invalid_run_id", "run id is required", 400);
+    }
+
+    const conversation = getOrchestratorConversation(issueID, runID);
+    if (!conversation) {
+      return orchestratorError("run_not_found", "run not found", 404);
+    }
+
+    return HttpResponse.json(conversation);
+  }),
 ];
 
 function jsonOk<T>(data: T, status = 200) {
@@ -125,9 +161,17 @@ function jsonOk<T>(data: T, status = 200) {
 }
 
 function jsonError(code: string, message: string, status: 400 | 404 | 500) {
-  const body: ErrorResponse = {
+  const body: IssueTrackerErrorResponse = {
     error: { code, message },
     meta: {},
+  };
+
+  return HttpResponse.json(body, { status });
+}
+
+function orchestratorError(code: string, message: string, status: 400 | 404 | 500) {
+  const body: OrchestratorErrorResponse = {
+    error: { code, message },
   };
 
   return HttpResponse.json(body, { status });
@@ -154,4 +198,17 @@ function numericParam(value: string | readonly string[] | undefined): number {
   const rawValue = Array.isArray(value) ? value[0] : value;
   const parsed = Number.parseInt(rawValue ?? "", 10);
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function stringParam(value: string | readonly string[] | undefined): string {
+  return Array.isArray(value) ? value[0] ?? "" : value ?? "";
+}
+
+function issueIDFromIdentifier(value: string | readonly string[] | undefined): number | null {
+  const identifier = stringParam(value);
+  const match = /^issue-([1-9][0-9]*)$/.exec(identifier);
+  if (!match) {
+    return null;
+  }
+  return Number.parseInt(match[1], 10);
 }

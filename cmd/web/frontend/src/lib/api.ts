@@ -15,10 +15,13 @@ import {
   type Project,
   type Summary,
 } from "@/lib/generated/issue-tracker";
-import type {
-  OrchestratorConversation as OrchestratorConversationPayload,
-  OrchestratorIssueRuntime as OrchestratorIssueRuntimePayload,
-} from "@/lib/types";
+import {
+  getApiV1IssueIdentifier,
+  getApiV1IssueIdentifierRunsRunIdConversations,
+  type ConversationResponse,
+  type ErrorResponse as OrchestratorErrorResponse,
+  type IssueRuntimeResponse,
+} from "@/lib/generated/orchestrator";
 
 type ApiResponse<T> = {
   data: ApiEnvelope<T> | ErrorResponse;
@@ -70,16 +73,20 @@ export function updateIssueStatus(id: number, status: IssueStatus): Promise<Issu
 
 export function fetchOrchestratorIssueRuntime(
   issueID: number,
-): Promise<OrchestratorIssueRuntimePayload> {
-  return fetchOrchestrator<OrchestratorIssueRuntimePayload>(`/api/v1/issue-${issueID}`);
+): Promise<IssueRuntimeResponse> {
+  return unwrapOrchestratorResponse(getApiV1IssueIdentifier(`issue-${issueID}`, noStore));
 }
 
 export function fetchOrchestratorConversation(
   issueID: number,
   runID: string,
-): Promise<OrchestratorConversationPayload> {
-  return fetchOrchestrator<OrchestratorConversationPayload>(
-    `/api/v1/issue-${issueID}/runs/${encodeURIComponent(runID)}/conversations`,
+): Promise<ConversationResponse> {
+  return unwrapOrchestratorResponse(
+    getApiV1IssueIdentifierRunsRunIdConversations(
+      `issue-${issueID}`,
+      encodeURIComponent(runID),
+      noStore,
+    ),
   );
 }
 
@@ -103,14 +110,15 @@ async function unwrapEnvelope<T extends ApiEnvelope<unknown>>(
   return resolved.data as T;
 }
 
-async function fetchOrchestrator<T>(path: string): Promise<T> {
-  const response = await fetch(`/orchestrator${path}`, noStore);
-  const payload = await response.json();
-  if (!response.ok) {
-    const error = payload as { error?: { code?: string; message?: string } };
-    const code = error.error?.code ?? "orchestrator_error";
-    const message = error.error?.message ?? "orchestrator request failed";
+async function unwrapOrchestratorResponse<T>(
+  response: Promise<{ data: T | OrchestratorErrorResponse; status: number }>,
+): Promise<T> {
+  const resolved = await response;
+  if (resolved.status >= 400) {
+    const payload = resolved.data as OrchestratorErrorResponse;
+    const code = payload.error?.code ?? "orchestrator_error";
+    const message = payload.error?.message ?? "orchestrator request failed";
     throw new Error(`${code}: ${message}`);
   }
-  return payload as T;
+  return resolved.data as T;
 }

@@ -12,4 +12,15 @@ export default defineConfig({
       target: "src/lib/generated/issue-tracker.ts",
     },
   },
+  orchestrator: {
+    input: {
+      target: "../../../docs/openapi/orchestrator.yml",
+    },
+    output: {
+      baseUrl: "/orchestrator",
+      clean: false,
+      client: "fetch",
+      target: "src/lib/generated/orchestrator.ts",
+    },
+  },
 });

@@ -30,8 +30,9 @@ Do not add server-rendered UI behavior to `cmd/web`. If runtime configuration is
 ## API Client
 
 The issue-tracker API client is generated from `docs/openapi/issue-tracker.yml` with Orval.
+The orchestrator API client is generated from `docs/openapi/orchestrator.yml` with Orval.
 
-Run the generator from `cmd/web/frontend` whenever the OpenAPI definition changes:
+Run the generator from `cmd/web/frontend` whenever either OpenAPI definition changes:
 
 ```sh
 npm run generate:api
