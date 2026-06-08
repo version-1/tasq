@@ -1,5 +1,33 @@
 .board {
   display: grid;
+  gap: 16px;
+}
+
+.boardToolbar {
+  align-items: center;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.boardActions {
+  align-items: center;
+  display: flex;
+  gap: 24px;
+}
+
+.boardActions button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  color: var(--dark-gray);
+  display: flex;
+  gap: 6px;
+  padding: 0;
+}
+
+.columns {
+  display: grid;
   gap: 0;
   grid-template-columns: repeat(4, minmax(260px, 1fr));
   overflow-x: auto;
@@ -96,7 +124,12 @@
 }
 
 @media (max-width: 900px) {
-  .board {
+  .boardActions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .columns {
     grid-template-columns: repeat(4, minmax(260px, 82vw));
   }
 }

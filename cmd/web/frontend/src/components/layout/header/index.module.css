@@ -11,8 +11,7 @@
 .globalActions,
 .titleGroup,
 .statusStrip,
-.tabs,
-.viewActions {
+.tabs {
   display: flex;
   align-items: center;
 }
@@ -24,8 +23,7 @@
 }
 
 .moreButton,
-.notificationButton,
-.viewActions button {
+.notificationButton {
   border: 0;
   background: transparent;
   border-radius: 6px;
@@ -123,19 +121,6 @@
   color: var(--primary-black);
 }
 
-.viewActions {
-  gap: 24px;
-  padding-bottom: 16px;
-}
-
-.viewActions button {
-  align-items: center;
-  color: var(--dark-gray);
-  display: flex;
-  gap: 6px;
-  padding: 0;
-}
-
 @media (max-width: 900px) {
   .header {
     margin: -16px -16px 18px;
@@ -150,8 +135,7 @@
   }
 
   .globalActions,
-  .statusStrip,
-  .viewActions {
+  .statusStrip {
     flex-wrap: wrap;
   }
 
