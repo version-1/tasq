@@ -1,9 +1,9 @@
 "use client";
 
-import { Link, useLocation, useParams } from "react-router-dom";
-import { useTranslation } from "react-i18next";
-import { DefaultLayout } from "@/components/layout/default";
 import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
+import { Link, useLocation, useParams } from "react-router-dom";
+import { DefaultLayout } from "@/components/layout/default";
 import styles from "./index.module.css";
 
 export function IssueDetailLayout({ children }: { children: ReactNode }) {

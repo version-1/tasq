@@ -1,6 +1,6 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import DashboardPage from "./app/dashboard/page";
-import { IssueDetailLayout } from "./app/issues/[id]/_components/issue-detail-layout";
+import { IssueDetailLayout } from "./components/layout/issue";
 import ConversationRoute from "./app/issues/[id]/conversations/page";
 import IssueDetailRoute from "./app/issues/[id]/page";
 import IssuesPage from "./app/issues/page";

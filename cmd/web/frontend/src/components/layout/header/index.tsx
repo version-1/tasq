@@ -5,21 +5,28 @@ import { IconProxy, type IconProxyName } from "@/components/ui/icon-proxy";
 import { Breadcrumb } from "./breadcrumb";
 import styles from "./index.module.css";
 
-type HeaderPage = "issues" | "dashboard" | "settings";
+export type HeaderPage = "issues" | "dashboard" | "settings";
+
+export type HeaderPageLink = {
+  href: string;
+  key: HeaderPage;
+  titleKey: string;
+};
 
 type HeaderProps = {
   activePage: HeaderPage;
   projectName: string | null;
   issueCount: number | null;
   onAddTask: () => void;
+  pages?: readonly HeaderPageLink[];
   showViewNavigation?: boolean;
   showAddTaskButton?: boolean;
 };
 
-const pages = [
+const defaultPages = [
   { key: "issues", href: "/issues", titleKey: "header.board" },
   { key: "settings", href: "/settings", titleKey: "header.settings" },
-] as const;
+] satisfies readonly HeaderPageLink[];
 
 const viewActions = [
   { icon: "filter", titleKey: "header.filter" },
@@ -31,6 +38,7 @@ export function Header({
   activePage,
   projectName,
   onAddTask,
+  pages = defaultPages,
   showViewNavigation = true,
   showAddTaskButton = true,
 }: HeaderProps) {
