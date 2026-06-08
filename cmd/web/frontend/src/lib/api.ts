@@ -5,15 +5,21 @@ import {
   getApiV1Summary,
   patchApiV1IssuesId,
   postApiV1Issues,
+  postApiV1Projects,
   type CommentListResponse,
   type CreateIssueInput,
+  type CreateProjectInput,
   type ErrorResponse,
   type Issue,
   type IssueStatus,
   type Project,
   type Summary,
 } from "@/lib/generated/issue-tracker";
-import type { OrchestratorState } from "@/lib/types";
+import type {
+  OrchestratorConversation as OrchestratorConversationPayload,
+  OrchestratorIssueRuntime as OrchestratorIssueRuntimePayload,
+  OrchestratorState,
+} from "@/lib/types";
 
 type ApiResponse<T> = {
   data: ApiEnvelope<T> | ErrorResponse;
@@ -55,12 +61,31 @@ export function fetchProjects(): Promise<Project[]> {
   return unwrapResponse(getApiV1Projects(noStore));
 }
 
+export function createProject(input: CreateProjectInput): Promise<Project> {
+  return unwrapResponse(postApiV1Projects(input, noStore));
+}
+
 export function updateIssueStatus(id: number, status: IssueStatus): Promise<Issue> {
   return unwrapResponse(patchApiV1IssuesId(id, { status }, noStore));
 }
 
 export function fetchOrchestratorState(): Promise<OrchestratorState> {
   return fetchOrchestrator<OrchestratorState>("/api/v1/state");
+}
+
+export function fetchOrchestratorIssueRuntime(
+  issueID: number,
+): Promise<OrchestratorIssueRuntimePayload> {
+  return fetchOrchestrator<OrchestratorIssueRuntimePayload>(`/api/v1/issue-${issueID}`);
+}
+
+export function fetchOrchestratorConversation(
+  issueID: number,
+  runID: string,
+): Promise<OrchestratorConversationPayload> {
+  return fetchOrchestrator<OrchestratorConversationPayload>(
+    `/api/v1/issue-${issueID}/runs/${encodeURIComponent(runID)}/conversations`,
+  );
 }
 
 async function unwrapResponse<T>(response: Promise<ApiResponse<T>>): Promise<T> {

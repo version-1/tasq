@@ -5,6 +5,7 @@ import {
   type Comment,
   type CommentListMeta,
   type CommentListResponse,
+  type CreateProjectInput,
   type CommentType,
   type CreateIssueInput,
   type Issue,
@@ -26,6 +27,8 @@ export type OrchestratorRunStatus =
   | "succeeded"
   | "failed"
   | "cancelled";
+
+export type OrchestratorConversationEventType = "turn_completed" | OrchestratorRunStatus;
 
 export type OrchestratorTokenSummary = {
   input_tokens: number;
@@ -58,11 +61,41 @@ export type OrchestratorState = {
   rate_limits: Record<string, unknown> | null;
 };
 
+export type OrchestratorIssueRun = {
+  run_id: string;
+  status: OrchestratorRunStatus;
+  attempt: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type OrchestratorIssueRuntime = {
+  issue_identifier: string;
+  issue_id: string;
+  status: OrchestratorRunStatus;
+  runs: OrchestratorIssueRun[];
+};
+
+export type OrchestratorConversationEvent = {
+  at: string;
+  event: OrchestratorConversationEventType;
+  message: string;
+  payload_json: string;
+};
+
+export type OrchestratorConversation = {
+  issue_identifier: string;
+  issue_id: string;
+  run_id: string;
+  events: OrchestratorConversationEvent[];
+};
+
 export type {
   Column,
   Comment,
   CommentListMeta,
   CommentListResponse,
+  CreateProjectInput,
   CommentType,
   CreateIssueInput,
   Issue,

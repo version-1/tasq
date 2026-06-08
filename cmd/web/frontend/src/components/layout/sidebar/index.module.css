@@ -52,6 +52,38 @@
   gap: 8px;
 }
 
+.sectionHeader {
+  align-items: center;
+  color: var(--medium-gray);
+  display: flex;
+  font-size: 12px;
+  font-weight: 700;
+  justify-content: space-between;
+  letter-spacing: 0;
+  padding: 0 8px 0 14px;
+  text-transform: uppercase;
+}
+
+.addProjectButton {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  color: var(--dark-gray);
+  display: inline-flex;
+  height: 28px;
+  justify-content: center;
+  line-height: 1;
+  padding: 0;
+  width: 28px;
+}
+
+.addProjectButton:hover,
+.addProjectButton:focus-visible {
+  background: #f0f0f0;
+  color: var(--primary-black);
+}
+
 .account button {
   border: 0;
   background: transparent;
@@ -61,12 +93,13 @@
 
 .navIcon {
   color: var(--dark-gray);
-  font-size: 15px;
-  line-height: 1;
+  flex: 0 0 auto;
   width: 16px;
 }
 
 .projectMore {
+  color: var(--dark-gray);
+  flex: 0 0 auto;
   margin-left: auto;
 }
 

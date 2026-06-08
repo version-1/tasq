@@ -2,6 +2,7 @@ import type {
   Comment,
   CommentListResponse,
   CreateIssueInput,
+  CreateProjectInput,
   Issue,
   IssueState,
   IssueStatus,
@@ -22,11 +23,42 @@ type IssueListFilters = {
 let projects = clone(projectFixtures);
 let issues = clone(issueFixtures);
 let comments = clone(commentFixtures);
+let nextProjectID = nextNumericID(projects);
 let nextIssueID = nextNumericID(issues);
 let nextCommentID = nextNumericID(comments);
 
 export function listProjects(): Project[] {
   return clone(projects);
+}
+
+export function createProject(input: CreateProjectInput): Project | null {
+  const key = input.key.trim();
+  const name = input.name.trim();
+  const location = input.location.trim();
+  const description = input.description?.trim() ?? "";
+
+  if (key === "" || name === "" || location === "") {
+    return null;
+  }
+
+  if (projects.some((project) => project.key === key)) {
+    return null;
+  }
+
+  const now = new Date().toISOString();
+  const project: Project = {
+    id: nextProjectID,
+    key,
+    name,
+    description,
+    location,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  nextProjectID += 1;
+  projects = [...projects, project];
+  return clone(project);
 }
 
 export function listIssues(filters: IssueListFilters = {}): Issue[] {

@@ -18,6 +18,9 @@ import (
 type Store interface {
 	ActiveRuns(ctx context.Context) ([]run.Run, error)
 	RunByIssueID(ctx context.Context, issueID int64) (run.Run, error)
+	RunByRunID(ctx context.Context, runID string) (run.Run, error)
+	RunsByIssueID(ctx context.Context, issueID int64) ([]run.Run, error)
+	ConversationEvents(ctx context.Context, runID string) ([]run.RunnerEvent, error)
 	RunnerEvents(ctx context.Context, runID string, limit int) ([]run.RunnerEvent, error)
 }
 
@@ -39,6 +42,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/v1/state", s.state)
 	mux.HandleFunc("POST /api/v1/refresh", s.refresh)
 	mux.HandleFunc("GET /api/v1/{issue_identifier}", s.issue)
+	mux.HandleFunc("GET /api/v1/{issue_identifier}/runs/{run_id}/conversations", s.conversation)
 	return mux
 }
 
@@ -111,6 +115,7 @@ type issueResponse struct {
 	Status          string           `json:"status"`
 	Workspace       workspacePayload `json:"workspace"`
 	Attempts        attemptsPayload  `json:"attempts"`
+	Runs            []issueRunRow    `json:"runs"`
 	Running         *runRow          `json:"running"`
 	Retry           any              `json:"retry"`
 	Logs            logsPayload      `json:"logs"`
@@ -128,6 +133,14 @@ type attemptsPayload struct {
 	CurrentRetryAttempt int `json:"current_retry_attempt"`
 }
 
+type issueRunRow struct {
+	RunID     string    `json:"run_id"`
+	Status    string    `json:"status"`
+	Attempt   int       `json:"attempt"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
 type logsPayload struct {
 	CodexSessionLogs []any `json:"codex_session_logs"`
 }
@@ -136,6 +149,20 @@ type eventRow struct {
 	At      time.Time `json:"at"`
 	Event   string    `json:"event"`
 	Message string    `json:"message"`
+}
+
+type conversationResponse struct {
+	IssueIdentifier string                 `json:"issue_identifier"`
+	IssueID         string                 `json:"issue_id"`
+	RunID           string                 `json:"run_id"`
+	Events          []conversationEventRow `json:"events"`
+}
+
+type conversationEventRow struct {
+	At          time.Time `json:"at"`
+	Event       string    `json:"event"`
+	Message     string    `json:"message"`
+	PayloadJSON string    `json:"payload_json"`
 }
 
 func (s *Server) state(w http.ResponseWriter, r *http.Request) {
@@ -188,6 +215,21 @@ func (s *Server) issue(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "issue_query_failed", err.Error())
 		return
 	}
+	runs, err := s.store.RunsByIssueID(r.Context(), issueID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "issue_query_failed", err.Error())
+		return
+	}
+	runRows := make([]issueRunRow, 0, len(runs))
+	for _, issueRun := range runs {
+		runRows = append(runRows, issueRunRow{
+			RunID:     issueRun.RunID,
+			Status:    string(issueRun.Status),
+			Attempt:   issueRun.Attempt,
+			CreatedAt: issueRun.CreatedAt,
+			UpdatedAt: issueRun.UpdatedAt,
+		})
+	}
 	eventRows := make([]eventRow, 0, len(events))
 	for _, event := range events {
 		eventRows = append(eventRows, eventRow{
@@ -218,6 +260,7 @@ func (s *Server) issue(w http.ResponseWriter, r *http.Request) {
 			RestartCount:        max(storedRun.Attempt-1, 0),
 			CurrentRetryAttempt: storedRun.Attempt,
 		},
+		Runs:         runRows,
 		Running:      running,
 		Retry:        nil,
 		Logs:         logsPayload{CodexSessionLogs: []any{}},
@@ -226,6 +269,53 @@ func (s *Server) issue(w http.ResponseWriter, r *http.Request) {
 		Tracked:      map[string]any{},
 	}
 	writeJSON(w, http.StatusOK, response)
+}
+
+func (s *Server) conversation(w http.ResponseWriter, r *http.Request) {
+	identifier := r.PathValue("issue_identifier")
+	issueID, ok := parseIssueIdentifier(identifier)
+	if !ok {
+		writeError(w, http.StatusBadRequest, "invalid_issue_identifier", "issue identifier must use issue-<id>")
+		return
+	}
+	runID := strings.TrimSpace(r.PathValue("run_id"))
+	if runID == "" {
+		writeError(w, http.StatusBadRequest, "invalid_run_id", "run id is required")
+		return
+	}
+	storedRun, err := s.store.RunByRunID(r.Context(), runID)
+	if errors.Is(err, sql.ErrNoRows) {
+		writeError(w, http.StatusNotFound, "run_not_found", "run not found")
+		return
+	}
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "conversation_query_failed", err.Error())
+		return
+	}
+	if storedRun.IssueID != issueID {
+		writeError(w, http.StatusNotFound, "run_not_found", "run not found")
+		return
+	}
+	events, err := s.store.ConversationEvents(r.Context(), runID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "conversation_query_failed", err.Error())
+		return
+	}
+	eventRows := make([]conversationEventRow, 0, len(events))
+	for _, event := range events {
+		eventRows = append(eventRows, conversationEventRow{
+			At:          event.OccurredAt,
+			Event:       event.EventType,
+			Message:     event.Message,
+			PayloadJSON: event.PayloadJSON,
+		})
+	}
+	writeJSON(w, http.StatusOK, conversationResponse{
+		IssueIdentifier: identifier,
+		IssueID:         strconv.FormatInt(issueID, 10),
+		RunID:           runID,
+		Events:          eventRows,
+	})
 }
 
 func (s *Server) refresh(w http.ResponseWriter, r *http.Request) {

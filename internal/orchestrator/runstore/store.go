@@ -276,6 +276,55 @@ func (s *Store) RunByIssueID(ctx context.Context, issueID int64) (run.Run, error
 	return scanRun(row)
 }
 
+func (s *Store) RunsByIssueID(ctx context.Context, issueID int64) ([]run.Run, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT id, run_id, issue_id, status, workspace, attempt, error, orchestrator_id, created_at, updated_at
+		FROM runs
+		WHERE issue_id = ?
+		ORDER BY id DESC`, issueID)
+	if err != nil {
+		return nil, fmt.Errorf("list runs by issue id: %w", err)
+	}
+	defer rows.Close()
+
+	var runs []run.Run
+	for rows.Next() {
+		storedRun, err := scanRun(rows)
+		if err != nil {
+			return nil, err
+		}
+		runs = append(runs, storedRun)
+	}
+	return runs, rows.Err()
+}
+
+func (s *Store) ConversationEvents(ctx context.Context, runID string) ([]run.RunnerEvent, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT id, run_id, event_type, message, payload_json, occurred_at
+		FROM runner_events
+		WHERE run_id = ?
+			AND event_type IN ('turn_completed', 'running', 'succeeded', 'failed', 'cancelled')
+		ORDER BY id ASC`, runID)
+	if err != nil {
+		return nil, fmt.Errorf("list conversation events: %w", err)
+	}
+	defer rows.Close()
+
+	var events []run.RunnerEvent
+	for rows.Next() {
+		var event run.RunnerEvent
+		var occurredAt string
+		if err := rows.Scan(&event.ID, &event.RunID, &event.EventType, &event.Message, &event.PayloadJSON, &occurredAt); err != nil {
+			return nil, err
+		}
+		parsed, err := parseTime(occurredAt)
+		if err != nil {
+			return nil, err
+		}
+		event.OccurredAt = parsed
+		events = append(events, event)
+	}
+	return events, rows.Err()
+}
+
 func scanRun(row scanner) (run.Run, error) {
 	var storedRun run.Run
 	var createdAt string
