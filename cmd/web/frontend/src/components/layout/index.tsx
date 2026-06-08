@@ -11,6 +11,7 @@ import {
 } from "react";
 import { modalIDs } from "@/constants";
 import { ModalOutlet } from "@/components/modal";
+import { ToastStack } from "@/components/ui/toast";
 import { createIssue, createProject, fetchProjects, fetchSummary, updateIssueStatus } from "@/lib/api";
 import "@/lib/i18n";
 import { i18n, type SupportedLanguage } from "@/lib/i18n";
@@ -256,6 +257,7 @@ function LayoutContent({ children }: { children: ReactNode }) {
   return (
     <layoutShellContext.Provider value={shellData}>
       {children}
+      <ToastStack />
     </layoutShellContext.Provider>
   );
 }

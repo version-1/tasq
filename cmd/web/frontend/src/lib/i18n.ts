@@ -239,6 +239,12 @@ const resources = {
         ready: "Ready",
         review: "Review",
       },
+      toast: {
+        dismiss: "通知を閉じる",
+        errorTitle: "エラー",
+        region: "通知",
+        successTitle: "成功",
+      },
     },
   },
   en: {
@@ -471,6 +477,12 @@ const resources = {
         in_progress: "In Progress",
         ready: "Ready",
         review: "Review",
+      },
+      toast: {
+        dismiss: "Dismiss notification",
+        errorTitle: "Error",
+        region: "Notifications",
+        successTitle: "Success",
       },
     },
   },

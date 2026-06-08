@@ -5,6 +5,7 @@ import {
   Plus,
   Settings,
   SquareKanban,
+  X,
   type LucideIcon,
 } from "lucide-react";
 
@@ -15,6 +16,7 @@ const icons = {
   plus: Plus,
   settings: Settings,
   "square-kanban": SquareKanban,
+  x: X,
 } satisfies Record<string, LucideIcon>;
 
 export type IconProxyName = keyof typeof icons;

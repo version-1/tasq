@@ -22,7 +22,7 @@ const listeners = new Set<ToastListener>();
 const timers = new Map<string, ReturnType<typeof setTimeout>>();
 
 let nextToastID = 1;
-let toasts: Toast[] = [];
+let toasts: readonly Toast[] = [];
 
 export function addToast(input: ToastInput): Toast {
   const toast: Toast = {
@@ -52,6 +52,14 @@ export function subscribe(listener: ToastListener): () => void {
   };
 }
 
+export function dismissToast(id: string): void {
+  removeToast(id);
+}
+
+export function getToastsSnapshot(): readonly Toast[] {
+  return toasts;
+}
+
 function removeToast(id: string): void {
   const timer = timers.get(id);
   if (timer) {
@@ -72,10 +80,6 @@ function createToastID(): string {
   const id = `toast-${nextToastID}`;
   nextToastID += 1;
   return id;
-}
-
-function getToastsSnapshot(): readonly Toast[] {
-  return [...toasts];
 }
 
 function notifyListeners(): void {
