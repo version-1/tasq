@@ -38,10 +38,12 @@ const resources = {
         close: "閉じる",
         errors: {
           keyRequired: "キーを入力してください",
+          locationAbsolute: "絶対パスの場所を入力してください",
           locationRequired: "場所を入力してください",
           nameRequired: "プロジェクト名を入力してください",
         },
         fields: {
+          chooseDirectory: "ディレクトリを選択",
           description: "説明",
           key: "キー",
           location: "場所",
@@ -49,8 +51,9 @@ const resources = {
         },
         placeholders: {
           description: "プロジェクトの目的や補足",
+          directory: "ディレクトリを選択してください",
           key: "product-web",
-          location: "ディレクトリを選択してください",
+          location: "/Users/admin/Projects/product-web",
           name: "Product Website",
         },
         saving: "追加中...",
@@ -244,10 +247,12 @@ const resources = {
         close: "Close",
         errors: {
           keyRequired: "Enter a project key",
+          locationAbsolute: "Enter an absolute project location",
           locationRequired: "Enter a project location",
           nameRequired: "Enter a project name",
         },
         fields: {
+          chooseDirectory: "Choose directory",
           description: "Description",
           key: "Key",
           location: "Location",
@@ -255,8 +260,9 @@ const resources = {
         },
         placeholders: {
           description: "Project purpose or notes",
+          directory: "Choose a directory",
           key: "product-web",
-          location: "Choose a directory",
+          location: "/Users/admin/Projects/product-web",
           name: "Product Website",
         },
         saving: "Adding...",

@@ -28,7 +28,9 @@ describe("AddProjectDialog", () => {
       value: "product-website/README.md",
     });
 
-    await user.upload(screen.getByLabelText("Location"), file);
+    await user.upload(screen.getByLabelText("Choose directory"), file);
+    await user.clear(screen.getByLabelText("Location"));
+    await user.type(screen.getByLabelText("Location"), "/workspace/product-website");
     await user.clear(screen.getByLabelText("Name"));
     await user.type(screen.getByLabelText("Name"), "  Product Website  ");
     await user.type(screen.getByLabelText("Description"), "  Customer-facing site  ");
@@ -38,7 +40,7 @@ describe("AddProjectDialog", () => {
     expect(onSubmit).toHaveBeenCalledWith({
       description: "Customer-facing site",
       key: "product-website",
-      location: "product-website",
+      location: "/workspace/product-website",
       name: "Product Website",
     });
   });
@@ -51,9 +53,10 @@ describe("AddProjectDialog", () => {
       value: "agent_docs/index.ts",
     });
 
-    await user.upload(screen.getByLabelText("Location"), file);
+    await user.upload(screen.getByLabelText("Choose directory"), file);
 
     expect(screen.getByLabelText("Key")).toHaveValue("agent-docs");
+    expect(screen.getByLabelText("Location")).toHaveValue("agent_docs");
     expect(screen.getByLabelText("Name")).toHaveValue("Agent Docs");
     expect(screen.getByText("agent_docs")).toBeTruthy();
   });
@@ -66,6 +69,22 @@ describe("AddProjectDialog", () => {
     await user.click(screen.getByRole("button", { name: "Add" }));
 
     expect(screen.getByText("Enter a project location")).toBeTruthy();
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it("requires an absolute project location", async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn<(_: CreateProjectInput) => Promise<void>>().mockResolvedValue(undefined);
+    renderAddProjectDialog({ onSubmit });
+    const file = new File([""], "index.ts", { type: "text/typescript" });
+    Object.defineProperty(file, "webkitRelativePath", {
+      value: "agent-docs/index.ts",
+    });
+
+    await user.upload(screen.getByLabelText("Choose directory"), file);
+    await user.click(screen.getByRole("button", { name: "Add" }));
+
+    expect(screen.getByText("Enter an absolute project location")).toBeTruthy();
     expect(onSubmit).not.toHaveBeenCalled();
   });
 

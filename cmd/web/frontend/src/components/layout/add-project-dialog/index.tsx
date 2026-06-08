@@ -45,6 +45,10 @@ export function AddProjectDialog({
       setValidationError(t("addProject.errors.locationRequired"));
       return;
     }
+    if (!isAbsoluteLocation(input.location)) {
+      setValidationError(t("addProject.errors.locationAbsolute"));
+      return;
+    }
     if (!input.key) {
       setValidationError(t("addProject.errors.keyRequired"));
       return;
@@ -81,7 +85,7 @@ export function AddProjectDialog({
           <label className={styles.field}>
             <span>{t("addProject.fields.location")}</span>
             <input
-              aria-label={t("addProject.fields.location")}
+              aria-label={t("addProject.fields.chooseDirectory")}
               autoFocus
               className={styles.fileInput}
               type="file"
@@ -89,8 +93,14 @@ export function AddProjectDialog({
               {...directoryPickerAttributes}
             />
             <span className={styles.selectedLocation}>
-              {values.location || t("addProject.placeholders.location")}
+              {values.location || t("addProject.placeholders.directory")}
             </span>
+            <input
+              aria-label={t("addProject.fields.location")}
+              value={values.location}
+              onChange={(event) => setValues({ ...values, location: event.target.value })}
+              placeholder={t("addProject.placeholders.location")}
+            />
           </label>
 
           <label className={styles.field}>
@@ -179,6 +189,10 @@ function projectLocationFromFiles(files: FileList | null): SelectedProjectLocati
     location,
     name: location,
   };
+}
+
+function isAbsoluteLocation(location: string): boolean {
+  return location.startsWith("/") || /^[A-Za-z]:[\\/]/.test(location);
 }
 
 function toProjectKey(name: string): string {
