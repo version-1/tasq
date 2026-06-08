@@ -5,7 +5,7 @@ export function DefaultLayout({ children }: { children: ReactNode }) {
   const shellData = useLayoutShellData();
 
   return (
-    <ShellLayout shellData={shellData} showViewNavigation={false}>
+    <ShellLayout shellData={shellData}>
       {children}
     </ShellLayout>
   );

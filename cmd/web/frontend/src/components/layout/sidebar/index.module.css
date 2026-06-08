@@ -84,13 +84,6 @@
   color: var(--primary-black);
 }
 
-.account button {
-  border: 0;
-  background: transparent;
-  color: var(--dark-gray);
-  padding: 4px;
-}
-
 .navIcon {
   color: var(--dark-gray);
   flex: 0 0 auto;
@@ -109,43 +102,19 @@
   padding-top: 28px;
 }
 
-.account {
+.themeSwitch {
   align-items: center;
   border-top: 1px solid var(--light-gray);
-  display: grid;
-  grid-template-columns: 36px minmax(0, 1fr) 24px;
-  gap: 10px;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
   padding: 18px 6px 0;
 }
 
-.avatar {
-  align-items: center;
-  background: #8f8f8f;
-  border-radius: 999px;
-  color: var(--white);
-  display: flex;
-  font-size: 13px;
-  height: 36px;
-  justify-content: center;
-  width: 36px;
-}
-
-.account strong,
-.account span {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.account strong {
+.themeSwitch > span:first-child {
   color: var(--primary-black);
   font-size: 14px;
-}
-
-.account span {
-  color: var(--medium-gray);
-  font-size: 12px;
+  font-weight: 700;
 }
 
 @media (max-width: 900px) {

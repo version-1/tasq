@@ -1,10 +1,11 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { useTabs } from "@/context/tabs";
 import { Breadcrumb } from "./breadcrumb";
 import styles from "./index.module.css";
 
-type HeaderPage = "issues" | "dashboard" | "settings";
+export type HeaderPage = "issues" | "dashboard" | "settings";
 
 type HeaderProps = {
   activePage: HeaderPage;
@@ -12,21 +13,18 @@ type HeaderProps = {
   issueCount: number | null;
   onAddTask: () => void;
   showViewNavigation?: boolean;
+  showAddTaskButton?: boolean;
 };
-
-const pages = [
-  { key: "issues", href: "/issues", titleKey: "header.board" },
-  { key: "settings", href: "/settings", titleKey: "header.settings" },
-] as const;
 
 export function Header({
   activePage,
   projectName,
-  issueCount,
   onAddTask,
   showViewNavigation = true,
+  showAddTaskButton = true,
 }: HeaderProps) {
   const { t } = useTranslation();
+  const tabs = useTabs();
   const displayedProjectName = projectName ?? t("header.projectName");
 
   return (
@@ -40,13 +38,6 @@ export function Header({
             <input type="search" placeholder={t("header.searchPlaceholder")} />
             <kbd>{t("header.commandKey")}</kbd>
           </label>
-          <button
-            className={styles.notificationButton}
-            type="button"
-            aria-label={t("header.notifications")}
-          >
-            ♡
-          </button>
         </div>
       </div>
 
@@ -57,36 +48,26 @@ export function Header({
               ? displayedProjectName
               : t(pageHeadingKey(activePage))}
           </h1>
-          <button
-            className={styles.moreButton}
-            type="button"
-            aria-label={t("header.moreProjectActions")}
-          >
-            ···
-          </button>
         </div>
 
-        <div className={styles.statusStrip}>
-          <span>
-            {issueCount === null
-              ? t("header.loading")
-              : t("header.issueCount", { count: issueCount })}
-          </span>
-          <Button onClick={onAddTask}>
-            <span aria-hidden="true">＋</span>
-            {t("header.addTask")}
-          </Button>
-        </div>
+        {showAddTaskButton ? (
+          <div className={styles.statusStrip}>
+            <Button onClick={onAddTask}>
+              <span aria-hidden="true">＋</span>
+              {t("header.addTask")}
+            </Button>
+          </div>
+        ) : null}
       </div>
 
-      {showViewNavigation ? (
+      {showViewNavigation && tabs.pages.length > 0 ? (
         <div className={styles.viewRow}>
           <nav className={styles.tabs} aria-label={t("header.views")}>
-            {pages.map((page) => (
+            {tabs.pages.map((page) => (
               <Link
                 key={page.key}
                 className={
-                  activePage === page.key
+                  tabs.activeKey === page.key
                     ? `${styles.tab} ${styles.active}`
                     : styles.tab
                 }
@@ -96,12 +77,6 @@ export function Header({
               </Link>
             ))}
           </nav>
-
-          <div className={styles.viewActions}>
-            <button type="button">{t("header.filter")}</button>
-            <button type="button">{t("header.sort")}</button>
-            <button type="button">{t("header.view")}</button>
-          </div>
         </div>
       ) : null}
     </header>

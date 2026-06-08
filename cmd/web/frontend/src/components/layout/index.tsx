@@ -290,11 +290,11 @@ export function useLayoutShellData(): LayoutShellData {
 export function ShellLayout({
   children,
   shellData,
-  showViewNavigation,
+  showViewNavigation = true,
 }: {
   children: ReactNode;
   shellData: LayoutShellData;
-  showViewNavigation: boolean;
+  showViewNavigation?: boolean;
 }) {
   const { t } = useTranslation();
 

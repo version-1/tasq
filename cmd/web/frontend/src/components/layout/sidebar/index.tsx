@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { IconProxy } from "@/components/ui/icon-proxy";
+import { Switch } from "@/components/ui/switch";
 import type { Project } from "@/lib/types";
 import styles from "./index.module.css";
 
@@ -98,18 +99,10 @@ export function Sidebar({
         {t("sidebar.settings")}
       </Link>
 
-      <div className={styles.account}>
-        <div className={styles.avatar} aria-hidden="true">
-          YK
-        </div>
-        <div>
-          <strong>{t("sidebar.userName")}</strong>
-          <span>{t("sidebar.userEmail")}</span>
-        </div>
-        <button type="button" aria-label={t("sidebar.accountMenu")}>
-          <IconProxy name="chevron-down" size={16} />
-        </button>
-      </div>
+      <label className={styles.themeSwitch}>
+        <span>{t("sidebar.darkMode")}</span>
+        <Switch aria-label={t("sidebar.darkMode")} />
+      </label>
     </aside>
   );
 }
