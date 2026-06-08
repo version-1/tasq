@@ -69,10 +69,6 @@ const layoutDataContext = createContext<LayoutData | null>(null);
 const layoutShellContext = createContext<LayoutShellData | null>(null);
 
 const defaultRefreshIntervalMs = 3000;
-const headerPages = [
-  { key: "issues", href: "/issues", titleKey: "header.board" },
-  { key: "settings", href: "/settings", titleKey: "header.settings" },
-] satisfies readonly HeaderPageLink[];
 
 export function Layout({ children }: { children: ReactNode }) {
   return (
@@ -282,10 +278,12 @@ export function useLayoutShellData(): LayoutShellData {
 
 export function ShellLayout({
   children,
+  pages,
   shellData,
   showViewNavigation,
 }: {
   children: ReactNode;
+  pages: readonly HeaderPageLink[];
   shellData: LayoutShellData;
   showViewNavigation: boolean;
 }) {
@@ -305,7 +303,7 @@ export function ShellLayout({
           projectName={shellData.title}
           issueCount={shellData.summary ? shellData.issues.length : null}
           onAddTask={() => shellData.onAddIssue("backlog")}
-          pages={headerPages}
+          pages={pages}
           showViewNavigation={showViewNavigation}
         />
 

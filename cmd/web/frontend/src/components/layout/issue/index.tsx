@@ -4,9 +4,16 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { DefaultLayout } from "@/components/layout/default";
+import type { HeaderPageLink } from "@/components/layout/header";
 import styles from "./index.module.css";
 
-export function IssueDetailLayout({ children }: { children: ReactNode }) {
+export function IssueDetailLayout({
+  children,
+  pages,
+}: {
+  children: ReactNode;
+  pages: readonly HeaderPageLink[];
+}) {
   const { t } = useTranslation();
   const { id } = useParams();
   const issuePath = id ? `/issues/${id}` : "/issues";
@@ -16,7 +23,7 @@ export function IssueDetailLayout({ children }: { children: ReactNode }) {
   const isDetailRoute = !isConversationRoute;
 
   return (
-    <DefaultLayout>
+    <DefaultLayout pages={pages}>
       <div className={styles.layout}>
         <Link className={styles.backLink} to="/issues">
           {t("issues.detailPage.backToList")}
