@@ -21,21 +21,8 @@ export function AddProjectDialog({
 }) {
   const { t } = useTranslation();
   const [values, setValues] = useState<AddProjectFormValues>(initialAddProjectValues);
-  const [selectedDirectoryName, setSelectedDirectoryName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationError, setValidationError] = useState("");
-
-  async function handleChooseDirectory() {
-    const selectedDirectory = await chooseProjectDirectory();
-    if (!selectedDirectory) return;
-
-    setSelectedDirectoryName(selectedDirectory.name);
-    setValues({
-      ...values,
-      key: values.key || toProjectKey(selectedDirectory.name),
-      name: values.name || toProjectName(selectedDirectory.name),
-    });
-  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -83,25 +70,12 @@ export function AddProjectDialog({
 
           <label className={styles.field}>
             <span>{t("addProject.fields.location")}</span>
-            <button
-              aria-label={t("addProject.fields.chooseDirectory")}
-              className={styles.directoryButton}
-              type="button"
-              autoFocus
-              onClick={() => void handleChooseDirectory()}
-            >
-              {t("addProject.fields.chooseDirectory")}
-            </button>
-            <span className={styles.selectedLocation}>
-              {selectedDirectoryName
-                ? t("addProject.selectedDirectory", { name: selectedDirectoryName })
-                : t("addProject.placeholders.directory")}
-            </span>
             <input
               aria-label={t("addProject.fields.location")}
               value={values.location}
               onChange={(event) => setValues({ ...values, location: event.target.value })}
               placeholder={t("addProject.placeholders.location")}
+              autoFocus
             />
           </label>
 
@@ -165,47 +139,6 @@ function toCreateProjectInput(values: AddProjectFormValues): CreateProjectInput 
   };
 }
 
-type SelectedProjectLocation = {
-  name: string;
-};
-
-async function chooseProjectDirectory(): Promise<SelectedProjectLocation | null> {
-  const picker = window as Window & {
-    showDirectoryPicker?: () => Promise<{ name: string }>;
-  };
-  if (!picker.showDirectoryPicker) {
-    return null;
-  }
-
-  try {
-    const directory = await picker.showDirectoryPicker();
-    if (!directory.name) {
-      return null;
-    }
-    return { name: directory.name };
-  } catch {
-    return null;
-  }
-}
-
 function isAbsoluteLocation(location: string): boolean {
   return location.startsWith("/") || /^[A-Za-z]:[\\/]/.test(location);
-}
-
-function toProjectKey(name: string): string {
-  return name
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 64);
-}
-
-function toProjectName(name: string): string {
-  return name
-    .trim()
-    .split(/[-_\s]+/)
-    .filter(Boolean)
-    .map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
-    .join(" ");
 }

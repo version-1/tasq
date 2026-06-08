@@ -43,7 +43,6 @@ const resources = {
           nameRequired: "プロジェクト名を入力してください",
         },
         fields: {
-          chooseDirectory: "ディレクトリを選択",
           description: "説明",
           key: "キー",
           location: "場所",
@@ -51,13 +50,11 @@ const resources = {
         },
         placeholders: {
           description: "プロジェクトの目的や補足",
-          directory: "ディレクトリを選択してください",
           key: "product-web",
           location: "/Users/admin/Projects/product-web",
           name: "Product Website",
         },
         saving: "追加中...",
-        selectedDirectory: "選択済み: {{name}}",
         submit: "追加",
         title: "プロジェクトを追加",
       },
@@ -253,7 +250,6 @@ const resources = {
           nameRequired: "Enter a project name",
         },
         fields: {
-          chooseDirectory: "Choose directory",
           description: "Description",
           key: "Key",
           location: "Location",
@@ -261,13 +257,11 @@ const resources = {
         },
         placeholders: {
           description: "Project purpose or notes",
-          directory: "Choose a directory",
           key: "product-web",
           location: "/Users/admin/Projects/product-web",
           name: "Product Website",
         },
         saving: "Adding...",
-        selectedDirectory: "Selected: {{name}}",
         submit: "Add",
         title: "Add project",
       },

@@ -4,10 +4,6 @@ import { describe, expect, it, vi } from "vitest";
 import type { CreateProjectInput } from "@/lib/types";
 import { AddProjectDialog } from "./index";
 
-type TestWindow = Window & {
-  showDirectoryPicker?: () => Promise<{ name: string }>;
-};
-
 function renderAddProjectDialog({
   error = "",
   onCancel = vi.fn(),
@@ -26,12 +22,11 @@ describe("AddProjectDialog", () => {
   it("submits trimmed project values", async () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn<(_: CreateProjectInput) => Promise<void>>().mockResolvedValue(undefined);
-    mockDirectoryPicker("product-website");
     renderAddProjectDialog({ onSubmit });
 
-    await user.click(screen.getByRole("button", { name: "Choose directory" }));
     await user.clear(screen.getByLabelText("Location"));
-    await user.type(screen.getByLabelText("Location"), "/workspace/product-website");
+    await user.type(screen.getByLabelText("Location"), "  /workspace/product-website  ");
+    await user.type(screen.getByLabelText("Key"), "  product-website  ");
     await user.clear(screen.getByLabelText("Name"));
     await user.type(screen.getByLabelText("Name"), "  Product Website  ");
     await user.type(screen.getByLabelText("Description"), "  Customer-facing site  ");
@@ -46,37 +41,11 @@ describe("AddProjectDialog", () => {
     });
   });
 
-  it("fills key and name from the selected directory", async () => {
-    const user = userEvent.setup();
-    mockDirectoryPicker("agent_docs");
-    renderAddProjectDialog();
-
-    await user.click(screen.getByRole("button", { name: "Choose directory" }));
-
-    expect(screen.getByLabelText("Key")).toHaveValue("agent-docs");
-    expect(screen.getByLabelText("Location")).toHaveValue("");
-    expect(screen.getByLabelText("Name")).toHaveValue("Agent Docs");
-    expect(screen.getByText("Selected: agent_docs")).toBeTruthy();
-  });
-
   it("shows validation errors without submitting", async () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn<(_: CreateProjectInput) => Promise<void>>().mockResolvedValue(undefined);
     renderAddProjectDialog({ onSubmit });
 
-    await user.click(screen.getByRole("button", { name: "Add" }));
-
-    expect(screen.getByText("Enter a project location")).toBeTruthy();
-    expect(onSubmit).not.toHaveBeenCalled();
-  });
-
-  it("requires an absolute project location", async () => {
-    const user = userEvent.setup();
-    const onSubmit = vi.fn<(_: CreateProjectInput) => Promise<void>>().mockResolvedValue(undefined);
-    mockDirectoryPicker("agent-docs");
-    renderAddProjectDialog({ onSubmit });
-
-    await user.click(screen.getByRole("button", { name: "Choose directory" }));
     await user.click(screen.getByRole("button", { name: "Add" }));
 
     expect(screen.getByText("Enter a project location")).toBeTruthy();
@@ -107,10 +76,3 @@ describe("AddProjectDialog", () => {
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
 });
-
-function mockDirectoryPicker(name: string) {
-  Object.defineProperty(window as TestWindow, "showDirectoryPicker", {
-    configurable: true,
-    value: vi.fn().mockResolvedValue({ name }),
-  });
-}
