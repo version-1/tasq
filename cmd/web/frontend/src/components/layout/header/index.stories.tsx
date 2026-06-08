@@ -8,6 +8,10 @@ const meta = {
     activePage: "issues",
     projectName: "Product Website",
     issueCount: 24,
+    pages: [
+      { key: "issues", href: "/issues", titleKey: "header.board" },
+      { key: "settings", href: "/settings", titleKey: "header.settings" },
+    ],
     showViewNavigation: true,
     onAddTask: () => undefined,
   },

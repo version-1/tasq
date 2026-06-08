@@ -18,15 +18,10 @@ type HeaderProps = {
   projectName: string | null;
   issueCount: number | null;
   onAddTask: () => void;
-  pages?: readonly HeaderPageLink[];
+  pages: readonly HeaderPageLink[];
   showViewNavigation?: boolean;
   showAddTaskButton?: boolean;
 };
-
-const defaultPages = [
-  { key: "issues", href: "/issues", titleKey: "header.board" },
-  { key: "settings", href: "/settings", titleKey: "header.settings" },
-] satisfies readonly HeaderPageLink[];
 
 const viewActions = [
   { icon: "filter", titleKey: "header.filter" },
@@ -38,7 +33,7 @@ export function Header({
   activePage,
   projectName,
   onAddTask,
-  pages = defaultPages,
+  pages,
   showViewNavigation = true,
   showAddTaskButton = true,
 }: HeaderProps) {
