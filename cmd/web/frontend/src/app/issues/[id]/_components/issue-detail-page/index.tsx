@@ -4,6 +4,7 @@ import { useParams } from "react-router-dom";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "@/lib/toast";
+import { PanelMessage } from "@/components/ui/pannel-message";
 import {
   fetchComments,
   fetchIssue,
@@ -14,7 +15,6 @@ import type { Comment, Issue, IssueStatus, OrchestratorIssueRun } from "@/lib/ty
 import { CommentList } from "./comment-list";
 import { IssueDescription } from "./issue-description";
 import { IssueHeader } from "./issue-header";
-import { PanelMessage } from "./panel-message";
 import { RunsSection } from "./runs-section";
 import { StatusActions } from "./status-actions";
 import styles from "./index.module.css";
