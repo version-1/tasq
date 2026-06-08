@@ -10,43 +10,80 @@ import type { HeaderPageLink } from "./components/layout/header";
 import { Layout } from "./components/layout";
 import { ProjectLayout } from "./components/layout/project";
 
-const headerPages = [
+const projectHeaderPages = [
   { key: "issues", href: "/issues", titleKey: "header.board" },
   { key: "settings", href: "/settings", titleKey: "header.settings" },
+] satisfies readonly HeaderPageLink[];
+
+const issueHeaderPages = [
+  { key: "detail", href: "/issues/", titleKey: "issues.detailPage.detailTab" },
+  {
+    key: "conversations",
+    href: "/issues/{id}/conversations",
+    titleKey: "issues.detailPage.conversationTab",
+  },
 ] satisfies readonly HeaderPageLink[];
 
 export function App() {
   return (
     <Layout>
       <Routes>
-        <Route path="/" element={<Navigate to="/issues" replace />} />
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route
           path="/issues"
-          element={<ProjectLayout pages={headerPages}><IssuesPage /></ProjectLayout>}
+          element={
+            <ProjectLayout pages={projectHeaderPages}>
+              <IssuesPage />
+            </ProjectLayout>
+          }
         />
         <Route
           path="/projects/:projectKey/issues"
-          element={<ProjectLayout pages={headerPages}><IssuesPage /></ProjectLayout>}
+          element={
+            <ProjectLayout pages={projectHeaderPages}>
+              <IssuesPage />
+            </ProjectLayout>
+          }
         />
         <Route
           path="/issues/:id"
-          element={<IssueDetailLayout pages={headerPages}><IssueDetailRoute /></IssueDetailLayout>}
+          element={
+            <IssueDetailLayout pages={issueHeaderPages}>
+              <IssueDetailRoute />
+            </IssueDetailLayout>
+          }
         />
         <Route
           path="/issues/:id/conversations"
-          element={<IssueDetailLayout pages={headerPages}><ConversationRoute /></IssueDetailLayout>}
+          element={
+            <IssueDetailLayout pages={issueHeaderPages}>
+              <ConversationRoute />
+            </IssueDetailLayout>
+          }
         />
         <Route
           path="/issues/:id/runs/:runId/conversations"
-          element={<IssueDetailLayout pages={headerPages}><ConversationRoute /></IssueDetailLayout>}
+          element={
+            <IssueDetailLayout pages={issueHeaderPages}>
+              <ConversationRoute />
+            </IssueDetailLayout>
+          }
         />
         <Route
           path="/dashboard"
-          element={<DefaultLayout pages={headerPages}><DashboardPage /></DefaultLayout>}
+          element={
+            <DefaultLayout pages={[]}>
+              <DashboardPage />
+            </DefaultLayout>
+          }
         />
         <Route
           path="/settings"
-          element={<ProjectLayout pages={headerPages}><SettingsPage /></ProjectLayout>}
+          element={
+            <DefaultLayout pages={[]}>
+              <SettingsPage />
+            </DefaultLayout>
+          }
         />
         <Route path="*" element={<Navigate to="/issues" replace />} />
       </Routes>

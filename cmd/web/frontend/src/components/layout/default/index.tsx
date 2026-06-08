@@ -12,7 +12,7 @@ export function DefaultLayout({
   const shellData = useLayoutShellData();
 
   return (
-    <ShellLayout pages={pages} shellData={shellData} showViewNavigation={false}>
+    <ShellLayout pages={pages} shellData={shellData}>
       {children}
     </ShellLayout>
   );
