@@ -12,6 +12,7 @@ type HeaderProps = {
   issueCount: number | null;
   onAddTask: () => void;
   showViewNavigation?: boolean;
+  showAddTaskButton?: boolean;
 };
 
 const pages = [
@@ -22,9 +23,9 @@ const pages = [
 export function Header({
   activePage,
   projectName,
-  issueCount,
   onAddTask,
   showViewNavigation = true,
+  showAddTaskButton = true,
 }: HeaderProps) {
   const { t } = useTranslation();
   const displayedProjectName = projectName ?? t("header.projectName");
@@ -40,13 +41,6 @@ export function Header({
             <input type="search" placeholder={t("header.searchPlaceholder")} />
             <kbd>{t("header.commandKey")}</kbd>
           </label>
-          <button
-            className={styles.notificationButton}
-            type="button"
-            aria-label={t("header.notifications")}
-          >
-            ♡
-          </button>
         </div>
       </div>
 
@@ -57,26 +51,16 @@ export function Header({
               ? displayedProjectName
               : t(pageHeadingKey(activePage))}
           </h1>
-          <button
-            className={styles.moreButton}
-            type="button"
-            aria-label={t("header.moreProjectActions")}
-          >
-            ···
-          </button>
         </div>
 
-        <div className={styles.statusStrip}>
-          <span>
-            {issueCount === null
-              ? t("header.loading")
-              : t("header.issueCount", { count: issueCount })}
-          </span>
-          <Button onClick={onAddTask}>
-            <span aria-hidden="true">＋</span>
-            {t("header.addTask")}
-          </Button>
-        </div>
+        {showAddTaskButton ? (
+          <div className={styles.statusStrip}>
+            <Button onClick={onAddTask}>
+              <span aria-hidden="true">＋</span>
+              {t("header.addTask")}
+            </Button>
+          </div>
+        ) : null}
       </div>
 
       {showViewNavigation ? (
