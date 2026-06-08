@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { IconProxy } from "@/components/ui/icon-proxy";
 import type { Project } from "@/lib/types";
 import styles from "./index.module.css";
 
@@ -40,9 +41,7 @@ export function Sidebar({
           }
           to="/dashboard"
         >
-          <span className={styles.navIcon} aria-hidden="true">
-            ▦
-          </span>
+          <IconProxy name="layout-dashboard" className={styles.navIcon} />
           {t("header.dashboard")}
         </Link>
         <Link
@@ -53,9 +52,7 @@ export function Sidebar({
           }
           to="/issues"
         >
-          <span className={styles.navIcon} aria-hidden="true">
-            □
-          </span>
+          <IconProxy name="square-kanban" className={styles.navIcon} />
           {t("sidebar.board")}
         </Link>
       </nav>
@@ -70,7 +67,7 @@ export function Sidebar({
             title={t("sidebar.addProject")}
             onClick={onAddProject}
           >
-            +
+            <IconProxy name="plus" size={15} />
           </button>
         </div>
         <div className={styles.projectList}>
@@ -88,9 +85,7 @@ export function Sidebar({
               >
                 {project.name}
                 {isActive ? (
-                  <span className={styles.projectMore} aria-hidden="true">
-                    ···
-                  </span>
+                  <IconProxy name="ellipsis" className={styles.projectMore} />
                 ) : null}
               </Link>
             );
@@ -99,7 +94,7 @@ export function Sidebar({
       </section>
 
       <Link className={styles.settingsLink} to="/settings">
-        <span aria-hidden="true">⚙</span>
+        <IconProxy name="settings" className={styles.navIcon} />
         {t("sidebar.settings")}
       </Link>
 
@@ -112,7 +107,7 @@ export function Sidebar({
           <span>{t("sidebar.userEmail")}</span>
         </div>
         <button type="button" aria-label={t("sidebar.accountMenu")}>
-          ⌄
+          <IconProxy name="chevron-down" size={16} />
         </button>
       </div>
     </aside>

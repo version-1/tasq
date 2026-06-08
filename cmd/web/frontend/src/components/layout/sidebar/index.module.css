@@ -71,7 +71,6 @@
   border-radius: 6px;
   color: var(--dark-gray);
   display: inline-flex;
-  font-size: 20px;
   height: 28px;
   justify-content: center;
   line-height: 1;
@@ -94,12 +93,13 @@
 
 .navIcon {
   color: var(--dark-gray);
-  font-size: 15px;
-  line-height: 1;
+  flex: 0 0 auto;
   width: 16px;
 }
 
 .projectMore {
+  color: var(--dark-gray);
+  flex: 0 0 auto;
   margin-left: auto;
 }
 
