@@ -122,11 +122,8 @@ export function IssueDetailPage() {
       const issue = await updateIssueStatus(issueState.issue.id, status);
       setIssueState({ kind: "ready", issue });
       toast.success({ message: t("toast.success.issueStatusUpdated") });
-    } catch (error) {
-      setIssueState({
-        kind: "error",
-        message: error instanceof Error ? error.message : t("layout.failedToUpdateIssue"),
-      });
+    } catch {
+      // Error toast is emitted by the API wrapper.
     } finally {
       setIsUpdatingStatus(false);
     }
