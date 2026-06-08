@@ -54,7 +54,7 @@ export function DashboardView({ summary, issues, refreshIntervalMs }: DashboardV
 
     async function loadOrchestratorState() {
       try {
-        const state = await fetchOrchestratorState();
+        const state = await fetchOrchestratorState({ silent: true });
         if (active) {
           setOrchestratorState({ kind: "ready", state });
         }

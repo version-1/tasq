@@ -20,14 +20,6 @@
   line-height: 1.2;
 }
 
-.notice {
-  border: 1px solid var(--border);
-  border-left: 4px solid var(--accent);
-  background: var(--surface);
-  border-radius: 6px;
-  padding: 10px 12px;
-}
-
 @media (max-width: 900px) {
   .appFrame {
     grid-template-columns: 1fr;

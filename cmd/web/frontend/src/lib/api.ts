@@ -100,8 +100,8 @@ export function updateIssueStatus(
   return unwrapResponse(patchApiV1IssuesId(id, { status }, noStore), options);
 }
 
-export function fetchOrchestratorState(): Promise<StateResponse> {
-  return unwrapOrchestratorResponse(getApiV1State(noStore));
+export function fetchOrchestratorState(options?: ApiRequestOptions): Promise<StateResponse> {
+  return unwrapOrchestratorResponse(getApiV1State(noStore), options);
 }
 
 export function fetchOrchestratorIssueRuntime(

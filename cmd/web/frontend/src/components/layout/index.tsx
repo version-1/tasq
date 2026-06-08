@@ -56,7 +56,6 @@ export type LayoutShellData = {
   issues: IssueSummary[];
   layoutData: LayoutData | null;
   loadState: LoadState;
-  notice: string;
   projects: Project[];
   summary: Summary | null;
   title: string | null;
@@ -92,7 +91,6 @@ function LayoutContent({ children }: { children: ReactNode }) {
   const isIssueDetailPage = /^\/issues\/\d+$/.test(pathname);
   const [loadState, setLoadState] = useState<LoadState>({ kind: "loading" });
   const [selectedIssueID, setSelectedIssueID] = useState<number | null>(null);
-  const [notice, setNotice] = useState("");
   const [addIssueInitialStatus, setAddIssueInitialStatus] = useState<IssueStatus>("backlog");
   const [addIssueError, setAddIssueError] = useState("");
   const [addProjectError, setAddProjectError] = useState("");
@@ -166,18 +164,16 @@ function LayoutContent({ children }: { children: ReactNode }) {
     issues.find((issue) => issue.id === selectedIssueID) ?? issues[0] ?? null;
 
   async function handleStatusChange(id: number, status: IssueStatus) {
-    setNotice("");
     try {
       await updateIssueStatus(id, status);
       await load();
       toast.success({ message: t("toast.success.issueStatusUpdated") });
-    } catch (error) {
-      setNotice(error instanceof Error ? error.message : t("layout.failedToUpdateIssue"));
+    } catch {
+      // Error toast is emitted by the API wrapper.
     }
   }
 
   async function handleCreateIssue(input: CreateIssueInput) {
-    setNotice("");
     try {
       const created = await createIssue(input, { silent: true });
       await load({ silent: true });
@@ -191,7 +187,6 @@ function LayoutContent({ children }: { children: ReactNode }) {
   }
 
   async function handleCreateProject(input: CreateProjectInput) {
-    setNotice("");
     try {
       const created = await createProject(input, { silent: true });
       await load({ silent: true });
@@ -258,7 +253,6 @@ function LayoutContent({ children }: { children: ReactNode }) {
     issues,
     layoutData,
     loadState,
-    notice,
     projects,
     summary,
     title: issueScopeTitle(issueScope, activeProject?.name ?? null, t("sidebar.allProjects")),
@@ -324,8 +318,6 @@ export function ShellLayout({
         <ModalOutlet>
           <LayoutModalContent shellData={shellData} />
         </ModalOutlet>
-
-        {shellData.notice ? <p className={styles.notice}>{shellData.notice}</p> : null}
 
         {shellData.loadState.kind === "loading" ? <PanelMessage title={t("layout.loading")} /> : null}
         {shellData.loadState.kind === "error" ? (
