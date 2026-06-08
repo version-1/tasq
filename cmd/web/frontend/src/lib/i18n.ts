@@ -33,6 +33,31 @@ const resources = {
         submit: "追加",
         title: "タスクを追加",
       },
+      addProject: {
+        cancel: "キャンセル",
+        close: "閉じる",
+        errors: {
+          keyRequired: "キーを入力してください",
+          locationAbsolute: "絶対パスの場所を入力してください",
+          locationRequired: "場所を入力してください",
+          nameRequired: "プロジェクト名を入力してください",
+        },
+        fields: {
+          description: "説明",
+          key: "キー",
+          location: "場所",
+          name: "名前",
+        },
+        placeholders: {
+          description: "プロジェクトの目的や補足",
+          key: "product-web",
+          location: "/Users/admin/Projects/product-web",
+          name: "Product Website",
+        },
+        saving: "追加中...",
+        submit: "追加",
+        title: "プロジェクトを追加",
+      },
       common: {
         pending: "未確定",
       },
@@ -122,6 +147,7 @@ const resources = {
       layout: {
         apiUnavailable: "API を利用できません",
         failedToCreateIssue: "issue の作成に失敗しました",
+        failedToCreateProject: "project の作成に失敗しました",
         failedToLoadSummary: "summary の読み込みに失敗しました",
         failedToUpdateIssue: "issue の更新に失敗しました",
         loading: "読み込み中",
@@ -158,6 +184,7 @@ const resources = {
         accountMenu: "アカウントメニュー",
         addProject: "プロジェクトを追加",
         allProjects: "すべてのプロジェクト",
+        projectsTitle: "プロジェクト",
         apiBackend: "API Backend",
         archive: "アーカイブ",
         board: "ボード",
@@ -221,6 +248,31 @@ const resources = {
         saving: "Adding...",
         submit: "Add",
         title: "Add task",
+      },
+      addProject: {
+        cancel: "Cancel",
+        close: "Close",
+        errors: {
+          keyRequired: "Enter a project key",
+          locationAbsolute: "Enter an absolute project location",
+          locationRequired: "Enter a project location",
+          nameRequired: "Enter a project name",
+        },
+        fields: {
+          description: "Description",
+          key: "Key",
+          location: "Location",
+          name: "Name",
+        },
+        placeholders: {
+          description: "Project purpose or notes",
+          key: "product-web",
+          location: "/Users/admin/Projects/product-web",
+          name: "Product Website",
+        },
+        saving: "Adding...",
+        submit: "Add",
+        title: "Add project",
       },
       common: {
         pending: "pending",
@@ -311,6 +363,7 @@ const resources = {
       layout: {
         apiUnavailable: "API unavailable",
         failedToCreateIssue: "failed to create issue",
+        failedToCreateProject: "failed to create project",
         failedToLoadSummary: "failed to load summary",
         failedToUpdateIssue: "failed to update issue",
         loading: "Loading",
@@ -347,6 +400,7 @@ const resources = {
         accountMenu: "Account menu",
         addProject: "Add project",
         allProjects: "All projects",
+        projectsTitle: "Projects",
         apiBackend: "API Backend",
         archive: "Archive",
         board: "Board",
@@ -401,7 +455,9 @@ function initialLanguage(): SupportedLanguage {
   return navigator.language.toLowerCase().startsWith("en") ? "en" : "ja";
 }
 
-export function isSupportedLanguage(value: string | null): value is SupportedLanguage {
+export function isSupportedLanguage(
+  value: string | null,
+): value is SupportedLanguage {
   return value === "ja" || value === "en";
 }
 

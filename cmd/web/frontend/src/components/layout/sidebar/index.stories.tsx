@@ -38,6 +38,7 @@ const meta = {
   args: {
     activePage: "issues",
     activeProjectID: 1,
+    onAddProject: () => undefined,
     projects,
   },
 } satisfies Meta<typeof Sidebar>;

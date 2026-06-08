@@ -5,8 +5,10 @@ import {
   getApiV1Summary,
   patchApiV1IssuesId,
   postApiV1Issues,
+  postApiV1Projects,
   type CommentListResponse,
   type CreateIssueInput,
+  type CreateProjectInput,
   type ErrorResponse,
   type Issue,
   type IssueStatus,
@@ -56,6 +58,10 @@ export function fetchComments(
 
 export function fetchProjects(): Promise<Project[]> {
   return unwrapResponse(getApiV1Projects(noStore));
+}
+
+export function createProject(input: CreateProjectInput): Promise<Project> {
+  return unwrapResponse(postApiV1Projects(input, noStore));
 }
 
 export function updateIssueStatus(id: number, status: IssueStatus): Promise<Issue> {
