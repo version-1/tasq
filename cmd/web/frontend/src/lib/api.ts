@@ -18,6 +18,7 @@ import {
 import type {
   OrchestratorConversation as OrchestratorConversationPayload,
   OrchestratorIssueRuntime as OrchestratorIssueRuntimePayload,
+  OrchestratorState,
 } from "@/lib/types";
 
 type ApiResponse<T> = {
@@ -68,6 +69,10 @@ export function updateIssueStatus(id: number, status: IssueStatus): Promise<Issu
   return unwrapResponse(patchApiV1IssuesId(id, { status }, noStore));
 }
 
+export function fetchOrchestratorState(): Promise<OrchestratorState> {
+  return fetchOrchestrator<OrchestratorState>("/api/v1/state");
+}
+
 export function fetchOrchestratorIssueRuntime(
   issueID: number,
 ): Promise<OrchestratorIssueRuntimePayload> {
@@ -105,7 +110,8 @@ async function unwrapEnvelope<T extends ApiEnvelope<unknown>>(
 
 async function fetchOrchestrator<T>(path: string): Promise<T> {
   const response = await fetch(`/orchestrator${path}`, noStore);
-  const payload = await response.json();
+  const text = await response.text();
+  const payload = text ? JSON.parse(text) : {};
   if (!response.ok) {
     const error = payload as { error?: { code?: string; message?: string } };
     const code = error.error?.code ?? "orchestrator_error";
