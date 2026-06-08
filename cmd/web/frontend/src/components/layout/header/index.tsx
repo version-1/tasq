@@ -32,7 +32,7 @@ export function Header({
   return (
     <header className={styles.header}>
       <div className={styles.utilityRow}>
-        <Breadcrumb projectName={displayedProjectName} />
+        <Breadcrumb />
 
         <div className={styles.globalActions}>
           <label className={styles.search}>
