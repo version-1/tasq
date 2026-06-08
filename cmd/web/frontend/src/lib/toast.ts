@@ -78,7 +78,7 @@ export function clearToasts(): void {
 }
 
 export function getToastsSnapshot(): readonly Toast[] {
-  return [...toasts];
+  return toasts;
 }
 
 export const toastStore = {
