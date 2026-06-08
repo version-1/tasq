@@ -31,7 +31,7 @@ export function RunsSection({ issueID, error, isLoading, runs }: RunsSectionProp
             <Link
               key={run.run_id}
               className={styles.runRow}
-              to={`/issues/${issueID}/runs/${encodeURIComponent(run.run_id)}/conversations`}
+              to={`/issues/${issueID}/conversations?runId=${encodeURIComponent(run.run_id)}`}
             >
               <span className={styles.runID}>{run.run_id}</span>
               <span className={styles.runMeta}>

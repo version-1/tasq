@@ -1,6 +1,6 @@
 "use client";
 
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -136,10 +136,6 @@ export function IssueDetailPage() {
 
   return (
     <div className={styles.page}>
-      <Link className={styles.backLink} to="/issues">
-        {t("issues.detailPage.backToList")}
-      </Link>
-
       {issueState.kind === "loading" ? (
         <PanelMessage title={t("layout.loading")} />
       ) : null}

@@ -8,7 +8,7 @@ Use this workflow when changing files under `cmd/web`.
 
 - Keep the Go server responsible for static asset serving, SPA fallback, and API reverse proxying.
 - Keep browser UI code under `cmd/web/frontend/src`.
-- Keep generated issue-tracker API files under `cmd/web/frontend/src/lib/generated` regenerable.
+- Keep generated issue-tracker and orchestrator API files under `cmd/web/frontend/src/lib/generated` regenerable.
 - Keep user-facing strings in `cmd/web/frontend/src/lib/i18n.ts`.
 - Keep feature-specific styles next to the owning component or route.
 
@@ -47,14 +47,16 @@ when the page reloads.
 ## API Generation
 
 The issue-tracker API client is generated from `docs/openapi/issue-tracker.yml`.
+The orchestrator API client is generated from `docs/openapi/orchestrator.yml`.
 
-Run this command from `cmd/web/frontend` whenever the OpenAPI document changes:
+Run this command from `cmd/web/frontend` whenever either OpenAPI document changes:
 
 ```sh
 npm run generate:api
 ```
 
 Do not manually edit `cmd/web/frontend/src/lib/generated`.
+Update MSW handlers and fixtures under `cmd/web/frontend/src/mocks` when standalone frontend development uses the changed endpoint.
 
 ## Component Flow
 

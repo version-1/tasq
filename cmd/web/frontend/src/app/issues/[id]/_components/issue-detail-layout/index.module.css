@@ -1,0 +1,53 @@
+.layout {
+  display: grid;
+  gap: 14px;
+  max-width: 1040px;
+}
+
+.backLink {
+  color: var(--primary-black);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  width: fit-content;
+}
+
+.backLink:hover {
+  text-decoration: underline;
+}
+
+.tabs {
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  gap: 4px;
+}
+
+.tab {
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: -1px;
+  padding: 10px 14px;
+  text-decoration: none;
+}
+
+.tab:hover {
+  color: var(--primary-black);
+}
+
+.activeTab {
+  border-bottom-color: var(--primary-black);
+  color: var(--primary-black);
+}
+
+@media (max-width: 720px) {
+  .tabs {
+    overflow-x: auto;
+  }
+
+  .tab {
+    white-space: nowrap;
+  }
+}

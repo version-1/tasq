@@ -1,36 +1,39 @@
 "use client";
 
-import { Link, useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Markdown } from "@/components/issue/markdown";
-import { fetchOrchestratorConversation } from "@/lib/api";
+import { fetchOrchestratorConversation, fetchOrchestratorIssueRuntime } from "@/lib/api";
 import type { OrchestratorConversation, OrchestratorConversationEvent } from "@/lib/types";
 import styles from "./index.module.css";
 
 type LoadState =
   | { kind: "loading" }
   | { kind: "ready"; conversation: OrchestratorConversation }
+  | { kind: "empty" }
   | { kind: "error"; message: string };
 
 export function ConversationPage() {
   const { t } = useTranslation();
   const { id, runId } = useParams();
+  const [searchParams] = useSearchParams();
   const issueID = parseIssueID(id);
+  const selectedRunID = runId ?? searchParams.get("runId");
   const [state, setState] = useState<LoadState>({ kind: "loading" });
 
   useEffect(() => {
-    if (!issueID || !runId) {
+    if (!issueID) {
       setState({ kind: "error", message: t("issues.detailPage.invalidIssue") });
       return;
     }
 
     let active = true;
     setState({ kind: "loading" });
-    void fetchOrchestratorConversation(issueID, runId)
+    void resolveConversation(issueID, selectedRunID)
       .then((conversation) => {
         if (active) {
-          setState({ kind: "ready", conversation });
+          setState(conversation ? { kind: "ready", conversation } : { kind: "empty" });
         }
       })
       .catch((error) => {
@@ -45,30 +48,46 @@ export function ConversationPage() {
     return () => {
       active = false;
     };
-  }, [issueID, runId, t]);
+  }, [issueID, selectedRunID, t]);
 
   const title = useMemo(() => {
-    if (!runId) {
+    if (state.kind !== "ready") {
       return t("issues.detailPage.conversation");
     }
-    return `${t("issues.detailPage.conversation")} · ${runId}`;
-  }, [runId, t]);
+    return `${t("issues.detailPage.conversation")} · ${state.conversation.run_id}`;
+  }, [state, t]);
 
   return (
     <div className={styles.page}>
-      <Link className={styles.backLink} to={issueID ? `/issues/${issueID}` : "/issues"}>
-        {t("issues.detailPage.backToIssue")}
-      </Link>
       <header className={styles.header}>
         <h2>{title}</h2>
       </header>
       {state.kind === "loading" ? <p className={styles.muted}>{t("layout.loading")}</p> : null}
       {state.kind === "error" ? <p className={styles.error}>{state.message}</p> : null}
+      {state.kind === "empty" ? (
+        <p className={styles.muted}>{t("issues.detailPage.noRuns")}</p>
+      ) : null}
       {state.kind === "ready" ? (
         <ConversationEvents events={state.conversation.events} />
       ) : null}
     </div>
   );
+}
+
+async function resolveConversation(
+  issueID: number,
+  selectedRunID: string | null,
+): Promise<OrchestratorConversation | null> {
+  if (selectedRunID) {
+    return fetchOrchestratorConversation(issueID, selectedRunID);
+  }
+
+  const runtime = await fetchOrchestratorIssueRuntime(issueID);
+  const latestRun = runtime.runs[0];
+  if (!latestRun) {
+    return null;
+  }
+  return fetchOrchestratorConversation(issueID, latestRun.run_id);
 }
 
 function ConversationEvents({ events }: { events: OrchestratorConversationEvent[] }) {
