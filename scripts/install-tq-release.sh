@@ -107,13 +107,19 @@ extract_dir="$tmp_dir/extracted"
 mkdir -p "$extract_dir"
 tar -xzf "$asset_path" -C "$extract_dir"
 
-if [ ! -f "$extract_dir/tq" ]; then
-	echo "archive does not contain tq" >&2
-	exit 1
-fi
+for executable in tq issue-tracker orchestrator web; do
+	if [ ! -f "$extract_dir/$executable" ]; then
+		echo "archive does not contain $executable" >&2
+		exit 1
+	fi
+done
 
 mkdir -p "$install_dir"
 cp "$extract_dir/tq" "$install_dir/$install_name"
 chmod 0755 "$install_dir/$install_name"
+for executable in issue-tracker orchestrator web; do
+	cp "$extract_dir/$executable" "$install_dir/$executable"
+	chmod 0755 "$install_dir/$executable"
+done
 
 printf "installed %s from %s to %s\n" "$install_name" "$tag" "$install_dir/$install_name"

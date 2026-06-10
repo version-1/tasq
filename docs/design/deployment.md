@@ -10,8 +10,8 @@ Tasq deploys release artifacts by pushing version tags. The local operator creat
 2. `Makefile` delegates tag validation and creation to `scripts/release.sh`.
 3. The script creates a local Git tag and pushes it to `origin`.
 4. `.github/workflows/release.yml` runs on pushed tags matching `v*`.
-5. The workflow runs Go tests and then runs GoReleaser.
-6. GoReleaser builds archives, checksums them, and creates or updates the GitHub Release.
+5. The workflow builds the Web frontend, runs Go tests, and then runs GoReleaser.
+6. GoReleaser builds `tq` plus the managed service executables, packages them into archives, checksums them, and creates or updates the GitHub Release.
 
 ## Prerelease
 
@@ -61,6 +61,16 @@ The Makefile exposes these release variables:
 | `RELEASE_REMOTE` | `origin` | Remote that receives release tags. |
 
 Override them only when validating release behavior outside the normal repository flow.
+
+## Release Artifacts
+
+Each platform archive contains `tq`, `issue-tracker`, `orchestrator`, and `web`. The `web`
+binary embeds `cmd/web/frontend/dist`, so the Release workflow must run the frontend production
+build before GoReleaser.
+
+`make install-tq` and `make install-tq-prerelease` install `tq` using `TQ_INSTALL_NAME`, and install
+the service executables next to it with their fixed names. `tq service start` looks for those sibling
+executables before falling back to source-based `go run` service startup.
 
 ## Failure Handling
 

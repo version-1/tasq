@@ -10,8 +10,8 @@ Tasq は version tag の push を起点に release artifacts を deploy しま�
 2. `Makefile` は tag validation と作成処理を `scripts/release.sh` に委譲します。
 3. Script が local Git tag を作成し、`origin` に push します。
 4. `.github/workflows/release.yml` が `v*` に一致する pushed tag で起動します。
-5. Workflow が Go tests を実行し、その後 GoReleaser を実行します。
-6. GoReleaser が archives と checksums を作成し、GitHub Release を作成または更新します。
+5. Workflow が Web frontend を build し、Go tests を実行し、その後 GoReleaser を実行します。
+6. GoReleaser が `tq` と managed service executables を build して archives にまとめ、checksums を作成し、GitHub Release を作成または更新します。
 
 ## Prerelease
 
@@ -61,6 +61,16 @@ Makefile は release 用に次の variables を公開します。
 | `RELEASE_REMOTE` | `origin` | Release tag を push する remote。 |
 
 通常の repository flow 以外で release behavior を検証する場合だけ override してください。
+
+## Release Artifacts
+
+各 platform archive には `tq`、`issue-tracker`、`orchestrator`、`web` が含まれます。`web`
+binary は `cmd/web/frontend/dist` を embed するため、Release workflow は GoReleaser の前に frontend production
+build を実行する必要があります。
+
+`make install-tq` と `make install-tq-prerelease` は `TQ_INSTALL_NAME` を使って `tq` を install し、
+service executables は固定名で同じ directory に install します。`tq service start` は source-based な `go run`
+service startup に fallback する前に、これらの sibling executables を探します。
 
 ## Failure Handling
 

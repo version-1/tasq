@@ -3,8 +3,42 @@ version: 2
 builds:
   - main: ./cmd/tq
     binary: tq
+    id: tq
     ldflags:
       - -s -w -X github.com/version-1/tasq/internal/cli/tq.buildVersion={{.Version}} -X github.com/version-1/tasq/internal/cli/tq.buildCommit={{.ShortCommit}}
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+    goarch:
+      - amd64
+      - arm64
+  - main: ./cmd/issue-tracker
+    binary: issue-tracker
+    id: issue-tracker
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+    goarch:
+      - amd64
+      - arm64
+  - main: ./cmd/orchestrator
+    binary: orchestrator
+    id: orchestrator
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+    goarch:
+      - amd64
+      - arm64
+  - main: ./cmd/web
+    binary: web
+    id: web
     env:
       - CGO_ENABLED=0
     goos:

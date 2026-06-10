@@ -20,7 +20,7 @@ Prefix guide と section 分けされた target 一覧は `make help` で確認�
 | `RELEASE_REMOTE` | `origin` | Release tag を push する remote。 |
 | `RELEASE_REPO` | `version-1/tasq` | Release asset から `tq` を install するときに使う GitHub repository。 |
 | `TQ_INSTALL_DIR` | `$HOME/.local/bin` | Release install targets が `tq` binary を配置する directory。 |
-| `TQ_INSTALL_NAME` | `tq` | Release install targets で install する command name。 |
+| `TQ_INSTALL_NAME` | `tq` | Release install targets で install する `tq` binary の command name。Managed service executables は固定名で隣に install します。 |
 | `AIR_VERSION` | `v1.52.3` | Go service を watch mode で動かす Air version。 |
 
 固定 port を使う例:
@@ -105,10 +105,10 @@ make run-logs
 | `make prerelease` | `scripts/release.sh` 経由で prerelease tag を作成して push します。 |
 | `make prerelease version=v0.3.0` | specific formal version を base にした prerelease tag を作成して push します。 |
 | `make release version=v0.1.1` | `scripts/release.sh` 経由で formal release tag を作成して push します。 |
-| `make install-tq` | latest formal release から `tq` を `$HOME/.local/bin` に install します。 |
-| `make install-tq version=v0.1.0` | specific release tag から `tq` を install します。 |
-| `make install-tq-prerelease` | latest prerelease から `tq` を install します。 |
-| `make install-tq-prerelease version=v0.1.0-pre.1` | specific prerelease tag から `tq` を install します。 |
+| `make install-tq` | latest formal release から `tq` と managed service executables を `$HOME/.local/bin` に install します。 |
+| `make install-tq version=v0.1.0` | specific release tag から `tq` と managed service executables を install します。 |
+| `make install-tq-prerelease` | latest prerelease から `tq` と managed service executables を install します。 |
+| `make install-tq-prerelease version=v0.1.0-pre.1` | specific prerelease tag から `tq` と managed service executables を install します。 |
 
 Tag、GitHub Actions、GoReleaser を含む全体の flow は [Deployment Flow](../design/deployment.ja.md) を参照してください。
 
