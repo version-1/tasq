@@ -20,7 +20,7 @@ Use `make help` to print the prefix guide and sectioned target list generated fr
 | `RELEASE_REMOTE` | `origin` | Remote that receives release tags. |
 | `RELEASE_REPO` | `version-1/tasq` | GitHub repository used when installing `tq` from release assets. |
 | `TQ_INSTALL_DIR` | `$HOME/.local/bin` | Directory where release install targets place the `tq` binary. |
-| `TQ_INSTALL_NAME` | `tq` | Installed command name for release install targets. |
+| `TQ_INSTALL_NAME` | `tq` | Installed command name for the release `tq` binary. Managed service executables are installed next to it with fixed names. |
 | `AIR_VERSION` | `v1.52.3` | Air version used to run Go services in watch mode. |
 
 Example with fixed ports:
@@ -105,10 +105,10 @@ make run-logs
 | `make prerelease` | Create and push a prerelease tag through `scripts/release.sh`. |
 | `make prerelease version=v0.3.0` | Create and push a prerelease tag based on a specific formal version. |
 | `make release version=v0.1.1` | Create and push a formal release tag through `scripts/release.sh`. |
-| `make install-tq` | Install `tq` from the latest formal release into `$HOME/.local/bin`. |
-| `make install-tq version=v0.1.0` | Install `tq` from a specific release tag. |
-| `make install-tq-prerelease` | Install `tq` from the latest prerelease. |
-| `make install-tq-prerelease version=v0.1.0-pre.1` | Install `tq` from a specific prerelease tag. |
+| `make install-tq` | Install `tq` and its managed service executables from the latest formal release into `$HOME/.local/bin`. |
+| `make install-tq version=v0.1.0` | Install `tq` and its managed service executables from a specific release tag. |
+| `make install-tq-prerelease` | Install `tq` and its managed service executables from the latest prerelease. |
+| `make install-tq-prerelease version=v0.1.0-pre.1` | Install `tq` and its managed service executables from a specific prerelease tag. |
 
 See [Deployment Flow](../design/deployment.md) for the full tag, GitHub Actions, and GoReleaser flow.
 
