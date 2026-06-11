@@ -11,7 +11,7 @@ agent:
   max_retry_backoff_ms: 300000
 codex:
   command: codex --sandbox workspace-write app-server
-  read_timeout_ms: 5000
+  read_timeout_ms: 15000
   turn_timeout_ms: 3600000
   stall_timeout_ms: 300000
 server:
