@@ -124,6 +124,113 @@ done
 	}
 }
 
+func TestCodexRunnerFailsWhenStdoutClosesBeforeResponse(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	script := filepath.Join(dir, "fake-app-server.sh")
+	if err := os.WriteFile(script, []byte(`#!/bin/sh
+exec 1>&-
+sleep 2
+`), 0o755); err != nil {
+		t.Fatalf("write fake app-server: %v", err)
+	}
+	var events []Event
+	startedAt := time.Now()
+	result := CodexRunner{}.Run(context.Background(), Task{
+		Attempt: 1,
+		Issue: entity.Issue{
+			ID:          123,
+			Title:       "Runner task",
+			Description: "Wire Codex.",
+		},
+		RunID:          "run-1",
+		Workspace:      workspace.Workspace{Path: dir, WorkspaceKey: "ISSUE-123"},
+		PromptTemplate: "Work on {{ issue.id }}: {{ issue.title }}",
+		Command:        "sh " + strconv.Quote(script),
+		ReadTimeout:    5 * time.Second,
+		TurnTimeout:    5 * time.Second,
+		OnEvent: func(event Event) {
+			events = append(events, event)
+		},
+	})
+	if result.Status != run.StatusFailed {
+		t.Fatalf("status = %q error = %q", result.Status, result.Error)
+	}
+	if result.Error != "initialize stdout_closed_before_response" {
+		t.Fatalf("error = %q", result.Error)
+	}
+	if time.Since(startedAt) > time.Second {
+		t.Fatalf("runner waited for timeout before failing: elapsed=%s", time.Since(startedAt))
+	}
+	event, ok := findEvent(events, "stdout_closed")
+	if !ok {
+		t.Fatalf("events = %+v", events)
+	}
+	if event.Message != "EOF" {
+		t.Fatalf("stdout closed message = %q", event.Message)
+	}
+}
+
+func TestCodexRunnerFailsWhenStdoutClosesDuringTurn(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	script := filepath.Join(dir, "fake-app-server.sh")
+	if err := os.WriteFile(script, []byte(`#!/bin/sh
+count=0
+while IFS= read -r line; do
+  count=$((count + 1))
+  case "$count" in
+    1)
+      echo '{"id":1,"result":{"codexHome":"/tmp/codex","platformFamily":"unix","platformOs":"linux","userAgent":"fake"}}'
+      ;;
+    3)
+      echo '{"id":2,"result":{"thread":{"id":"thread-1"},"approvalPolicy":"never","approvalsReviewer":"user","cwd":"'"$PWD"'","model":"fake","modelProvider":"fake","sandbox":{"type":"readOnly"}}}'
+      ;;
+    4)
+      echo '{"id":3,"result":{"turn":{"id":"turn-1"}}}'
+      exec 1>&-
+      sleep 2
+      ;;
+  esac
+done
+`), 0o755); err != nil {
+		t.Fatalf("write fake app-server: %v", err)
+	}
+	var events []Event
+	startedAt := time.Now()
+	result := CodexRunner{}.Run(context.Background(), Task{
+		Attempt: 1,
+		Issue: entity.Issue{
+			ID:          123,
+			Title:       "Runner task",
+			Description: "Wire Codex.",
+		},
+		RunID:          "run-1",
+		Workspace:      workspace.Workspace{Path: dir, WorkspaceKey: "ISSUE-123"},
+		PromptTemplate: "Work on {{ issue.id }}: {{ issue.title }}",
+		Command:        "sh " + strconv.Quote(script),
+		ReadTimeout:    5 * time.Second,
+		TurnTimeout:    5 * time.Second,
+		OnEvent: func(event Event) {
+			events = append(events, event)
+		},
+	})
+	if result.Status != run.StatusFailed {
+		t.Fatalf("status = %q error = %q", result.Status, result.Error)
+	}
+	if result.Error != "stdout_closed_before_turn_completion" {
+		t.Fatalf("error = %q", result.Error)
+	}
+	if time.Since(startedAt) > time.Second {
+		t.Fatalf("runner waited for timeout before failing: elapsed=%s", time.Since(startedAt))
+	}
+	if !eventTypesContain(events, "stdout_closed") {
+		t.Fatalf("events = %+v", events)
+	}
+}
+
 func TestCodexRunnerFailsTurnWhenApprovalRequestIsDenied(t *testing.T) {
 	t.Parallel()
 
