@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/version-1/tasq/internal/issue/domain/entity"
@@ -154,6 +155,7 @@ type session struct {
 	stdin    io.WriteCloser
 	mu       sync.Mutex
 	nextID   int64
+	closing  atomic.Bool
 	messages chan rpcMessage
 	done     chan error
 }
@@ -196,7 +198,7 @@ func startSession(ctx context.Context, task Task) (*session, error) {
 		messages: make(chan rpcMessage, 64),
 		done:     make(chan error, 1),
 	}
-	go s.readStdout(stdout)
+	go s.readStdout(stdout, task)
 	go readStderr(stderr, task)
 	go func() {
 		s.done <- cmd.Wait()
@@ -213,6 +215,7 @@ func (s *session) pid() int {
 }
 
 func (s *session) close() {
+	s.closing.Store(true)
 	_ = s.stdin.Close()
 	if s.cmd.Process != nil {
 		_ = s.cmd.Process.Kill()
@@ -220,17 +223,29 @@ func (s *session) close() {
 	<-s.done
 }
 
-func (s *session) readStdout(stdout io.Reader) {
+func (s *session) readStdout(stdout io.Reader, task Task) {
+	defer close(s.messages)
+
 	scanner := bufio.NewScanner(stdout)
 	scanner.Buffer(make([]byte, 0, 64*1024), 10*1024*1024)
 	for scanner.Scan() {
 		var message rpcMessage
 		if err := json.Unmarshal(scanner.Bytes(), &message); err != nil {
+			line := string(scanner.Bytes())
+			emitMalformedStdout(task, line, err)
 			s.messages <- rpcMessage{Method: "malformed", Params: append([]byte(nil), scanner.Bytes()...)}
 			continue
 		}
 		s.messages <- message
 	}
+	if s.closing.Load() {
+		return
+	}
+	message := "EOF"
+	if err := scanner.Err(); err != nil {
+		message = err.Error()
+	}
+	emit(task, "stdout_closed", message, "")
 }
 
 func readStderr(stderr io.Reader, task Task) {
@@ -239,6 +254,17 @@ func readStderr(stderr io.Reader, task Task) {
 	for scanner.Scan() {
 		emit(task, "stderr", scanner.Text(), "")
 	}
+}
+
+func emitMalformedStdout(task Task, line string, err error) {
+	payload, marshalErr := json.Marshal(map[string]string{
+		"error": err.Error(),
+	})
+	payloadJSON := ""
+	if marshalErr == nil {
+		payloadJSON = string(payload)
+	}
+	emit(task, "stdout_malformed", truncateText(line, 10000), payloadJSON)
 }
 
 func (s *session) request(ctx context.Context, timeout time.Duration, method string, params any, output any) error {
@@ -259,7 +285,10 @@ func (s *session) request(ctx context.Context, timeout time.Duration, method str
 			return fmt.Errorf("codex app-server exited: %w", err)
 		case <-timer.C:
 			return fmt.Errorf("%s response_timeout", method)
-		case message := <-s.messages:
+		case message, ok := <-s.messages:
+			if !ok {
+				return fmt.Errorf("%s stdout_closed_before_response", method)
+			}
 			if message.Method != "" && message.ID != nil {
 				_ = s.write(map[string]any{
 					"id": message.ID,
@@ -328,7 +357,10 @@ func (s *session) waitTurn(ctx context.Context, timeout time.Duration, task Task
 			return fmt.Errorf("codex app-server exited before turn completion: %w", err)
 		case <-timer.C:
 			return errors.New("turn_timeout")
-		case message := <-s.messages:
+		case message, ok := <-s.messages:
+			if !ok {
+				return errors.New("stdout_closed_before_turn_completion")
+			}
 			if message.Method == "" {
 				continue
 			}
