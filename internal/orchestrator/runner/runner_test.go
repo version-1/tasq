@@ -65,6 +65,65 @@ done
 	}
 }
 
+func TestCodexRunnerEmitsMalformedStdout(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	script := filepath.Join(dir, "fake-app-server.sh")
+	if err := os.WriteFile(script, []byte(`#!/bin/sh
+count=0
+while IFS= read -r line; do
+  count=$((count + 1))
+  case "$count" in
+    1)
+      echo 'shell startup noise'
+      echo '{"id":1,"result":{"codexHome":"/tmp/codex","platformFamily":"unix","platformOs":"linux","userAgent":"fake"}}'
+      ;;
+    3)
+      echo '{"id":2,"result":{"thread":{"id":"thread-1"},"approvalPolicy":"never","approvalsReviewer":"user","cwd":"'"$PWD"'","model":"fake","modelProvider":"fake","sandbox":{"type":"readOnly"}}}'
+      ;;
+    4)
+      echo '{"id":3,"result":{"turn":{"id":"turn-1"}}}'
+      echo '{"method":"turn/completed","params":{"threadId":"thread-1","turn":{"id":"turn-1"}}}'
+      ;;
+  esac
+done
+`), 0o755); err != nil {
+		t.Fatalf("write fake app-server: %v", err)
+	}
+	var events []Event
+	result := CodexRunner{}.Run(context.Background(), Task{
+		Attempt: 1,
+		Issue: entity.Issue{
+			ID:          123,
+			Title:       "Runner task",
+			Description: "Wire Codex.",
+		},
+		RunID:          "run-1",
+		Workspace:      workspace.Workspace{Path: dir, WorkspaceKey: "ISSUE-123"},
+		PromptTemplate: "Work on {{ issue.id }}: {{ issue.title }}",
+		Command:        "sh " + strconv.Quote(script),
+		ReadTimeout:    5 * time.Second,
+		TurnTimeout:    5 * time.Second,
+		OnEvent: func(event Event) {
+			events = append(events, event)
+		},
+	})
+	if result.Status != run.StatusSucceeded {
+		t.Fatalf("status = %q error = %q", result.Status, result.Error)
+	}
+	event, ok := findEvent(events, "stdout_malformed")
+	if !ok {
+		t.Fatalf("events = %+v", events)
+	}
+	if event.Message != "shell startup noise" {
+		t.Fatalf("malformed stdout message = %q", event.Message)
+	}
+	if !strings.Contains(event.PayloadJSON, "invalid character") {
+		t.Fatalf("malformed stdout payload = %q", event.PayloadJSON)
+	}
+}
+
 func TestCodexRunnerFailsTurnWhenApprovalRequestIsDenied(t *testing.T) {
 	t.Parallel()
 
@@ -165,6 +224,15 @@ func eventTypesContain(events []Event, eventType string) bool {
 		}
 	}
 	return false
+}
+
+func findEvent(events []Event, eventType string) (Event, bool) {
+	for _, event := range events {
+		if event.EventType == eventType {
+			return event, true
+		}
+	}
+	return Event{}, false
 }
 
 func TestRenderPromptUsesZeroAttemptForFirstAttempt(t *testing.T) {

@@ -196,7 +196,7 @@ func startSession(ctx context.Context, task Task) (*session, error) {
 		messages: make(chan rpcMessage, 64),
 		done:     make(chan error, 1),
 	}
-	go s.readStdout(stdout)
+	go s.readStdout(stdout, task)
 	go readStderr(stderr, task)
 	go func() {
 		s.done <- cmd.Wait()
@@ -220,16 +220,21 @@ func (s *session) close() {
 	<-s.done
 }
 
-func (s *session) readStdout(stdout io.Reader) {
+func (s *session) readStdout(stdout io.Reader, task Task) {
 	scanner := bufio.NewScanner(stdout)
 	scanner.Buffer(make([]byte, 0, 64*1024), 10*1024*1024)
 	for scanner.Scan() {
 		var message rpcMessage
 		if err := json.Unmarshal(scanner.Bytes(), &message); err != nil {
+			line := string(scanner.Bytes())
+			emitMalformedStdout(task, line, err)
 			s.messages <- rpcMessage{Method: "malformed", Params: append([]byte(nil), scanner.Bytes()...)}
 			continue
 		}
 		s.messages <- message
+	}
+	if err := scanner.Err(); err != nil {
+		emit(task, "stdout_error", err.Error(), "")
 	}
 }
 
@@ -239,6 +244,17 @@ func readStderr(stderr io.Reader, task Task) {
 	for scanner.Scan() {
 		emit(task, "stderr", scanner.Text(), "")
 	}
+}
+
+func emitMalformedStdout(task Task, line string, err error) {
+	payload, marshalErr := json.Marshal(map[string]string{
+		"error": err.Error(),
+	})
+	payloadJSON := ""
+	if marshalErr == nil {
+		payloadJSON = string(payload)
+	}
+	emit(task, "stdout_malformed", truncateText(line, 10000), payloadJSON)
 }
 
 func (s *session) request(ctx context.Context, timeout time.Duration, method string, params any, output any) error {
