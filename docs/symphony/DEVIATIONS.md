@@ -146,6 +146,36 @@ Workspace branches use `agent/<workspace-key>`, for example `agent/issue-42`. Cl
 `git worktree remove --force`, deletes the corresponding local branch best-effort, and runs
 `git worktree prune` on orchestrator startup.
 
+## Multi-Project Orchestration
+
+Symphony assumes one process serves one project (one `WORKFLOW.md`, one `tracker.project_slug`,
+one `workspace.root`). Tasq runs a single orchestrator process that serves multiple projects.
+
+The orchestrator itself is project-unaware. It polls the local issue-tracker for all eligible
+issues across projects in a single call, dispatches them through the same concurrency pool, and
+manages runtime state (`claimed`, `running`, `retry_attempts`) in flat maps keyed by issue ID
+without project partitioning.
+
+Project-specific behavior is resolved per-issue at dispatch time:
+
+- **Workspace path**: resolved via `Issue.ProjectID → Project.Location` plus the relative
+  `workspace.root` suffix (documented in "Workspace Creation Strategy" above).
+- **Prompt and hooks**: each project owns its own `WORKFLOW.md`. The orchestrator loads the
+  project-local workflow file when building the prompt and executing hooks for a given issue.
+- **Polling**: a single poll tick fetches candidates from all projects. Per-project
+  `polling.interval_ms` is not supported; the orchestrator uses one global interval.
+- **Concurrency**: `agent.max_concurrent_agents` is a global limit across all projects.
+  Per-project concurrency limits are not currently supported.
+
+This deviates from the following SPEC.md sections:
+
+| Section | Symphony assumption | Tasq behavior |
+| --- | --- | --- |
+| §5.1–5.2 | One `WORKFLOW.md` per process | One `WORKFLOW.md` per project, resolved per-issue |
+| §5.3.1 | `tracker.project_slug` (singular) | Not used; issue-tracker returns issues across projects |
+| §4.1.8, §8.3 | Runtime state and concurrency are implicitly single-project scoped | Flat global state; no per-project partitioning |
+| §8.1 | One poll interval from one workflow | One global poll interval; per-project intervals ignored |
+
 ## Compatibility Notes
 
 Where Symphony says "tracker" for scheduling, Tasq's orchestrator should read that as the local issue-tracker API unless a future design explicitly adds an external tracker adapter.
