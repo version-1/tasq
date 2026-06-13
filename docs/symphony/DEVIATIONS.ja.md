@@ -150,6 +150,36 @@ Workspace branches は `agent/<workspace-key>` を使います。例: `agent/iss
 `git worktree remove --force` を使い、対応する local branch を best-effort で削除し、orchestrator
 startup 時に `git worktree prune` を実行します。
 
+## Multi-Project Orchestration
+
+Symphony は 1 process が 1 project を担当する前提です（1 つの `WORKFLOW.md`、1 つの
+`tracker.project_slug`、1 つの `workspace.root`）。Tasq は単一の orchestrator process で複数の
+project を扱います。
+
+Orchestrator 自体は project を意識しません。単一の呼び出しで local issue-tracker から全 project の
+eligible issues を polling し、同じ concurrency pool で dispatch し、runtime state（`claimed`、
+`running`、`retry_attempts`）を issue ID をキーとする flat map で管理します。
+
+Project-specific な振る舞いは dispatch 時に issue 単位で解決されます:
+
+- **Workspace path**: `Issue.ProjectID → Project.Location` と relative `workspace.root` suffix
+  で解決されます（上記 "Workspace Creation Strategy" に記載）。
+- **Prompt と hooks**: 各 project が自身の `WORKFLOW.md` を所有します。Orchestrator は該当 issue の
+  prompt 構築と hooks 実行時に project-local workflow file を load します。
+- **Polling**: 単一の poll tick で全 project の candidates を取得します。Project ごとの
+  `polling.interval_ms` はサポートされません。Orchestrator は 1 つの global interval を使います。
+- **Concurrency**: `agent.max_concurrent_agents` は全 project 横断の global limit です。Project ごとの
+  concurrency limit は現在サポートされていません。
+
+SPEC.md の以下のセクションと乖離します:
+
+| Section | Symphony の前提 | Tasq の振る舞い |
+| --- | --- | --- |
+| §5.1–5.2 | 1 process に 1 つの `WORKFLOW.md` | Project ごとに 1 つの `WORKFLOW.md`、issue 単位で解決 |
+| §5.3.1 | `tracker.project_slug`（単数） | 使用しない。issue-tracker が全 project の issues を返す |
+| §4.1.8, §8.3 | Runtime state と concurrency は暗黙的に single-project scope | Flat global state。Project ごとの partitioning なし |
+| §8.1 | 1 つの workflow からの 1 つの poll interval | 1 つの global poll interval。Project ごとの interval は無視 |
+
 ## Compatibility Notes
 
 Symphony が scheduling に関して "tracker" と言う箇所は、将来の design で external tracker adapter
