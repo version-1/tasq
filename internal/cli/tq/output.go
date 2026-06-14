@@ -162,6 +162,15 @@ func writeProjectCheckItems(w io.Writer, format string, items []projectCheckItem
 	return nil
 }
 
+func writeWorkflowAddResult(w io.Writer, format string, project entity.Project, workflow entity.ProjectWorkflow) error {
+	if format == "json" {
+		return writeJSON(w, workflow)
+	}
+	fmt.Fprintf(w, "Workflow override updated for project %s\n", project.Key)
+	fmt.Fprintf(w, "Checksum: %s\n", workflow.Checksum)
+	return nil
+}
+
 func writeComments(w io.Writer, format string, comments []entity.Comment) error {
 	if format == "json" {
 		return writeJSON(w, comments)

@@ -152,6 +152,8 @@ func (a app) routeWorkflow(ctx context.Context, args []string, cfg config) error
 	}
 	action := args[0]
 	switch action {
+	case "add":
+		return a.workflowAdd(ctx, args[1:], cfg)
 	case "remove":
 		return a.workflowRemove(ctx, args[1:], cfg)
 	default:
@@ -595,7 +597,7 @@ func printRootHelp(w io.Writer) {
 	fmt.Fprintln(w, "  issue    create, get, list, update, and shortcut issue actions")
 	fmt.Fprintln(w, "  comment  add and list issue comments")
 	fmt.Fprintln(w, "  project  add, remove, check, and list projects")
-	fmt.Fprintln(w, "  workflow remove project workflow overrides")
+	fmt.Fprintln(w, "  workflow add and remove project workflow overrides")
 	fmt.Fprintln(w, "  web      open the running Web UI in the default browser")
 	fmt.Fprintln(w, "  service  start, stop, and inspect local services")
 	fmt.Fprintln(w, "  logs     show and follow service logs")
@@ -639,5 +641,6 @@ func printWorkflowHelp(w io.Writer) {
 	fmt.Fprintln(w, "Usage: tq workflow <action> [flags]")
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "Actions:")
+	fmt.Fprintln(w, "  add      Add or replace a project workflow override (--project KEY and --file PATH or --body TEXT required)")
 	fmt.Fprintln(w, "  remove   Remove a project workflow override (--project KEY required)")
 }
