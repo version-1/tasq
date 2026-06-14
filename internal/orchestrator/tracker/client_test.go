@@ -165,6 +165,29 @@ func TestWorkflowGetsProjectWorkflow(t *testing.T) {
 	}
 }
 
+func TestProjectsListsProjects(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet || r.URL.Path != "/api/v1/projects" {
+			t.Fatalf("unexpected request %s %s", r.Method, r.URL.Path)
+		}
+		writeTestData(t, w, []entity.Project{
+			{ID: 1, Key: "APP", Location: "/repo/app"},
+			{ID: 2, Key: "CLI", Location: "/repo/cli"},
+		})
+	}))
+	defer server.Close()
+
+	projects, err := NewClient(server.URL).Projects(context.Background())
+	if err != nil {
+		t.Fatalf("projects: %v", err)
+	}
+	if len(projects) != 2 || projects[0].Key != "APP" || projects[1].Location != "/repo/cli" {
+		t.Fatalf("projects = %+v", projects)
+	}
+}
+
 func TestWorkflowReturnsNotFoundIndicator(t *testing.T) {
 	t.Parallel()
 
