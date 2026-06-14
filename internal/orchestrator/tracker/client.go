@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -15,6 +16,12 @@ import (
 type Client struct {
 	baseURL string
 	client  *http.Client
+}
+
+type Workflow struct {
+	Frontmatter json.RawMessage `json:"frontmatter"`
+	Body        string          `json:"body"`
+	Checksum    string          `json:"checksum"`
 }
 
 func NewClient(baseURL string) *Client {
@@ -38,6 +45,18 @@ func (c *Client) Project(ctx context.Context, id int64) (entity.Project, error) 
 		return entity.Project{}, err
 	}
 	return output, nil
+}
+
+func (c *Client) Workflow(ctx context.Context, projectID int64) (Workflow, bool, error) {
+	var output Workflow
+	found, err := c.requestOptional(ctx, http.MethodGet, fmt.Sprintf("/api/v1/projects/%d/workflow", projectID), nil, &output)
+	if err != nil {
+		return Workflow{}, false, err
+	}
+	if !found {
+		return Workflow{}, false, nil
+	}
+	return output, true, nil
 }
 
 func (c *Client) UpdateIssue(ctx context.Context, id int64, input entity.UpdateIssueInput) (entity.Issue, error) {
@@ -97,45 +116,76 @@ func (c *Client) IssueStatesByIDs(ctx context.Context, ids []int64) ([]IssueStat
 }
 
 func (c *Client) request(ctx context.Context, method string, path string, input any, output any) error {
-	var body *bytes.Reader
-	if input == nil {
-		body = bytes.NewReader(nil)
-	} else {
-		raw, err := json.Marshal(input)
-		if err != nil {
-			return err
-		}
-		body = bytes.NewReader(raw)
-	}
-	req, err := http.NewRequestWithContext(ctx, method, c.baseURL+path, body)
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := c.client.Do(req)
+	resp, err := c.do(ctx, method, path, input)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		var payload struct {
-			Error struct {
-				Code    string `json:"code"`
-				Message string `json:"message"`
-			} `json:"error"`
-		}
-		_ = json.NewDecoder(resp.Body).Decode(&payload)
-		if payload.Error.Message != "" {
-			return fmt.Errorf("%s %s returned %s: %s: %s", method, path, resp.Status, payload.Error.Code, payload.Error.Message)
-		}
-		return fmt.Errorf("%s %s returned %s", method, path, resp.Status)
+		return responseError(method, path, resp)
 	}
+	return decodeData(resp.Body, output)
+}
+
+func (c *Client) requestOptional(ctx context.Context, method string, path string, input any, output any) (bool, error) {
+	resp, err := c.do(ctx, method, path, input)
+	if err != nil {
+		return false, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
+		return false, nil
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return false, responseError(method, path, resp)
+	}
+	if err := decodeData(resp.Body, output); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func (c *Client) do(ctx context.Context, method string, path string, input any) (*http.Response, error) {
+	var body *bytes.Reader
+	if input == nil {
+		body = bytes.NewReader(nil)
+	} else {
+		raw, err := json.Marshal(input)
+		if err != nil {
+			return nil, err
+		}
+		body = bytes.NewReader(raw)
+	}
+	req, err := http.NewRequestWithContext(ctx, method, c.baseURL+path, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	return c.client.Do(req)
+}
+
+func responseError(method string, path string, resp *http.Response) error {
+	var payload struct {
+		Error struct {
+			Code    string `json:"code"`
+			Message string `json:"message"`
+		} `json:"error"`
+	}
+	_ = json.NewDecoder(resp.Body).Decode(&payload)
+	if payload.Error.Message != "" {
+		return fmt.Errorf("%s %s returned %s: %s: %s", method, path, resp.Status, payload.Error.Code, payload.Error.Message)
+	}
+	return fmt.Errorf("%s %s returned %s", method, path, resp.Status)
+}
+
+func decodeData(body io.Reader, output any) error {
 	if output != nil {
 		var payload struct {
 			Data json.RawMessage `json:"data"`
 		}
-		if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+		if err := json.NewDecoder(body).Decode(&payload); err != nil {
 			return err
 		}
 		if err := json.Unmarshal(payload.Data, output); err != nil {
