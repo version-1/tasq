@@ -173,6 +173,23 @@ func TestProjectWorkflowCRUD(t *testing.T) {
 		t.Fatalf("updated workflow timestamps = %+v", updated)
 	}
 
+	skipped, err := store.UpsertProjectWorkflow(ctx, entity.UpsertProjectWorkflowInput{
+		ProjectID:       project.ID,
+		FrontmatterJSON: `{"tracker":{"kind":"changed"}}`,
+		Body:            "This body should not be saved.",
+		Checksum:        strings.Repeat("b", 64),
+	})
+	if err != nil {
+		t.Fatalf("skip matching checksum workflow: %v", err)
+	}
+	if skipped.ProjectID != updated.ProjectID || skipped.Body != updated.Body || skipped.Checksum != updated.Checksum || !skipped.CreatedAt.Equal(updated.CreatedAt) || !skipped.UpdatedAt.Equal(updated.UpdatedAt) {
+		t.Fatalf("skipped workflow = %+v, want existing %+v", skipped, updated)
+	}
+	tasq, ok = skipped.Frontmatter["tasq"].(map[string]any)
+	if !ok || tasq["task_work_prompt"] != false {
+		t.Fatalf("skipped workflow frontmatter = %#v", skipped.Frontmatter)
+	}
+
 	read, err := store.ProjectWorkflow(ctx, project.ID)
 	if err != nil {
 		t.Fatalf("read project workflow: %v", err)

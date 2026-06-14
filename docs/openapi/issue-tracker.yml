@@ -171,6 +171,27 @@ paths:
           $ref: "#/components/responses/Error"
         "404":
           $ref: "#/components/responses/Error"
+    put:
+      tags:
+        - Projects
+      summary: Upsert a project's stored workflow.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpsertProjectWorkflowInput"
+      responses:
+        "200":
+          description: Project workflow upserted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectWorkflowResponse"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
     delete:
       tags:
         - Projects
@@ -687,12 +708,28 @@ components:
           type: string
         checksum:
           type: string
+          pattern: "^[0-9a-fA-F]{64}$"
         createdAt:
           type: string
           format: date-time
         updatedAt:
           type: string
           format: date-time
+    UpsertProjectWorkflowInput:
+      type: object
+      required:
+        - frontmatter
+        - body
+        - checksum
+      properties:
+        frontmatter:
+          type: object
+          additionalProperties: true
+        body:
+          type: string
+        checksum:
+          type: string
+          pattern: "^[0-9a-fA-F]{64}$"
     Issue:
       type: object
       required:

@@ -194,6 +194,119 @@ func TestDeleteProjectWorkflow(t *testing.T) {
 	}
 }
 
+func TestUpsertProjectWorkflow(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer(t)
+	project, err := server.store.CreateProject(context.Background(), entity.CreateProjectInput{
+		Key:      "WFUPSERT",
+		Name:     "Workflow Upsert",
+		Location: t.TempDir(),
+	})
+	if err != nil {
+		t.Fatalf("create project: %v", err)
+	}
+	body := bytes.NewBufferString(`{
+		"frontmatter": {"tracker": {"kind": "tasq"}},
+		"body": "Use tq to keep the issue tracker synchronized.",
+		"checksum": "` + strings.Repeat("a", 64) + `"
+	}`)
+	req := httptest.NewRequest(http.MethodPut, "/api/v1/projects/"+stringID(project.ID)+"/workflow", body)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d body=%s", rec.Code, rec.Body.String())
+	}
+	var payload struct {
+		Data struct {
+			ProjectID   int64 `json:"projectId"`
+			Frontmatter struct {
+				Tracker struct {
+					Kind string `json:"kind"`
+				} `json:"tracker"`
+			} `json:"frontmatter"`
+			Body     string `json:"body"`
+			Checksum string `json:"checksum"`
+		} `json:"data"`
+	}
+	if err := json.NewDecoder(rec.Body).Decode(&payload); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if payload.Data.ProjectID != project.ID || payload.Data.Frontmatter.Tracker.Kind != "tasq" || payload.Data.Body == "" || payload.Data.Checksum != strings.Repeat("a", 64) {
+		t.Fatalf("data = %+v", payload.Data)
+	}
+	stored, err := server.store.ProjectWorkflow(context.Background(), project.ID)
+	if err != nil {
+		t.Fatalf("read project workflow: %v", err)
+	}
+	tracker, ok := stored.Frontmatter["tracker"].(map[string]any)
+	if !ok || tracker["kind"] != "tasq" {
+		t.Fatalf("frontmatter = %#v", stored.Frontmatter)
+	}
+}
+
+func TestUpsertProjectWorkflowSkipsMatchingChecksum(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer(t)
+	project, err := server.store.CreateProject(context.Background(), entity.CreateProjectInput{
+		Key:      "WFSKIP",
+		Name:     "Workflow Skip",
+		Location: t.TempDir(),
+	})
+	if err != nil {
+		t.Fatalf("create project: %v", err)
+	}
+	checksum := strings.Repeat("b", 64)
+	if _, err := server.store.UpsertProjectWorkflow(context.Background(), entity.UpsertProjectWorkflowInput{
+		ProjectID:       project.ID,
+		FrontmatterJSON: `{"tracker":{"kind":"tasq"}}`,
+		Body:            "Original prompt template.",
+		Checksum:        checksum,
+	}); err != nil {
+		t.Fatalf("upsert project workflow: %v", err)
+	}
+	body := bytes.NewBufferString(`{
+		"frontmatter": {"tracker": {"kind": "changed"}},
+		"body": "Changed prompt template.",
+		"checksum": "` + checksum + `"
+	}`)
+	req := httptest.NewRequest(http.MethodPut, "/api/v1/projects/"+stringID(project.ID)+"/workflow", body)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d body=%s", rec.Code, rec.Body.String())
+	}
+	var payload struct {
+		Data struct {
+			Frontmatter struct {
+				Tracker struct {
+					Kind string `json:"kind"`
+				} `json:"tracker"`
+			} `json:"frontmatter"`
+			Body string `json:"body"`
+		} `json:"data"`
+	}
+	if err := json.NewDecoder(rec.Body).Decode(&payload); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if payload.Data.Frontmatter.Tracker.Kind != "tasq" || payload.Data.Body != "Original prompt template." {
+		t.Fatalf("data = %+v", payload.Data)
+	}
+	stored, err := server.store.ProjectWorkflow(context.Background(), project.ID)
+	if err != nil {
+		t.Fatalf("read project workflow: %v", err)
+	}
+	tracker, ok := stored.Frontmatter["tracker"].(map[string]any)
+	if !ok || tracker["kind"] != "tasq" || stored.Body != "Original prompt template." {
+		t.Fatalf("stored workflow = %+v", stored)
+	}
+}
+
 func TestDeleteProjectWorkflowReturnsNotFoundForMissingProject(t *testing.T) {
 	t.Parallel()
 
