@@ -22,6 +22,7 @@ const ignoredRunnerEventTypeAgentMessageDelta = "item/agentMessage/delta"
 
 type IssueReader interface {
 	Issue(ctx context.Context, id int64) (entity.Issue, error)
+	Project(ctx context.Context, id int64) (entity.Project, error)
 }
 
 type IssueUpdater interface {
@@ -45,6 +46,7 @@ type Dispatcher struct {
 	runner            runner.Runner
 	workflowConfig    workflow.Config
 	promptTemplate    string
+	workflowResolver  WorkflowResolver
 	maxConcurrentRuns int
 
 	mu      sync.Mutex
@@ -60,7 +62,12 @@ type DispatcherConfig struct {
 	Runner            runner.Runner
 	WorkflowConfig    workflow.Config
 	PromptTemplate    string
+	WorkflowResolver  WorkflowResolver
 	MaxConcurrentRuns int
+}
+
+type WorkflowResolver interface {
+	Resolve(ctx context.Context, project entity.Project) (workflow.Definition, error)
 }
 
 func NewDispatcher(config DispatcherConfig) (*Dispatcher, error) {
@@ -83,6 +90,7 @@ func NewDispatcher(config DispatcherConfig) (*Dispatcher, error) {
 		runner:            config.Runner,
 		workflowConfig:    config.WorkflowConfig,
 		promptTemplate:    config.PromptTemplate,
+		workflowResolver:  config.WorkflowResolver,
 		maxConcurrentRuns: config.MaxConcurrentRuns,
 		claimed:           make(map[string]struct{}),
 		runCtx:            runCtx,
@@ -130,7 +138,12 @@ func (d *Dispatcher) Dispatch(ctx context.Context, activeRuns []run.Run) error {
 			d.release(queuedRun.RunID)
 			return fmt.Errorf("fetch issue %d for run %s: %w", queuedRun.IssueID, queuedRun.RunID, err)
 		}
-		task := d.taskForRun(queuedRun, issue)
+		definition, err := d.workflowForIssue(ctx, issue)
+		if err != nil {
+			d.release(queuedRun.RunID)
+			return fmt.Errorf("resolve workflow for issue %d run %s: %w", queuedRun.IssueID, queuedRun.RunID, err)
+		}
+		task := d.taskForRun(queuedRun, issue, definition)
 		d.wg.Add(1)
 		go d.startRun(queuedRun, task)
 		availableSlots--
@@ -204,19 +217,34 @@ func (d *Dispatcher) startRun(storedRun run.Run, task runner.Task) {
 	}
 }
 
-func (d *Dispatcher) taskForRun(storedRun run.Run, issue entity.Issue) runner.Task {
+func (d *Dispatcher) workflowForIssue(ctx context.Context, issue entity.Issue) (workflow.Definition, error) {
+	definition := workflow.Definition{
+		Config:         d.workflowConfig,
+		PromptTemplate: d.promptTemplate,
+	}
+	if d.workflowResolver == nil {
+		return definition, nil
+	}
+	project, err := d.tracker.Project(ctx, issue.ProjectID)
+	if err != nil {
+		return workflow.Definition{}, fmt.Errorf("fetch project %d: %w", issue.ProjectID, err)
+	}
+	return d.workflowResolver.Resolve(ctx, project)
+}
+
+func (d *Dispatcher) taskForRun(storedRun run.Run, issue entity.Issue, definition workflow.Definition) runner.Task {
 	return runner.Task{
 		Issue:          issue,
 		Attempt:        storedRun.Attempt,
 		RunID:          storedRun.RunID,
 		Workspace:      workspace.Workspace{Path: storedRun.Workspace, WorkspaceKey: issueIdentifier(storedRun.IssueID)},
-		PromptTemplate: d.promptTemplate,
-		TaskWorkPrompt: d.workflowConfig.Tasq.TaskWorkPrompt,
-		MaxTurns:       d.workflowConfig.MaxTurns,
-		ContinueTurns:  d.workflowConfig.ContinuationTurns,
-		Command:        d.workflowConfig.CodexCommand,
-		ReadTimeout:    d.workflowConfig.CodexReadTimeout,
-		TurnTimeout:    d.workflowConfig.CodexTurnTimeout,
+		PromptTemplate: definition.PromptTemplate,
+		TaskWorkPrompt: definition.Config.Tasq.TaskWorkPrompt,
+		MaxTurns:       definition.Config.MaxTurns,
+		ContinueTurns:  definition.Config.ContinuationTurns,
+		Command:        definition.Config.CodexCommand,
+		ReadTimeout:    definition.Config.CodexReadTimeout,
+		TurnTimeout:    definition.Config.CodexTurnTimeout,
 	}
 }
 

@@ -51,13 +51,14 @@ const (
 )
 
 type Project struct {
-	ID          int64     `json:"id"`
-	Key         string    `json:"key"`
-	Name        string    `json:"name"`
-	Description string    `json:"description"`
-	Location    string    `json:"location"`
-	CreatedAt   time.Time `json:"createdAt"`
-	UpdatedAt   time.Time `json:"updatedAt"`
+	ID               int64     `json:"id"`
+	Key              string    `json:"key"`
+	Name             string    `json:"name"`
+	Description      string    `json:"description"`
+	Location         string    `json:"location"`
+	WorkflowChecksum string    `json:"workflowChecksum"`
+	CreatedAt        time.Time `json:"createdAt"`
+	UpdatedAt        time.Time `json:"updatedAt"`
 }
 
 type ProjectWorkflow struct {

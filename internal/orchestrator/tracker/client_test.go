@@ -140,8 +140,9 @@ func TestWorkflowGetsProjectWorkflow(t *testing.T) {
 		if r.Method != http.MethodGet || r.URL.Path != "/api/v1/projects/42/workflow" {
 			t.Fatalf("unexpected request %s %s", r.Method, r.URL.Path)
 		}
-		writeTestData(t, w, Workflow{
-			Frontmatter: json.RawMessage(`{"agent":{"max_turns":3}}`),
+		writeTestData(t, w, entity.ProjectWorkflow{
+			ProjectID:   42,
+			Frontmatter: map[string]any{"agent": map[string]any{"max_turns": float64(3)}},
 			Body:        "Work on {{ issue.id }}.",
 			Checksum:    "sha256:abc123",
 		})
@@ -155,10 +156,11 @@ func TestWorkflowGetsProjectWorkflow(t *testing.T) {
 	if !found {
 		t.Fatal("found = false")
 	}
-	if string(workflow.Frontmatter) != `{"agent":{"max_turns":3}}` {
-		t.Fatalf("frontmatter = %s", workflow.Frontmatter)
-	}
 	if workflow.Body != "Work on {{ issue.id }}." || workflow.Checksum != "sha256:abc123" {
+		t.Fatalf("workflow = %+v", workflow)
+	}
+	agent, ok := workflow.Frontmatter["agent"].(map[string]any)
+	if !ok || agent["max_turns"] != float64(3) {
 		t.Fatalf("workflow = %+v", workflow)
 	}
 }
@@ -191,7 +193,48 @@ func TestWorkflowReturnsNotFoundIndicator(t *testing.T) {
 	if found {
 		t.Fatal("found = true")
 	}
-	if string(workflow.Frontmatter) != "" || workflow.Body != "" || workflow.Checksum != "" {
+	if workflow.Frontmatter != nil || workflow.Body != "" || workflow.Checksum != "" {
+		t.Fatalf("workflow = %+v", workflow)
+	}
+}
+
+func TestUpsertWorkflowPutsProjectWorkflow(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPut || r.URL.Path != "/api/v1/projects/7/workflow" {
+			t.Fatalf("unexpected request %s %s", r.Method, r.URL.Path)
+		}
+		var payload struct {
+			Frontmatter json.RawMessage `json:"frontmatter"`
+			Body        string          `json:"body"`
+			Checksum    string          `json:"checksum"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			t.Fatalf("decode request: %v", err)
+		}
+		if string(payload.Frontmatter) != `{"agent":{"max_turns":3}}` || payload.Body != "Project prompt" || payload.Checksum != "abc" {
+			t.Fatalf("payload = %+v", payload)
+		}
+		writeTestData(t, w, entity.ProjectWorkflow{
+			ProjectID:   7,
+			Frontmatter: map[string]any{"agent": map[string]any{"max_turns": float64(3)}},
+			Body:        payload.Body,
+			Checksum:    payload.Checksum,
+		})
+	}))
+	defer server.Close()
+
+	workflow, err := NewClient(server.URL).UpsertWorkflow(context.Background(), 7, entity.UpsertProjectWorkflowInput{
+		ProjectID:       7,
+		FrontmatterJSON: `{"agent":{"max_turns":3}}`,
+		Body:            "Project prompt",
+		Checksum:        "abc",
+	})
+	if err != nil {
+		t.Fatalf("upsert workflow: %v", err)
+	}
+	if workflow.Body != "Project prompt" || workflow.Checksum != "abc" {
 		t.Fatalf("workflow = %+v", workflow)
 	}
 }

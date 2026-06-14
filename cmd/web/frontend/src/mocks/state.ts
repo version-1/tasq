@@ -57,6 +57,7 @@ export function createProject(input: CreateProjectInput): Project | null {
     name,
     description,
     location,
+    workflowChecksum: "",
     createdAt: now,
     updatedAt: now,
   };

@@ -18,7 +18,7 @@ type Client struct {
 	client  *http.Client
 }
 
-type Workflow struct {
+type upsertWorkflowRequest struct {
 	Frontmatter json.RawMessage `json:"frontmatter"`
 	Body        string          `json:"body"`
 	Checksum    string          `json:"checksum"`
@@ -47,16 +47,29 @@ func (c *Client) Project(ctx context.Context, id int64) (entity.Project, error) 
 	return output, nil
 }
 
-func (c *Client) Workflow(ctx context.Context, projectID int64) (Workflow, bool, error) {
-	var output Workflow
+func (c *Client) Workflow(ctx context.Context, projectID int64) (entity.ProjectWorkflow, bool, error) {
+	var output entity.ProjectWorkflow
 	found, err := c.requestOptional(ctx, http.MethodGet, fmt.Sprintf("/api/v1/projects/%d/workflow", projectID), nil, &output)
 	if err != nil {
-		return Workflow{}, false, err
+		return entity.ProjectWorkflow{}, false, err
 	}
 	if !found {
-		return Workflow{}, false, nil
+		return entity.ProjectWorkflow{}, false, nil
 	}
 	return output, true, nil
+}
+
+func (c *Client) UpsertWorkflow(ctx context.Context, projectID int64, input entity.UpsertProjectWorkflowInput) (entity.ProjectWorkflow, error) {
+	var output entity.ProjectWorkflow
+	request := upsertWorkflowRequest{
+		Frontmatter: json.RawMessage(input.FrontmatterJSON),
+		Body:        input.Body,
+		Checksum:    input.Checksum,
+	}
+	if err := c.request(ctx, http.MethodPut, fmt.Sprintf("/api/v1/projects/%d/workflow", projectID), request, &output); err != nil {
+		return entity.ProjectWorkflow{}, err
+	}
+	return output, nil
 }
 
 func (c *Client) UpdateIssue(ctx context.Context, id int64, input entity.UpdateIssueInput) (entity.Issue, error) {

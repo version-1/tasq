@@ -52,6 +52,12 @@ func (s *Store) migrate(ctx context.Context) error {
 	if err := s.addColumnIfMissing(ctx, "projects", "location", "TEXT NOT NULL DEFAULT ''"); err != nil {
 		return err
 	}
+	if err := s.addColumnIfMissing(ctx, "projects", "workflow", "TEXT NOT NULL DEFAULT ''"); err != nil {
+		return err
+	}
+	if err := s.addColumnIfMissing(ctx, "projects", "workflow_checksum", "TEXT NOT NULL DEFAULT ''"); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -550,7 +556,7 @@ func commentColumns() string {
 }
 
 func projectColumns() string {
-	return `id, key, name, description, location, created_at, updated_at`
+	return `id, key, name, description, location, COALESCE((SELECT checksum FROM project_workflows WHERE project_workflows.project_id = projects.id), workflow_checksum), created_at, updated_at`
 }
 
 func projectWorkflowColumns() string {
@@ -615,7 +621,7 @@ func scanProject(row rowScanner) (entity.Project, error) {
 	var item entity.Project
 	var createdAt string
 	var updatedAt string
-	err := row.Scan(&item.ID, &item.Key, &item.Name, &item.Description, &item.Location, &createdAt, &updatedAt)
+	err := row.Scan(&item.ID, &item.Key, &item.Name, &item.Description, &item.Location, &item.WorkflowChecksum, &createdAt, &updatedAt)
 	if err != nil {
 		return entity.Project{}, err
 	}

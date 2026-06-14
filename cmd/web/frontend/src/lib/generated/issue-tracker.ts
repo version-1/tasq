@@ -87,6 +87,7 @@ export interface Project {
   name: string;
   description: string;
   location: string;
+  workflowChecksum: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -105,6 +106,16 @@ export interface UpdateProjectInput {
   name?: string;
   description?: string;
   location?: string;
+}
+
+export interface Workflow {
+  content: string;
+  checksum: string;
+}
+
+export interface UpdateProjectWorkflowInput {
+  content: string;
+  checksum: string;
 }
 
 export interface ProjectCheckResult {
@@ -247,6 +258,11 @@ export interface ProjectResponse {
 
 export interface ProjectListResponse {
   data: Project[];
+  meta: ApiMeta;
+}
+
+export interface ProjectWorkflowResponse {
+  data: Workflow;
   meta: ApiMeta;
 }
 
@@ -690,6 +706,116 @@ export const deleteApiV1ProjectsId = async (id: number, options?: RequestInit): 
 
   const data: deleteApiV1ProjectsIdResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as deleteApiV1ProjectsIdResponse
+}
+
+
+
+/**
+ * @summary Get a project workflow.
+ */
+export type getApiV1ProjectsIdWorkflowResponse200 = {
+  data: ProjectWorkflowResponse
+  status: 200
+}
+
+export type getApiV1ProjectsIdWorkflowResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type getApiV1ProjectsIdWorkflowResponse404 = {
+  data: ErrorResponse
+  status: 404
+}
+
+export type getApiV1ProjectsIdWorkflowResponseSuccess = (getApiV1ProjectsIdWorkflowResponse200) & {
+  headers: Headers;
+};
+export type getApiV1ProjectsIdWorkflowResponseError = (getApiV1ProjectsIdWorkflowResponse400 | getApiV1ProjectsIdWorkflowResponse404) & {
+  headers: Headers;
+};
+
+export type getApiV1ProjectsIdWorkflowResponse = (getApiV1ProjectsIdWorkflowResponseSuccess | getApiV1ProjectsIdWorkflowResponseError)
+
+export const getGetApiV1ProjectsIdWorkflowUrl = (id: number,) => {
+
+
+
+
+  return `/tracker/api/v1/projects/${id}/workflow`
+}
+
+export const getApiV1ProjectsIdWorkflow = async (id: number, options?: RequestInit): Promise<getApiV1ProjectsIdWorkflowResponse> => {
+
+  const res = await fetch(getGetApiV1ProjectsIdWorkflowUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getApiV1ProjectsIdWorkflowResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getApiV1ProjectsIdWorkflowResponse
+}
+
+
+
+/**
+ * @summary Update a project workflow.
+ */
+export type putApiV1ProjectsIdWorkflowResponse200 = {
+  data: ProjectWorkflowResponse
+  status: 200
+}
+
+export type putApiV1ProjectsIdWorkflowResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type putApiV1ProjectsIdWorkflowResponse404 = {
+  data: ErrorResponse
+  status: 404
+}
+
+export type putApiV1ProjectsIdWorkflowResponseSuccess = (putApiV1ProjectsIdWorkflowResponse200) & {
+  headers: Headers;
+};
+export type putApiV1ProjectsIdWorkflowResponseError = (putApiV1ProjectsIdWorkflowResponse400 | putApiV1ProjectsIdWorkflowResponse404) & {
+  headers: Headers;
+};
+
+export type putApiV1ProjectsIdWorkflowResponse = (putApiV1ProjectsIdWorkflowResponseSuccess | putApiV1ProjectsIdWorkflowResponseError)
+
+export const getPutApiV1ProjectsIdWorkflowUrl = (id: number,) => {
+
+
+
+
+  return `/tracker/api/v1/projects/${id}/workflow`
+}
+
+export const putApiV1ProjectsIdWorkflow = async (id: number,
+    updateProjectWorkflowInput: UpdateProjectWorkflowInput, options?: RequestInit): Promise<putApiV1ProjectsIdWorkflowResponse> => {
+
+  const res = await fetch(getPutApiV1ProjectsIdWorkflowUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateProjectWorkflowInput,)
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: putApiV1ProjectsIdWorkflowResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as putApiV1ProjectsIdWorkflowResponse
 }
 
 

@@ -11,6 +11,7 @@ const project: Project = {
   key: "product",
   location: "/workspace/product",
   name: "Product Website",
+  workflowChecksum: "",
   updatedAt: "2026-06-08T00:00:00Z",
 };
 
