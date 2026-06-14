@@ -1,6 +1,7 @@
 package api
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"encoding/json"
@@ -12,6 +13,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/version-1/tasq/internal/issue/domain/entity"
 	"github.com/version-1/tasq/internal/issue/store"
@@ -40,6 +42,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/v1/projects/{id}", s.project)
 	mux.HandleFunc("PATCH /api/v1/projects/{id}", s.updateProject)
 	mux.HandleFunc("DELETE /api/v1/projects/{id}", s.deleteProject)
+	mux.HandleFunc("PUT /api/v1/projects/{id}/workflow", s.upsertProjectWorkflow)
 	mux.HandleFunc("DELETE /api/v1/projects/{id}/workflow", s.deleteProjectWorkflow)
 	mux.HandleFunc("POST /api/v1/projects/{id}/check", s.checkProject)
 	mux.HandleFunc("GET /api/v1/issues", s.issues)
@@ -136,6 +139,53 @@ func (s *Server) deleteProject(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+type upsertProjectWorkflowRequest struct {
+	FrontmatterJSON json.RawMessage `json:"frontmatter_json"`
+	Body            *string         `json:"body"`
+	Checksum        string          `json:"checksum"`
+}
+
+type projectWorkflowResponse struct {
+	ProjectID       int64           `json:"project_id"`
+	FrontmatterJSON json.RawMessage `json:"frontmatter_json"`
+	Body            string          `json:"body"`
+	Checksum        string          `json:"checksum"`
+	CreatedAt       string          `json:"created_at"`
+	UpdatedAt       string          `json:"updated_at"`
+}
+
+func (s *Server) upsertProjectWorkflow(w http.ResponseWriter, r *http.Request) {
+	id, ok := pathID(w, r, "project", "projects.workflow.upsert")
+	if !ok {
+		return
+	}
+	var request upsertProjectWorkflowRequest
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		writeError(w, http.StatusBadRequest, "projects.workflow.upsert.invalid_request", err)
+		return
+	}
+	frontmatterJSON, err := compactJSONObject(request.FrontmatterJSON)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "projects.workflow.upsert.invalid_input", err)
+		return
+	}
+	if request.Body == nil {
+		writeError(w, http.StatusBadRequest, "projects.workflow.upsert.invalid_input", errors.New("body is required"))
+		return
+	}
+	workflow, err := s.store.UpsertProjectWorkflow(r.Context(), entity.UpsertProjectWorkflowInput{
+		ProjectID:       id,
+		FrontmatterJSON: frontmatterJSON,
+		Body:            *request.Body,
+		Checksum:        request.Checksum,
+	})
+	if err != nil {
+		writeStoreError(w, err, "projects.workflow.upsert", "project workflow")
+		return
+	}
+	writeJSON(w, http.StatusOK, newProjectWorkflowResponse(workflow))
+}
+
 func (s *Server) deleteProjectWorkflow(w http.ResponseWriter, r *http.Request) {
 	id, ok := pathID(w, r, "project", "projects.workflow.delete")
 	if !ok {
@@ -146,6 +196,32 @@ func (s *Server) deleteProjectWorkflow(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func compactJSONObject(raw json.RawMessage) (string, error) {
+	if len(raw) == 0 {
+		return "", errors.New("frontmatter_json is required")
+	}
+	var object map[string]any
+	if err := json.Unmarshal(raw, &object); err != nil || object == nil {
+		return "", errors.New("frontmatter_json must be a JSON object")
+	}
+	var buffer bytes.Buffer
+	if err := json.Compact(&buffer, raw); err != nil {
+		return "", err
+	}
+	return buffer.String(), nil
+}
+
+func newProjectWorkflowResponse(workflow entity.ProjectWorkflow) projectWorkflowResponse {
+	return projectWorkflowResponse{
+		ProjectID:       workflow.ProjectID,
+		FrontmatterJSON: json.RawMessage(workflow.FrontmatterJSON),
+		Body:            workflow.Body,
+		Checksum:        workflow.Checksum,
+		CreatedAt:       workflow.CreatedAt.Format(time.RFC3339Nano),
+		UpdatedAt:       workflow.UpdatedAt.Format(time.RFC3339Nano),
+	}
 }
 
 type projectCheckResult struct {

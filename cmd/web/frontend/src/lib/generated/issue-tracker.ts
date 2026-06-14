@@ -112,6 +112,27 @@ export interface ProjectCheckResult {
   reason: string;
 }
 
+export type ProjectWorkflowFrontmatterJson = { [key: string]: unknown };
+
+export interface ProjectWorkflow {
+  project_id: number;
+  frontmatter_json: ProjectWorkflowFrontmatterJson;
+  body: string;
+  /** @pattern ^[0-9a-fA-F]{64}$ */
+  checksum: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type UpsertProjectWorkflowInputFrontmatterJson = { [key: string]: unknown };
+
+export interface UpsertProjectWorkflowInput {
+  frontmatter_json: UpsertProjectWorkflowInputFrontmatterJson;
+  body: string;
+  /** @pattern ^[0-9a-fA-F]{64}$ */
+  checksum: string;
+}
+
 export interface Issue {
   id: number;
   projectId: number;
@@ -231,6 +252,11 @@ export interface ProjectListResponse {
 
 export interface ProjectCheckResponse {
   data: ProjectCheckResult;
+  meta: ApiMeta;
+}
+
+export interface ProjectWorkflowResponse {
+  data: ProjectWorkflow;
   meta: ApiMeta;
 }
 
@@ -720,6 +746,62 @@ export const postApiV1ProjectsIdCheck = async (id: number,
   
   const data: postApiV1ProjectsIdCheckResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as postApiV1ProjectsIdCheckResponse
+}
+
+
+
+/**
+ * @summary Upsert a project's stored workflow.
+ */
+export type putApiV1ProjectsIdWorkflowResponse200 = {
+  data: ProjectWorkflowResponse
+  status: 200
+}
+
+export type putApiV1ProjectsIdWorkflowResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type putApiV1ProjectsIdWorkflowResponse404 = {
+  data: ErrorResponse
+  status: 404
+}
+
+export type putApiV1ProjectsIdWorkflowResponseSuccess = (putApiV1ProjectsIdWorkflowResponse200) & {
+  headers: Headers;
+};
+export type putApiV1ProjectsIdWorkflowResponseError = (putApiV1ProjectsIdWorkflowResponse400 | putApiV1ProjectsIdWorkflowResponse404) & {
+  headers: Headers;
+};
+
+export type putApiV1ProjectsIdWorkflowResponse = (putApiV1ProjectsIdWorkflowResponseSuccess | putApiV1ProjectsIdWorkflowResponseError)
+
+export const getPutApiV1ProjectsIdWorkflowUrl = (id: number,) => {
+
+
+
+
+  return `/tracker/api/v1/projects/${id}/workflow`
+}
+
+export const putApiV1ProjectsIdWorkflow = async (id: number,
+    upsertProjectWorkflowInput: UpsertProjectWorkflowInput, options?: RequestInit): Promise<putApiV1ProjectsIdWorkflowResponse> => {
+
+  const res = await fetch(getPutApiV1ProjectsIdWorkflowUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      upsertProjectWorkflowInput,)
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: putApiV1ProjectsIdWorkflowResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as putApiV1ProjectsIdWorkflowResponse
 }
 
 

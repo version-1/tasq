@@ -205,6 +205,13 @@ func (s *Store) UpsertProjectWorkflow(ctx context.Context, input entity.UpsertPr
 	if err != nil {
 		return entity.ProjectWorkflow{}, err
 	}
+	current, err := s.ProjectWorkflow(ctx, normalized.ProjectID)
+	if err == nil && current.Checksum == normalized.Checksum {
+		return current, nil
+	}
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return entity.ProjectWorkflow{}, err
+	}
 	if _, err := s.Project(ctx, normalized.ProjectID); err != nil {
 		return entity.ProjectWorkflow{}, err
 	}
