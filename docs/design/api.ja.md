@@ -55,6 +55,7 @@ JSON success response は `{ "data": ..., "meta": {} }` を使います。JSON e
 - `tq comment list <issue-id>`
 - `tq workflow add --project <project-key> (--file <path> | --body <text>)`
 - `tq workflow remove --project <project-key>`
+- `tq workflow show --project <project-key> [--json]`
 
 `tq` は default では human-readable output を使い、`--output json` が指定された場合は JSON output を使います。
 

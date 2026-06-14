@@ -891,6 +891,126 @@ func TestWorkflowRemoveRequiresProject(t *testing.T) {
 	}
 }
 
+func TestWorkflowShowResolvesPhysicalFile(t *testing.T) {
+	ctx := context.Background()
+	issueStore, err := store.Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer issueStore.Close()
+	server := httptest.NewServer(api.NewServer(issueStore).Handler())
+	defer server.Close()
+
+	projectRoot := t.TempDir()
+	workflowPath := filepath.Join(projectRoot, "WORKFLOW.md")
+	if err := os.WriteFile(workflowPath, []byte("# File Workflow\n\nRun from file.\n"), 0o644); err != nil {
+		t.Fatalf("write workflow: %v", err)
+	}
+	project, err := issueStore.CreateProject(ctx, entity.CreateProjectInput{Key: "file-project", Name: "File Project", Location: projectRoot})
+	if err != nil {
+		t.Fatalf("create project: %v", err)
+	}
+	if _, err := issueStore.UpsertProjectWorkflow(ctx, entity.UpsertProjectWorkflowInput{
+		ProjectID:       project.ID,
+		FrontmatterJSON: `{}`,
+		Body:            "DB workflow should not win.",
+		Checksum:        strings.Repeat("a", 64),
+	}); err != nil {
+		t.Fatalf("upsert workflow: %v", err)
+	}
+
+	stdout, stderr, code := runCLI(t, []string{"--api-url", server.URL, "workflow", "show", "--project", "file-project"})
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr)
+	}
+	if !strings.Contains(stdout, "# Source: file ("+workflowPath+")") || !strings.Contains(stdout, "Run from file.") {
+		t.Fatalf("unexpected stdout: %s", stdout)
+	}
+	if strings.Contains(stdout, "DB workflow should not win.") {
+		t.Fatalf("file source did not take priority: %s", stdout)
+	}
+}
+
+func TestWorkflowShowResolvesDBWorkflow(t *testing.T) {
+	ctx := context.Background()
+	issueStore, err := store.Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer issueStore.Close()
+	server := httptest.NewServer(api.NewServer(issueStore).Handler())
+	defer server.Close()
+
+	project, err := issueStore.CreateProject(ctx, entity.CreateProjectInput{Key: "db-project", Name: "DB Project", Location: t.TempDir()})
+	if err != nil {
+		t.Fatalf("create project: %v", err)
+	}
+	if _, err := issueStore.UpsertProjectWorkflow(ctx, entity.UpsertProjectWorkflowInput{
+		ProjectID:       project.ID,
+		FrontmatterJSON: `{"agent":{"max_turns":3}}`,
+		Body:            "# DB Workflow\n\nRun from DB.",
+		Checksum:        strings.Repeat("b", 64),
+	}); err != nil {
+		t.Fatalf("upsert workflow: %v", err)
+	}
+
+	stdout, stderr, code := runCLI(t, []string{"--api-url", server.URL, "workflow", "show", "--project", "db-project"})
+	if code != 0 {
+		t.Fatalf("text code=%d stderr=%s", code, stderr)
+	}
+	if !strings.Contains(stdout, fmt.Sprintf("# Source: db (project db-project, id %d)", project.ID)) ||
+		!strings.Contains(stdout, "---\nagent:\n    max_turns: 3\n---\n# DB Workflow") {
+		t.Fatalf("unexpected text stdout: %s", stdout)
+	}
+
+	stdout, stderr, code = runCLI(t, []string{"--api-url", server.URL, "workflow", "show", "--project", "db-project", "--json"})
+	if code != 0 {
+		t.Fatalf("json code=%d stderr=%s", code, stderr)
+	}
+	if stderr != "" {
+		t.Fatalf("stderr=%s", stderr)
+	}
+	var result workflowShowResult
+	if err := json.Unmarshal([]byte(stdout), &result); err != nil {
+		t.Fatalf("decode stdout: %v\n%s", err, stdout)
+	}
+	if result.Source.Type != "db" || result.Source.ProjectID != project.ID {
+		t.Fatalf("source = %+v", result.Source)
+	}
+	if !strings.Contains(result.Content, "agent:\n    max_turns: 3") || !strings.Contains(result.Content, "Run from DB.") {
+		t.Fatalf("content = %q", result.Content)
+	}
+}
+
+func TestWorkflowShowResolvesGlobalWorkflow(t *testing.T) {
+	ctx := context.Background()
+	issueStore, err := store.Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer issueStore.Close()
+	server := httptest.NewServer(api.NewServer(issueStore).Handler())
+	defer server.Close()
+
+	if _, err := issueStore.CreateProject(ctx, entity.CreateProjectInput{Key: "global-project", Name: "Global Project", Location: t.TempDir()}); err != nil {
+		t.Fatalf("create project: %v", err)
+	}
+	home := t.TempDir()
+	t.Setenv(tqconfig.EnvHome, home)
+	globalPath := tqconfig.WorkflowPath(home)
+	if err := os.WriteFile(globalPath, []byte("# Global Workflow\n\nRun globally.\n"), 0o644); err != nil {
+		t.Fatalf("write global workflow: %v", err)
+	}
+
+	stdout, stderr, code := runCLI(t, []string{"--api-url", server.URL, "workflow", "show", "--project", "global-project"})
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr)
+	}
+	if !strings.Contains(stdout, "# Source: global ("+globalPath+")") || !strings.Contains(stdout, "Run globally.") {
+		t.Fatalf("unexpected stdout: %s", stdout)
+	}
+}
+
 func TestIssueGetAPIError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
