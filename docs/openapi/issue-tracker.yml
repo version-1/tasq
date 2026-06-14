@@ -629,6 +629,7 @@ components:
         - name
         - description
         - location
+        - workflowChecksum
         - createdAt
         - updatedAt
       properties:
@@ -643,6 +644,8 @@ components:
         description:
           type: string
         location:
+          type: string
+        workflowChecksum:
           type: string
         createdAt:
           type: string

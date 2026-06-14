@@ -550,7 +550,7 @@ func commentColumns() string {
 }
 
 func projectColumns() string {
-	return `id, key, name, description, location, created_at, updated_at`
+	return `id, key, name, description, location, COALESCE((SELECT checksum FROM project_workflows WHERE project_workflows.project_id = projects.id), ''), created_at, updated_at`
 }
 
 func projectWorkflowColumns() string {
@@ -615,7 +615,7 @@ func scanProject(row rowScanner) (entity.Project, error) {
 	var item entity.Project
 	var createdAt string
 	var updatedAt string
-	err := row.Scan(&item.ID, &item.Key, &item.Name, &item.Description, &item.Location, &createdAt, &updatedAt)
+	err := row.Scan(&item.ID, &item.Key, &item.Name, &item.Description, &item.Location, &item.WorkflowChecksum, &createdAt, &updatedAt)
 	if err != nil {
 		return entity.Project{}, err
 	}

@@ -588,6 +588,34 @@ func TestProjectCRUD(t *testing.T) {
 		t.Fatalf("updated project name = %q", updated.Name)
 	}
 
+	checksum := strings.Repeat("a", 64)
+	workflow, err := store.UpsertProjectWorkflow(ctx, entity.UpsertProjectWorkflowInput{
+		ProjectID:       created.ID,
+		FrontmatterJSON: `{"agent":{"max_turns":3}}`,
+		Body:            "Project prompt",
+		Checksum:        checksum,
+	})
+	if err != nil {
+		t.Fatalf("upsert project workflow: %v", err)
+	}
+	if workflow.Body != "Project prompt" || workflow.Checksum != checksum {
+		t.Fatalf("workflow = %+v", workflow)
+	}
+	readWorkflow, err := store.ProjectWorkflow(ctx, created.ID)
+	if err != nil {
+		t.Fatalf("project workflow: %v", err)
+	}
+	if readWorkflow.Body != workflow.Body || readWorkflow.Checksum != workflow.Checksum {
+		t.Fatalf("read workflow = %+v, want %+v", readWorkflow, workflow)
+	}
+	withWorkflowChecksum, err := store.Project(ctx, created.ID)
+	if err != nil {
+		t.Fatalf("project after workflow update: %v", err)
+	}
+	if withWorkflowChecksum.WorkflowChecksum != checksum {
+		t.Fatalf("project workflow checksum = %q", withWorkflowChecksum.WorkflowChecksum)
+	}
+
 	projects, err := store.Projects(ctx)
 	if err != nil {
 		t.Fatalf("list projects: %v", err)

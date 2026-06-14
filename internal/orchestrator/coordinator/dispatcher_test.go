@@ -72,6 +72,44 @@ func TestDispatcherCompletesSuccessfulRun(t *testing.T) {
 	}
 }
 
+func TestDispatcherUsesResolvedProjectWorkflow(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store := openTestStore(t)
+	storedRun := createQueuedRun(t, store, 42)
+	testRunner := &recordingRunner{result: runner.Result{Status: run.StatusSucceeded}}
+	tracker := newFakeTracker([]entity.Issue{{ID: 42, ProjectID: 7, Status: entity.StatusReady, Title: "Run task"}})
+	tracker.setProject(entity.Project{ID: 7, Key: "TEST", Location: t.TempDir()})
+	dispatcher, err := NewDispatcher(DispatcherConfig{
+		Tracker: tracker,
+		Store:   store,
+		Runner:  testRunner,
+		WorkflowConfig: workflow.Config{
+			MaxTurns:         2,
+			CodexCommand:     "codex app-server",
+			CodexReadTimeout: time.Second,
+			CodexTurnTimeout: time.Second,
+		},
+		PromptTemplate:    "Default prompt",
+		WorkflowResolver:  fakeWorkflowResolver{definition: workflow.Definition{Config: workflow.Config{MaxTurns: 5, CodexCommand: "custom codex", CodexReadTimeout: 2 * time.Second, CodexTurnTimeout: 3 * time.Second}, PromptTemplate: "Project prompt"}},
+		MaxConcurrentRuns: 2,
+	})
+	if err != nil {
+		t.Fatalf("new dispatcher: %v", err)
+	}
+
+	if err := dispatcher.Dispatch(ctx, []run.Run{storedRun}); err != nil {
+		t.Fatalf("dispatch: %v", err)
+	}
+	shutdownDispatcher(t, dispatcher)
+
+	task := testRunner.firstTask(t)
+	if task.PromptTemplate != "Project prompt" || task.MaxTurns != 5 || task.Command != "custom codex" {
+		t.Fatalf("task = %+v", task)
+	}
+}
+
 func TestDispatcherRecordsFailedRun(t *testing.T) {
 	t.Parallel()
 
@@ -353,6 +391,14 @@ type recordingRunner struct {
 	result     runner.Result
 	events     []runner.Event
 	panicValue any
+}
+
+type fakeWorkflowResolver struct {
+	definition workflow.Definition
+}
+
+func (r fakeWorkflowResolver) Resolve(ctx context.Context, project entity.Project) (workflow.Definition, error) {
+	return r.definition, nil
 }
 
 func (r *recordingRunner) Run(ctx context.Context, task runner.Task) runner.Result {

@@ -519,6 +519,50 @@ func TestIssuesRejectsInvalidStates(t *testing.T) {
 	}
 }
 
+func TestProjectWorkflowRoundTrip(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer(t)
+	project, err := server.store.CreateProject(context.Background(), entity.CreateProjectInput{
+		Key:      "WORKFLOW",
+		Name:     "Workflow Project",
+		Location: t.TempDir(),
+	})
+	if err != nil {
+		t.Fatalf("create project: %v", err)
+	}
+	checksum := strings.Repeat("a", 64)
+	body := bytes.NewBufferString(`{"frontmatter":{"agent":{"max_turns":3}},"body":"Project prompt","checksum":"` + checksum + `"}`)
+	putReq := httptest.NewRequest(http.MethodPut, "/api/v1/projects/"+stringID(project.ID)+"/workflow", body)
+	putRec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(putRec, putReq)
+
+	if putRec.Code != http.StatusOK {
+		t.Fatalf("put status = %d body=%s", putRec.Code, putRec.Body.String())
+	}
+	updated := decodeData[entity.ProjectWorkflow](t, putRec)
+	if updated.Body != "Project prompt" || updated.Checksum != checksum {
+		t.Fatalf("updated workflow = %+v", updated)
+	}
+	agent, ok := updated.Frontmatter["agent"].(map[string]any)
+	if !ok || agent["max_turns"] != float64(3) {
+		t.Fatalf("updated workflow frontmatter = %+v", updated.Frontmatter)
+	}
+
+	getReq := httptest.NewRequest(http.MethodGet, "/api/v1/projects/"+stringID(project.ID)+"/workflow", nil)
+	getRec := httptest.NewRecorder()
+	server.Handler().ServeHTTP(getRec, getReq)
+
+	if getRec.Code != http.StatusOK {
+		t.Fatalf("get status = %d body=%s", getRec.Code, getRec.Body.String())
+	}
+	read := decodeData[entity.ProjectWorkflow](t, getRec)
+	if read.Body != updated.Body || read.Checksum != updated.Checksum {
+		t.Fatalf("read workflow = %+v, want %+v", read, updated)
+	}
+}
+
 func TestIssuesFiltersByProjectID(t *testing.T) {
 	t.Parallel()
 

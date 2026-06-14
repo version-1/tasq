@@ -88,6 +88,7 @@ func main() {
 			Runner:            runner.CodexRunner{},
 			WorkflowConfig:    definition.Config,
 			PromptTemplate:    definition.PromptTemplate,
+			WorkflowResolver:  workflow.NewResolver(trackerClient),
 			MaxConcurrentRuns: effectiveMaxConcurrentRuns,
 		})
 		if err != nil {
