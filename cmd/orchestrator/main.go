@@ -23,6 +23,7 @@ import (
 
 func main() {
 	dbPath := flag.String("db", "", "SQLite database path")
+	workflowPath := flag.String("workflow", "WORKFLOW.md", "Symphony workflow file path")
 	issueTrackerURL := flag.String("issue-tracker", "", "issue-tracker API base URL; enables polling when set")
 	httpPort := flag.Int("port", -1, "orchestrator HTTP server port; overrides workflow server.port when >= 0")
 	flag.Parse()
@@ -52,7 +53,7 @@ func main() {
 		}
 	}()
 
-	definition, err := workflow.Load("WORKFLOW.md")
+	definition, err := workflow.Load(*workflowPath)
 	if err != nil {
 		log.Fatalf("load workflow: %v", err)
 	}
