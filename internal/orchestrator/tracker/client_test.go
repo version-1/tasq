@@ -133,6 +133,69 @@ func TestUpdateIssuePatchesIssue(t *testing.T) {
 	}
 }
 
+func TestWorkflowGetsProjectWorkflow(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet || r.URL.Path != "/api/v1/projects/42/workflow" {
+			t.Fatalf("unexpected request %s %s", r.Method, r.URL.Path)
+		}
+		writeTestData(t, w, Workflow{
+			Frontmatter: json.RawMessage(`{"agent":{"max_turns":3}}`),
+			Body:        "Work on {{ issue.id }}.",
+			Checksum:    "sha256:abc123",
+		})
+	}))
+	defer server.Close()
+
+	workflow, found, err := NewClient(server.URL).Workflow(context.Background(), 42)
+	if err != nil {
+		t.Fatalf("workflow: %v", err)
+	}
+	if !found {
+		t.Fatal("found = false")
+	}
+	if string(workflow.Frontmatter) != `{"agent":{"max_turns":3}}` {
+		t.Fatalf("frontmatter = %s", workflow.Frontmatter)
+	}
+	if workflow.Body != "Work on {{ issue.id }}." || workflow.Checksum != "sha256:abc123" {
+		t.Fatalf("workflow = %+v", workflow)
+	}
+}
+
+func TestWorkflowReturnsNotFoundIndicator(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet || r.URL.Path != "/api/v1/projects/42/workflow" {
+			t.Fatalf("unexpected request %s %s", r.Method, r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		if err := json.NewEncoder(w).Encode(map[string]any{
+			"error": map[string]any{
+				"code":    "projects.workflow_not_found",
+				"message": "workflow not found",
+			},
+			"meta": map[string]any{},
+		}); err != nil {
+			t.Fatalf("write response: %v", err)
+		}
+	}))
+	defer server.Close()
+
+	workflow, found, err := NewClient(server.URL).Workflow(context.Background(), 42)
+	if err != nil {
+		t.Fatalf("workflow: %v", err)
+	}
+	if found {
+		t.Fatal("found = true")
+	}
+	if string(workflow.Frontmatter) != "" || workflow.Body != "" || workflow.Checksum != "" {
+		t.Fatalf("workflow = %+v", workflow)
+	}
+}
+
 func TestCreateCommentPostsComment(t *testing.T) {
 	t.Parallel()
 
