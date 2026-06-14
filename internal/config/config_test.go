@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -68,6 +69,25 @@ func TestEnsureHomePreservesExistingWorkflow(t *testing.T) {
 	}
 	if string(content) != existing {
 		t.Fatalf("workflow content=%q, want %q", content, existing)
+	}
+}
+
+func TestDefaultWorkflowTemplateIncludesAgentTaskInstructions(t *testing.T) {
+	template := DefaultWorkflowTemplate()
+	for _, want := range []string{
+		"  root: .worktrees/agents\n",
+		"  max_concurrent_agents: 5\n",
+		"  command: codex --sandbox workspace-write app-server\n",
+		"  read_timeout_ms: 15000\n",
+		"# Task\n",
+		"Issue ID: {{ issue.id }}\n",
+		"Write agent plan files, pull request summary drafts, and other temporary\n",
+		"temporary artifacts under `~/codex`, `$CODEX_HOME`, or other external home\n",
+		"7. Move the issue to `review` when the pull request is ready for human review.\n",
+	} {
+		if !strings.Contains(template, want) {
+			t.Fatalf("default workflow template missing %q", want)
+		}
 	}
 }
 
