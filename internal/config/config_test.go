@@ -31,7 +31,7 @@ func TestEnsureHomeCreatesLayout(t *testing.T) {
 	if resolved != home {
 		t.Fatalf("resolved=%q, want %q", resolved, home)
 	}
-	for _, path := range []string{ConfigDir(home), SystemDir(home), DataDir(home)} {
+	for _, path := range []string{ConfigDir(home), SystemDir(home), DataDir(home), LogDir(home)} {
 		info, err := os.Stat(path)
 		if err != nil {
 			t.Fatalf("stat %s: %v", path, err)
@@ -39,6 +39,35 @@ func TestEnsureHomeCreatesLayout(t *testing.T) {
 		if !info.IsDir() {
 			t.Fatalf("%s is not dir", path)
 		}
+	}
+	content, err := os.ReadFile(WorkflowPath(home))
+	if err != nil {
+		t.Fatalf("read workflow: %v", err)
+	}
+	if string(content) != DefaultWorkflowTemplate() {
+		t.Fatalf("workflow content=%q", content)
+	}
+}
+
+func TestEnsureHomePreservesExistingWorkflow(t *testing.T) {
+	home := filepath.Join(t.TempDir(), ".tasq")
+	t.Setenv(EnvHome, home)
+	const existing = "custom workflow\n"
+	if err := os.MkdirAll(home, 0o755); err != nil {
+		t.Fatalf("mkdir home: %v", err)
+	}
+	if err := os.WriteFile(WorkflowPath(home), []byte(existing), 0o644); err != nil {
+		t.Fatalf("write workflow: %v", err)
+	}
+	if _, err := EnsureHome(); err != nil {
+		t.Fatalf("ensure home: %v", err)
+	}
+	content, err := os.ReadFile(WorkflowPath(home))
+	if err != nil {
+		t.Fatalf("read workflow: %v", err)
+	}
+	if string(content) != existing {
+		t.Fatalf("workflow content=%q, want %q", content, existing)
 	}
 }
 
