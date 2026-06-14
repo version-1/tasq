@@ -16,6 +16,7 @@ issue-tracker は user-facing API です。
 - `PATCH /api/v1/projects/{id}`
 - `DELETE /api/v1/projects/{id}`
 - `GET /api/v1/projects/{id}/workflow`
+- `PUT /api/v1/projects/{id}/workflow`
 - `POST /api/v1/projects/{id}/check`
 - `DELETE /api/v1/projects/{id}/workflow`
 - `GET /api/v1/issues`
