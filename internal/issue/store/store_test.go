@@ -29,6 +29,7 @@ func TestOpenAppliesIssueTrackerSchema(t *testing.T) {
 		"comments_issue_id_idx",
 		"projects",
 		"projects_key_idx",
+		"project_workflows",
 		"attachments",
 		"attachments_entity_idx",
 	} {
@@ -118,6 +119,152 @@ func TestOpenDeletesLegacyIssuesWhenProjectIDIsMissing(t *testing.T) {
 	}
 	if remainingAttachmentID != "other_att" {
 		t.Fatalf("remaining attachment = %q", remainingAttachmentID)
+	}
+}
+
+func TestProjectWorkflowCRUD(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store, err := Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer store.Close()
+
+	project := createTestProject(t, store, "WORKFLOW")
+	created, err := store.UpsertProjectWorkflow(ctx, entity.UpsertProjectWorkflowInput{
+		ProjectID:       project.ID,
+		FrontmatterJSON: `{"tracker":{"kind":"tasq"}}`,
+		Body:            "Use tq to keep the issue tracker synchronized.",
+		Checksum:        strings.Repeat("a", 64),
+	})
+	if err != nil {
+		t.Fatalf("upsert project workflow: %v", err)
+	}
+	if created.ProjectID != project.ID || created.FrontmatterJSON != `{"tracker":{"kind":"tasq"}}` || created.Body == "" || created.Checksum != strings.Repeat("a", 64) {
+		t.Fatalf("created workflow = %+v", created)
+	}
+	if created.CreatedAt.IsZero() || created.UpdatedAt.IsZero() {
+		t.Fatalf("created workflow timestamps = %+v", created)
+	}
+
+	updated, err := store.UpsertProjectWorkflow(ctx, entity.UpsertProjectWorkflowInput{
+		ProjectID:       project.ID,
+		FrontmatterJSON: `{"tasq":{"task_work_prompt":false}}`,
+		Body:            "Updated prompt template.",
+		Checksum:        strings.Repeat("b", 64),
+	})
+	if err != nil {
+		t.Fatalf("update project workflow: %v", err)
+	}
+	if updated.ProjectID != project.ID || updated.FrontmatterJSON != `{"tasq":{"task_work_prompt":false}}` || updated.Body != "Updated prompt template." || updated.Checksum != strings.Repeat("b", 64) {
+		t.Fatalf("updated workflow = %+v", updated)
+	}
+	if updated.CreatedAt.IsZero() || updated.UpdatedAt.IsZero() {
+		t.Fatalf("updated workflow timestamps = %+v", updated)
+	}
+
+	read, err := store.ProjectWorkflow(ctx, project.ID)
+	if err != nil {
+		t.Fatalf("read project workflow: %v", err)
+	}
+	if read != updated {
+		t.Fatalf("read workflow = %+v, want %+v", read, updated)
+	}
+
+	if err := store.DeleteProjectWorkflow(ctx, project.ID); err != nil {
+		t.Fatalf("delete project workflow: %v", err)
+	}
+	if _, err := store.ProjectWorkflow(ctx, project.ID); !errors.Is(err, sql.ErrNoRows) {
+		t.Fatalf("err = %v, want sql.ErrNoRows", err)
+	}
+	if err := store.DeleteProjectWorkflow(ctx, project.ID); !errors.Is(err, sql.ErrNoRows) {
+		t.Fatalf("delete missing err = %v, want sql.ErrNoRows", err)
+	}
+}
+
+func TestDeleteProjectDeletesProjectWorkflow(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store, err := Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer store.Close()
+
+	project := createTestProject(t, store, "WFDELETE")
+	if _, err := store.UpsertProjectWorkflow(ctx, entity.UpsertProjectWorkflowInput{
+		ProjectID:       project.ID,
+		FrontmatterJSON: `{}`,
+		Checksum:        strings.Repeat("e", 64),
+	}); err != nil {
+		t.Fatalf("upsert project workflow: %v", err)
+	}
+
+	if err := store.DeleteProject(ctx, project.ID); err != nil {
+		t.Fatalf("delete project: %v", err)
+	}
+	if _, err := store.ProjectWorkflow(ctx, project.ID); !errors.Is(err, sql.ErrNoRows) {
+		t.Fatalf("workflow err = %v, want sql.ErrNoRows", err)
+	}
+}
+
+func TestProjectWorkflowRequiresExistingProject(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store, err := Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer store.Close()
+
+	_, err = store.UpsertProjectWorkflow(ctx, entity.UpsertProjectWorkflowInput{
+		ProjectID:       999999,
+		FrontmatterJSON: `{}`,
+		Checksum:        strings.Repeat("c", 64),
+	})
+	if !errors.Is(err, sql.ErrNoRows) {
+		t.Fatalf("err = %v, want sql.ErrNoRows", err)
+	}
+}
+
+func TestProjectWorkflowRejectsInvalidInput(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store, err := Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer store.Close()
+
+	project := createTestProject(t, store, "WFVALID")
+	tests := []struct {
+		name  string
+		input entity.UpsertProjectWorkflowInput
+	}{
+		{
+			name:  "missing project",
+			input: entity.UpsertProjectWorkflowInput{FrontmatterJSON: `{}`, Checksum: strings.Repeat("d", 64)},
+		},
+		{
+			name:  "invalid frontmatter json",
+			input: entity.UpsertProjectWorkflowInput{ProjectID: project.ID, FrontmatterJSON: `{`, Checksum: strings.Repeat("d", 64)},
+		},
+		{
+			name:  "invalid checksum",
+			input: entity.UpsertProjectWorkflowInput{ProjectID: project.ID, FrontmatterJSON: `{}`, Checksum: "not-sha256"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if _, err := store.UpsertProjectWorkflow(ctx, tt.input); err == nil {
+				t.Fatal("expected error")
+			}
+		})
 	}
 }
 
