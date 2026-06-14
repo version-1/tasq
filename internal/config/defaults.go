@@ -49,12 +49,13 @@ directories.
 ## Required Flow
 
 1. Confirm the task scope from the issue title and description above.
-2. Create or switch to an isolated task branch/worktree before editing.
-3. Make focused changes that satisfy the issue.
-4. Run the narrowest useful verification first, then broaden checks when shared behavior is affected.
-5. Commit the change and create or update a pull request.
-6. Leave a progress or handoff comment on the issue.
-7. Move the issue to ` + "`review`" + ` when the pull request is ready for human review.
+2. Before branch creation, run ` + "`git fetch origin`" + `, then create the task branch from ` + "`origin/main`" + ` or the repository's default branch.
+3. Create or switch to an isolated task branch/worktree before editing.
+4. Make focused changes that satisfy the issue.
+5. Run the narrowest useful verification first, then broaden checks when shared behavior is affected.
+6. Commit the change and create or update a pull request.
+7. Leave a progress or handoff comment on the issue.
+8. Move the issue to ` + "`review`" + ` when the pull request is ready for human review.
 
 ## Complete the issue
 
