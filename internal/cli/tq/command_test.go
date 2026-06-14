@@ -698,6 +698,56 @@ func TestProjectAddCheckRemoveAgainstIssueTrackerAPI(t *testing.T) {
 	}
 }
 
+func TestWorkflowRemoveDeletesProjectWorkflow(t *testing.T) {
+	requests := []string{}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests = append(requests, r.Method+" "+r.URL.Path)
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/projects":
+			writeTestJSON(t, w, apiResponse[[]entity.Project]{
+				Data: []entity.Project{{ID: 7, Key: "demo-project", Name: "Demo Project"}},
+			})
+		case r.Method == http.MethodDelete && r.URL.Path == "/api/v1/projects/7/workflow":
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
+	}))
+	defer server.Close()
+
+	stdout, stderr, code := runCLI(t, []string{
+		"--api-url", server.URL,
+		"workflow", "remove",
+		"--project", "demo-project",
+	})
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr)
+	}
+	if !strings.Contains(stdout, "Removed workflow override for project demo-project") {
+		t.Fatalf("unexpected stdout: %s", stdout)
+	}
+	want := []string{"GET /api/v1/projects", "DELETE /api/v1/projects/7/workflow"}
+	if strings.Join(requests, ",") != strings.Join(want, ",") {
+		t.Fatalf("requests = %+v, want %+v", requests, want)
+	}
+}
+
+func TestWorkflowRemoveRequiresProject(t *testing.T) {
+	stdout, stderr, code := runCLI(t, []string{
+		"--api-url", defaultAPIURL,
+		"workflow", "remove",
+	})
+	if code != 2 {
+		t.Fatalf("code=%d stderr=%s", code, stderr)
+	}
+	if stdout != "" {
+		t.Fatalf("expected empty stdout: %s", stdout)
+	}
+	if got := decodeCLIError(t, stderr); got != "project is required" {
+		t.Fatalf("error=%q", got)
+	}
+}
+
 func TestIssueGetAPIError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)

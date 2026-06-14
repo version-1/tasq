@@ -257,16 +257,11 @@ func (s *Store) DeleteProjectWorkflow(ctx context.Context, projectID int64) erro
 	if projectID <= 0 {
 		return errors.New("projectId is required")
 	}
-	result, err := s.db.ExecContext(ctx, `DELETE FROM project_workflows WHERE project_id = ?`, projectID)
-	if err != nil {
-		return fmt.Errorf("delete project workflow: %w", err)
-	}
-	affected, err := result.RowsAffected()
-	if err != nil {
+	if _, err := s.Project(ctx, projectID); err != nil {
 		return err
 	}
-	if affected == 0 {
-		return sql.ErrNoRows
+	if _, err := s.db.ExecContext(ctx, `DELETE FROM project_workflows WHERE project_id = ?`, projectID); err != nil {
+		return fmt.Errorf("delete project workflow: %w", err)
 	}
 	return nil
 }

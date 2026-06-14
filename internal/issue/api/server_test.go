@@ -122,6 +122,31 @@ func TestNoContentResponseStaysEmpty(t *testing.T) {
 	}
 }
 
+func TestDeleteProjectWorkflowAllowsMissingOverride(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer(t)
+	project, err := server.store.CreateProject(context.Background(), entity.CreateProjectInput{
+		Key:      "DOCS",
+		Name:     "Docs",
+		Location: t.TempDir(),
+	})
+	if err != nil {
+		t.Fatalf("create project: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodDelete, "/api/v1/projects/"+stringID(project.ID)+"/workflow", nil)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("status = %d body=%s", rec.Code, rec.Body.String())
+	}
+	if rec.Body.Len() != 0 {
+		t.Fatalf("body = %q", rec.Body.String())
+	}
+}
+
 func TestProjectCheckPassesWithDefaultTaskWorkPrompt(t *testing.T) {
 	t.Parallel()
 

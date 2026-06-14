@@ -208,8 +208,8 @@ func TestProjectWorkflowCRUD(t *testing.T) {
 	if _, err := store.ProjectWorkflow(ctx, project.ID); !errors.Is(err, sql.ErrNoRows) {
 		t.Fatalf("err = %v, want sql.ErrNoRows", err)
 	}
-	if err := store.DeleteProjectWorkflow(ctx, project.ID); !errors.Is(err, sql.ErrNoRows) {
-		t.Fatalf("delete missing err = %v, want sql.ErrNoRows", err)
+	if err := store.DeleteProjectWorkflow(ctx, project.ID); err != nil {
+		t.Fatalf("delete missing project workflow: %v", err)
 	}
 }
 
@@ -627,6 +627,82 @@ func TestDeleteProjectRejectsLinkedIssues(t *testing.T) {
 	}
 	if _, err := store.Project(ctx, project.ID); err != nil {
 		t.Fatalf("project should remain: %v", err)
+	}
+}
+
+func TestDeleteProjectWorkflowRemovesOverride(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store, err := Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer store.Close()
+
+	project := createTestProject(t, store, "WORKFLOW")
+	now := nowString()
+	if _, err := store.db.ExecContext(ctx, `INSERT INTO project_workflows (
+		project_id, frontmatter_json, body, checksum, created_at, updated_at
+	) VALUES (?, ?, ?, ?, ?, ?)`, project.ID, `{}`, "custom workflow", strings.Repeat("a", 64), now, now); err != nil {
+		t.Fatalf("insert project workflow: %v", err)
+	}
+
+	if err := store.DeleteProjectWorkflow(ctx, project.ID); err != nil {
+		t.Fatalf("delete project workflow: %v", err)
+	}
+	var count int
+	if err := store.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM project_workflows WHERE project_id = ?`, project.ID).Scan(&count); err != nil {
+		t.Fatalf("count project workflows: %v", err)
+	}
+	if count != 0 {
+		t.Fatalf("workflow count = %d, want 0", count)
+	}
+}
+
+func TestDeleteProjectWorkflowAllowsMissingOverride(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store, err := Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer store.Close()
+
+	project := createTestProject(t, store, "NOWORKFLOW")
+	if err := store.DeleteProjectWorkflow(ctx, project.ID); err != nil {
+		t.Fatalf("delete missing project workflow: %v", err)
+	}
+}
+
+func TestDeleteProjectRemovesWorkflowOverride(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store, err := Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer store.Close()
+
+	project := createTestProject(t, store, "PROJECTFLOW")
+	now := nowString()
+	if _, err := store.db.ExecContext(ctx, `INSERT INTO project_workflows (
+		project_id, frontmatter_json, body, checksum, created_at, updated_at
+	) VALUES (?, ?, ?, ?, ?, ?)`, project.ID, `{}`, "custom workflow", strings.Repeat("b", 64), now, now); err != nil {
+		t.Fatalf("insert project workflow: %v", err)
+	}
+
+	if err := store.DeleteProject(ctx, project.ID); err != nil {
+		t.Fatalf("delete project: %v", err)
+	}
+	var count int
+	if err := store.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM project_workflows WHERE project_id = ?`, project.ID).Scan(&count); err != nil {
+		t.Fatalf("count project workflows: %v", err)
+	}
+	if count != 0 {
+		t.Fatalf("workflow count = %d, want 0", count)
 	}
 }
 
