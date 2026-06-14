@@ -84,6 +84,10 @@ func TestDefaultWorkflowTemplateIncludesAgentTaskInstructions(t *testing.T) {
 		"Write agent plan files, pull request summary drafts, and other temporary\n",
 		"temporary artifacts under `~/codex`, `$CODEX_HOME`, or other external home\n",
 		"7. Move the issue to `review` when the pull request is ready for human review.\n",
+		"## Complete the issue\n",
+		"1. Run a review and resolve every High or higher severity finding.\n",
+		"2. Create a pull request.\n",
+		"3. After both steps 1 and 2 are complete, run `tq issue ready` to mark the issue ready.\n",
 	} {
 		if !strings.Contains(template, want) {
 			t.Fatalf("default workflow template missing %q", want)
