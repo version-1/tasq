@@ -17,6 +17,7 @@ import (
 	"github.com/version-1/tasq/internal/orchestrator/runstore"
 	"github.com/version-1/tasq/internal/orchestrator/tracker"
 	"github.com/version-1/tasq/internal/orchestrator/workflow"
+	"github.com/version-1/tasq/internal/orchestrator/workflowsync"
 	"github.com/version-1/tasq/internal/orchestrator/workspace"
 )
 
@@ -82,6 +83,11 @@ func main() {
 			log.Fatalf("prune workspace manager: %v", err)
 		}
 		trackerClient := tracker.NewClient(resolvedIssueTrackerURL)
+		syncResult, err := workflowsync.SyncProjectWorkflows(ctx, trackerClient)
+		if err != nil {
+			log.Fatalf("sync project workflows: %v", err)
+		}
+		log.Printf("orchestrator workflow sync complete projects=%d updated=%d skipped=%d missing=%d", syncResult.Projects, syncResult.Updated, syncResult.Skipped, syncResult.Missing)
 		dispatcher, err = coordinator.NewDispatcher(coordinator.DispatcherConfig{
 			Tracker:           trackerClient,
 			Store:             store,

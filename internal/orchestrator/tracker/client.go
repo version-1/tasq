@@ -31,6 +31,14 @@ func NewClient(baseURL string) *Client {
 	}
 }
 
+func (c *Client) Projects(ctx context.Context) ([]entity.Project, error) {
+	var output []entity.Project
+	if err := c.request(ctx, http.MethodGet, "/api/v1/projects", nil, &output); err != nil {
+		return nil, err
+	}
+	return output, nil
+}
+
 func (c *Client) Issue(ctx context.Context, id int64) (entity.Issue, error) {
 	var output entity.Issue
 	if err := c.request(ctx, http.MethodGet, fmt.Sprintf("/api/v1/issues/%d", id), nil, &output); err != nil {
