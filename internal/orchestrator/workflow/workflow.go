@@ -65,12 +65,16 @@ func Load(path string) (Definition, error) {
 	if err != nil {
 		return Definition{}, fmt.Errorf("resolve workflow path: %w", err)
 	}
-	config, body, err := parse(raw, filepath.Dir(absPath))
+	return ParseDefinition(absPath, raw, filepath.Dir(absPath))
+}
+
+func ParseDefinition(path string, raw []byte, workflowDir string) (Definition, error) {
+	config, body, err := parse(raw, workflowDir)
 	if err != nil {
 		return Definition{}, err
 	}
 	return Definition{
-		Path:           absPath,
+		Path:           path,
 		Config:         config,
 		PromptTemplate: strings.TrimSpace(body),
 	}, nil

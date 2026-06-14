@@ -1,7 +1,8 @@
 # Tasq Symphony Workflow Contract
 
-Tasq は orchestrator プロセス起動時に `WORKFLOW.md` を一度だけ読み込みます。runtime reload は意図的に
-無効化されています。workflow の runtime 設定を変更した場合は orchestrator を再起動してください。
+Tasq は run dispatch 時に project ごとの effective workflow を解決します。既に dispatch 済みの run に
+対する runtime reload は意図的に無効化されています。workflow の runtime 設定を変更した場合は run を
+再起動または再 dispatch してください。
 
 front matter パーサは YAML を使用し、以下の Tasq 固有フィールドをサポートします。未知のフィールドは
 前方互換性のために無視されます。

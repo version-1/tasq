@@ -23,7 +23,6 @@ import (
 
 func main() {
 	dbPath := flag.String("db", "", "SQLite database path")
-	workflowPath := flag.String("workflow", "WORKFLOW.md", "Symphony workflow file path")
 	issueTrackerURL := flag.String("issue-tracker", "", "issue-tracker API base URL; enables polling when set")
 	httpPort := flag.Int("port", -1, "orchestrator HTTP server port; overrides workflow server.port when >= 0")
 	flag.Parse()
@@ -53,7 +52,7 @@ func main() {
 		}
 	}()
 
-	definition, err := workflow.Load(*workflowPath)
+	definition, err := workflow.Load("WORKFLOW.md")
 	if err != nil {
 		log.Fatalf("load workflow: %v", err)
 	}
@@ -88,13 +87,12 @@ func main() {
 			log.Fatalf("sync project workflows: %v", err)
 		}
 		log.Printf("orchestrator workflow sync complete projects=%d updated=%d skipped=%d missing=%d", syncResult.Projects, syncResult.Updated, syncResult.Skipped, syncResult.Missing)
+		workflowResolver := workflow.NewResolver(trackerClient, definition)
 		dispatcher, err = coordinator.NewDispatcher(coordinator.DispatcherConfig{
 			Tracker:           trackerClient,
 			Store:             store,
 			Runner:            runner.CodexRunner{},
-			WorkflowConfig:    definition.Config,
-			PromptTemplate:    definition.PromptTemplate,
-			WorkflowResolver:  workflow.NewResolver(trackerClient),
+			WorkflowResolver:  workflowResolver,
 			MaxConcurrentRuns: effectiveMaxConcurrentRuns,
 		})
 		if err != nil {
