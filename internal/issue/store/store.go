@@ -52,12 +52,6 @@ func (s *Store) migrate(ctx context.Context) error {
 	if err := s.addColumnIfMissing(ctx, "projects", "location", "TEXT NOT NULL DEFAULT ''"); err != nil {
 		return err
 	}
-	if err := s.addColumnIfMissing(ctx, "projects", "workflow", "TEXT NOT NULL DEFAULT ''"); err != nil {
-		return err
-	}
-	if err := s.addColumnIfMissing(ctx, "projects", "workflow_checksum", "TEXT NOT NULL DEFAULT ''"); err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -556,7 +550,7 @@ func commentColumns() string {
 }
 
 func projectColumns() string {
-	return `id, key, name, description, location, COALESCE((SELECT checksum FROM project_workflows WHERE project_workflows.project_id = projects.id), workflow_checksum), created_at, updated_at`
+	return `id, key, name, description, location, COALESCE((SELECT checksum FROM project_workflows WHERE project_workflows.project_id = projects.id), ''), created_at, updated_at`
 }
 
 func projectWorkflowColumns() string {
