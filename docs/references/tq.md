@@ -248,6 +248,16 @@ Remove a project by key.
 make run-tq ARGS="project remove tasq"
 ```
 
+## Workflow Commands
+
+### `workflow remove`
+
+Remove the database workflow override for a project. After removal, workflow resolution falls back to the project `WORKFLOW.md` file or the global workflow fallback.
+
+```sh
+make run-tq ARGS="workflow remove --project tasq"
+```
+
 ## Valid Values
 
 ### Issue Status

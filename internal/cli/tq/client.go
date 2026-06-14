@@ -112,6 +112,10 @@ func (c *apiClient) checkProject(ctx context.Context, id int64, workflow string)
 	return result, nil
 }
 
+func (c *apiClient) deleteProjectWorkflow(ctx context.Context, id int64) error {
+	return c.doNoContent(ctx, http.MethodDelete, fmt.Sprintf("/api/v1/projects/%d/workflow", id))
+}
+
 func (c *apiClient) getIssue(ctx context.Context, id int64) (entity.Issue, error) {
 	var issue entity.Issue
 	if err := c.do(ctx, http.MethodGet, fmt.Sprintf("/api/v1/issues/%d", id), nil, &issue); err != nil {

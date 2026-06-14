@@ -60,6 +60,32 @@ func (a app) projectRemove(ctx context.Context, args []string, cfg config) error
 	return nil
 }
 
+func (a app) workflowRemove(ctx context.Context, args []string, cfg config) error {
+	fs := newFlagSet("workflow remove")
+	projectKey := fs.String("project", "", "project key")
+	if err := fs.Parse(args); err != nil {
+		return usageError(err.Error())
+	}
+	if fs.NArg() != 0 {
+		return usageError("workflow remove does not accept positional arguments")
+	}
+	if *projectKey == "" {
+		return usageError("project is required")
+	}
+	project, err := a.projectByKey(ctx, *projectKey)
+	if err != nil {
+		return err
+	}
+	if err := a.client.deleteProjectWorkflow(ctx, project.ID); err != nil {
+		return err
+	}
+	if cfg.output == "json" {
+		return writeJSON(a.stdout, map[string]any{"removed": true, "project": project})
+	}
+	fmt.Fprintf(a.stdout, "Removed workflow override for project %s\n", project.Key)
+	return nil
+}
+
 func (a app) projectAdd(ctx context.Context, args []string, cfg config) error {
 	fs := newFlagSet("project add")
 	key := fs.String("key", "", "project key")

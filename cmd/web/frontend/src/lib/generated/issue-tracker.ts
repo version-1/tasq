@@ -861,7 +861,8 @@ export const putApiV1ProjectsIdWorkflow = async (id: number,
 
 
 /**
- * @summary Delete a project's stored workflow.
+ * Deletes the workflow stored in the database. If no workflow override exists for the project, the endpoint still returns 204 so callers can fall back to file-based workflow resolution.
+ * @summary Delete a project workflow override.
  */
 export type deleteApiV1ProjectsIdWorkflowResponse204 = {
   data: void
@@ -888,7 +889,6 @@ export type deleteApiV1ProjectsIdWorkflowResponseError = (deleteApiV1ProjectsIdW
 export type deleteApiV1ProjectsIdWorkflowResponse = (deleteApiV1ProjectsIdWorkflowResponseSuccess | deleteApiV1ProjectsIdWorkflowResponseError)
 
 export const getDeleteApiV1ProjectsIdWorkflowUrl = (id: number,) => {
-
 
 
 

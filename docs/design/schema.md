@@ -78,6 +78,7 @@ Projects cannot be deleted while linked issues exist.
 | UpdatedAt   | `time.Time`       | auto     | `now()` | —                                   |
 
 `GET /api/v1/projects/{id}/workflow` returns a `ProjectWorkflow` for projects with a stored workflow and returns 404 when no workflow row exists.
+Deleting a project workflow row returns the project to file-based workflow resolution, such as the project `WORKFLOW.md` or a global fallback workflow.
 
 ## orchestrator
 

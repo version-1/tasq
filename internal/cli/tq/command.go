@@ -69,6 +69,8 @@ func (a app) route(ctx context.Context, args []string, cfg config) error {
 		return a.routeComment(ctx, args[1:], cfg)
 	case "project":
 		return a.routeProject(ctx, args[1:], cfg)
+	case "workflow":
+		return a.routeWorkflow(ctx, args[1:], cfg)
 	case "web":
 		return a.web(args[1:])
 	case "service":
@@ -140,6 +142,20 @@ func (a app) routeProject(ctx context.Context, args []string, cfg config) error 
 		return a.projectList(ctx, args[1:], cfg)
 	default:
 		return usageError("unknown project action %q", action)
+	}
+}
+
+func (a app) routeWorkflow(ctx context.Context, args []string, cfg config) error {
+	if len(args) == 0 || args[0] == "help" || args[0] == "-help" || args[0] == "--help" {
+		printWorkflowHelp(a.stdout)
+		return nil
+	}
+	action := args[0]
+	switch action {
+	case "remove":
+		return a.workflowRemove(ctx, args[1:], cfg)
+	default:
+		return usageError("unknown workflow action %q", action)
 	}
 }
 
@@ -579,6 +595,7 @@ func printRootHelp(w io.Writer) {
 	fmt.Fprintln(w, "  issue    create, get, list, update, and shortcut issue actions")
 	fmt.Fprintln(w, "  comment  add and list issue comments")
 	fmt.Fprintln(w, "  project  add, remove, check, and list projects")
+	fmt.Fprintln(w, "  workflow remove project workflow overrides")
 	fmt.Fprintln(w, "  web      open the running Web UI in the default browser")
 	fmt.Fprintln(w, "  service  start, stop, and inspect local services")
 	fmt.Fprintln(w, "  logs     show and follow service logs")
@@ -616,4 +633,11 @@ func printProjectHelp(w io.Writer) {
 	fmt.Fprintln(w, "  remove   Remove a project by key")
 	fmt.Fprintln(w, "  check    Check local project workflow files")
 	fmt.Fprintln(w, "  list     List projects")
+}
+
+func printWorkflowHelp(w io.Writer) {
+	fmt.Fprintln(w, "Usage: tq workflow <action> [flags]")
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, "Actions:")
+	fmt.Fprintln(w, "  remove   Remove a project workflow override (--project KEY required)")
 }

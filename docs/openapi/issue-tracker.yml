@@ -195,10 +195,11 @@ paths:
     delete:
       tags:
         - Projects
-      summary: Delete a project's stored workflow.
+      summary: Delete a project workflow override.
+      description: Deletes the workflow stored in the database. If no workflow override exists for the project, the endpoint still returns 204 so callers can fall back to file-based workflow resolution.
       responses:
         "204":
-          description: Project workflow deleted.
+          description: Project workflow override deleted or not present.
         "400":
           $ref: "#/components/responses/Error"
         "404":
