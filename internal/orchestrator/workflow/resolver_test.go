@@ -2,156 +2,148 @@ package workflow
 
 import (
 	"context"
-	"encoding/json"
+	"database/sql"
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/version-1/tasq/internal/issue/domain/entity"
 )
 
-func TestResolverUpdatesProjectWorkflowWhenFileChecksumDiffers(t *testing.T) {
+func TestResolverLoadsPhysicalProjectWorkflowFirst(t *testing.T) {
 	t.Parallel()
 
-	projectRoot := t.TempDir()
-	content := "---\nagent:\n  max_turns: 3\n---\nProject prompt"
-	writeWorkflow(t, projectRoot, content)
-	client := newFakeWorkflowClient()
-	resolver := NewResolver(client)
-
-	definition, err := resolver.Resolve(context.Background(), entity.Project{
-		ID:               7,
-		Location:         projectRoot,
-		WorkflowChecksum: "old",
-	})
+	dir := t.TempDir()
+	writeWorkflow(t, filepath.Join(dir, workflowFileName), `---
+agent:
+  max_turns: 4
+codex:
+  command: codex app-server --physical
+  read_timeout_ms: 2000
+  turn_timeout_ms: 3000
+---
+Physical workflow`)
+	client := &fakeWorkflowClient{
+		project: entity.Project{ID: 7, Location: dir},
+		workflow: entity.ProjectWorkflow{
+			Frontmatter: map[string]any{
+				"agent": map[string]any{"max_turns": 9},
+				"codex": map[string]any{
+					"command":         "codex app-server --stored",
+					"read_timeout_ms": 9000,
+					"turn_timeout_ms": 10000,
+				},
+			},
+			Body: "Stored workflow",
+		},
+		workflowFound: true,
+	}
+	definition, err := NewResolver(client, fallbackDefinition()).Resolve(context.Background(), 7)
 	if err != nil {
 		t.Fatalf("resolve: %v", err)
 	}
-	if definition.PromptTemplate != "Project prompt" || definition.Config.MaxTurns != 3 {
-		t.Fatalf("definition = %+v", definition)
-	}
-	if client.updateCount != 1 {
-		t.Fatalf("update count = %d", client.updateCount)
-	}
-	if client.workflowCount != 0 {
-		t.Fatalf("workflow count = %d", client.workflowCount)
-	}
 
-	if _, err := resolver.Resolve(context.Background(), entity.Project{
-		ID:               7,
-		Location:         projectRoot,
-		WorkflowChecksum: checksum([]byte(content)),
-	}); err != nil {
-		t.Fatalf("resolve cached: %v", err)
+	if definition.PromptTemplate != "Physical workflow" {
+		t.Fatalf("prompt = %q", definition.PromptTemplate)
 	}
-	if client.workflowCount != 0 {
-		t.Fatalf("workflow count after cache hit = %d", client.workflowCount)
+	if definition.Config.MaxTurns != 4 || definition.Config.CodexCommand != "codex app-server --physical" {
+		t.Fatalf("config = %+v", definition.Config)
 	}
 }
 
-func TestResolverInvalidatesProjectCacheOnChecksumChange(t *testing.T) {
+func TestResolverLoadsStoredProjectWorkflowWhenPhysicalFileMissing(t *testing.T) {
 	t.Parallel()
 
-	projectRoot := t.TempDir()
-	client := newFakeWorkflowClient()
-	first := testProjectWorkflow("First prompt")
-	second := testProjectWorkflow("Second prompt")
-	client.workflows[9] = first
-	resolver := NewResolver(client)
+	dir := t.TempDir()
+	falseTaskWorkPrompt := false
+	client := &fakeWorkflowClient{
+		project: entity.Project{ID: 7, Location: dir},
+		workflow: entity.ProjectWorkflow{
+			Frontmatter: map[string]any{
+				"tasq":      map[string]any{"task_work_prompt": false},
+				"workspace": map[string]any{"root": ".worktrees"},
+				"agent":     map[string]any{"max_turns": 6},
+				"codex": map[string]any{
+					"command":         "codex app-server --stored",
+					"read_timeout_ms": 2000,
+					"turn_timeout_ms": 3000,
+				},
+			},
+			Body: "Stored workflow",
+		},
+		workflowFound: true,
+	}
+	definition, err := NewResolver(client, fallbackDefinition()).Resolve(context.Background(), 7)
+	if err != nil {
+		t.Fatalf("resolve: %v", err)
+	}
 
-	definition, err := resolver.Resolve(context.Background(), entity.Project{ID: 9, Location: projectRoot, WorkflowChecksum: first.Checksum})
-	if err != nil {
-		t.Fatalf("resolve first: %v", err)
+	if definition.PromptTemplate != "Stored workflow" {
+		t.Fatalf("prompt = %q", definition.PromptTemplate)
 	}
-	if definition.PromptTemplate != "First prompt" {
-		t.Fatalf("first prompt = %q", definition.PromptTemplate)
+	if definition.Config.MaxTurns != 6 || definition.Config.CodexCommand != "codex app-server --stored" {
+		t.Fatalf("config = %+v", definition.Config)
 	}
-	client.workflows[9] = second
-	definition, err = resolver.Resolve(context.Background(), entity.Project{ID: 9, Location: projectRoot, WorkflowChecksum: second.Checksum})
-	if err != nil {
-		t.Fatalf("resolve second: %v", err)
+	if definition.Config.Tasq.TaskWorkPrompt == nil || *definition.Config.Tasq.TaskWorkPrompt != falseTaskWorkPrompt {
+		t.Fatalf("task work prompt = %v", definition.Config.Tasq.TaskWorkPrompt)
 	}
-	if definition.PromptTemplate != "Second prompt" {
-		t.Fatalf("second prompt = %q", definition.PromptTemplate)
-	}
-	if client.workflowCount != 2 {
-		t.Fatalf("workflow count = %d", client.workflowCount)
+	if definition.Config.WorkspaceRoot != filepath.Join(dir, ".worktrees") {
+		t.Fatalf("workspace root = %q", definition.Config.WorkspaceRoot)
 	}
 }
 
-func TestResolverFallsBackToGlobalWorkflowAndCachesByChecksum(t *testing.T) {
-	home := t.TempDir()
-	t.Setenv("TQ_HOME", home)
-	content := "Global prompt"
-	writeWorkflow(t, home, content)
-	client := newFakeWorkflowClient()
-	resolver := NewResolver(client)
+func TestResolverFallsBackWhenProjectHasNoWorkflow(t *testing.T) {
+	t.Parallel()
 
-	definition, err := resolver.Resolve(context.Background(), entity.Project{ID: 11, Location: t.TempDir()})
-	if err != nil {
-		t.Fatalf("resolve global: %v", err)
+	fallback := fallbackDefinition()
+	client := &fakeWorkflowClient{
+		project: entity.Project{ID: 7, Location: t.TempDir()},
 	}
-	if definition.PromptTemplate != "Global prompt" {
-		t.Fatalf("global prompt = %q", definition.PromptTemplate)
+	definition, err := NewResolver(client, fallback).Resolve(context.Background(), 7)
+	if err != nil {
+		t.Fatalf("resolve: %v", err)
 	}
 
-	content = "Updated global prompt"
-	writeWorkflow(t, home, content)
-	definition, err = resolver.Resolve(context.Background(), entity.Project{ID: 11, Location: t.TempDir()})
-	if err != nil {
-		t.Fatalf("resolve updated global: %v", err)
+	if definition.PromptTemplate != fallback.PromptTemplate || definition.Config.CodexCommand != fallback.Config.CodexCommand {
+		t.Fatalf("definition = %+v, want fallback %+v", definition, fallback)
 	}
-	if definition.PromptTemplate != "Updated global prompt" {
-		t.Fatalf("updated global prompt = %q", definition.PromptTemplate)
+}
+
+func fallbackDefinition() Definition {
+	return Definition{
+		Path: "fallback",
+		Config: Config{
+			WorkspaceRoot:    os.TempDir(),
+			MaxTurns:         2,
+			CodexCommand:     "codex app-server --fallback",
+			CodexReadTimeout: time.Second,
+			CodexTurnTimeout: time.Second,
+		},
+		PromptTemplate: "Fallback workflow",
+	}
+}
+
+func writeWorkflow(t *testing.T, path string, content string) {
+	t.Helper()
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("write workflow: %v", err)
 	}
 }
 
 type fakeWorkflowClient struct {
-	workflows     map[int64]entity.ProjectWorkflow
-	updateCount   int
-	workflowCount int
+	project       entity.Project
+	workflow      entity.ProjectWorkflow
+	workflowFound bool
 }
 
-func newFakeWorkflowClient() *fakeWorkflowClient {
-	return &fakeWorkflowClient{workflows: map[int64]entity.ProjectWorkflow{}}
+func (c *fakeWorkflowClient) Project(ctx context.Context, id int64) (entity.Project, error) {
+	if c.project.ID == id {
+		return c.project, nil
+	}
+	return entity.Project{}, sql.ErrNoRows
 }
 
 func (c *fakeWorkflowClient) Workflow(ctx context.Context, projectID int64) (entity.ProjectWorkflow, bool, error) {
-	c.workflowCount++
-	workflow, ok := c.workflows[projectID]
-	if !ok {
-		return entity.ProjectWorkflow{}, false, nil
-	}
-	return workflow, true, nil
-}
-
-func (c *fakeWorkflowClient) UpsertWorkflow(ctx context.Context, projectID int64, input entity.UpsertProjectWorkflowInput) (entity.ProjectWorkflow, error) {
-	c.updateCount++
-	frontmatter := map[string]any{}
-	if err := json.Unmarshal([]byte(input.FrontmatterJSON), &frontmatter); err != nil {
-		return entity.ProjectWorkflow{}, err
-	}
-	workflow := entity.ProjectWorkflow{
-		ProjectID:   projectID,
-		Frontmatter: frontmatter,
-		Body:        input.Body,
-		Checksum:    input.Checksum,
-	}
-	c.workflows[projectID] = workflow
-	return workflow, nil
-}
-
-func testProjectWorkflow(body string) entity.ProjectWorkflow {
-	return entity.ProjectWorkflow{
-		Frontmatter: map[string]any{},
-		Body:        body,
-		Checksum:    checksum([]byte(body)),
-	}
-}
-
-func writeWorkflow(t *testing.T, dir string, content string) {
-	t.Helper()
-	if err := os.WriteFile(filepath.Join(dir, workflowFileName), []byte(content), 0o644); err != nil {
-		t.Fatalf("write workflow: %v", err)
-	}
+	return c.workflow, c.workflowFound, nil
 }

@@ -22,7 +22,6 @@ const ignoredRunnerEventTypeAgentMessageDelta = "item/agentMessage/delta"
 
 type IssueReader interface {
 	Issue(ctx context.Context, id int64) (entity.Issue, error)
-	Project(ctx context.Context, id int64) (entity.Project, error)
 }
 
 type IssueUpdater interface {
@@ -40,12 +39,14 @@ type DispatchStore interface {
 	RecordRunnerEvent(ctx context.Context, runID string, eventType string, message string, payloadJSON string) error
 }
 
+type WorkflowResolver interface {
+	Resolve(ctx context.Context, projectID int64) (workflow.Definition, error)
+}
+
 type Dispatcher struct {
 	tracker           IssueTracker
 	store             DispatchStore
 	runner            runner.Runner
-	workflowConfig    workflow.Config
-	promptTemplate    string
 	workflowResolver  WorkflowResolver
 	maxConcurrentRuns int
 
@@ -60,14 +61,8 @@ type DispatcherConfig struct {
 	Tracker           IssueTracker
 	Store             DispatchStore
 	Runner            runner.Runner
-	WorkflowConfig    workflow.Config
-	PromptTemplate    string
 	WorkflowResolver  WorkflowResolver
 	MaxConcurrentRuns int
-}
-
-type WorkflowResolver interface {
-	Resolve(ctx context.Context, project entity.Project) (workflow.Definition, error)
 }
 
 func NewDispatcher(config DispatcherConfig) (*Dispatcher, error) {
@@ -80,6 +75,9 @@ func NewDispatcher(config DispatcherConfig) (*Dispatcher, error) {
 	if config.Runner == nil {
 		return nil, errors.New("runner is required")
 	}
+	if config.WorkflowResolver == nil {
+		return nil, errors.New("workflow resolver is required")
+	}
 	if config.MaxConcurrentRuns <= 0 {
 		return nil, errors.New("max concurrent runs must be positive")
 	}
@@ -88,8 +86,6 @@ func NewDispatcher(config DispatcherConfig) (*Dispatcher, error) {
 		tracker:           config.Tracker,
 		store:             config.Store,
 		runner:            config.Runner,
-		workflowConfig:    config.WorkflowConfig,
-		promptTemplate:    config.PromptTemplate,
 		workflowResolver:  config.WorkflowResolver,
 		maxConcurrentRuns: config.MaxConcurrentRuns,
 		claimed:           make(map[string]struct{}),
@@ -138,10 +134,10 @@ func (d *Dispatcher) Dispatch(ctx context.Context, activeRuns []run.Run) error {
 			d.release(queuedRun.RunID)
 			return fmt.Errorf("fetch issue %d for run %s: %w", queuedRun.IssueID, queuedRun.RunID, err)
 		}
-		definition, err := d.workflowForIssue(ctx, issue)
+		definition, err := d.workflowResolver.Resolve(ctx, issue.ProjectID)
 		if err != nil {
 			d.release(queuedRun.RunID)
-			return fmt.Errorf("resolve workflow for issue %d run %s: %w", queuedRun.IssueID, queuedRun.RunID, err)
+			return fmt.Errorf("resolve workflow for project %d run %s: %w", issue.ProjectID, queuedRun.RunID, err)
 		}
 		task := d.taskForRun(queuedRun, issue, definition)
 		d.wg.Add(1)
@@ -215,21 +211,6 @@ func (d *Dispatcher) startRun(storedRun run.Run, task runner.Task) {
 	if result.Status == run.StatusFailed {
 		d.blockRunnableIssue(context.Background(), storedRun, result.Error)
 	}
-}
-
-func (d *Dispatcher) workflowForIssue(ctx context.Context, issue entity.Issue) (workflow.Definition, error) {
-	definition := workflow.Definition{
-		Config:         d.workflowConfig,
-		PromptTemplate: d.promptTemplate,
-	}
-	if d.workflowResolver == nil {
-		return definition, nil
-	}
-	project, err := d.tracker.Project(ctx, issue.ProjectID)
-	if err != nil {
-		return workflow.Definition{}, fmt.Errorf("fetch project %d: %w", issue.ProjectID, err)
-	}
-	return d.workflowResolver.Resolve(ctx, project)
 }
 
 func (d *Dispatcher) taskForRun(storedRun run.Run, issue entity.Issue, definition workflow.Definition) runner.Task {

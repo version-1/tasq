@@ -72,41 +72,75 @@ func TestDispatcherCompletesSuccessfulRun(t *testing.T) {
 	}
 }
 
-func TestDispatcherUsesResolvedProjectWorkflow(t *testing.T) {
+func TestDispatcherResolvesWorkflowForEachRunProject(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
 	store := openTestStore(t)
-	storedRun := createQueuedRun(t, store, 42)
+	firstRun := createQueuedRun(t, store, 42)
+	secondRun := createQueuedRun(t, store, 43)
 	testRunner := &recordingRunner{result: runner.Result{Status: run.StatusSucceeded}}
-	tracker := newFakeTracker([]entity.Issue{{ID: 42, ProjectID: 7, Status: entity.StatusReady, Title: "Run task"}})
-	tracker.setProject(entity.Project{ID: 7, Key: "TEST", Location: t.TempDir()})
+	tracker := newFakeTracker([]entity.Issue{
+		{ID: 42, ProjectID: 7, Status: entity.StatusReady, Title: "First"},
+		{ID: 43, ProjectID: 8, Status: entity.StatusReady, Title: "Second"},
+	})
+	falseTaskWorkPrompt := false
+	resolver := workflowResolverFunc(func(ctx context.Context, projectID int64) (workflow.Definition, error) {
+		switch projectID {
+		case 7:
+			return workflow.Definition{
+				Config: workflow.Config{
+					Tasq:              workflow.TasqConfig{TaskWorkPrompt: &falseTaskWorkPrompt},
+					MaxTurns:          3,
+					ContinuationTurns: true,
+					CodexCommand:      "codex app-server --project-a",
+					CodexReadTimeout:  2 * time.Second,
+					CodexTurnTimeout:  3 * time.Second,
+				},
+				PromptTemplate: "Project A prompt",
+			}, nil
+		case 8:
+			return workflow.Definition{
+				Config: workflow.Config{
+					MaxTurns:         5,
+					CodexCommand:     "codex app-server --project-b",
+					CodexReadTimeout: 4 * time.Second,
+					CodexTurnTimeout: 5 * time.Second,
+				},
+				PromptTemplate: "Project B prompt",
+			}, nil
+		default:
+			t.Fatalf("unexpected projectID = %d", projectID)
+			return workflow.Definition{}, nil
+		}
+	})
 	dispatcher, err := NewDispatcher(DispatcherConfig{
-		Tracker: tracker,
-		Store:   store,
-		Runner:  testRunner,
-		WorkflowConfig: workflow.Config{
-			MaxTurns:         2,
-			CodexCommand:     "codex app-server",
-			CodexReadTimeout: time.Second,
-			CodexTurnTimeout: time.Second,
-		},
-		PromptTemplate:    "Default prompt",
-		WorkflowResolver:  fakeWorkflowResolver{definition: workflow.Definition{Config: workflow.Config{MaxTurns: 5, CodexCommand: "custom codex", CodexReadTimeout: 2 * time.Second, CodexTurnTimeout: 3 * time.Second}, PromptTemplate: "Project prompt"}},
+		Tracker:           tracker,
+		Store:             store,
+		Runner:            testRunner,
+		WorkflowResolver:  resolver,
 		MaxConcurrentRuns: 2,
 	})
 	if err != nil {
 		t.Fatalf("new dispatcher: %v", err)
 	}
 
-	if err := dispatcher.Dispatch(ctx, []run.Run{storedRun}); err != nil {
+	if err := dispatcher.Dispatch(ctx, []run.Run{firstRun, secondRun}); err != nil {
 		t.Fatalf("dispatch: %v", err)
 	}
 	shutdownDispatcher(t, dispatcher)
 
-	task := testRunner.firstTask(t)
-	if task.PromptTemplate != "Project prompt" || task.MaxTurns != 5 || task.Command != "custom codex" {
-		t.Fatalf("task = %+v", task)
+	tasks := testRunner.tasksByIssueID()
+	firstTask := tasks[42]
+	if firstTask.PromptTemplate != "Project A prompt" || firstTask.MaxTurns != 3 || !firstTask.ContinueTurns || firstTask.Command != "codex app-server --project-a" {
+		t.Fatalf("first task workflow = %+v", firstTask)
+	}
+	if firstTask.TaskWorkPrompt == nil || *firstTask.TaskWorkPrompt {
+		t.Fatalf("first task task_work_prompt = %v", firstTask.TaskWorkPrompt)
+	}
+	secondTask := tasks[43]
+	if secondTask.PromptTemplate != "Project B prompt" || secondTask.MaxTurns != 5 || secondTask.ContinueTurns || secondTask.Command != "codex app-server --project-b" {
+		t.Fatalf("second task workflow = %+v", secondTask)
 	}
 }
 
@@ -358,8 +392,7 @@ func newTestDispatcherWithTracker(t *testing.T, store *runstore.Store, testRunne
 		Tracker:           tracker,
 		Store:             store,
 		Runner:            testRunner,
-		WorkflowConfig:    workflow.Config{MaxTurns: 2, CodexCommand: "codex app-server", CodexReadTimeout: time.Second, CodexTurnTimeout: time.Second},
-		PromptTemplate:    "Do the task",
+		WorkflowResolver:  staticWorkflowResolver(testWorkflowDefinition()),
 		MaxConcurrentRuns: maxConcurrentRuns,
 	})
 	if err != nil {
@@ -393,14 +426,6 @@ type recordingRunner struct {
 	panicValue any
 }
 
-type fakeWorkflowResolver struct {
-	definition workflow.Definition
-}
-
-func (r fakeWorkflowResolver) Resolve(ctx context.Context, project entity.Project) (workflow.Definition, error) {
-	return r.definition, nil
-}
-
 func (r *recordingRunner) Run(ctx context.Context, task runner.Task) runner.Result {
 	r.mu.Lock()
 	r.tasks = append(r.tasks, task)
@@ -428,4 +453,38 @@ func (r *recordingRunner) firstTask(t *testing.T) runner.Task {
 		t.Fatal("runner was not called")
 	}
 	return r.tasks[0]
+}
+
+func (r *recordingRunner) tasksByIssueID() map[int64]runner.Task {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	output := make(map[int64]runner.Task, len(r.tasks))
+	for _, task := range r.tasks {
+		output[task.Issue.ID] = task
+	}
+	return output
+}
+
+type workflowResolverFunc func(ctx context.Context, projectID int64) (workflow.Definition, error)
+
+func (f workflowResolverFunc) Resolve(ctx context.Context, projectID int64) (workflow.Definition, error) {
+	return f(ctx, projectID)
+}
+
+func staticWorkflowResolver(definition workflow.Definition) WorkflowResolver {
+	return workflowResolverFunc(func(ctx context.Context, projectID int64) (workflow.Definition, error) {
+		return definition, nil
+	})
+}
+
+func testWorkflowDefinition() workflow.Definition {
+	return workflow.Definition{
+		Config: workflow.Config{
+			MaxTurns:         2,
+			CodexCommand:     "codex app-server",
+			CodexReadTimeout: time.Second,
+			CodexTurnTimeout: time.Second,
+		},
+		PromptTemplate: "Do the task",
+	}
 }

@@ -1,7 +1,8 @@
 # Tasq Symphony Workflow Contract
 
-Tasq loads `WORKFLOW.md` once at orchestrator process startup. Runtime reload is intentionally not
-enabled; operators should restart the orchestrator after changing workflow runtime settings.
+Tasq resolves the effective workflow for each project when dispatching a run. Runtime reload of an
+already dispatched run is intentionally not enabled; operators should restart or re-dispatch runs
+after changing workflow runtime settings.
 
 The front matter parser uses YAML and supports the Tasq-specific fields below. Unknown fields are
 ignored for forward compatibility.

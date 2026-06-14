@@ -88,13 +88,12 @@ func main() {
 			log.Fatalf("sync project workflows: %v", err)
 		}
 		log.Printf("orchestrator workflow sync complete projects=%d updated=%d skipped=%d missing=%d", syncResult.Projects, syncResult.Updated, syncResult.Skipped, syncResult.Missing)
+		workflowResolver := workflow.NewResolver(trackerClient, definition)
 		dispatcher, err = coordinator.NewDispatcher(coordinator.DispatcherConfig{
 			Tracker:           trackerClient,
 			Store:             store,
 			Runner:            runner.CodexRunner{},
-			WorkflowConfig:    definition.Config,
-			PromptTemplate:    definition.PromptTemplate,
-			WorkflowResolver:  workflow.NewResolver(trackerClient),
+			WorkflowResolver:  workflowResolver,
 			MaxConcurrentRuns: effectiveMaxConcurrentRuns,
 		})
 		if err != nil {
