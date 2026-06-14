@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strings"
 
+	tqconfig "github.com/version-1/tasq/internal/config"
 	"github.com/version-1/tasq/internal/issue/domain/entity"
 	"gopkg.in/yaml.v3"
 )
@@ -233,7 +234,7 @@ func prepareProjectFiles(root string) (localProjectFiles, error) {
 		if !errors.Is(err, os.ErrNotExist) {
 			return local, err
 		}
-		if err := os.WriteFile(workflowPath, []byte(defaultWorkflowTemplate()), 0o644); err != nil {
+		if err := os.WriteFile(workflowPath, []byte(tqconfig.DefaultWorkflowTemplate()), 0o644); err != nil {
 			return local, err
 		}
 		local.workflowCreated = true
@@ -402,25 +403,4 @@ func checkAgentsFile(root string) projectCheckItem {
 		return projectCheckItem{Name: "agents.references_development", Passed: false, Reason: "AGENTS.md does not reference docs/development.md"}
 	}
 	return projectCheckItem{Name: "agents.references_development", Passed: true, Reason: "AGENTS.md references docs/development.md"}
-}
-
-func defaultWorkflowTemplate() string {
-	return `---
-polling:
-  interval_ms: 30000
-workspace:
-  root: .worktrees
-agent:
-  max_concurrent_agents: 1
-  max_turns: 20
-  continuation_turns_enabled: false
-  max_retry_attempts: 3
-  max_retry_backoff_ms: 300000
-codex:
-  command: codex app-server
-  read_timeout_ms: 5000
-  turn_timeout_ms: 3600000
-  stall_timeout_ms: 300000
----
-`
 }
