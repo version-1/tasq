@@ -41,6 +41,12 @@ type attachmentUploadInput struct {
 	Path       string
 }
 
+type upsertProjectWorkflowInput struct {
+	Frontmatter map[string]any `json:"frontmatter"`
+	Body        string         `json:"body"`
+	Checksum    string         `json:"checksum"`
+}
+
 func newAPIClient(baseURL string) (*apiClient, error) {
 	baseURL = strings.TrimRight(strings.TrimSpace(baseURL), "/")
 	if baseURL == "" {
@@ -114,6 +120,14 @@ func (c *apiClient) checkProject(ctx context.Context, id int64, workflow string)
 
 func (c *apiClient) deleteProjectWorkflow(ctx context.Context, id int64) error {
 	return c.doNoContent(ctx, http.MethodDelete, fmt.Sprintf("/api/v1/projects/%d/workflow", id))
+}
+
+func (c *apiClient) upsertProjectWorkflow(ctx context.Context, id int64, input upsertProjectWorkflowInput) (entity.ProjectWorkflow, error) {
+	var workflow entity.ProjectWorkflow
+	if err := c.do(ctx, http.MethodPut, fmt.Sprintf("/api/v1/projects/%d/workflow", id), input, &workflow); err != nil {
+		return entity.ProjectWorkflow{}, err
+	}
+	return workflow, nil
 }
 
 func (c *apiClient) getIssue(ctx context.Context, id int64) (entity.Issue, error) {

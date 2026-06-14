@@ -3,6 +3,7 @@ package tq
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -729,6 +730,148 @@ func TestWorkflowRemoveDeletesProjectWorkflow(t *testing.T) {
 	want := []string{"GET /api/v1/projects", "DELETE /api/v1/projects/7/workflow"}
 	if strings.Join(requests, ",") != strings.Join(want, ",") {
 		t.Fatalf("requests = %+v, want %+v", requests, want)
+	}
+}
+
+func TestWorkflowAddFromBodyUpsertsProjectWorkflow(t *testing.T) {
+	content := "---\ntracker:\n  kind: tasq\nagent:\n  max_turns: 3\n---\n# Prompt\nUse tq.\n"
+	checksum := fmt.Sprintf("%x", sha256.Sum256([]byte(content)))
+	requests := []string{}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests = append(requests, r.Method+" "+r.URL.Path)
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/projects":
+			writeTestJSON(t, w, apiResponse[[]entity.Project]{
+				Data: []entity.Project{{ID: 7, Key: "demo-project", Name: "Demo Project"}},
+			})
+		case r.Method == http.MethodPut && r.URL.Path == "/api/v1/projects/7/workflow":
+			var input upsertProjectWorkflowInput
+			if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+				t.Fatal(err)
+			}
+			tracker, ok := input.Frontmatter["tracker"].(map[string]any)
+			if !ok || tracker["kind"] != "tasq" {
+				t.Fatalf("frontmatter = %#v", input.Frontmatter)
+			}
+			agent, ok := input.Frontmatter["agent"].(map[string]any)
+			if !ok || agent["max_turns"] != float64(3) {
+				t.Fatalf("frontmatter = %#v", input.Frontmatter)
+			}
+			if input.Body != "# Prompt\nUse tq.\n" || input.Checksum != checksum {
+				t.Fatalf("input = %+v, checksum want %s", input, checksum)
+			}
+			writeTestJSON(t, w, apiResponse[entity.ProjectWorkflow]{
+				Data: entity.ProjectWorkflow{
+					ProjectID:   7,
+					Frontmatter: input.Frontmatter,
+					Body:        input.Body,
+					Checksum:    input.Checksum,
+				},
+			})
+		default:
+			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
+	}))
+	defer server.Close()
+
+	stdout, stderr, code := runCLI(t, []string{
+		"--api-url", server.URL,
+		"workflow", "add",
+		"--project", "demo-project",
+		"--body", content,
+	})
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr)
+	}
+	if !strings.Contains(stdout, "Workflow override updated for project demo-project") || !strings.Contains(stdout, checksum) {
+		t.Fatalf("unexpected stdout: %s", stdout)
+	}
+	want := []string{"GET /api/v1/projects", "PUT /api/v1/projects/7/workflow"}
+	if strings.Join(requests, ",") != strings.Join(want, ",") {
+		t.Fatalf("requests = %+v, want %+v", requests, want)
+	}
+}
+
+func TestWorkflowAddFileAndBodyOverwriteAgainstIssueTrackerAPI(t *testing.T) {
+	ctx := context.Background()
+	issueStore, err := store.Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer issueStore.Close()
+	project, err := issueStore.CreateProject(ctx, entity.CreateProjectInput{Key: "demo-project", Name: "Demo Project", Location: t.TempDir()})
+	if err != nil {
+		t.Fatalf("create project: %v", err)
+	}
+	server := httptest.NewServer(api.NewServer(issueStore).Handler())
+	defer server.Close()
+
+	fileContent := "---\ntracker:\n  kind: file\n---\nFile prompt.\n"
+	filePath := filepath.Join(t.TempDir(), "WORKFLOW.md")
+	if err := os.WriteFile(filePath, []byte(fileContent), 0o644); err != nil {
+		t.Fatalf("write workflow file: %v", err)
+	}
+	stdout, stderr, code := runCLI(t, []string{
+		"--api-url", server.URL,
+		"workflow", "add",
+		"--project", "demo-project",
+		"--file", filePath,
+	})
+	if code != 0 {
+		t.Fatalf("file add code=%d stderr=%s", code, stderr)
+	}
+	if !strings.Contains(stdout, "Workflow override updated for project demo-project") {
+		t.Fatalf("unexpected file add stdout: %s", stdout)
+	}
+
+	bodyContent := "---\ntracker:\n  kind: body\n---\nBody prompt.\n"
+	stdout, stderr, code = runCLI(t, []string{
+		"--api-url", server.URL,
+		"workflow", "add",
+		"--project", "demo-project",
+		"--body", bodyContent,
+	})
+	if code != 0 {
+		t.Fatalf("body add code=%d stderr=%s", code, stderr)
+	}
+	if !strings.Contains(stdout, fmt.Sprintf("%x", sha256.Sum256([]byte(bodyContent)))) {
+		t.Fatalf("unexpected body add stdout: %s", stdout)
+	}
+
+	stored, err := issueStore.ProjectWorkflow(ctx, project.ID)
+	if err != nil {
+		t.Fatalf("read stored workflow: %v", err)
+	}
+	tracker, ok := stored.Frontmatter["tracker"].(map[string]any)
+	if !ok || tracker["kind"] != "body" || stored.Body != "Body prompt.\n" {
+		t.Fatalf("stored workflow = %+v", stored)
+	}
+	if stored.Checksum != fmt.Sprintf("%x", sha256.Sum256([]byte(bodyContent))) {
+		t.Fatalf("checksum = %s", stored.Checksum)
+	}
+}
+
+func TestWorkflowAddRequiresExactlyOneSource(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+	}{
+		{name: "missing source", args: []string{"--api-url", defaultAPIURL, "workflow", "add", "--project", "demo-project"}},
+		{name: "multiple sources", args: []string{"--api-url", defaultAPIURL, "workflow", "add", "--project", "demo-project", "--file", "WORKFLOW.md", "--body", "---\n---\n"}},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			stdout, stderr, code := runCLI(t, test.args)
+			if code != 2 {
+				t.Fatalf("code=%d stderr=%s", code, stderr)
+			}
+			if stdout != "" {
+				t.Fatalf("expected empty stdout: %s", stdout)
+			}
+			if got := decodeCLIError(t, stderr); got != "exactly one of file or body is required" {
+				t.Fatalf("error=%q", got)
+			}
+		})
 	}
 }
 

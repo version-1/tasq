@@ -16,6 +16,7 @@ Current issue-tracker endpoints:
 - `PATCH /api/v1/projects/{id}`
 - `DELETE /api/v1/projects/{id}`
 - `GET /api/v1/projects/{id}/workflow`
+- `PUT /api/v1/projects/{id}/workflow`
 - `POST /api/v1/projects/{id}/check`
 - `DELETE /api/v1/projects/{id}/workflow`
 - `GET /api/v1/issues`
@@ -52,6 +53,7 @@ The `tq` CLI wraps issue CRUD endpoints with these commands:
 - `tq issue edit <id> <description>`
 - `tq comment add <issue-id> --body <body> [--attach <image-path>]`
 - `tq comment list <issue-id>`
+- `tq workflow add --project <project-key> (--file <path> | --body <text>)`
 - `tq workflow remove --project <project-key>`
 
 `tq` uses human-readable output by default and JSON output when `--output json` is set.

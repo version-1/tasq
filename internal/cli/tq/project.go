@@ -2,6 +2,7 @@ package tq
 
 import (
 	"context"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"os"
@@ -29,6 +30,12 @@ type projectCheckItem struct {
 	Name   string `json:"name"`
 	Passed bool   `json:"passed"`
 	Reason string `json:"reason"`
+}
+
+type workflowAddContent struct {
+	Frontmatter map[string]any
+	Body        string
+	Checksum    string
 }
 
 func (a app) projectList(ctx context.Context, args []string, cfg config) error {
@@ -84,6 +91,52 @@ func (a app) workflowRemove(ctx context.Context, args []string, cfg config) erro
 	}
 	fmt.Fprintf(a.stdout, "Removed workflow override for project %s\n", project.Key)
 	return nil
+}
+
+func (a app) workflowAdd(ctx context.Context, args []string, cfg config) error {
+	fs := newFlagSet("workflow add")
+	projectKey := fs.String("project", "", "project key")
+	filePath := fs.String("file", "", "workflow file path")
+	body := fs.String("body", "", "workflow content")
+	if err := fs.Parse(args); err != nil {
+		return usageError(err.Error())
+	}
+	if fs.NArg() != 0 {
+		return usageError("workflow add does not accept positional arguments")
+	}
+	if *projectKey == "" {
+		return usageError("project is required")
+	}
+	if (*filePath == "" && *body == "") || (*filePath != "" && *body != "") {
+		return usageError("exactly one of file or body is required")
+	}
+
+	content := *body
+	if *filePath != "" {
+		read, err := os.ReadFile(*filePath)
+		if err != nil {
+			return fmt.Errorf("read workflow file: %w", err)
+		}
+		content = string(read)
+	}
+
+	parsed, err := parseWorkflowAddContent(content)
+	if err != nil {
+		return err
+	}
+	project, err := a.projectByKey(ctx, *projectKey)
+	if err != nil {
+		return err
+	}
+	workflow, err := a.client.upsertProjectWorkflow(ctx, project.ID, upsertProjectWorkflowInput{
+		Frontmatter: parsed.Frontmatter,
+		Body:        parsed.Body,
+		Checksum:    parsed.Checksum,
+	})
+	if err != nil {
+		return err
+	}
+	return writeWorkflowAddResult(a.stdout, cfg.output, project, workflow)
 }
 
 func (a app) projectAdd(ctx context.Context, args []string, cfg config) error {
@@ -372,13 +425,38 @@ func checkWorkflowFrontMatter(content []byte) projectCheckItem {
 	return projectCheckItem{Name: "workflow.front_matter", Passed: true, Reason: "required front matter fields are present"}
 }
 
+func parseWorkflowAddContent(content string) (workflowAddContent, error) {
+	frontMatter, body, ok := splitWorkflowContent(content)
+	if !ok {
+		return workflowAddContent{}, usageError("workflow front matter is required")
+	}
+	var parsed map[string]any
+	if err := yaml.Unmarshal([]byte(frontMatter), &parsed); err != nil {
+		return workflowAddContent{}, fmt.Errorf("parse workflow front matter: %w", err)
+	}
+	if parsed == nil {
+		return workflowAddContent{}, usageError("workflow front matter must be a YAML object")
+	}
+	sum := sha256.Sum256([]byte(content))
+	return workflowAddContent{
+		Frontmatter: parsed,
+		Body:        body,
+		Checksum:    fmt.Sprintf("%x", sum),
+	}, nil
+}
+
 func workflowFrontMatter(content string) (string, bool) {
+	frontMatter, _, ok := splitWorkflowContent(content)
+	return frontMatter, ok
+}
+
+func splitWorkflowContent(content string) (string, string, bool) {
 	if !strings.HasPrefix(content, "---\n") {
-		return "", false
+		return "", "", false
 	}
 	rest := strings.TrimPrefix(content, "---\n")
-	frontMatter, _, ok := strings.Cut(rest, "\n---\n")
-	return frontMatter, ok
+	frontMatter, body, ok := strings.Cut(rest, "\n---\n")
+	return frontMatter, body, ok
 }
 
 func missingWorkflowFields(raw map[string]any) []string {

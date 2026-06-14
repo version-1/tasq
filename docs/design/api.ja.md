@@ -16,6 +16,7 @@ issue-tracker は user-facing API です。
 - `PATCH /api/v1/projects/{id}`
 - `DELETE /api/v1/projects/{id}`
 - `GET /api/v1/projects/{id}/workflow`
+- `PUT /api/v1/projects/{id}/workflow`
 - `POST /api/v1/projects/{id}/check`
 - `DELETE /api/v1/projects/{id}/workflow`
 - `GET /api/v1/issues`
@@ -52,6 +53,7 @@ JSON success response は `{ "data": ..., "meta": {} }` を使います。JSON e
 - `tq issue edit <id> <description>`
 - `tq comment add <issue-id> --body <body> [--attach <image-path>]`
 - `tq comment list <issue-id>`
+- `tq workflow add --project <project-key> (--file <path> | --body <text>)`
 - `tq workflow remove --project <project-key>`
 
 `tq` は default では human-readable output を使い、`--output json` が指定された場合は JSON output を使います。
