@@ -204,6 +204,19 @@ func TestIssueClose(t *testing.T) {
 	}
 }
 
+func TestIssueCancel(t *testing.T) {
+	stdout := assertIssueShortcut(t, issueShortcutTest{
+		args:        []string{"issue", "cancel", "5"},
+		id:          5,
+		wantPatch:   map[string]string{"status": "cancelled"},
+		response:    entity.Issue{ID: 5, Title: "Cancel issue", Status: entity.StatusCancelled},
+		wantMessage: ansiGreen + "✓" + ansiReset + " Issue #5 cancelled",
+	})
+	if !strings.Contains(stdout, string(entity.StatusCancelled)) {
+		t.Fatalf("unexpected stdout: %s", stdout)
+	}
+}
+
 func TestIssueReady(t *testing.T) {
 	stdout := assertIssueShortcut(t, issueShortcutTest{
 		args:        []string{"issue", "ready", "3"},
@@ -278,6 +291,7 @@ func TestIssueShortcutUsageErrors(t *testing.T) {
 		want string
 	}{
 		{name: "close", args: []string{"issue", "close"}, want: "usage: tq issue close <id>"},
+		{name: "cancel", args: []string{"issue", "cancel"}, want: "usage: tq issue cancel <id>"},
 		{name: "ready", args: []string{"issue", "ready"}, want: "usage: tq issue ready <id>"},
 		{name: "draft", args: []string{"issue", "draft"}, want: "usage: tq issue draft <id>"},
 		{name: "rename", args: []string{"issue", "rename", "6"}, want: "usage: tq issue rename <id> <title>"},

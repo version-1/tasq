@@ -47,6 +47,8 @@ export const IssueStatus = {
   done: 'done',
   blocked: 'blocked',
   failed: 'failed',
+  cancelled: 'cancelled',
+  duplicate: 'duplicate',
 } as const;
 
 export type Priority = typeof Priority[keyof typeof Priority];

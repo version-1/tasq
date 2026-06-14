@@ -8,4 +8,6 @@ export const summaryColumnFixtures: Array<{ status: IssueStatus; title: string }
   { status: "done", title: "Done" },
   { status: "blocked", title: "Blocked" },
   { status: "failed", title: "Failed" },
+  { status: "cancelled", title: "Cancelled" },
+  { status: "duplicate", title: "Duplicate" },
 ];

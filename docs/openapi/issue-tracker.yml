@@ -602,6 +602,8 @@ components:
         - done
         - blocked
         - failed
+        - cancelled
+        - duplicate
     Priority:
       type: string
       enum:

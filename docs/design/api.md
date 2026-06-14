@@ -47,6 +47,7 @@ The `tq` CLI wraps issue CRUD endpoints with these commands:
 - `tq issue create ... --attach <image-path>`
 - `tq issue update <id> ... --attach <image-path>`
 - `tq issue close <id>`
+- `tq issue cancel <id>`
 - `tq issue ready <id>`
 - `tq issue draft <id>`
 - `tq issue rename <id> <title>`
