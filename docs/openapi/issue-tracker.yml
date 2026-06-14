@@ -153,6 +153,20 @@ paths:
           $ref: "#/components/responses/Error"
         "404":
           $ref: "#/components/responses/Error"
+  /api/v1/projects/{id}/workflow:
+    parameters:
+      - $ref: "#/components/parameters/ProjectID"
+    delete:
+      tags:
+        - Projects
+      summary: Delete a project's stored workflow.
+      responses:
+        "204":
+          description: Project workflow deleted.
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
   /api/v1/issues:
     get:
       tags:
