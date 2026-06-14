@@ -128,45 +128,6 @@ paths:
           $ref: "#/components/responses/Error"
         "404":
           $ref: "#/components/responses/Error"
-  /api/v1/projects/{id}/workflow:
-    parameters:
-      - $ref: "#/components/parameters/ProjectID"
-    get:
-      tags:
-        - Projects
-      summary: Get a project workflow.
-      responses:
-        "200":
-          description: Project workflow.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ProjectWorkflowResponse"
-        "400":
-          $ref: "#/components/responses/Error"
-        "404":
-          $ref: "#/components/responses/Error"
-    put:
-      tags:
-        - Projects
-      summary: Update a project workflow.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UpdateProjectWorkflowInput"
-      responses:
-        "200":
-          description: Updated project workflow.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ProjectWorkflowResponse"
-        "400":
-          $ref: "#/components/responses/Error"
-        "404":
-          $ref: "#/components/responses/Error"
   /api/v1/projects/{id}/check:
     parameters:
       - $ref: "#/components/parameters/ProjectID"
@@ -721,26 +682,6 @@ components:
           type: string
         location:
           type: string
-    Workflow:
-      type: object
-      required:
-        - content
-        - checksum
-      properties:
-        content:
-          type: string
-        checksum:
-          type: string
-    UpdateProjectWorkflowInput:
-      type: object
-      required:
-        - content
-        - checksum
-      properties:
-        content:
-          type: string
-        checksum:
-          type: string
     ProjectCheckResult:
       type: object
       required:
@@ -1027,16 +968,6 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Project"
-        meta:
-          $ref: "#/components/schemas/ApiMeta"
-    ProjectWorkflowResponse:
-      type: object
-      required:
-        - data
-        - meta
-      properties:
-        data:
-          $ref: "#/components/schemas/Workflow"
         meta:
           $ref: "#/components/schemas/ApiMeta"
     ProjectCheckResponse:
