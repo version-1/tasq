@@ -36,6 +36,7 @@ tq [--api-url URL] [--output text|json] <resource|command> <action> [flags]
 | `issue` | `create`, `get`, `list`, `update` |
 | `comment` | `add`, `list` |
 | `project` | `add`, `remove`, `check`, `list` |
+| `workflow` | `add`, `remove`, `show` |
 | `service` | `start`, `stop`, `status` |
 | `version` | version information を表示 |
 
@@ -248,7 +249,15 @@ Project key で project を削除します。
 make run-tq ARGS="project remove tasq"
 ```
 
-## Workflow Commands
+## Workflows
+
+### `workflow add`
+
+Project の database workflow override を追加または置換します。
+
+```sh
+make run-tq ARGS="workflow add --project tasq --file WORKFLOW.md"
+```
 
 ### `workflow remove`
 
@@ -256,6 +265,26 @@ Project の database workflow override を削除します。削除後の workflo
 
 ```sh
 make run-tq ARGS="workflow remove --project tasq"
+```
+
+### `workflow show`
+
+Project の resolved `WORKFLOW.md` content を表示します。
+
+```sh
+make run-tq ARGS="workflow show --project tasq"
+```
+
+この command は workflow resolution と同じ source order を使います。
+
+1. 登録済み project location 配下の `WORKFLOW.md`。
+2. issue-tracker API に保存された project workflow。
+3. Global `$TQ_HOME/WORKFLOW.md`。
+
+Text output は `# Source: ...` header に続けて resolved `WORKFLOW.md` content を出力します。Structured output には `--json` または global `--output json` を使います。
+
+```sh
+make run-tq ARGS="workflow show --project tasq --json"
 ```
 
 ## Valid Values

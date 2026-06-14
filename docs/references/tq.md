@@ -36,6 +36,7 @@ tq [--api-url URL] [--output text|json] <resource|command> <action> [flags]
 | `issue` | `create`, `get`, `list`, `update` |
 | `comment` | `add`, `list` |
 | `project` | `add`, `remove`, `check`, `list` |
+| `workflow` | `add`, `remove`, `show` |
 | `service` | `start`, `stop`, `status` |
 | `version` | show version information |
 
@@ -248,7 +249,15 @@ Remove a project by key.
 make run-tq ARGS="project remove tasq"
 ```
 
-## Workflow Commands
+## Workflows
+
+### `workflow add`
+
+Add or replace the database workflow override for a project.
+
+```sh
+make run-tq ARGS="workflow add --project tasq --file WORKFLOW.md"
+```
 
 ### `workflow remove`
 
@@ -256,6 +265,26 @@ Remove the database workflow override for a project. After removal, workflow res
 
 ```sh
 make run-tq ARGS="workflow remove --project tasq"
+```
+
+### `workflow show`
+
+Show the resolved `WORKFLOW.md` content for a project.
+
+```sh
+make run-tq ARGS="workflow show --project tasq"
+```
+
+The command uses the same source order as workflow resolution:
+
+1. `WORKFLOW.md` under the registered project location.
+2. The stored project workflow from the issue-tracker API.
+3. The global `$TQ_HOME/WORKFLOW.md`.
+
+Text output prints a `# Source: ...` header followed by the resolved `WORKFLOW.md` content. Use `--json` or global `--output json` for structured output:
+
+```sh
+make run-tq ARGS="workflow show --project tasq --json"
 ```
 
 ## Valid Values

@@ -130,6 +130,35 @@ func (c *apiClient) upsertProjectWorkflow(ctx context.Context, id int64, input u
 	return workflow, nil
 }
 
+func (c *apiClient) projectWorkflow(ctx context.Context, id int64) (entity.ProjectWorkflow, bool, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/api/v1/projects/%d/workflow", c.baseURL, id), nil)
+	if err != nil {
+		return entity.ProjectWorkflow{}, false, err
+	}
+	req.Header.Set("Accept", "application/json")
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return entity.ProjectWorkflow{}, false, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
+		return entity.ProjectWorkflow{}, false, nil
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return entity.ProjectWorkflow{}, false, readAPIError(resp)
+	}
+	var payload apiResponse[json.RawMessage]
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+		return entity.ProjectWorkflow{}, false, fmt.Errorf("decode response: %w", err)
+	}
+	var workflow entity.ProjectWorkflow
+	if err := json.Unmarshal(payload.Data, &workflow); err != nil {
+		return entity.ProjectWorkflow{}, false, fmt.Errorf("decode response: %w", err)
+	}
+	return workflow, true, nil
+}
+
 func (c *apiClient) getIssue(ctx context.Context, id int64) (entity.Issue, error) {
 	var issue entity.Issue
 	if err := c.do(ctx, http.MethodGet, fmt.Sprintf("/api/v1/issues/%d", id), nil, &issue); err != nil {
