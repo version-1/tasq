@@ -156,6 +156,21 @@ paths:
   /api/v1/projects/{id}/workflow:
     parameters:
       - $ref: "#/components/parameters/ProjectID"
+    get:
+      tags:
+        - Projects
+      summary: Get the stored project workflow.
+      responses:
+        "200":
+          description: Project workflow.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectWorkflowResponse"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
     put:
       tags:
         - Projects
@@ -676,17 +691,17 @@ components:
     ProjectWorkflow:
       type: object
       required:
-        - project_id
-        - frontmatter_json
+        - projectId
+        - frontmatter
         - body
         - checksum
-        - created_at
-        - updated_at
+        - createdAt
+        - updatedAt
       properties:
-        project_id:
+        projectId:
           type: integer
           format: int64
-        frontmatter_json:
+        frontmatter:
           type: object
           additionalProperties: true
         body:
@@ -694,20 +709,20 @@ components:
         checksum:
           type: string
           pattern: "^[0-9a-fA-F]{64}$"
-        created_at:
+        createdAt:
           type: string
           format: date-time
-        updated_at:
+        updatedAt:
           type: string
           format: date-time
     UpsertProjectWorkflowInput:
       type: object
       required:
-        - frontmatter_json
+        - frontmatter
         - body
         - checksum
       properties:
-        frontmatter_json:
+        frontmatter:
           type: object
           additionalProperties: true
         body:

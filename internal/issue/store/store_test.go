@@ -135,15 +135,19 @@ func TestProjectWorkflowCRUD(t *testing.T) {
 	project := createTestProject(t, store, "WORKFLOW")
 	created, err := store.UpsertProjectWorkflow(ctx, entity.UpsertProjectWorkflowInput{
 		ProjectID:       project.ID,
-		FrontmatterJSON: `{"tracker":{"kind":"tasq"}}`,
+		FrontmatterJSON: `{"agent":{"max_turns":3},"tracker":{"kind":"tasq"}}`,
 		Body:            "Use tq to keep the issue tracker synchronized.",
 		Checksum:        strings.Repeat("a", 64),
 	})
 	if err != nil {
 		t.Fatalf("upsert project workflow: %v", err)
 	}
-	if created.ProjectID != project.ID || created.FrontmatterJSON != `{"tracker":{"kind":"tasq"}}` || created.Body == "" || created.Checksum != strings.Repeat("a", 64) {
+	if created.ProjectID != project.ID || created.Body == "" || created.Checksum != strings.Repeat("a", 64) {
 		t.Fatalf("created workflow = %+v", created)
+	}
+	agent, ok := created.Frontmatter["agent"].(map[string]any)
+	if !ok || agent["max_turns"] != float64(3) {
+		t.Fatalf("created workflow frontmatter = %#v", created.Frontmatter)
 	}
 	if created.CreatedAt.IsZero() || created.UpdatedAt.IsZero() {
 		t.Fatalf("created workflow timestamps = %+v", created)
@@ -158,8 +162,12 @@ func TestProjectWorkflowCRUD(t *testing.T) {
 	if err != nil {
 		t.Fatalf("update project workflow: %v", err)
 	}
-	if updated.ProjectID != project.ID || updated.FrontmatterJSON != `{"tasq":{"task_work_prompt":false}}` || updated.Body != "Updated prompt template." || updated.Checksum != strings.Repeat("b", 64) {
+	if updated.ProjectID != project.ID || updated.Body != "Updated prompt template." || updated.Checksum != strings.Repeat("b", 64) {
 		t.Fatalf("updated workflow = %+v", updated)
+	}
+	tasq, ok := updated.Frontmatter["tasq"].(map[string]any)
+	if !ok || tasq["task_work_prompt"] != false {
+		t.Fatalf("updated workflow frontmatter = %#v", updated.Frontmatter)
 	}
 	if updated.CreatedAt.IsZero() || updated.UpdatedAt.IsZero() {
 		t.Fatalf("updated workflow timestamps = %+v", updated)
@@ -174,16 +182,24 @@ func TestProjectWorkflowCRUD(t *testing.T) {
 	if err != nil {
 		t.Fatalf("skip matching checksum workflow: %v", err)
 	}
-	if skipped != updated {
+	if skipped.ProjectID != updated.ProjectID || skipped.Body != updated.Body || skipped.Checksum != updated.Checksum || !skipped.CreatedAt.Equal(updated.CreatedAt) || !skipped.UpdatedAt.Equal(updated.UpdatedAt) {
 		t.Fatalf("skipped workflow = %+v, want existing %+v", skipped, updated)
+	}
+	tasq, ok = skipped.Frontmatter["tasq"].(map[string]any)
+	if !ok || tasq["task_work_prompt"] != false {
+		t.Fatalf("skipped workflow frontmatter = %#v", skipped.Frontmatter)
 	}
 
 	read, err := store.ProjectWorkflow(ctx, project.ID)
 	if err != nil {
 		t.Fatalf("read project workflow: %v", err)
 	}
-	if read != updated {
+	if read.ProjectID != updated.ProjectID || read.Body != updated.Body || read.Checksum != updated.Checksum || !read.CreatedAt.Equal(updated.CreatedAt) || !read.UpdatedAt.Equal(updated.UpdatedAt) {
 		t.Fatalf("read workflow = %+v, want %+v", read, updated)
+	}
+	tasq, ok = read.Frontmatter["tasq"].(map[string]any)
+	if !ok || tasq["task_work_prompt"] != false {
+		t.Fatalf("read workflow frontmatter = %#v", read.Frontmatter)
 	}
 
 	if err := store.DeleteProjectWorkflow(ctx, project.ID); err != nil {

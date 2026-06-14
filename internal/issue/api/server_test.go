@@ -207,7 +207,7 @@ func TestUpsertProjectWorkflow(t *testing.T) {
 		t.Fatalf("create project: %v", err)
 	}
 	body := bytes.NewBufferString(`{
-		"frontmatter_json": {"tracker": {"kind": "tasq"}},
+		"frontmatter": {"tracker": {"kind": "tasq"}},
 		"body": "Use tq to keep the issue tracker synchronized.",
 		"checksum": "` + strings.Repeat("a", 64) + `"
 	}`)
@@ -221,12 +221,12 @@ func TestUpsertProjectWorkflow(t *testing.T) {
 	}
 	var payload struct {
 		Data struct {
-			ProjectID       int64 `json:"project_id"`
-			FrontmatterJSON struct {
+			ProjectID   int64 `json:"projectId"`
+			Frontmatter struct {
 				Tracker struct {
 					Kind string `json:"kind"`
 				} `json:"tracker"`
-			} `json:"frontmatter_json"`
+			} `json:"frontmatter"`
 			Body     string `json:"body"`
 			Checksum string `json:"checksum"`
 		} `json:"data"`
@@ -234,15 +234,16 @@ func TestUpsertProjectWorkflow(t *testing.T) {
 	if err := json.NewDecoder(rec.Body).Decode(&payload); err != nil {
 		t.Fatalf("decode response: %v", err)
 	}
-	if payload.Data.ProjectID != project.ID || payload.Data.FrontmatterJSON.Tracker.Kind != "tasq" || payload.Data.Body == "" || payload.Data.Checksum != strings.Repeat("a", 64) {
+	if payload.Data.ProjectID != project.ID || payload.Data.Frontmatter.Tracker.Kind != "tasq" || payload.Data.Body == "" || payload.Data.Checksum != strings.Repeat("a", 64) {
 		t.Fatalf("data = %+v", payload.Data)
 	}
 	stored, err := server.store.ProjectWorkflow(context.Background(), project.ID)
 	if err != nil {
 		t.Fatalf("read project workflow: %v", err)
 	}
-	if stored.FrontmatterJSON != `{"tracker":{"kind":"tasq"}}` {
-		t.Fatalf("frontmatter json = %q", stored.FrontmatterJSON)
+	tracker, ok := stored.Frontmatter["tracker"].(map[string]any)
+	if !ok || tracker["kind"] != "tasq" {
+		t.Fatalf("frontmatter = %#v", stored.Frontmatter)
 	}
 }
 
@@ -268,7 +269,7 @@ func TestUpsertProjectWorkflowSkipsMatchingChecksum(t *testing.T) {
 		t.Fatalf("upsert project workflow: %v", err)
 	}
 	body := bytes.NewBufferString(`{
-		"frontmatter_json": {"tracker": {"kind": "changed"}},
+		"frontmatter": {"tracker": {"kind": "changed"}},
 		"body": "Changed prompt template.",
 		"checksum": "` + checksum + `"
 	}`)
@@ -282,25 +283,26 @@ func TestUpsertProjectWorkflowSkipsMatchingChecksum(t *testing.T) {
 	}
 	var payload struct {
 		Data struct {
-			FrontmatterJSON struct {
+			Frontmatter struct {
 				Tracker struct {
 					Kind string `json:"kind"`
 				} `json:"tracker"`
-			} `json:"frontmatter_json"`
+			} `json:"frontmatter"`
 			Body string `json:"body"`
 		} `json:"data"`
 	}
 	if err := json.NewDecoder(rec.Body).Decode(&payload); err != nil {
 		t.Fatalf("decode response: %v", err)
 	}
-	if payload.Data.FrontmatterJSON.Tracker.Kind != "tasq" || payload.Data.Body != "Original prompt template." {
+	if payload.Data.Frontmatter.Tracker.Kind != "tasq" || payload.Data.Body != "Original prompt template." {
 		t.Fatalf("data = %+v", payload.Data)
 	}
 	stored, err := server.store.ProjectWorkflow(context.Background(), project.ID)
 	if err != nil {
 		t.Fatalf("read project workflow: %v", err)
 	}
-	if stored.FrontmatterJSON != `{"tracker":{"kind":"tasq"}}` || stored.Body != "Original prompt template." {
+	tracker, ok := stored.Frontmatter["tracker"].(map[string]any)
+	if !ok || tracker["kind"] != "tasq" || stored.Body != "Original prompt template." {
 		t.Fatalf("stored workflow = %+v", stored)
 	}
 }
@@ -354,6 +356,54 @@ func TestProjectCheckFailsWhenTaskWorkPromptDisabledWithoutTQUsage(t *testing.T)
 	if payload.Data.Passed {
 		t.Fatalf("expected check to fail: %+v", payload.Data)
 	}
+}
+
+func TestProjectWorkflowReturnsStoredWorkflow(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer(t)
+	project := createProject(t, server, "WORKFLOW")
+	_, err := server.store.UpsertProjectWorkflow(context.Background(), entity.UpsertProjectWorkflowInput{
+		ProjectID:       project.ID,
+		FrontmatterJSON: `{"agent":{"max_turns":3},"tasq":{"task_work_prompt":false}}`,
+		Body:            "Work on {{ issue.id }}.",
+		Checksum:        strings.Repeat("a", 64),
+	})
+	if err != nil {
+		t.Fatalf("upsert workflow: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/projects/"+stringID(project.ID)+"/workflow", nil)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d body=%s", rec.Code, rec.Body.String())
+	}
+	workflow := decodeData[entity.ProjectWorkflow](t, rec)
+	if workflow.ProjectID != project.ID || workflow.Body != "Work on {{ issue.id }}." || workflow.Checksum != strings.Repeat("a", 64) {
+		t.Fatalf("workflow = %+v", workflow)
+	}
+	agent, ok := workflow.Frontmatter["agent"].(map[string]any)
+	if !ok || agent["max_turns"] != float64(3) {
+		t.Fatalf("frontmatter = %#v", workflow.Frontmatter)
+	}
+}
+
+func TestProjectWorkflowReturnsNotFoundWhenMissing(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer(t)
+	project := createProject(t, server, "NOWORKFLOW")
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/projects/"+stringID(project.ID)+"/workflow", nil)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status = %d body=%s", rec.Code, rec.Body.String())
+	}
+	assertErrorCode(t, rec, "projects.workflow.not_found")
 }
 
 func TestOptionsResponseStaysEmpty(t *testing.T) {

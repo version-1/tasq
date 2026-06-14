@@ -112,22 +112,22 @@ export interface ProjectCheckResult {
   reason: string;
 }
 
-export type ProjectWorkflowFrontmatterJson = { [key: string]: unknown };
+export type ProjectWorkflowFrontmatter = { [key: string]: unknown };
 
 export interface ProjectWorkflow {
-  project_id: number;
-  frontmatter_json: ProjectWorkflowFrontmatterJson;
+  projectId: number;
+  frontmatter: ProjectWorkflowFrontmatter;
   body: string;
   /** @pattern ^[0-9a-fA-F]{64}$ */
   checksum: string;
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export type UpsertProjectWorkflowInputFrontmatterJson = { [key: string]: unknown };
+export type UpsertProjectWorkflowInputFrontmatter = { [key: string]: unknown };
 
 export interface UpsertProjectWorkflowInput {
-  frontmatter_json: UpsertProjectWorkflowInputFrontmatterJson;
+  frontmatter: UpsertProjectWorkflowInputFrontmatter;
   body: string;
   /** @pattern ^[0-9a-fA-F]{64}$ */
   checksum: string;
@@ -347,7 +347,7 @@ export type getApiV1HealthResponse200 = {
   data: HealthResponse
   status: 200
 }
-    
+
 export type getApiV1HealthResponseSuccess = (getApiV1HealthResponse200) & {
   headers: Headers;
 };
@@ -358,24 +358,24 @@ export type getApiV1HealthResponse = (getApiV1HealthResponseSuccess)
 export const getGetApiV1HealthUrl = () => {
 
 
-  
+
 
   return `/tracker/api/v1/health`
 }
 
 export const getApiV1Health = async ( options?: RequestInit): Promise<getApiV1HealthResponse> => {
-  
+
   const res = await fetch(getGetApiV1HealthUrl(),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: getApiV1HealthResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as getApiV1HealthResponse
 }
@@ -394,7 +394,7 @@ export type getApiV1SummaryResponse500 = {
   data: ErrorResponse
   status: 500
 }
-    
+
 export type getApiV1SummaryResponseSuccess = (getApiV1SummaryResponse200) & {
   headers: Headers;
 };
@@ -407,24 +407,24 @@ export type getApiV1SummaryResponse = (getApiV1SummaryResponseSuccess | getApiV1
 export const getGetApiV1SummaryUrl = () => {
 
 
-  
+
 
   return `/tracker/api/v1/summary`
 }
 
 export const getApiV1Summary = async ( options?: RequestInit): Promise<getApiV1SummaryResponse> => {
-  
+
   const res = await fetch(getGetApiV1SummaryUrl(),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: getApiV1SummaryResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as getApiV1SummaryResponse
 }
@@ -443,7 +443,7 @@ export type getApiV1ProjectsResponse500 = {
   data: ErrorResponse
   status: 500
 }
-    
+
 export type getApiV1ProjectsResponseSuccess = (getApiV1ProjectsResponse200) & {
   headers: Headers;
 };
@@ -456,24 +456,24 @@ export type getApiV1ProjectsResponse = (getApiV1ProjectsResponseSuccess | getApi
 export const getGetApiV1ProjectsUrl = () => {
 
 
-  
+
 
   return `/tracker/api/v1/projects`
 }
 
 export const getApiV1Projects = async ( options?: RequestInit): Promise<getApiV1ProjectsResponse> => {
-  
+
   const res = await fetch(getGetApiV1ProjectsUrl(),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: getApiV1ProjectsResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as getApiV1ProjectsResponse
 }
@@ -492,7 +492,7 @@ export type postApiV1ProjectsResponse400 = {
   data: ErrorResponse
   status: 400
 }
-    
+
 export type postApiV1ProjectsResponseSuccess = (postApiV1ProjectsResponse201) & {
   headers: Headers;
 };
@@ -505,15 +505,15 @@ export type postApiV1ProjectsResponse = (postApiV1ProjectsResponseSuccess | post
 export const getPostApiV1ProjectsUrl = () => {
 
 
-  
+
 
   return `/tracker/api/v1/projects`
 }
 
 export const postApiV1Projects = async (createProjectInput: CreateProjectInput, options?: RequestInit): Promise<postApiV1ProjectsResponse> => {
-  
+
   const res = await fetch(getPostApiV1ProjectsUrl(),
-  {      
+  {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -523,7 +523,7 @@ export const postApiV1Projects = async (createProjectInput: CreateProjectInput, 
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: postApiV1ProjectsResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as postApiV1ProjectsResponse
 }
@@ -547,7 +547,7 @@ export type getApiV1ProjectsIdResponse404 = {
   data: ErrorResponse
   status: 404
 }
-    
+
 export type getApiV1ProjectsIdResponseSuccess = (getApiV1ProjectsIdResponse200) & {
   headers: Headers;
 };
@@ -560,24 +560,24 @@ export type getApiV1ProjectsIdResponse = (getApiV1ProjectsIdResponseSuccess | ge
 export const getGetApiV1ProjectsIdUrl = (id: number,) => {
 
 
-  
+
 
   return `/tracker/api/v1/projects/${id}`
 }
 
 export const getApiV1ProjectsId = async (id: number, options?: RequestInit): Promise<getApiV1ProjectsIdResponse> => {
-  
+
   const res = await fetch(getGetApiV1ProjectsIdUrl(id),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: getApiV1ProjectsIdResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as getApiV1ProjectsIdResponse
 }
@@ -601,7 +601,7 @@ export type patchApiV1ProjectsIdResponse404 = {
   data: ErrorResponse
   status: 404
 }
-    
+
 export type patchApiV1ProjectsIdResponseSuccess = (patchApiV1ProjectsIdResponse200) & {
   headers: Headers;
 };
@@ -614,16 +614,16 @@ export type patchApiV1ProjectsIdResponse = (patchApiV1ProjectsIdResponseSuccess 
 export const getPatchApiV1ProjectsIdUrl = (id: number,) => {
 
 
-  
+
 
   return `/tracker/api/v1/projects/${id}`
 }
 
 export const patchApiV1ProjectsId = async (id: number,
     updateProjectInput: UpdateProjectInput, options?: RequestInit): Promise<patchApiV1ProjectsIdResponse> => {
-  
+
   const res = await fetch(getPatchApiV1ProjectsIdUrl(id),
-  {      
+  {
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -633,7 +633,7 @@ export const patchApiV1ProjectsId = async (id: number,
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: patchApiV1ProjectsIdResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as patchApiV1ProjectsIdResponse
 }
@@ -657,7 +657,7 @@ export type deleteApiV1ProjectsIdResponse404 = {
   data: ErrorResponse
   status: 404
 }
-    
+
 export type deleteApiV1ProjectsIdResponseSuccess = (deleteApiV1ProjectsIdResponse204) & {
   headers: Headers;
 };
@@ -670,24 +670,24 @@ export type deleteApiV1ProjectsIdResponse = (deleteApiV1ProjectsIdResponseSucces
 export const getDeleteApiV1ProjectsIdUrl = (id: number,) => {
 
 
-  
+
 
   return `/tracker/api/v1/projects/${id}`
 }
 
 export const deleteApiV1ProjectsId = async (id: number, options?: RequestInit): Promise<deleteApiV1ProjectsIdResponse> => {
-  
+
   const res = await fetch(getDeleteApiV1ProjectsIdUrl(id),
-  {      
+  {
     ...options,
     method: 'DELETE'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: deleteApiV1ProjectsIdResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as deleteApiV1ProjectsIdResponse
 }
@@ -711,7 +711,7 @@ export type postApiV1ProjectsIdCheckResponse404 = {
   data: ErrorResponse
   status: 404
 }
-    
+
 export type postApiV1ProjectsIdCheckResponseSuccess = (postApiV1ProjectsIdCheckResponse200) & {
   headers: Headers;
 };
@@ -724,28 +724,82 @@ export type postApiV1ProjectsIdCheckResponse = (postApiV1ProjectsIdCheckResponse
 export const getPostApiV1ProjectsIdCheckUrl = (id: number,) => {
 
 
-  
+
 
   return `/tracker/api/v1/projects/${id}/check`
 }
 
 export const postApiV1ProjectsIdCheck = async (id: number,
     postApiV1ProjectsIdCheckBody: string, options?: RequestInit): Promise<postApiV1ProjectsIdCheckResponse> => {
-  
+
   const res = await fetch(getPostApiV1ProjectsIdCheckUrl(id),
-  {      
+  {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'text/plain', ...options?.headers },
-    body: 
+    body:
       postApiV1ProjectsIdCheckBody,
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: postApiV1ProjectsIdCheckResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as postApiV1ProjectsIdCheckResponse
+}
+
+
+
+/**
+ * @summary Get the stored project workflow.
+ */
+export type getApiV1ProjectsIdWorkflowResponse200 = {
+  data: ProjectWorkflowResponse
+  status: 200
+}
+
+export type getApiV1ProjectsIdWorkflowResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type getApiV1ProjectsIdWorkflowResponse404 = {
+  data: ErrorResponse
+  status: 404
+}
+
+export type getApiV1ProjectsIdWorkflowResponseSuccess = (getApiV1ProjectsIdWorkflowResponse200) & {
+  headers: Headers;
+};
+export type getApiV1ProjectsIdWorkflowResponseError = (getApiV1ProjectsIdWorkflowResponse400 | getApiV1ProjectsIdWorkflowResponse404) & {
+  headers: Headers;
+};
+
+export type getApiV1ProjectsIdWorkflowResponse = (getApiV1ProjectsIdWorkflowResponseSuccess | getApiV1ProjectsIdWorkflowResponseError)
+
+export const getGetApiV1ProjectsIdWorkflowUrl = (id: number,) => {
+
+
+
+
+  return `/tracker/api/v1/projects/${id}/workflow`
+}
+
+export const getApiV1ProjectsIdWorkflow = async (id: number, options?: RequestInit): Promise<getApiV1ProjectsIdWorkflowResponse> => {
+
+  const res = await fetch(getGetApiV1ProjectsIdWorkflowUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getApiV1ProjectsIdWorkflowResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getApiV1ProjectsIdWorkflowResponse
 }
 
 
@@ -877,7 +931,7 @@ export type getApiV1IssuesResponse500 = {
   data: ErrorResponse
   status: 500
 }
-    
+
 export type getApiV1IssuesResponseSuccess = (getApiV1IssuesResponse200) & {
   headers: Headers;
 };
@@ -891,7 +945,7 @@ export const getGetApiV1IssuesUrl = (params?: GetApiV1IssuesParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
-    
+
     if (value !== undefined) {
       normalizedParams.append(key, value === null ? 'null' : value.toString())
     }
@@ -903,18 +957,18 @@ export const getGetApiV1IssuesUrl = (params?: GetApiV1IssuesParams,) => {
 }
 
 export const getApiV1Issues = async (params?: GetApiV1IssuesParams, options?: RequestInit): Promise<getApiV1IssuesResponse> => {
-  
+
   const res = await fetch(getGetApiV1IssuesUrl(params),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: getApiV1IssuesResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as getApiV1IssuesResponse
 }
@@ -933,7 +987,7 @@ export type postApiV1IssuesResponse400 = {
   data: ErrorResponse
   status: 400
 }
-    
+
 export type postApiV1IssuesResponseSuccess = (postApiV1IssuesResponse201) & {
   headers: Headers;
 };
@@ -946,15 +1000,15 @@ export type postApiV1IssuesResponse = (postApiV1IssuesResponseSuccess | postApiV
 export const getPostApiV1IssuesUrl = () => {
 
 
-  
+
 
   return `/tracker/api/v1/issues`
 }
 
 export const postApiV1Issues = async (createIssueInput: CreateIssueInput, options?: RequestInit): Promise<postApiV1IssuesResponse> => {
-  
+
   const res = await fetch(getPostApiV1IssuesUrl(),
-  {      
+  {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -964,7 +1018,7 @@ export const postApiV1Issues = async (createIssueInput: CreateIssueInput, option
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: postApiV1IssuesResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as postApiV1IssuesResponse
 }
@@ -988,7 +1042,7 @@ export type postApiV1IssuesStatesResponse500 = {
   data: ErrorResponse
   status: 500
 }
-    
+
 export type postApiV1IssuesStatesResponseSuccess = (postApiV1IssuesStatesResponse200) & {
   headers: Headers;
 };
@@ -1001,15 +1055,15 @@ export type postApiV1IssuesStatesResponse = (postApiV1IssuesStatesResponseSucces
 export const getPostApiV1IssuesStatesUrl = () => {
 
 
-  
+
 
   return `/tracker/api/v1/issues/states`
 }
 
 export const postApiV1IssuesStates = async (issueStatesInput: IssueStatesInput, options?: RequestInit): Promise<postApiV1IssuesStatesResponse> => {
-  
+
   const res = await fetch(getPostApiV1IssuesStatesUrl(),
-  {      
+  {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -1019,7 +1073,7 @@ export const postApiV1IssuesStates = async (issueStatesInput: IssueStatesInput, 
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: postApiV1IssuesStatesResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as postApiV1IssuesStatesResponse
 }
@@ -1043,7 +1097,7 @@ export type getApiV1IssuesIdResponse404 = {
   data: ErrorResponse
   status: 404
 }
-    
+
 export type getApiV1IssuesIdResponseSuccess = (getApiV1IssuesIdResponse200) & {
   headers: Headers;
 };
@@ -1056,24 +1110,24 @@ export type getApiV1IssuesIdResponse = (getApiV1IssuesIdResponseSuccess | getApi
 export const getGetApiV1IssuesIdUrl = (id: number,) => {
 
 
-  
+
 
   return `/tracker/api/v1/issues/${id}`
 }
 
 export const getApiV1IssuesId = async (id: number, options?: RequestInit): Promise<getApiV1IssuesIdResponse> => {
-  
+
   const res = await fetch(getGetApiV1IssuesIdUrl(id),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: getApiV1IssuesIdResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as getApiV1IssuesIdResponse
 }
@@ -1097,7 +1151,7 @@ export type patchApiV1IssuesIdResponse404 = {
   data: ErrorResponse
   status: 404
 }
-    
+
 export type patchApiV1IssuesIdResponseSuccess = (patchApiV1IssuesIdResponse200) & {
   headers: Headers;
 };
@@ -1110,16 +1164,16 @@ export type patchApiV1IssuesIdResponse = (patchApiV1IssuesIdResponseSuccess | pa
 export const getPatchApiV1IssuesIdUrl = (id: number,) => {
 
 
-  
+
 
   return `/tracker/api/v1/issues/${id}`
 }
 
 export const patchApiV1IssuesId = async (id: number,
     updateIssueInput: UpdateIssueInput, options?: RequestInit): Promise<patchApiV1IssuesIdResponse> => {
-  
+
   const res = await fetch(getPatchApiV1IssuesIdUrl(id),
-  {      
+  {
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -1129,7 +1183,7 @@ export const patchApiV1IssuesId = async (id: number,
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: patchApiV1IssuesIdResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as patchApiV1IssuesIdResponse
 }
@@ -1153,7 +1207,7 @@ export type getApiV1IssuesIssueIdCommentsResponse404 = {
   data: ErrorResponse
   status: 404
 }
-    
+
 export type getApiV1IssuesIssueIdCommentsResponseSuccess = (getApiV1IssuesIssueIdCommentsResponse200) & {
   headers: Headers;
 };
@@ -1168,7 +1222,7 @@ export const getGetApiV1IssuesIssueIdCommentsUrl = (issueId: number,
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
-    
+
     if (value !== undefined) {
       normalizedParams.append(key, value === null ? 'null' : value.toString())
     }
@@ -1181,18 +1235,18 @@ export const getGetApiV1IssuesIssueIdCommentsUrl = (issueId: number,
 
 export const getApiV1IssuesIssueIdComments = async (issueId: number,
     params?: GetApiV1IssuesIssueIdCommentsParams, options?: RequestInit): Promise<getApiV1IssuesIssueIdCommentsResponse> => {
-  
+
   const res = await fetch(getGetApiV1IssuesIssueIdCommentsUrl(issueId,params),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: getApiV1IssuesIssueIdCommentsResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as getApiV1IssuesIssueIdCommentsResponse
 }
@@ -1216,7 +1270,7 @@ export type postApiV1IssuesIssueIdCommentsResponse404 = {
   data: ErrorResponse
   status: 404
 }
-    
+
 export type postApiV1IssuesIssueIdCommentsResponseSuccess = (postApiV1IssuesIssueIdCommentsResponse201) & {
   headers: Headers;
 };
@@ -1229,16 +1283,16 @@ export type postApiV1IssuesIssueIdCommentsResponse = (postApiV1IssuesIssueIdComm
 export const getPostApiV1IssuesIssueIdCommentsUrl = (issueId: number,) => {
 
 
-  
+
 
   return `/tracker/api/v1/issues/${issueId}/comments`
 }
 
 export const postApiV1IssuesIssueIdComments = async (issueId: number,
     createCommentInput: CreateCommentInput, options?: RequestInit): Promise<postApiV1IssuesIssueIdCommentsResponse> => {
-  
+
   const res = await fetch(getPostApiV1IssuesIssueIdCommentsUrl(issueId),
-  {      
+  {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -1248,7 +1302,7 @@ export const postApiV1IssuesIssueIdComments = async (issueId: number,
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: postApiV1IssuesIssueIdCommentsResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as postApiV1IssuesIssueIdCommentsResponse
 }
@@ -1272,7 +1326,7 @@ export type patchApiV1CommentsIdResponse404 = {
   data: ErrorResponse
   status: 404
 }
-    
+
 export type patchApiV1CommentsIdResponseSuccess = (patchApiV1CommentsIdResponse200) & {
   headers: Headers;
 };
@@ -1285,16 +1339,16 @@ export type patchApiV1CommentsIdResponse = (patchApiV1CommentsIdResponseSuccess 
 export const getPatchApiV1CommentsIdUrl = (id: number,) => {
 
 
-  
+
 
   return `/tracker/api/v1/comments/${id}`
 }
 
 export const patchApiV1CommentsId = async (id: number,
     updateCommentInput: UpdateCommentInput, options?: RequestInit): Promise<patchApiV1CommentsIdResponse> => {
-  
+
   const res = await fetch(getPatchApiV1CommentsIdUrl(id),
-  {      
+  {
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -1304,7 +1358,7 @@ export const patchApiV1CommentsId = async (id: number,
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: patchApiV1CommentsIdResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as patchApiV1CommentsIdResponse
 }
@@ -1323,7 +1377,7 @@ export type getApiV1AttachmentsResponse400 = {
   data: ErrorResponse
   status: 400
 }
-    
+
 export type getApiV1AttachmentsResponseSuccess = (getApiV1AttachmentsResponse200) & {
   headers: Headers;
 };
@@ -1337,7 +1391,7 @@ export const getGetApiV1AttachmentsUrl = (params: GetApiV1AttachmentsParams,) =>
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
-    
+
     if (value !== undefined) {
       normalizedParams.append(key, value === null ? 'null' : value.toString())
     }
@@ -1349,18 +1403,18 @@ export const getGetApiV1AttachmentsUrl = (params: GetApiV1AttachmentsParams,) =>
 }
 
 export const getApiV1Attachments = async (params: GetApiV1AttachmentsParams, options?: RequestInit): Promise<getApiV1AttachmentsResponse> => {
-  
+
   const res = await fetch(getGetApiV1AttachmentsUrl(params),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: getApiV1AttachmentsResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as getApiV1AttachmentsResponse
 }
@@ -1384,7 +1438,7 @@ export type postApiV1AttachmentsResponse404 = {
   data: ErrorResponse
   status: 404
 }
-    
+
 export type postApiV1AttachmentsResponseSuccess = (postApiV1AttachmentsResponse201) & {
   headers: Headers;
 };
@@ -1397,7 +1451,7 @@ export type postApiV1AttachmentsResponse = (postApiV1AttachmentsResponseSuccess 
 export const getPostApiV1AttachmentsUrl = () => {
 
 
-  
+
 
   return `/tracker/api/v1/attachments`
 }
@@ -1409,17 +1463,17 @@ formData.append(`entity_id`, postApiV1AttachmentsBody.entity_id)
 formData.append(`file`, postApiV1AttachmentsBody.file)
 
   const res = await fetch(getPostApiV1AttachmentsUrl(),
-  {      
+  {
     ...options,
     method: 'POST'
     ,
-    body: 
+    body:
       formData,
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: postApiV1AttachmentsResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as postApiV1AttachmentsResponse
 }
@@ -1438,7 +1492,7 @@ export type getApiV1AttachmentsIdContentResponse404 = {
   data: ErrorResponse
   status: 404
 }
-    
+
 export type getApiV1AttachmentsIdContentResponseSuccess = (getApiV1AttachmentsIdContentResponse200) & {
   headers: Headers;
 };
@@ -1451,24 +1505,24 @@ export type getApiV1AttachmentsIdContentResponse = (getApiV1AttachmentsIdContent
 export const getGetApiV1AttachmentsIdContentUrl = (id: string,) => {
 
 
-  
+
 
   return `/tracker/api/v1/attachments/${id}/content`
 }
 
 export const getApiV1AttachmentsIdContent = async (id: string, options?: RequestInit): Promise<getApiV1AttachmentsIdContentResponse> => {
-  
+
   const res = await fetch(getGetApiV1AttachmentsIdContentUrl(id),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: getApiV1AttachmentsIdContentResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as getApiV1AttachmentsIdContentResponse
 }
@@ -1492,7 +1546,7 @@ export type deleteApiV1AttachmentsIdResponse404 = {
   data: ErrorResponse
   status: 404
 }
-    
+
 export type deleteApiV1AttachmentsIdResponseSuccess = (deleteApiV1AttachmentsIdResponse204) & {
   headers: Headers;
 };
@@ -1505,24 +1559,24 @@ export type deleteApiV1AttachmentsIdResponse = (deleteApiV1AttachmentsIdResponse
 export const getDeleteApiV1AttachmentsIdUrl = (id: string,) => {
 
 
-  
+
 
   return `/tracker/api/v1/attachments/${id}`
 }
 
 export const deleteApiV1AttachmentsId = async (id: string, options?: RequestInit): Promise<deleteApiV1AttachmentsIdResponse> => {
-  
+
   const res = await fetch(getDeleteApiV1AttachmentsIdUrl(id),
-  {      
+  {
     ...options,
     method: 'DELETE'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: deleteApiV1AttachmentsIdResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as deleteApiV1AttachmentsIdResponse
 }

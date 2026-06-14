@@ -13,7 +13,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/version-1/tasq/internal/issue/domain/entity"
 	"github.com/version-1/tasq/internal/issue/store"
@@ -42,6 +41,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/v1/projects/{id}", s.project)
 	mux.HandleFunc("PATCH /api/v1/projects/{id}", s.updateProject)
 	mux.HandleFunc("DELETE /api/v1/projects/{id}", s.deleteProject)
+	mux.HandleFunc("GET /api/v1/projects/{id}/workflow", s.projectWorkflow)
 	mux.HandleFunc("PUT /api/v1/projects/{id}/workflow", s.upsertProjectWorkflow)
 	mux.HandleFunc("DELETE /api/v1/projects/{id}/workflow", s.deleteProjectWorkflow)
 	mux.HandleFunc("POST /api/v1/projects/{id}/check", s.checkProject)
@@ -140,18 +140,9 @@ func (s *Server) deleteProject(w http.ResponseWriter, r *http.Request) {
 }
 
 type upsertProjectWorkflowRequest struct {
-	FrontmatterJSON json.RawMessage `json:"frontmatter_json"`
-	Body            *string         `json:"body"`
-	Checksum        string          `json:"checksum"`
-}
-
-type projectWorkflowResponse struct {
-	ProjectID       int64           `json:"project_id"`
-	FrontmatterJSON json.RawMessage `json:"frontmatter_json"`
-	Body            string          `json:"body"`
-	Checksum        string          `json:"checksum"`
-	CreatedAt       string          `json:"created_at"`
-	UpdatedAt       string          `json:"updated_at"`
+	Frontmatter json.RawMessage `json:"frontmatter"`
+	Body        *string         `json:"body"`
+	Checksum    string          `json:"checksum"`
 }
 
 func (s *Server) upsertProjectWorkflow(w http.ResponseWriter, r *http.Request) {
@@ -164,7 +155,7 @@ func (s *Server) upsertProjectWorkflow(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "projects.workflow.upsert.invalid_request", err)
 		return
 	}
-	frontmatterJSON, err := compactJSONObject(request.FrontmatterJSON)
+	frontmatterJSON, err := compactJSONObject(request.Frontmatter)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "projects.workflow.upsert.invalid_input", err)
 		return
@@ -183,7 +174,20 @@ func (s *Server) upsertProjectWorkflow(w http.ResponseWriter, r *http.Request) {
 		writeStoreError(w, err, "projects.workflow.upsert", "project workflow")
 		return
 	}
-	writeJSON(w, http.StatusOK, newProjectWorkflowResponse(workflow))
+	writeJSON(w, http.StatusOK, workflow)
+}
+
+func (s *Server) projectWorkflow(w http.ResponseWriter, r *http.Request) {
+	id, ok := pathID(w, r, "project", "projects.workflow")
+	if !ok {
+		return
+	}
+	item, err := s.store.ProjectWorkflow(r.Context(), id)
+	if err != nil {
+		writeStoreError(w, err, "projects.workflow", "workflow")
+		return
+	}
+	writeJSON(w, http.StatusOK, item)
 }
 
 func (s *Server) deleteProjectWorkflow(w http.ResponseWriter, r *http.Request) {
@@ -200,28 +204,17 @@ func (s *Server) deleteProjectWorkflow(w http.ResponseWriter, r *http.Request) {
 
 func compactJSONObject(raw json.RawMessage) (string, error) {
 	if len(raw) == 0 {
-		return "", errors.New("frontmatter_json is required")
+		return "", errors.New("frontmatter is required")
 	}
 	var object map[string]any
 	if err := json.Unmarshal(raw, &object); err != nil || object == nil {
-		return "", errors.New("frontmatter_json must be a JSON object")
+		return "", errors.New("frontmatter must be a JSON object")
 	}
 	var buffer bytes.Buffer
 	if err := json.Compact(&buffer, raw); err != nil {
 		return "", err
 	}
 	return buffer.String(), nil
-}
-
-func newProjectWorkflowResponse(workflow entity.ProjectWorkflow) projectWorkflowResponse {
-	return projectWorkflowResponse{
-		ProjectID:       workflow.ProjectID,
-		FrontmatterJSON: json.RawMessage(workflow.FrontmatterJSON),
-		Body:            workflow.Body,
-		Checksum:        workflow.Checksum,
-		CreatedAt:       workflow.CreatedAt.Format(time.RFC3339Nano),
-		UpdatedAt:       workflow.UpdatedAt.Format(time.RFC3339Nano),
-	}
 }
 
 type projectCheckResult struct {
