@@ -40,6 +40,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/v1/projects/{id}", s.project)
 	mux.HandleFunc("PATCH /api/v1/projects/{id}", s.updateProject)
 	mux.HandleFunc("DELETE /api/v1/projects/{id}", s.deleteProject)
+	mux.HandleFunc("DELETE /api/v1/projects/{id}/workflow", s.deleteProjectWorkflow)
 	mux.HandleFunc("POST /api/v1/projects/{id}/check", s.checkProject)
 	mux.HandleFunc("GET /api/v1/issues", s.issues)
 	mux.HandleFunc("POST /api/v1/issues", s.createIssue)
@@ -130,6 +131,18 @@ func (s *Server) deleteProject(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := s.store.DeleteProject(r.Context(), id); err != nil {
 		writeStoreError(w, err, "projects.delete", "project")
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *Server) deleteProjectWorkflow(w http.ResponseWriter, r *http.Request) {
+	id, ok := pathID(w, r, "project", "projects.workflow.delete")
+	if !ok {
+		return
+	}
+	if err := s.store.DeleteProjectWorkflow(r.Context(), id); err != nil {
+		writeStoreError(w, err, "projects.workflow.delete", "project workflow")
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)

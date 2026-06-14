@@ -3,7 +3,9 @@ package api
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"io"
 	"mime"
 	"mime/multipart"
@@ -12,6 +14,7 @@ import (
 	"net/textproto"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/version-1/tasq/internal/issue/domain/entity"
@@ -153,6 +156,57 @@ func TestProjectCheckPassesWithDefaultTaskWorkPrompt(t *testing.T) {
 	if !payload.Data.Passed {
 		t.Fatalf("expected check to pass: %+v", payload.Data)
 	}
+}
+
+func TestDeleteProjectWorkflow(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer(t)
+	project, err := server.store.CreateProject(context.Background(), entity.CreateProjectInput{
+		Key:      "WORKFLOW",
+		Name:     "Workflow",
+		Location: t.TempDir(),
+	})
+	if err != nil {
+		t.Fatalf("create project: %v", err)
+	}
+	if _, err := server.store.UpsertProjectWorkflow(context.Background(), entity.UpsertProjectWorkflowInput{
+		ProjectID:       project.ID,
+		FrontmatterJSON: `{"tracker":{"kind":"tasq"}}`,
+		Body:            "Use tq to keep the issue tracker synchronized.",
+		Checksum:        strings.Repeat("a", 64),
+	}); err != nil {
+		t.Fatalf("upsert project workflow: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodDelete, "/api/v1/projects/"+stringID(project.ID)+"/workflow", nil)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("status = %d body=%s", rec.Code, rec.Body.String())
+	}
+	if rec.Body.Len() != 0 {
+		t.Fatalf("body = %q", rec.Body.String())
+	}
+	if _, err := server.store.ProjectWorkflow(context.Background(), project.ID); !errors.Is(err, sql.ErrNoRows) {
+		t.Fatalf("project workflow err = %v, want sql.ErrNoRows", err)
+	}
+}
+
+func TestDeleteProjectWorkflowReturnsNotFoundForMissingProject(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer(t)
+	req := httptest.NewRequest(http.MethodDelete, "/api/v1/projects/999999/workflow", nil)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status = %d", rec.Code)
+	}
+	assertErrorCode(t, rec, "projects.workflow.delete.not_found")
 }
 
 func TestProjectCheckFailsWhenTaskWorkPromptDisabledWithoutTQUsage(t *testing.T) {
