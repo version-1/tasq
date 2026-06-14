@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import type { Issue } from "@/lib/types";
+import type { Issue, IssueStatus } from "@/lib/types";
 import { formatDateTime } from "../format";
 import { MetaItem } from "./meta-item";
 import styles from "./index.module.css";
@@ -14,7 +14,7 @@ export function IssueHeader({ issue }: { issue: Issue }) {
         <h2>{issue.title}</h2>
       </div>
       <div className={styles.badges}>
-        <span className={styles.statusBadge}>{t(`statuses.${issue.status}`)}</span>
+        <span className={statusClassName(issue.status)}>{t(`statuses.${issue.status}`)}</span>
         <span className={priorityClassName(issue.priority)}>{t(`priorities.${issue.priority}`)}</span>
       </div>
       <dl className={styles.metaGrid}>
@@ -32,4 +32,11 @@ function priorityClassName(priority: Issue["priority"]): string {
     return `${styles.priorityBadge} ${styles.warningPriority}`;
   }
   return styles.priorityBadge;
+}
+
+function statusClassName(status: IssueStatus): string {
+  if (status === "cancelled" || status === "duplicate") {
+    return `${styles.statusBadge} ${styles.neutralStatus}`;
+  }
+  return styles.statusBadge;
 }

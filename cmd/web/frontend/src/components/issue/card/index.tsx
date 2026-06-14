@@ -31,7 +31,7 @@ export function IssueCard({
       <div className={styles.metaRow}>
         <span className={styles.projectKey}>{issue.projectKey}</span>
         <span className={priorityClassName(issue.priority)}>{t(`priorities.${issue.priority}`)}</span>
-        <span>{t(`statuses.${issue.status}`)}</span>
+        <span className={statusClassName(issue.status)}>{t(`statuses.${issue.status}`)}</span>
       </div>
       <select
         aria-label={t("issues.moveLabel", { title: issue.title })}
@@ -56,4 +56,11 @@ function priorityClassName(priority: IssueSummary["priority"]): string {
     return `${styles.priority} ${styles.warningPriority}`;
   }
   return styles.priority;
+}
+
+function statusClassName(status: IssueStatus): string {
+  if (status === "cancelled" || status === "duplicate") {
+    return `${styles.statusBadge} ${styles.neutralStatus}`;
+  }
+  return styles.statusBadge;
 }

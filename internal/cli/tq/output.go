@@ -78,6 +78,8 @@ func statusColor(status entity.Status) string {
 		return ansiMagenta
 	case entity.StatusBlocked, entity.StatusFailed:
 		return ansiRed
+	case entity.StatusCancelled, entity.StatusDuplicate:
+		return ansiFaint
 	case entity.StatusDone:
 		return ansiGreen
 	default:

@@ -35,7 +35,7 @@ type DistributionRow<Key extends string> = {
 export function DashboardView({ summary, issues, refreshIntervalMs }: DashboardViewProps) {
   const { t } = useTranslation();
   const [orchestratorState, setOrchestratorState] = useState<OrchestratorLoadState>({ kind: "loading" });
-  const activeIssues = issues.filter((issue) => issue.status !== "done").length;
+  const activeIssues = issues.filter((issue) => !isTerminalIssueStatus(issue.status)).length;
   const statusRows = useMemo(
     () => buildStatusDistribution(issues, t),
     [issues, t],
@@ -242,6 +242,10 @@ function RunningRunsTable({ runs }: { runs: OrchestratorRunSummary[] }) {
       </table>
     </div>
   );
+}
+
+function isTerminalIssueStatus(status: IssueStatus): boolean {
+  return status === "done" || status === "cancelled" || status === "duplicate";
 }
 
 function buildStatusDistribution(

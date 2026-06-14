@@ -72,6 +72,19 @@
   padding: 3px 8px;
 }
 
+.statusBadge {
+  background: #eef6f8;
+  border-radius: 999px;
+  color: #14636f;
+  font-weight: 700;
+  padding: 3px 8px;
+}
+
+.neutralStatus {
+  background: var(--extra-light-gray);
+  color: var(--dark-gray);
+}
+
 .projectKey {
   background: #eef6f8;
   border-radius: 6px;

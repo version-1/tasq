@@ -180,6 +180,8 @@ func (a app) routeIssue(ctx context.Context, args []string, cfg config) error {
 		return a.issueUpdate(ctx, args[1:], cfg)
 	case "close":
 		return a.issueSetStatus(ctx, args[1:], cfg, entity.StatusDone, "closed", "usage: tq issue close <id>")
+	case "cancel":
+		return a.issueSetStatus(ctx, args[1:], cfg, entity.StatusCancelled, "cancelled", "usage: tq issue cancel <id>")
 	case "ready":
 		return a.issueSetStatus(ctx, args[1:], cfg, entity.StatusReady, "marked as ready", "usage: tq issue ready <id>")
 	case "draft":
@@ -615,6 +617,7 @@ func printIssueHelp(w io.Writer) {
 	fmt.Fprintln(w, "  list     List issues (--project KEY optional)")
 	fmt.Fprintln(w, "  update   Update an issue")
 	fmt.Fprintln(w, "  close    Mark an issue as done")
+	fmt.Fprintln(w, "  cancel   Mark an issue as cancelled")
 	fmt.Fprintln(w, "  ready    Mark an issue as ready")
 	fmt.Fprintln(w, "  draft    Move an issue to backlog")
 	fmt.Fprintln(w, "  rename   Rename an issue")

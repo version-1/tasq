@@ -234,7 +234,9 @@ const resources = {
       statuses: {
         backlog: "Backlog",
         blocked: "Blocked",
+        cancelled: "Cancelled",
         done: "Done",
+        duplicate: "Duplicate",
         failed: "Failed",
         in_progress: "In Progress",
         ready: "Ready",
@@ -601,7 +603,9 @@ const resources = {
       statuses: {
         backlog: "Backlog",
         blocked: "Blocked",
+        cancelled: "Cancelled",
         done: "Done",
+        duplicate: "Duplicate",
         failed: "Failed",
         in_progress: "In Progress",
         ready: "Ready",

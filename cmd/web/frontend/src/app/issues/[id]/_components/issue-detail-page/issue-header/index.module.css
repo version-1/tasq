@@ -56,6 +56,11 @@
   color: var(--warning);
 }
 
+.neutralStatus {
+  background: var(--extra-light-gray);
+  color: var(--dark-gray);
+}
+
 .metaGrid {
   display: grid;
   gap: 12px;

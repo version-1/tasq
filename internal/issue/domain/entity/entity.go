@@ -30,6 +30,8 @@ const (
 	StatusDone       Status = "done"
 	StatusBlocked    Status = "blocked"
 	StatusFailed     Status = "failed"
+	StatusCancelled  Status = "cancelled"
+	StatusDuplicate  Status = "duplicate"
 )
 
 type Priority string
@@ -321,7 +323,7 @@ func NormalizeUpdateComment(input UpdateCommentInput) (UpdateCommentInput, error
 
 func IsValidStatus(status Status) bool {
 	switch status {
-	case StatusBacklog, StatusReady, StatusInProgress, StatusReview, StatusDone, StatusBlocked, StatusFailed:
+	case StatusBacklog, StatusReady, StatusInProgress, StatusReview, StatusDone, StatusBlocked, StatusFailed, StatusCancelled, StatusDuplicate:
 		return true
 	default:
 		return false
@@ -364,7 +366,7 @@ func runeCount(value string) int {
 }
 
 func OrderedStatuses() []Status {
-	return []Status{StatusBacklog, StatusReady, StatusInProgress, StatusReview, StatusBlocked, StatusFailed, StatusDone}
+	return []Status{StatusBacklog, StatusReady, StatusInProgress, StatusReview, StatusBlocked, StatusFailed, StatusCancelled, StatusDuplicate, StatusDone}
 }
 
 func StatusTitle(status Status) string {
@@ -381,6 +383,10 @@ func StatusTitle(status Status) string {
 		return "Blocked"
 	case StatusFailed:
 		return "Failed"
+	case StatusCancelled:
+		return "Cancelled"
+	case StatusDuplicate:
+		return "Duplicate"
 	case StatusDone:
 		return "Done"
 	default:
