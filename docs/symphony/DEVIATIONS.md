@@ -76,6 +76,8 @@ Intentional differences from Symphony:
   cleanup state in the orchestrator SQLite database.
 - The local `tq project check` command validates the front matter fields required by Tasq's default
   project template rather than the full Symphony schema.
+- Workflow path selection does not use a process-level explicit workflow path or cwd default.
+  Tasq resolves the effective workflow per project, as described in "Workflow Path Selection".
 
 ## Workspace Key
 
@@ -146,10 +148,40 @@ Workspace branches use `agent/<workspace-key>`, for example `agent/issue-42`. Cl
 `git worktree remove --force`, deletes the corresponding local branch best-effort, and runs
 `git worktree prune` on orchestrator startup.
 
+## Workflow Path Selection
+
+Symphony defines a process-level workflow path selection model: the runtime can receive an explicit
+workflow path, otherwise it defaults to `WORKFLOW.md` in the current process working directory. Tasq
+does not expose the Symphony workflow-path flag, including the earlier `--workflow` flag shape.
+
+Tasq resolves workflow configuration per project instead of per orchestrator process. When an issue
+is dispatched, the orchestrator selects the effective workflow in this order:
+
+1. A physical project `WORKFLOW.md` file under the issue's `Project.Location`.
+2. Workflow content stored with the project record in the local issue-tracker database.
+3. The global fallback workflow used by the orchestrator.
+
+This means the orchestrator process cwd is not the default source of workflow behavior for
+dispatched issues. The cwd still matters for operator commands and process startup, but issue
+dispatch uses the project associated with the issue.
+
+This deviates from the following SPEC.md sections:
+
+| Section | Symphony assumption | Tasq behavior |
+| --- | --- | --- |
+| §5.2, §6.1 | Explicit runtime workflow path, otherwise cwd `WORKFLOW.md` | No `--workflow` path selection; resolve workflow per project |
+| §17.7 | CLI accepts a positional workflow path and falls back to `./WORKFLOW.md` | Orchestrator CLI does not select one workflow file for all projects |
+| §18 | Workflow path selection supports explicit runtime path and cwd default | Effective workflow is resolved at issue dispatch time |
+
 ## Multi-Project Orchestration
 
 Symphony assumes one process serves one project (one `WORKFLOW.md`, one `tracker.project_slug`,
 one `workspace.root`). Tasq runs a single orchestrator process that serves multiple projects.
+
+The Symphony model therefore treats workflow configuration as a single file selected for the
+orchestrator instance. Tasq treats workflow configuration as project data: multiple projects can
+have independent workflows, and the orchestrator resolves the relevant workflow only when it
+dispatches a specific issue.
 
 The orchestrator itself is project-unaware. It polls the local issue-tracker for all eligible
 issues across projects in a single call, dispatches them through the same concurrency pool, and

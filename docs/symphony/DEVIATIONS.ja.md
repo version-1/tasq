@@ -80,6 +80,8 @@ Symphony との差分:
   SQLite database に記録します。
 - local `tq project check` command は full Symphony schema ではなく、Tasq の default project template
   が要求する front matter fields を検証します。
+- Workflow path selection は process-level の explicit workflow path や cwd default を使いません。
+  Tasq は "Workflow Path Selection" に記載するように、project ごとに effective workflow を解決します。
 
 ## Workspace Key
 
@@ -150,11 +152,42 @@ Workspace branches は `agent/<workspace-key>` を使います。例: `agent/iss
 `git worktree remove --force` を使い、対応する local branch を best-effort で削除し、orchestrator
 startup 時に `git worktree prune` を実行します。
 
+## Workflow Path Selection
+
+Symphony は process-level の workflow path selection model を定義しています。Runtime は explicit
+workflow path を受け取ることができ、指定がなければ current process working directory の
+`WORKFLOW.md` を default とします。Tasq は Symphony の workflow-path flag を公開しません。これには
+以前の `--workflow` flag 形式も含みます。
+
+Tasq は workflow configuration を orchestrator process 単位ではなく project 単位で解決します。Issue
+を dispatch するとき、orchestrator は次の順序で effective workflow を選択します:
+
+1. Issue の `Project.Location` 配下にある physical project `WORKFLOW.md` file。
+2. Local issue-tracker database の project record に保存された workflow content。
+3. Orchestrator が使う global fallback workflow。
+
+つまり orchestrator process の cwd は、dispatched issues の workflow behavior の default source
+ではありません。Cwd は operator commands と process startup には引き続き関係しますが、issue dispatch
+は issue に紐づく project を使います。
+
+SPEC.md の以下のセクションと乖離します:
+
+| Section | Symphony の前提 | Tasq の振る舞い |
+| --- | --- | --- |
+| §5.2, §6.1 | Explicit runtime workflow path。未指定時は cwd の `WORKFLOW.md` | `--workflow` path selection はない。Project ごとに workflow を解決 |
+| §17.7 | CLI は positional workflow path を受け取り、`./WORKFLOW.md` に fallback する | Orchestrator CLI は全 project 用の単一 workflow file を選択しない |
+| §18 | Workflow path selection は explicit runtime path と cwd default をサポートする | Effective workflow は issue dispatch 時に解決される |
+
 ## Multi-Project Orchestration
 
 Symphony は 1 process が 1 project を担当する前提です（1 つの `WORKFLOW.md`、1 つの
 `tracker.project_slug`、1 つの `workspace.root`）。Tasq は単一の orchestrator process で複数の
 project を扱います。
+
+そのため Symphony model は、workflow configuration を orchestrator instance に対して選択された単一
+file として扱います。Tasq は workflow configuration を project data として扱います。複数の project
+が独立した workflow を持つことができ、orchestrator は specific issue を dispatch するときにだけ
+該当 workflow を解決します。
 
 Orchestrator 自体は project を意識しません。単一の呼び出しで local issue-tracker から全 project の
 eligible issues を polling し、同じ concurrency pool で dispatch し、runtime state（`claimed`、
