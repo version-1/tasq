@@ -61,6 +61,6 @@ directories.
 
 1. Run a review and resolve every High or higher severity finding.
 2. Create a pull request.
-3. After both steps 1 and 2 are complete, run ` + "`tq issue ready`" + ` to mark the issue ready.
+3. After both steps 1 and 2 are complete, run ` + "`tq issue update {{ issue.id }} --status review`" + `
 `
 }

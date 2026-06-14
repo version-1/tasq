@@ -88,7 +88,7 @@ func TestDefaultWorkflowTemplateIncludesAgentTaskInstructions(t *testing.T) {
 		"## Complete the issue\n",
 		"1. Run a review and resolve every High or higher severity finding.\n",
 		"2. Create a pull request.\n",
-		"3. After both steps 1 and 2 are complete, run `tq issue ready` to mark the issue ready.\n",
+		"3. After both steps 1 and 2 are complete, run `tq issue update {{ issue.id }} --status review`\n",
 	} {
 		if !strings.Contains(template, want) {
 			t.Fatalf("default workflow template missing %q", want)

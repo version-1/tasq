@@ -50,3 +50,9 @@ directories.
 6. Commit the change and create or update a pull request.
 7. Leave a progress or handoff comment on the issue.
 8. Move the issue to `review` when the pull request is ready for human review.
+
+## Complete the issue
+
+1. Run a review and resolve every High or higher severity finding.
+2. Create a pull request.
+3. After both steps 1 and 2 are complete, run `tq issue update {{ issue.id }} --status review`
