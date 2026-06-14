@@ -53,6 +53,7 @@ export type LayoutShellData = {
   addIssueInitialStatus: IssueStatus;
   addProjectError: string;
   isIssueDetailPage: boolean;
+  isProjectIssueScope: boolean;
   issues: IssueSummary[];
   layoutData: LayoutData | null;
   loadState: LoadState;
@@ -250,6 +251,7 @@ function LayoutContent({ children }: { children: ReactNode }) {
     addIssueInitialStatus,
     addProjectError,
     isIssueDetailPage,
+    isProjectIssueScope,
     issues,
     layoutData,
     loadState,
@@ -302,7 +304,7 @@ export function ShellLayout({
     <div className={styles.appFrame}>
       <Sidebar
         activePage={shellData.activePage}
-        activeProjectID={shellData.activeProject?.id ?? null}
+        activeProjectID={shellData.isProjectIssueScope ? shellData.activeProject?.id ?? null : null}
         onAddProject={shellData.onAddProject}
         projects={shellData.projects}
       />
