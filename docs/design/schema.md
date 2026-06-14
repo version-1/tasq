@@ -74,8 +74,10 @@ Projects cannot be deleted while linked issues exist.
 | Frontmatter | `map[string]any`  | yes      | `{}`    | JSON object stored in SQLite        |
 | Body        | `string`          | yes      | —       | Raw workflow Markdown body          |
 | Checksum    | `string`          | yes      | —       | Workflow content checksum           |
+| CreatedAt   | `time.Time`       | auto     | `now()` | —                                   |
+| UpdatedAt   | `time.Time`       | auto     | `now()` | —                                   |
 
-`GET /api/v1/projects/{id}/workflow` returns `{ "frontmatter": {...}, "body": "...", "checksum": "..." }` for projects with a stored workflow and returns 404 when no workflow row exists.
+`GET /api/v1/projects/{id}/workflow` returns a `ProjectWorkflow` for projects with a stored workflow and returns 404 when no workflow row exists.
 
 ## orchestrator
 
