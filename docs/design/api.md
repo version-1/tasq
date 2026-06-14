@@ -52,6 +52,7 @@ The `tq` CLI wraps issue CRUD endpoints with these commands:
 - `tq issue edit <id> <description>`
 - `tq comment add <issue-id> --body <body> [--attach <image-path>]`
 - `tq comment list <issue-id>`
+- `tq workflow add --project <project-key> (--file <path> | --body <text>)`
 - `tq workflow remove --project <project-key>`
 
 `tq` uses human-readable output by default and JSON output when `--output json` is set.
