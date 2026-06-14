@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -31,13 +32,65 @@ func TestEnsureHomeCreatesLayout(t *testing.T) {
 	if resolved != home {
 		t.Fatalf("resolved=%q, want %q", resolved, home)
 	}
-	for _, path := range []string{ConfigDir(home), SystemDir(home), DataDir(home)} {
+	for _, path := range []string{ConfigDir(home), SystemDir(home), DataDir(home), LogDir(home)} {
 		info, err := os.Stat(path)
 		if err != nil {
 			t.Fatalf("stat %s: %v", path, err)
 		}
 		if !info.IsDir() {
 			t.Fatalf("%s is not dir", path)
+		}
+	}
+	content, err := os.ReadFile(WorkflowPath(home))
+	if err != nil {
+		t.Fatalf("read workflow: %v", err)
+	}
+	if string(content) != DefaultWorkflowTemplate() {
+		t.Fatalf("workflow content=%q", content)
+	}
+}
+
+func TestEnsureHomePreservesExistingWorkflow(t *testing.T) {
+	home := filepath.Join(t.TempDir(), ".tasq")
+	t.Setenv(EnvHome, home)
+	const existing = "custom workflow\n"
+	if err := os.MkdirAll(home, 0o755); err != nil {
+		t.Fatalf("mkdir home: %v", err)
+	}
+	if err := os.WriteFile(WorkflowPath(home), []byte(existing), 0o644); err != nil {
+		t.Fatalf("write workflow: %v", err)
+	}
+	if _, err := EnsureHome(); err != nil {
+		t.Fatalf("ensure home: %v", err)
+	}
+	content, err := os.ReadFile(WorkflowPath(home))
+	if err != nil {
+		t.Fatalf("read workflow: %v", err)
+	}
+	if string(content) != existing {
+		t.Fatalf("workflow content=%q, want %q", content, existing)
+	}
+}
+
+func TestDefaultWorkflowTemplateIncludesAgentTaskInstructions(t *testing.T) {
+	template := DefaultWorkflowTemplate()
+	for _, want := range []string{
+		"  root: .worktrees/agents\n",
+		"  max_concurrent_agents: 5\n",
+		"  command: codex --sandbox workspace-write app-server\n",
+		"  read_timeout_ms: 15000\n",
+		"# Task\n",
+		"Issue ID: {{ issue.id }}\n",
+		"Write agent plan files, pull request summary drafts, and other temporary\n",
+		"temporary artifacts under `~/codex`, `$CODEX_HOME`, or other external home\n",
+		"7. Move the issue to `review` when the pull request is ready for human review.\n",
+		"## Complete the issue\n",
+		"1. Run a review and resolve every High or higher severity finding.\n",
+		"2. Create a pull request.\n",
+		"3. After both steps 1 and 2 are complete, run `tq issue ready` to mark the issue ready.\n",
+	} {
+		if !strings.Contains(template, want) {
+			t.Fatalf("default workflow template missing %q", want)
 		}
 	}
 }

@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"encoding/json"
 	"errors"
 	"path/filepath"
 	"regexp"
@@ -17,6 +18,7 @@ const (
 )
 
 var projectKeyPattern = regexp.MustCompile(`^([A-Z][A-Z0-9_]{0,19}|[a-z][a-z0-9-]{0,63})$`)
+var sha256HexPattern = regexp.MustCompile(`^[0-9a-fA-F]{64}$`)
 
 type Status string
 
@@ -70,6 +72,22 @@ type UpdateProjectInput struct {
 	Name        *string `json:"name"`
 	Description *string `json:"description"`
 	Location    *string `json:"location"`
+}
+
+type ProjectWorkflow struct {
+	ProjectID       int64     `json:"projectId"`
+	FrontmatterJSON string    `json:"frontmatterJson"`
+	Body            string    `json:"body"`
+	Checksum        string    `json:"checksum"`
+	CreatedAt       time.Time `json:"createdAt"`
+	UpdatedAt       time.Time `json:"updatedAt"`
+}
+
+type UpsertProjectWorkflowInput struct {
+	ProjectID       int64  `json:"projectId"`
+	FrontmatterJSON string `json:"frontmatterJson"`
+	Body            string `json:"body"`
+	Checksum        string `json:"checksum"`
 }
 
 type Issue struct {
@@ -243,6 +261,25 @@ func NormalizeUpdateProject(input UpdateProjectInput) (UpdateProjectInput, error
 		if err := validateAbsolutePath("location", *input.Location); err != nil {
 			return input, err
 		}
+	}
+	return input, nil
+}
+
+func NormalizeUpsertProjectWorkflow(input UpsertProjectWorkflowInput) (UpsertProjectWorkflowInput, error) {
+	if input.ProjectID <= 0 {
+		return input, errors.New("projectId is required")
+	}
+	if input.FrontmatterJSON == "" {
+		return input, errors.New("frontmatterJson is required")
+	}
+	if !json.Valid([]byte(input.FrontmatterJSON)) {
+		return input, errors.New("frontmatterJson must be valid JSON")
+	}
+	if input.Checksum == "" {
+		return input, errors.New("checksum is required")
+	}
+	if !sha256HexPattern.MatchString(input.Checksum) {
+		return input, errors.New("checksum must be a SHA256 hex string")
 	}
 	return input, nil
 }

@@ -179,6 +179,9 @@ func (s *Store) DeleteProject(ctx context.Context, id int64) error {
 	if issueCount > 0 {
 		return errors.New("project has linked issues")
 	}
+	if _, err := tx.ExecContext(ctx, `DELETE FROM project_workflows WHERE project_id = ?`, id); err != nil {
+		return fmt.Errorf("delete project workflow: %w", err)
+	}
 	result, err := tx.ExecContext(ctx, `DELETE FROM projects WHERE id = ?`, id)
 	if err != nil {
 		return fmt.Errorf("delete project: %w", err)
@@ -194,6 +197,69 @@ func (s *Store) DeleteProject(ctx context.Context, id int64) error {
 		return err
 	}
 	tx = nil
+	return nil
+}
+
+func (s *Store) UpsertProjectWorkflow(ctx context.Context, input entity.UpsertProjectWorkflowInput) (entity.ProjectWorkflow, error) {
+	normalized, err := entity.NormalizeUpsertProjectWorkflow(input)
+	if err != nil {
+		return entity.ProjectWorkflow{}, err
+	}
+	if _, err := s.Project(ctx, normalized.ProjectID); err != nil {
+		return entity.ProjectWorkflow{}, err
+	}
+	now := nowString()
+	_, err = s.db.ExecContext(ctx, `INSERT INTO project_workflows (
+		project_id, frontmatter_json, body, checksum, created_at, updated_at
+	) VALUES (?, ?, ?, ?, ?, ?)
+	ON CONFLICT(project_id) DO UPDATE SET
+		frontmatter_json = excluded.frontmatter_json,
+		body = excluded.body,
+		checksum = excluded.checksum,
+		updated_at = excluded.updated_at`,
+		normalized.ProjectID,
+		normalized.FrontmatterJSON,
+		normalized.Body,
+		normalized.Checksum,
+		now,
+		now,
+	)
+	if err != nil {
+		return entity.ProjectWorkflow{}, fmt.Errorf("upsert project workflow: %w", err)
+	}
+	return s.ProjectWorkflow(ctx, normalized.ProjectID)
+}
+
+func (s *Store) ProjectWorkflow(ctx context.Context, projectID int64) (entity.ProjectWorkflow, error) {
+	if projectID <= 0 {
+		return entity.ProjectWorkflow{}, errors.New("projectId is required")
+	}
+	row := s.db.QueryRowContext(ctx, `SELECT `+projectWorkflowColumns()+` FROM project_workflows WHERE project_id = ?`, projectID)
+	item, err := scanProjectWorkflow(row)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return entity.ProjectWorkflow{}, sql.ErrNoRows
+		}
+		return entity.ProjectWorkflow{}, fmt.Errorf("read project workflow: %w", err)
+	}
+	return item, nil
+}
+
+func (s *Store) DeleteProjectWorkflow(ctx context.Context, projectID int64) error {
+	if projectID <= 0 {
+		return errors.New("projectId is required")
+	}
+	result, err := s.db.ExecContext(ctx, `DELETE FROM project_workflows WHERE project_id = ?`, projectID)
+	if err != nil {
+		return fmt.Errorf("delete project workflow: %w", err)
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected == 0 {
+		return sql.ErrNoRows
+	}
 	return nil
 }
 
@@ -484,6 +550,10 @@ func projectColumns() string {
 	return `id, key, name, description, location, created_at, updated_at`
 }
 
+func projectWorkflowColumns() string {
+	return `project_id, frontmatter_json, body, checksum, created_at, updated_at`
+}
+
 func normalizeCommentLimit(limit int) int {
 	if limit <= 0 {
 		return 50
@@ -553,6 +623,27 @@ func scanProject(row rowScanner) (entity.Project, error) {
 	parsedUpdatedAt, err := parseTime(updatedAt)
 	if err != nil {
 		return entity.Project{}, err
+	}
+	item.CreatedAt = parsedCreatedAt
+	item.UpdatedAt = parsedUpdatedAt
+	return item, nil
+}
+
+func scanProjectWorkflow(row rowScanner) (entity.ProjectWorkflow, error) {
+	var item entity.ProjectWorkflow
+	var createdAt string
+	var updatedAt string
+	err := row.Scan(&item.ProjectID, &item.FrontmatterJSON, &item.Body, &item.Checksum, &createdAt, &updatedAt)
+	if err != nil {
+		return entity.ProjectWorkflow{}, err
+	}
+	parsedCreatedAt, err := parseTime(createdAt)
+	if err != nil {
+		return entity.ProjectWorkflow{}, err
+	}
+	parsedUpdatedAt, err := parseTime(updatedAt)
+	if err != nil {
+		return entity.ProjectWorkflow{}, err
 	}
 	item.CreatedAt = parsedCreatedAt
 	item.UpdatedAt = parsedUpdatedAt
