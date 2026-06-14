@@ -66,6 +66,17 @@ Attachment records live in SQLite, while file bytes are stored under `$TQ_HOME/s
 
 Projects cannot be deleted while linked issues exist.
 
+### ProjectWorkflow
+
+| Field       | Go Type           | Required | Default | Constraints                         |
+|-------------|-------------------|----------|---------|-------------------------------------|
+| ProjectID   | `int64`           | yes      | —       | `> 0`, one workflow per project     |
+| Frontmatter | `map[string]any`  | yes      | `{}`    | JSON object stored in SQLite        |
+| Body        | `string`          | yes      | —       | Raw workflow Markdown body          |
+| Checksum    | `string`          | yes      | —       | Workflow content checksum           |
+
+`GET /api/v1/projects/{id}/workflow` returns `{ "frontmatter": {...}, "body": "...", "checksum": "..." }` for projects with a stored workflow and returns 404 when no workflow row exists.
+
 ## orchestrator
 
 ### Run
