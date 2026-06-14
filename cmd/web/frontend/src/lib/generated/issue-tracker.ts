@@ -112,6 +112,17 @@ export interface ProjectCheckResult {
   reason: string;
 }
 
+export type ProjectWorkflowFrontmatter = { [key: string]: unknown };
+
+export interface ProjectWorkflow {
+  projectId: number;
+  frontmatter: ProjectWorkflowFrontmatter;
+  body: string;
+  checksum: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Issue {
   id: number;
   projectId: number;
@@ -231,6 +242,11 @@ export interface ProjectListResponse {
 
 export interface ProjectCheckResponse {
   data: ProjectCheckResult;
+  meta: ApiMeta;
+}
+
+export interface ProjectWorkflowResponse {
+  data: ProjectWorkflow;
   meta: ApiMeta;
 }
 
@@ -725,6 +741,60 @@ export const postApiV1ProjectsIdCheck = async (id: number,
 
 
 /**
+ * @summary Get the stored project workflow.
+ */
+export type getApiV1ProjectsIdWorkflowResponse200 = {
+  data: ProjectWorkflowResponse
+  status: 200
+}
+
+export type getApiV1ProjectsIdWorkflowResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type getApiV1ProjectsIdWorkflowResponse404 = {
+  data: ErrorResponse
+  status: 404
+}
+    
+export type getApiV1ProjectsIdWorkflowResponseSuccess = (getApiV1ProjectsIdWorkflowResponse200) & {
+  headers: Headers;
+};
+export type getApiV1ProjectsIdWorkflowResponseError = (getApiV1ProjectsIdWorkflowResponse400 | getApiV1ProjectsIdWorkflowResponse404) & {
+  headers: Headers;
+};
+
+export type getApiV1ProjectsIdWorkflowResponse = (getApiV1ProjectsIdWorkflowResponseSuccess | getApiV1ProjectsIdWorkflowResponseError)
+
+export const getGetApiV1ProjectsIdWorkflowUrl = (id: number,) => {
+
+
+  
+
+  return `/tracker/api/v1/projects/${id}/workflow`
+}
+
+export const getApiV1ProjectsIdWorkflow = async (id: number, options?: RequestInit): Promise<getApiV1ProjectsIdWorkflowResponse> => {
+  
+  const res = await fetch(getGetApiV1ProjectsIdWorkflowUrl(id),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: getApiV1ProjectsIdWorkflowResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getApiV1ProjectsIdWorkflowResponse
+}
+
+
+
+/**
  * @summary Delete a project's stored workflow.
  */
 export type deleteApiV1ProjectsIdWorkflowResponse204 = {
@@ -741,7 +811,7 @@ export type deleteApiV1ProjectsIdWorkflowResponse404 = {
   data: ErrorResponse
   status: 404
 }
-
+    
 export type deleteApiV1ProjectsIdWorkflowResponseSuccess = (deleteApiV1ProjectsIdWorkflowResponse204) & {
   headers: Headers;
 };
@@ -754,24 +824,24 @@ export type deleteApiV1ProjectsIdWorkflowResponse = (deleteApiV1ProjectsIdWorkfl
 export const getDeleteApiV1ProjectsIdWorkflowUrl = (id: number,) => {
 
 
-
+  
 
   return `/tracker/api/v1/projects/${id}/workflow`
 }
 
 export const deleteApiV1ProjectsIdWorkflow = async (id: number, options?: RequestInit): Promise<deleteApiV1ProjectsIdWorkflowResponse> => {
-
+  
   const res = await fetch(getDeleteApiV1ProjectsIdWorkflowUrl(id),
-  {
+  {      
     ...options,
     method: 'DELETE'
-
-
+    
+    
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-
+  
   const data: deleteApiV1ProjectsIdWorkflowResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as deleteApiV1ProjectsIdWorkflowResponse
 }

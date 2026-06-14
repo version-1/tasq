@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -631,11 +632,18 @@ func scanProject(row rowScanner) (entity.Project, error) {
 
 func scanProjectWorkflow(row rowScanner) (entity.ProjectWorkflow, error) {
 	var item entity.ProjectWorkflow
+	var frontmatterJSON string
 	var createdAt string
 	var updatedAt string
-	err := row.Scan(&item.ProjectID, &item.FrontmatterJSON, &item.Body, &item.Checksum, &createdAt, &updatedAt)
+	err := row.Scan(&item.ProjectID, &frontmatterJSON, &item.Body, &item.Checksum, &createdAt, &updatedAt)
 	if err != nil {
 		return entity.ProjectWorkflow{}, err
+	}
+	if err := json.Unmarshal([]byte(frontmatterJSON), &item.Frontmatter); err != nil {
+		return entity.ProjectWorkflow{}, fmt.Errorf("parse project workflow frontmatter: %w", err)
+	}
+	if item.Frontmatter == nil {
+		item.Frontmatter = map[string]any{}
 	}
 	parsedCreatedAt, err := parseTime(createdAt)
 	if err != nil {

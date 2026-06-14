@@ -245,6 +245,54 @@ func TestProjectCheckFailsWhenTaskWorkPromptDisabledWithoutTQUsage(t *testing.T)
 	}
 }
 
+func TestProjectWorkflowReturnsStoredWorkflow(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer(t)
+	project := createProject(t, server, "WORKFLOW")
+	_, err := server.store.UpsertProjectWorkflow(context.Background(), entity.UpsertProjectWorkflowInput{
+		ProjectID:       project.ID,
+		FrontmatterJSON: `{"agent":{"max_turns":3},"tasq":{"task_work_prompt":false}}`,
+		Body:            "Work on {{ issue.id }}.",
+		Checksum:        strings.Repeat("a", 64),
+	})
+	if err != nil {
+		t.Fatalf("upsert workflow: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/projects/"+stringID(project.ID)+"/workflow", nil)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d body=%s", rec.Code, rec.Body.String())
+	}
+	workflow := decodeData[entity.ProjectWorkflow](t, rec)
+	if workflow.ProjectID != project.ID || workflow.Body != "Work on {{ issue.id }}." || workflow.Checksum != strings.Repeat("a", 64) {
+		t.Fatalf("workflow = %+v", workflow)
+	}
+	agent, ok := workflow.Frontmatter["agent"].(map[string]any)
+	if !ok || agent["max_turns"] != float64(3) {
+		t.Fatalf("frontmatter = %#v", workflow.Frontmatter)
+	}
+}
+
+func TestProjectWorkflowReturnsNotFoundWhenMissing(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer(t)
+	project := createProject(t, server, "NOWORKFLOW")
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/projects/"+stringID(project.ID)+"/workflow", nil)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status = %d body=%s", rec.Code, rec.Body.String())
+	}
+	assertErrorCode(t, rec, "projects.workflow.not_found")
+}
+
 func TestOptionsResponseStaysEmpty(t *testing.T) {
 	t.Parallel()
 

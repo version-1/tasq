@@ -156,6 +156,21 @@ paths:
   /api/v1/projects/{id}/workflow:
     parameters:
       - $ref: "#/components/parameters/ProjectID"
+    get:
+      tags:
+        - Projects
+      summary: Get the stored project workflow.
+      responses:
+        "200":
+          description: Project workflow.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectWorkflowResponse"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
     delete:
       tags:
         - Projects
@@ -652,6 +667,32 @@ components:
           type: boolean
         reason:
           type: string
+    ProjectWorkflow:
+      type: object
+      required:
+        - projectId
+        - frontmatter
+        - body
+        - checksum
+        - createdAt
+        - updatedAt
+      properties:
+        projectId:
+          type: integer
+          format: int64
+        frontmatter:
+          type: object
+          additionalProperties: true
+        body:
+          type: string
+        checksum:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
     Issue:
       type: object
       required:
@@ -896,6 +937,16 @@ components:
       properties:
         data:
           $ref: "#/components/schemas/ProjectCheckResult"
+        meta:
+          $ref: "#/components/schemas/ApiMeta"
+    ProjectWorkflowResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          $ref: "#/components/schemas/ProjectWorkflow"
         meta:
           $ref: "#/components/schemas/ApiMeta"
     IssueResponse:

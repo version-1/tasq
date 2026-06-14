@@ -60,6 +60,15 @@ type Project struct {
 	UpdatedAt   time.Time `json:"updatedAt"`
 }
 
+type ProjectWorkflow struct {
+	ProjectID   int64          `json:"projectId"`
+	Frontmatter map[string]any `json:"frontmatter"`
+	Body        string         `json:"body"`
+	Checksum    string         `json:"checksum"`
+	CreatedAt   time.Time      `json:"createdAt"`
+	UpdatedAt   time.Time      `json:"updatedAt"`
+}
+
 type CreateProjectInput struct {
 	Key         string `json:"key"`
 	Name        string `json:"name"`
@@ -72,15 +81,6 @@ type UpdateProjectInput struct {
 	Name        *string `json:"name"`
 	Description *string `json:"description"`
 	Location    *string `json:"location"`
-}
-
-type ProjectWorkflow struct {
-	ProjectID       int64     `json:"projectId"`
-	FrontmatterJSON string    `json:"frontmatterJson"`
-	Body            string    `json:"body"`
-	Checksum        string    `json:"checksum"`
-	CreatedAt       time.Time `json:"createdAt"`
-	UpdatedAt       time.Time `json:"updatedAt"`
 }
 
 type UpsertProjectWorkflowInput struct {
