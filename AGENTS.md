@@ -7,7 +7,10 @@ Ask questions to clarify ambiguous instructions.
 
 # Documentation
 
-- Write documentation in English.
+- Write documentation in English and Japanese.
+  - English documentation is the primary source of truth for development and design decisions.
+  - All documents linked from AGENTS.md must also be written in English.
+  - Create two documents for each topic, one in English and one in Japanese, and keep them synchronized.
 - See [docs/development.md](docs/development.md) for repository workflow, task flow, documentation update rules, and component workflow links.
 - See [docs/design.md](docs/design.md) for the design documentation index.
   - [docs/design/architecture.md](docs/design/architecture.md): system architecture and ownership boundaries.
@@ -18,9 +21,6 @@ Ask questions to clarify ambiguous instructions.
 - See [docs/design/schema.md](docs/design/schema.md) for entity field specifications and validation rules.
 - See [docs/design/web.md](docs/design/web.md) for Web UI structure and styling conventions.
 - See [cmd/web/frontend/docs/design.md](cmd/web/frontend/docs/design.md) for frontend routing and component placement rules.
-- All documents linked from AGENTS.md must also be written in English.
-- When a Japanese version of the same content is needed, create it as `*.ja.md` in the same location as the English version.
-- Keep the English and Japanese versions synchronized.
 
 # Code Design
 

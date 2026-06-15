@@ -87,8 +87,9 @@ func TestDefaultWorkflowTemplateIncludesAgentTaskInstructions(t *testing.T) {
 		"8. Move the issue to `review` when the pull request is ready for human review.\n",
 		"## Complete the issue\n",
 		"1. Run a review and resolve every High or higher severity finding.\n",
-		"2. Create a pull request.\n",
-		"3. After both steps 1 and 2 are complete, run `tq issue update {{ issue.id }} --status review`\n",
+		"2. Leave an issue comment that summarizes the review result, including whether any High or higher severity findings were found and how they were handled.\n",
+		"3. Create a pull request.\n",
+		"4. After steps 1 through 3 are complete, run `tq issue update {{ issue.id }} --status review`\n",
 	} {
 		if !strings.Contains(template, want) {
 			t.Fatalf("default workflow template missing %q", want)
