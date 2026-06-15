@@ -54,5 +54,6 @@ directories.
 ## Complete the issue
 
 1. Run a review and resolve every High or higher severity finding.
-2. Create a pull request.
-3. After both steps 1 and 2 are complete, run `tq issue update {{ issue.id }} --status review`
+2. Leave an issue comment that summarizes the review result, including whether any High or higher severity findings were found and how they were handled.
+3. Create a pull request.
+4. After steps 1 through 3 are complete, run `tq issue update {{ issue.id }} --status review`
