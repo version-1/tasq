@@ -6,15 +6,17 @@ sidebar_position: 1
 
 # 概念の概要
 
-Tasq は issue state と run state を分離します。issue-tracker は users と agents が取り組んでいるものを所有します。orchestrator は agent runs、workspaces、runtime events の記録方法を所有します。
+Tasq は task state、agent execution state、workspace metadata を分離し、複数の AI coding-agent tasks を 1 つの mutable checkout に共有させず並列実行できるようにします。
+
+issue-tracker は users と agents が取り組んでいるものを所有します。orchestrator は agent runs、workspaces、runtime events の記録方法を所有します。
 
 ![Tasq の概念概要](/img/concepts-overview-ja.svg)
 
 ## 所有モデル
 
-issue-tracker は projects、issues、comments、attachments、board summaries の user-facing source of truth です。`tq` や Web UI などの clients は issue-tracker API を通じてその state を読み書きします。terminal client は計画されていますが、まだ published user guide には含まれていません。
+issue-tracker は projects、issues、comments、attachments、board summaries の user-facing source of truth です。`tq` や Web UI などの clients は issue-tracker API を通じてその state を読み書きします。
 
-orchestrator は runs、runner events、workspace metadata の runtime source of truth です。issue status を直接変更しません。task status が変わる場合でも、その変更は issue-tracker を通ります。
+orchestrator は runs、runner events、workspace metadata の runtime source of truth です。実行可能な task のために isolated workspace を準備し、何が起きたかを inspect できる runtime state を記録します。issue status を直接変更しません。task status が変わる場合でも、その変更は issue-tracker を通ります。
 
 ## クライアントの流れ
 
@@ -22,11 +24,12 @@ orchestrator は runs、runner events、workspace metadata の runtime source of
 flowchart LR
   CLI[tq CLI] --> Tracker[Issue Tracker API]
   Web[Web UI] --> Tracker
-  Terminal[Terminal client planned] -. planned .-> Tracker
   Tracker --> IssueDB[(issues.sqlite)]
   Tracker --> Attachments[$TQ_HOME attachments]
+  Tracker -. ready tasks .-> Orchestrator[Orchestrator API]
   Orchestrator[Orchestrator API] --> RunDB[(orchestrator.sqlite)]
-  Orchestrator --> Workspaces[Issue workspaces]
+  Orchestrator --> Workspaces[Isolated workspaces]
+  Workspaces --> Agents[AI coding agents]
   Web -. runtime views .-> Orchestrator
 ```
 
