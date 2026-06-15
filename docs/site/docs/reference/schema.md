@@ -1,0 +1,51 @@
+---
+id: schema
+title: Schema
+sidebar_position: 4
+---
+
+# Schema
+
+Tasq validates entity data at the store layer on create and update operations. This reference summarizes the public field constraints that clients should respect.
+
+## Issue Tracker Entities
+
+| Entity | Required fields | Key constraints |
+| --- | --- | --- |
+| Issue | `projectId`, `title` | title 1-500 chars, description max 10,000 chars, immutable project ownership |
+| Comment | `issueId`, `author`, `body` | body 1-10,000 chars, type defaults to `general` |
+| Attachment | `entityType`, `entityId`, `file` | image PNG/JPEG/GIF/WebP, max 5 MiB |
+| Project | `key`, `name`, `location` | key format, name 1-200 chars, absolute location |
+| ProjectWorkflow | `projectId`, `frontmatter`, `body`, `checksum` | one workflow override per project |
+
+## Orchestrator Entities
+
+| Entity | Required fields | Key constraints |
+| --- | --- | --- |
+| Run | `issueId`, `attempt`, `orchestratorId` | run ID generated, status defaults to `queued` |
+| RunnerEvent | `runId`, `occurredAt` | payload JSON must be valid when present |
+| WorkspaceMetadata | `workspaceKey`, `issueId`, `path`, `createdNow` | paths must be absolute |
+| WorkspaceSetupFailure | `issueId`, `error` | records setup failure context |
+
+## Enums
+
+| Field | Values |
+| --- | --- |
+| Issue status | `backlog`, `ready`, `in_progress`, `review`, `done`, `blocked`, `failed` |
+| Issue priority | `low`, `normal`, `high`, `urgent` |
+| Comment type | `progress`, `blocker`, `handoff`, `general` |
+| Attachment entity type | `issue`, `comment` |
+| Run status | `queued`, `starting`, `running`, `waiting_for_input`, `succeeded`, `failed`, `cancelled` |
+
+## String and Path Limits
+
+```mermaid
+flowchart TD
+  Short[200 chars] --> Assignee[assignee, project name, event type]
+  Medium[500 chars] --> Title[issue title]
+  Path[1,000 chars] --> Paths[project, workspace, attachment paths]
+  Long[10,000 chars] --> Bodies[descriptions, comments, errors]
+  Payload[50,000 chars] --> JSON[runner event payload JSON]
+```
+
+Absolute path fields must start with `/`. Clients such as `tq project add` check local directory existence when they can access the target filesystem.
