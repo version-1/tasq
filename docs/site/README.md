@@ -37,6 +37,8 @@ docs/site/
     design/                Architecture and design pages copied from repo docs.
     cli-reference.md       CLI reference page.
     getting-started.md     Getting started page.
+    setup-guide.md         Local Codex and agent setup guide.
+  i18n/ja/                 Japanese localized Docusaurus content.
   src/
     css/custom.css         Site-wide theme overrides.
     pages/index.tsx        Landing page route.
@@ -59,6 +61,7 @@ Generated directories are not source files:
 Source content for the published docs lives under `docs/site/docs/`. The current site includes:
 
 - `getting-started.md`
+- `setup-guide.md`
 - `cli-reference.md`
 - `design/architecture.md`
 - `design/api.md`
@@ -72,6 +75,8 @@ The sidebar is explicit. When adding a new page under `docs/site/docs/`, update 
 Docusaurus is configured with English as the default locale and Japanese as an additional locale.
 
 Repository documentation outside this site usually keeps English and Japanese files as synchronized pairs, such as `docs/development.md` and `docs/development.ja.md`. Apply the same rule when the docs-site README or source documentation introduces a topic that needs both languages.
+
+For Docusaurus pages, keep the English source under `docs/site/docs/` and the Japanese localized page under `docs/site/i18n/ja/docusaurus-plugin-content-docs/current/`.
 
 ## Editing Guidelines
 

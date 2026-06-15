@@ -37,6 +37,8 @@ docs/site/
     design/                リポジトリ docs から取り込む architecture / design ページ。
     cli-reference.md       CLI reference ページ。
     getting-started.md     Getting started ページ。
+    setup-guide.md         ローカル Codex / agent setup guide。
+  i18n/ja/                 Docusaurus の日本語 localized content。
   src/
     css/custom.css         サイト全体のテーマ上書き。
     pages/index.tsx        ランディングページのルート。
@@ -59,6 +61,7 @@ docs/site/
 公開される docs のソースは `docs/site/docs/` に置きます。現在のサイトには次のページがあります。
 
 - `getting-started.md`
+- `setup-guide.md`
 - `cli-reference.md`
 - `design/architecture.md`
 - `design/api.md`
@@ -72,6 +75,8 @@ sidebar は明示的に管理しています。`docs/site/docs/` に新しいペ
 Docusaurus は英語を default locale、日本語を追加 locale として設定しています。
 
 このサイト外のリポジトリドキュメントでは、通常 `docs/development.md` と `docs/development.ja.md` のように英語版と日本語版を同期したペアとして管理します。docs-site の README や元になるドキュメントで新しいトピックを追加する場合も、同じルールを適用してください。
+
+Docusaurus page では、英語 source を `docs/site/docs/` に置き、日本語 localized page を `docs/site/i18n/ja/docusaurus-plugin-content-docs/current/` に置きます。
 
 ## 編集ガイドライン
 
