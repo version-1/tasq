@@ -6,15 +6,15 @@ sidebar_position: 2
 
 # CLI リファレンス
 
-`tq` は、Tasq の issue management、project setup、local services、logs、migrations、Web UI を扱う command-line interface です。
+`tq` は、Tasq の issue 管理、project setup、local services、logs、migrations、Web UI を扱う command-line interface です。
 
-## Global Flags
+## グローバルフラグ
 
 ```sh
 tq [--api-url URL] [--output text|json] <resource> <action> [flags]
 ```
 
-| Flag | Description |
+| フラグ | 説明 |
 | --- | --- |
 | `--api-url URL` | issue-tracker API URL。environment と state discovery より優先されます。 |
 | `--output text\|json` | output format。default は `text` です。 |
@@ -25,7 +25,7 @@ tq [--api-url URL] [--output text|json] <resource> <action> [flags]
 
 issue-tracker API 経由で issue を管理します。
 
-| Command | Flags | Example |
+| コマンド | フラグ | 例 |
 | --- | --- | --- |
 | `tq issue list` | `--project <project-key>` optional | `tq issue list --project tasq` |
 | `tq issue get <id>` | none | `tq issue get 1` |
@@ -46,7 +46,7 @@ priority は `low`、`normal`、`high`、`urgent` です。
 
 issue comment を管理します。
 
-| Command | Flags | Example |
+| コマンド | フラグ | 例 |
 | --- | --- | --- |
 | `tq comment add <issue-id>` | `--author`, `--type`, `--body`, `--attach` | `tq comment add 1 --type progress --body "Started work."` |
 | `tq comment list <issue-id>` | none | `tq comment list 1` |
@@ -59,7 +59,7 @@ comment type は `progress`、`blocker`、`handoff`、`general` です。
 
 repository の登録と workflow setup の検証を行います。
 
-| Command | Flags | Example |
+| コマンド | フラグ | 例 |
 | --- | --- | --- |
 | `tq project add [path]` | `--key` optional | `tq project add --key tasq .` |
 | `tq project remove <project-key>` | none | `tq project remove tasq` |
@@ -72,7 +72,7 @@ repository の登録と workflow setup の検証を行います。
 
 project workflow override の管理と resolved workflow の確認を行います。
 
-| Command | Flags | Example |
+| コマンド | フラグ | 例 |
 | --- | --- | --- |
 | `tq workflow add` | `--project`, `--file` または `--body` のどちらか 1 つ | `tq workflow add --project tasq --file WORKFLOW.md` |
 | `tq workflow remove` | `--project` | `tq workflow remove --project tasq` |
@@ -84,7 +84,7 @@ project workflow override の管理と resolved workflow の確認を行いま�
 
 local Tasq services を起動・停止します。
 
-| Command | Flags | Example |
+| コマンド | フラグ | 例 |
 | --- | --- | --- |
 | `tq service start` | none | `tq service start` |
 | `tq service stop` | none | `tq service stop` |
@@ -106,7 +106,7 @@ Web UI は `tq service start` によって起動済みである必要があり�
 
 `$TQ_HOME/system/log/` の service log を読みます。
 
-| Command | Flags | Example |
+| コマンド | フラグ | 例 |
 | --- | --- | --- |
 | `tq logs <service>` | `-n <lines>`, `-f` | `tq logs issue-tracker -n 200` |
 
@@ -116,7 +116,7 @@ service は `tracker`、`issue-tracker`、`orchestrator`、`web` です。
 
 local SQLite database migrations の apply、rollback、status inspection を行います。
 
-| Command | Flags | Example |
+| コマンド | フラグ | 例 |
 | --- | --- | --- |
 | `tq migrate` | none | `tq migrate` |
 | `tq migrate down` | none | `tq migrate down` |
