@@ -1,0 +1,10 @@
+DROP INDEX IF EXISTS attachments_entity_idx;
+DROP TABLE IF EXISTS attachments;
+DROP TABLE IF EXISTS project_workflows;
+DROP INDEX IF EXISTS comments_issue_id_idx;
+DROP TABLE IF EXISTS comments;
+DROP INDEX IF EXISTS issues_status_idx;
+DROP INDEX IF EXISTS issues_project_id_idx;
+DROP TABLE IF EXISTS issues;
+DROP INDEX IF EXISTS projects_key_idx;
+DROP TABLE IF EXISTS projects;

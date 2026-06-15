@@ -8,6 +8,8 @@ Docker Compose は local development を長時間起動する `dev` container �
 
 Personal machine 上の host-only operation では、`tq service start` が issue-tracker と orchestrator を background process として起動します。固定 local port `37651` と `37652` を使い、discovery state を `$TQ_HOME/system/state.json` に書き込み、log を `$TQ_HOME/system/log/` 配下へ追記します。
 
+Database が新規、または pending migration がある場合は、service 起動前に `tq migrate` を実行します。Service は schema change を自動適用せず、`tq migrate` の実行を促して fail fast します。
+
 Recommended commands:
 
 - `make run-issue-tracker`
@@ -20,11 +22,13 @@ Recommended commands:
 
 CLI commands:
 
+- `make run-migrate`
+- `TQ_HOME=./.tasq go run ./cmd/tq migrate`
 - `make run-tq ARGS="issue list"`
 - `make run-tq ARGS="issue get 1"`
 - `TQ_HOME=./.tasq go run ./cmd/tq service status`
 
-`make dev-up` は OpenAPI UI を起動し、`dev` container 内で issue-tracker、orchestrator、web-ui を起動します。Runtime state は `$TQ_HOME` 配下に保存され、container 内の default は `/workspace/.tasq` です。`make dev-codex-login` は device auth を使い、Codex authentication を `codex-home` Docker volume に永続化します。
+`make dev-up` は OpenAPI UI を起動し、`dev` container 内で issue-tracker、orchestrator、web-ui を起動します。Runtime state は `$TQ_HOME` 配下に保存され、container 内の default は `/workspace/.tasq` です。`run-all` step は service 起動前に migration を明示的に適用します。`make dev-codex-login` は device auth を使い、Codex authentication を `codex-home` Docker volume に永続化します。
 
 ## Verification
 

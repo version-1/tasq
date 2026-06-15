@@ -68,7 +68,8 @@ Use `run-*` targets for processes and commands that run inside an already-runnin
 
 | Target | Purpose |
 |---|---|
-| `make run-all` | Start issue-tracker, orchestrator, and Web inside the running dev container. |
+| `make run-all` | Apply migrations, then start issue-tracker, orchestrator, and Web inside the running dev container. |
+| `make run-migrate` | Apply local SQLite migrations inside the running dev container. |
 | `make run-stop` | Stop Air-managed service processes inside the dev container without stopping the container. |
 | `make run-issue-tracker` | Start only the issue-tracker process inside the running dev container. |
 | `make run-is` | Alias for `run-issue-tracker`. |
@@ -85,6 +86,7 @@ Useful examples:
 
 ```sh
 make run-is
+make run-migrate
 make run-or
 make run-w
 make run-tq ARGS="issue list"

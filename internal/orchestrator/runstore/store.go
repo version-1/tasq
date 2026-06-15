@@ -10,7 +10,8 @@ import (
 
 	_ "modernc.org/sqlite"
 
-	"github.com/version-1/tasq/db/schema"
+	"github.com/version-1/tasq/db/migrations"
+	"github.com/version-1/tasq/internal/migration"
 	"github.com/version-1/tasq/internal/orchestrator/run"
 )
 
@@ -25,34 +26,33 @@ func Open(ctx context.Context, path string) (*Store, error) {
 	}
 	db.SetMaxOpenConns(1)
 	store := &Store{db: db}
-	if err := store.migrate(ctx); err != nil {
+	if err := store.checkMigrations(ctx); err != nil {
 		_ = db.Close()
 		return nil, err
 	}
 	return store, nil
 }
 
+func OpenMigrated(ctx context.Context, path string) (*Store, error) {
+	db, err := sql.Open("sqlite", path)
+	if err != nil {
+		return nil, fmt.Errorf("open sqlite: %w", err)
+	}
+	db.SetMaxOpenConns(1)
+	if _, err := migration.NewManager(db, migrations.Files, "orchestrator").Apply(ctx); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
+	return &Store{db: db}, nil
+}
+
 func (s *Store) Close() error {
 	return s.db.Close()
 }
 
-func (s *Store) migrate(ctx context.Context) error {
-	if _, err := s.db.ExecContext(ctx, schema.Orchestrator); err != nil {
-		return fmt.Errorf("migrate orchestrator sqlite: %w", err)
-	}
-	for _, column := range []struct {
-		name       string
-		definition string
-	}{
-		{name: "source_path", definition: "TEXT NOT NULL DEFAULT ''"},
-		{name: "populated_at", definition: "TEXT NOT NULL DEFAULT ''"},
-		{name: "cleanup_status", definition: "TEXT NOT NULL DEFAULT ''"},
-		{name: "cleanup_at", definition: "TEXT NOT NULL DEFAULT ''"},
-		{name: "last_error", definition: "TEXT NOT NULL DEFAULT ''"},
-	} {
-		if err := s.addColumnIfMissing(ctx, "workspace_metadata", column.name, column.definition); err != nil {
-			return err
-		}
+func (s *Store) checkMigrations(ctx context.Context) error {
+	if err := migration.NewManager(s.db, migrations.Files, "orchestrator").CheckNoPending(ctx); err != nil {
+		return fmt.Errorf("orchestrator sqlite migrations pending: %w", err)
 	}
 	return nil
 }
@@ -346,35 +346,6 @@ func scanRun(row scanner) (run.Run, error) {
 
 type scanner interface {
 	Scan(dest ...any) error
-}
-
-func (s *Store) addColumnIfMissing(ctx context.Context, table string, column string, definition string) error {
-	rows, err := s.db.QueryContext(ctx, `PRAGMA table_info(`+table+`)`)
-	if err != nil {
-		return fmt.Errorf("inspect %s columns: %w", table, err)
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var cid int
-		var name string
-		var typ string
-		var notNull int
-		var defaultValue any
-		var pk int
-		if err := rows.Scan(&cid, &name, &typ, &notNull, &defaultValue, &pk); err != nil {
-			return err
-		}
-		if name == column {
-			return nil
-		}
-	}
-	if err := rows.Err(); err != nil {
-		return err
-	}
-	if _, err := s.db.ExecContext(ctx, `ALTER TABLE `+table+` ADD COLUMN `+column+` `+definition); err != nil {
-		return fmt.Errorf("add %s.%s column: %w", table, column, err)
-	}
-	return nil
 }
 
 func randomID(prefix string) (string, error) {

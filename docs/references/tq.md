@@ -37,6 +37,7 @@ tq [--api-url URL] [--output text|json] <resource|command> <action> [flags]
 | `comment` | `add`, `list` |
 | `project` | `add`, `remove`, `check`, `list` |
 | `workflow` | `add`, `remove`, `show` |
+| `migrate` | apply pending migrations, `down`, `status` |
 | `service` | `start`, `stop`, `status` |
 | `version` | show version information |
 
@@ -285,6 +286,40 @@ Text output prints a `# Source: ...` header followed by the resolved `WORKFLOW.m
 
 ```sh
 make run-tq ARGS="workflow show --project tasq --json"
+```
+
+## Migrations
+
+### `migrate`
+
+Apply all pending SQLite migrations for the local issue-tracker and orchestrator databases under `$TQ_HOME`.
+
+```sh
+make run-tq ARGS="migrate"
+```
+
+The command runs without starting services and writes migration state to each database's `schema_migrations` table.
+
+### `migrate down`
+
+Roll back one applied migration per local database.
+
+```sh
+make run-tq ARGS="migrate down"
+```
+
+### `migrate status`
+
+List applied and pending migrations for each local database.
+
+```sh
+make run-tq ARGS="migrate status"
+```
+
+Use JSON output for scripts:
+
+```sh
+make run-tq ARGS="--output json migrate status"
 ```
 
 ## Valid Values

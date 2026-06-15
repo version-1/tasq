@@ -80,6 +80,18 @@ Projects cannot be deleted while linked issues exist.
 `GET /api/v1/projects/{id}/workflow` returns a `ProjectWorkflow` for projects with a stored workflow and returns 404 when no workflow row exists.
 Deleting a project workflow row returns the project to file-based workflow resolution, such as the project `WORKFLOW.md` or a global fallback workflow.
 
+## migrations
+
+### SchemaMigration
+
+Each SQLite database owns a `schema_migrations` table. The migration engine writes one row after a migration successfully applies and removes the row when that migration is rolled back.
+
+| Field     | Go Type  | Required | Default             | Constraints                     |
+|-----------|----------|----------|---------------------|---------------------------------|
+| Version   | `string` | yes      | —                   | primary key, timestamp version  |
+| Name      | `string` | yes      | —                   | migration name from filename    |
+| AppliedAt | `string` | auto     | `CURRENT_TIMESTAMP` | SQLite timestamp text           |
+
 ## orchestrator
 
 ### Run

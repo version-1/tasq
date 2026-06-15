@@ -37,6 +37,7 @@ tq [--api-url URL] [--output text|json] <resource|command> <action> [flags]
 | `comment` | `add`, `list` |
 | `project` | `add`, `remove`, `check`, `list` |
 | `workflow` | `add`, `remove`, `show` |
+| `migrate` | pending migration の適用、`down`、`status` |
 | `service` | `start`, `stop`, `status` |
 | `version` | version information を表示 |
 
@@ -285,6 +286,40 @@ Text output は `# Source: ...` header に続けて resolved `WORKFLOW.md` conte
 
 ```sh
 make run-tq ARGS="workflow show --project tasq --json"
+```
+
+## Migrations
+
+### `migrate`
+
+`$TQ_HOME` 配下の local issue-tracker / orchestrator database に対して、pending SQLite migration をすべて適用します。
+
+```sh
+make run-tq ARGS="migrate"
+```
+
+この command は service を起動せずに実行でき、各 database の `schema_migrations` table に migration state を記録します。
+
+### `migrate down`
+
+Local database ごとに、適用済み migration を 1 つずつ rollback します。
+
+```sh
+make run-tq ARGS="migrate down"
+```
+
+### `migrate status`
+
+Local database ごとに、applied / pending migration を一覧表示します。
+
+```sh
+make run-tq ARGS="migrate status"
+```
+
+Script では JSON output を使えます。
+
+```sh
+make run-tq ARGS="--output json migrate status"
 ```
 
 ## Valid Values
