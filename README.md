@@ -44,21 +44,7 @@ Repeating that setup for every task slows down parallel execution.
 
 tasq manages executable tasks as a queue and creates agent-ready workspaces for tasks that are ready to run.
 
-```text
-Backlog
-   |
-   v
- Ready
-   |
-   v
- tasq
-   |
-   +------------+------------+
-   |            |            |
- Agent       Agent        Agent
-   |            |            |
-Task A      Task B       Task C
-```
+![Tasq task queue to parallel agent workspaces](docs/site/static/img/agent-task-queue.svg)
 
 The goal is not just faster code generation. The goal is to reduce the management cost introduced by parallel agent work.
 

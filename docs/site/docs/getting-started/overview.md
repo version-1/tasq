@@ -31,21 +31,7 @@ Each agent task often needs the same preparation steps: create a branch, create 
 
 Tasq manages executable tasks as a queue and creates agent-ready workspaces for tasks that are ready to run.
 
-```text
-Backlog
-   |
-   v
- Ready
-   |
-   v
- tasq
-   |
-   +------------+------------+
-   |            |            |
- Agent       Agent        Agent
-   |            |            |
-Task A      Task B       Task C
-```
+![Tasq task queue to parallel agent workspaces](/img/agent-task-queue.svg)
 
 ## What Tasq Provides
 
