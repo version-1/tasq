@@ -66,8 +66,8 @@ Table notes:
 
 Intentional differences from Symphony:
 
-- `WORKFLOW.md` is loaded once at orchestrator process startup. Dynamic watch/reload and runtime
-  re-application of changed settings are deferred.
+- The effective `WORKFLOW.md` is resolved per project when an issue is queued or dispatched.
+  Dynamic watch/reload of already-running work is deferred.
 - Unknown front matter fields are ignored for forward compatibility.
 - `workspace.source` is not supported. Tasq creates issue workspaces with Git worktrees under
   `workspace.root`.
@@ -102,7 +102,8 @@ The current orchestrator is moving toward Symphony conformance incrementally. It
 Implemented or in progress:
 
 - Workflow file loading with a small supported subset of Symphony front matter.
-- `WORKFLOW.md` is loaded at process startup only; runtime reload is intentionally deferred.
+- Effective workflow resolution happens per project at queue/dispatch time; runtime reload for
+  already-running work is intentionally deferred.
 - Workspace root resolution and sanitized per-issue workspace directories.
 - Workspace lifecycle hooks with `hooks.timeout_ms`.
 - A runner interface with both simulated and Codex app-server subprocess implementations.
@@ -145,8 +146,7 @@ issue-tracker API and creates the worktree under the referenced project's locati
 relative suffix, for example `<Project.Location>/.worktrees/agents/issue-42`.
 
 Workspace branches use `agent/<workspace-key>`, for example `agent/issue-42`. Cleanup uses
-`git worktree remove --force`, deletes the corresponding local branch best-effort, and runs
-`git worktree prune` on orchestrator startup.
+`git worktree remove --force` and deletes the corresponding local branch best-effort.
 
 ## Workflow Path Selection
 

@@ -15,6 +15,7 @@ import (
 	"github.com/version-1/tasq/internal/orchestrator/run"
 	"github.com/version-1/tasq/internal/orchestrator/runner"
 	"github.com/version-1/tasq/internal/orchestrator/runstore"
+	"github.com/version-1/tasq/internal/orchestrator/workflow"
 	"github.com/version-1/tasq/internal/orchestrator/workspace"
 )
 
@@ -89,6 +90,67 @@ func TestPollQueuesWorkspaceUnderIssueProjectLocation(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(runs[0].Workspace, ".git")); err != nil {
 		t.Fatalf("workspace git file missing: %v", err)
+	}
+}
+
+func TestPollUsesResolvedWorkflowForWorkspaceRootAndHooks(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store := openTestStore(t)
+	manager := newTestWorkspaceManager(t)
+	projectLocation := newTestProjectRepo(t)
+	tracker := newFakeTracker([]entity.Issue{
+		{ID: 42, ProjectID: 7, ProjectKey: "OTHER", Status: entity.StatusReady, Title: "Build in project repo"},
+	})
+	tracker.setProject(entity.Project{
+		ID:       7,
+		Key:      "OTHER",
+		Name:     "Other project",
+		Location: projectLocation,
+	})
+	resolver := workflowResolverFunc(func(ctx context.Context, projectID int64) (workflow.Definition, error) {
+		return workflow.Definition{
+			Path: filepath.Join(projectLocation, "WORKFLOW.md"),
+			Config: workflow.Config{
+				WorkspaceRoot:   filepath.Join(projectLocation, ".custom-worktrees"),
+				HookAfterCreate: `echo project-hook > project-hook.out`,
+				HookTimeout:     time.Second,
+			},
+			PromptTemplate: "Project prompt",
+		}, nil
+	})
+	poller, err := NewPoller(PollerConfig{
+		Tracker:        tracker,
+		Store:          store,
+		Workspaces:     manager,
+		Workflow:       resolver,
+		Interval:       time.Minute,
+		MaxActiveRuns:  2,
+		OrchestratorID: "test-orchestrator",
+	})
+	if err != nil {
+		t.Fatalf("new poller: %v", err)
+	}
+
+	if err := poller.Poll(ctx); err != nil {
+		t.Fatalf("poll: %v", err)
+	}
+
+	storedRun, err := store.RunByIssueID(ctx, 42)
+	if err != nil {
+		t.Fatalf("run by issue id: %v", err)
+	}
+	wantWorkspace := filepath.Join(canonicalTestPath(t, projectLocation), ".custom-worktrees", "issue-42")
+	if storedRun.Workspace != wantWorkspace {
+		t.Fatalf("workspace = %q, want %q", storedRun.Workspace, wantWorkspace)
+	}
+	content, err := os.ReadFile(filepath.Join(storedRun.Workspace, "project-hook.out"))
+	if err != nil {
+		t.Fatalf("read project hook output: %v", err)
+	}
+	if strings.TrimSpace(string(content)) != "project-hook" {
+		t.Fatalf("hook output = %q", content)
 	}
 }
 
@@ -169,6 +231,7 @@ func TestPollQueuesAndDispatchesInSameCycle(t *testing.T) {
 		Tracker:        tracker,
 		Store:          store,
 		Workspaces:     manager,
+		Workflow:       workflowResolverForManager(manager),
 		Dispatcher:     dispatcher,
 		Interval:       time.Minute,
 		MaxActiveRuns:  2,
@@ -209,6 +272,7 @@ func TestPollFailedDispatchBlocksIssueAndSkipsNextPoll(t *testing.T) {
 		Tracker:        tracker,
 		Store:          store,
 		Workspaces:     manager,
+		Workflow:       workflowResolverForManager(manager),
 		Dispatcher:     dispatcher,
 		Interval:       time.Minute,
 		MaxActiveRuns:  2,
@@ -455,6 +519,7 @@ func newTestPollerWithTracker(t *testing.T, store *runstore.Store, manager *work
 		Tracker:        tracker,
 		Store:          store,
 		Workspaces:     manager,
+		Workflow:       workflowResolverForManager(manager),
 		Interval:       time.Minute,
 		MaxActiveRuns:  2,
 		OrchestratorID: "test-orchestrator",
@@ -463,4 +528,11 @@ func newTestPollerWithTracker(t *testing.T, store *runstore.Store, manager *work
 		t.Fatalf("new poller: %v", err)
 	}
 	return poller
+}
+
+func workflowResolverForManager(manager *workspace.Manager) WorkflowResolver {
+	definition := testWorkflowDefinition()
+	definition.Path = filepath.Join(manager.RepoRoot(), "WORKFLOW.md")
+	definition.Config.WorkspaceRoot = manager.Root()
+	return staticWorkflowResolver(definition)
 }
