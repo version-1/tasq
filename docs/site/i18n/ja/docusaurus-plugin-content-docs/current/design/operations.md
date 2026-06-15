@@ -21,7 +21,6 @@ Recommended commands:
 - `make run-orchestrator`
 - `make dev-up`
 - `make run-web`
-- `make run-tui`
 - `make dev-ports`
 - `make dev-codex-login`
 

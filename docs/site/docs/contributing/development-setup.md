@@ -22,7 +22,6 @@ Recommended development commands include:
 - `make run-issue-tracker`
 - `make run-orchestrator`
 - `make run-web`
-- `make run-tui`
 - `make run-migrate`
 - `make dev-codex-login`
 

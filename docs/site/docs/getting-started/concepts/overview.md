@@ -12,7 +12,7 @@ Tasq separates issue state from run state. The issue-tracker owns what users and
 
 ## Ownership Model
 
-The issue-tracker is the user-facing source of truth for projects, issues, comments, attachments, and board summaries. Clients such as `tq`, the Web UI, and future terminal views read and mutate that state through the issue-tracker API.
+The issue-tracker is the user-facing source of truth for projects, issues, comments, attachments, and board summaries. Clients such as `tq` and the Web UI read and mutate that state through the issue-tracker API. A terminal client is planned but is not part of the published user guide yet.
 
 The orchestrator is the runtime source of truth for runs, runner events, and workspace metadata. It does not directly change issue status. When a task status changes, the change still goes through the issue-tracker.
 
@@ -22,7 +22,7 @@ The orchestrator is the runtime source of truth for runs, runner events, and wor
 flowchart LR
   CLI[tq CLI] --> Tracker[Issue Tracker API]
   Web[Web UI] --> Tracker
-  TUI[TUI] --> Tracker
+  Terminal[Terminal client planned] -. planned .-> Tracker
   Tracker --> IssueDB[(issues.sqlite)]
   Tracker --> Attachments[$TQ_HOME attachments]
   Orchestrator[Orchestrator API] --> RunDB[(orchestrator.sqlite)]
