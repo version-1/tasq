@@ -1,0 +1,10 @@
+{
+  "version.label": {
+    "message": "現行版",
+    "description": "The label for version current"
+  },
+  "sidebar.docsSidebar.category.Architecture / Design": {
+    "message": "アーキテクチャ / 設計",
+    "description": "The label for category 'Architecture / Design' in sidebar 'docsSidebar'"
+  }
+}
