@@ -3,8 +3,24 @@
     "message": "現行版",
     "description": "The label for version current"
   },
-  "sidebar.docsSidebar.category.Architecture / Design": {
-    "message": "アーキテクチャ / 設計",
-    "description": "The label for category 'Architecture / Design' in sidebar 'docsSidebar'"
+  "sidebar.docsSidebar.category.Getting Started": {
+    "message": "はじめに",
+    "description": "The label for category 'Getting Started' in sidebar 'docsSidebar'"
+  },
+  "sidebar.docsSidebar.category.Concepts": {
+    "message": "概念",
+    "description": "The label for category 'Concepts' in sidebar 'docsSidebar'"
+  },
+  "sidebar.docsSidebar.category.Guides": {
+    "message": "ガイド",
+    "description": "The label for category 'Guides' in sidebar 'docsSidebar'"
+  },
+  "sidebar.docsSidebar.category.Reference": {
+    "message": "リファレンス",
+    "description": "The label for category 'Reference' in sidebar 'docsSidebar'"
+  },
+  "sidebar.docsSidebar.category.Contributing": {
+    "message": "コントリビューション",
+    "description": "The label for category 'Contributing' in sidebar 'docsSidebar'"
   }
 }

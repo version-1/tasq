@@ -7,6 +7,14 @@
     "message": "ドキュメント",
     "description": "Navbar item with label Docs"
   },
+  "item.label.Guides": {
+    "message": "ガイド",
+    "description": "Navbar item with label Guides"
+  },
+  "item.label.Reference": {
+    "message": "リファレンス",
+    "description": "Navbar item with label Reference"
+  },
   "item.label.GitHub": {
     "message": "GitHub",
     "description": "Navbar item with label GitHub"
