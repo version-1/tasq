@@ -7,11 +7,11 @@ sidebar_position: 1
 
 # はじめに
 
-この guide では、fresh checkout から local Tasq service の起動、最初の issue 作成までを扱います。
+このガイドでは、新しい checkout からローカル Tasq service の起動、最初の issue 作成までを扱います。
 
-## Install
+## インストール
 
-repository を clone し、`tq` command を build します。
+repository を clone し、`tq` コマンドを build します。
 
 ```sh
 git clone https://github.com/version-1/tasq.git
@@ -26,9 +26,9 @@ export PATH="$PWD/bin:$PATH"
 tq version
 ```
 
-## Initialize Local State
+## ローカル状態の初期化
 
-Tasq は local service data を `$TQ_HOME` 配下に保存します。`TQ_HOME` が未設定の場合は current user の default home directory を使います。
+Tasq はローカル service data を `$TQ_HOME` 配下に保存します。`TQ_HOME` が未設定の場合は current user の default home directory を使います。
 
 service 起動前に database migration を適用します。
 
@@ -50,7 +50,7 @@ tq project add --key tasq .
 tq project check tasq
 ```
 
-## Create Your First Issue
+## 最初の issue を作成する
 
 project に issue を作成します。
 
@@ -88,7 +88,7 @@ local service が起動している場合は Web UI を開けます。
 tq web
 ```
 
-## Useful Defaults
+## 便利な default
 
 - `tq` は issue-tracker URL を `--api-url`、`TQ_API_URL`、`$TQ_HOME/system/state.json`、`http://localhost:37651` の順に解決します。
 - script や agent が structured output を必要とする場合は `--output json` を使います。
