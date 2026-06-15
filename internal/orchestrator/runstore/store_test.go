@@ -125,11 +125,22 @@ func TestStoreRecordsRunnerEventAndWorkspaceMetadata(t *testing.T) {
 	}
 	defer store.Close()
 
-	if err := store.RecordRunnerEvent(ctx, "run-1", "turn_completed", "done", `{"ok":true}`); err != nil {
-		t.Fatalf("record runner event: %v", err)
-	}
-	if err := store.RecordRunnerEvent(ctx, "run-1", "running", "runner started", ""); err != nil {
-		t.Fatalf("record running event: %v", err)
+	for _, event := range []struct {
+		eventType string
+		message   string
+		payload   string
+	}{
+		{eventType: "turn_completed", message: "done", payload: `{"ok":true}`},
+		{eventType: "running", message: "runner started"},
+		{eventType: "succeeded", message: "runner succeeded"},
+		{eventType: "failed", message: "runner failed"},
+		{eventType: "cancelled", message: "runner cancelled"},
+		{eventType: "item/completed", message: "item completed"},
+		{eventType: "item/commandExecution/requestApproval", message: "approval requested"},
+	} {
+		if err := store.RecordRunnerEvent(ctx, "run-1", event.eventType, event.message, event.payload); err != nil {
+			t.Fatalf("record %s event: %v", event.eventType, err)
+		}
 	}
 	if err := store.RecordRunnerEvent(ctx, "run-1", "debug", "ignore", ""); err != nil {
 		t.Fatalf("record debug event: %v", err)
@@ -138,17 +149,27 @@ func TestStoreRecordsRunnerEventAndWorkspaceMetadata(t *testing.T) {
 	if err != nil {
 		t.Fatalf("list runner events: %v", err)
 	}
-	if len(events) != 3 || events[0].EventType != "turn_completed" || events[0].PayloadJSON != `{"ok":true}` {
+	if len(events) != 8 || events[0].EventType != "turn_completed" || events[0].PayloadJSON != `{"ok":true}` {
 		t.Fatalf("events = %+v", events)
 	}
 	conversationEvents, err := store.ConversationEvents(ctx, "run-1")
 	if err != nil {
 		t.Fatalf("conversation events: %v", err)
 	}
-	if len(conversationEvents) != 2 {
-		t.Fatalf("conversation events = %+v", conversationEvents)
+	var conversationEventTypes []string
+	for _, event := range conversationEvents {
+		conversationEventTypes = append(conversationEventTypes, event.EventType)
 	}
-	if conversationEvents[0].EventType != "turn_completed" || conversationEvents[1].EventType != "running" {
+	wantConversationEventTypes := []string{
+		"turn_completed",
+		"running",
+		"succeeded",
+		"failed",
+		"cancelled",
+		"item/completed",
+		"item/commandExecution/requestApproval",
+	}
+	if strings.Join(conversationEventTypes, ",") != strings.Join(wantConversationEventTypes, ",") {
 		t.Fatalf("conversation event order = %+v", conversationEvents)
 	}
 
