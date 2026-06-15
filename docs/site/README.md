@@ -41,8 +41,6 @@ docs/site/
   i18n/ja/                 Japanese localized Docusaurus content.
   src/
     css/custom.css         Site-wide theme overrides.
-    pages/index.tsx        Landing page route.
-    pages/index.module.css Landing page styles.
   docusaurus.config.ts     Site configuration, base URL, locales, navbar, footer.
   sidebars.ts              Docs sidebar structure.
   package.json             npm scripts and Docusaurus dependencies.

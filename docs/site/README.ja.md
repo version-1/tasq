@@ -41,8 +41,6 @@ docs/site/
   i18n/ja/                 Docusaurus の日本語 localized content。
   src/
     css/custom.css         サイト全体のテーマ上書き。
-    pages/index.tsx        ランディングページのルート。
-    pages/index.module.css ランディングページのスタイル。
   docusaurus.config.ts     サイト設定、base URL、locale、navbar、footer。
   sidebars.ts              docs sidebar の構成。
   package.json             npm scripts と Docusaurus 依存。

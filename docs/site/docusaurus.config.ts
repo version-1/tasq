@@ -37,6 +37,7 @@ const config: Config = {
       'classic',
       {
         docs: {
+          routeBasePath: '/',
           sidebarPath: './sidebars.ts',
           editUrl: 'https://github.com/version-1/tasq/tree/main/docs/site/',
         },
@@ -77,11 +78,11 @@ const config: Config = {
           items: [
             {
               label: 'Getting Started',
-              to: '/docs/getting-started',
+              to: '/',
             },
             {
               label: 'CLI Reference',
-              to: '/docs/cli-reference',
+              to: '/cli-reference',
             },
           ],
         },

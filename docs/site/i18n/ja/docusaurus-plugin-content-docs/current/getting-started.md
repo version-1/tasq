@@ -1,6 +1,7 @@
 ---
 id: getting-started
 title: はじめに
+slug: /
 sidebar_position: 1
 ---
 
