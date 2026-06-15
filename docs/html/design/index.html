@@ -1,383 +1,961 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Tasq Architecture</title>
-    <style>
-      :root {
-        color-scheme: light;
-        --bg: #f6f7f9;
-        --panel: #ffffff;
-        --ink: #17202a;
-        --muted: #5f6b7a;
-        --line: #d8dee8;
-        --issue: #226f54;
-        --orch: #3658a8;
-        --ui: #9a5b13;
-        --future: #6c5a86;
-        --danger: #a43d3d;
-      }
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tasq Design Map</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --ink: #162033;
+      --muted: #5d6b7f;
+      --line: #d9e0ea;
+      --soft: #f9fbff;
+      --blue: #2864d8;
+      --green: #0c7c66;
+      --amber: #aa6b11;
+      --violet: #7353b6;
+      --red: #b43d45;
+      --cyan: #0d7b92;
+      --shadow: 0 14px 34px rgba(20, 33, 61, 0.08);
+    }
 
-      * {
-        box-sizing: border-box;
-      }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
 
-      body {
-        margin: 0;
-        background: var(--bg);
-        color: var(--ink);
-        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        line-height: 1.5;
-      }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font: 14px/1.58 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
 
-      main {
-        width: min(1180px, calc(100% - 32px));
-        margin: 0 auto;
-        padding: 32px 0 48px;
-      }
+    a { color: var(--blue); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code, pre, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
 
-      header {
-        display: flex;
-        justify-content: space-between;
-        gap: 24px;
-        align-items: end;
-        margin-bottom: 24px;
-      }
+    .layout {
+      display: grid;
+      grid-template-columns: 282px minmax(0, 1fr);
+      min-height: 100vh;
+    }
 
-      h1,
-      h2,
-      h3,
-      p {
-        margin: 0;
-      }
+    aside {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: auto;
+      padding: 24px 18px;
+      border-right: 1px solid var(--line);
+      background: #fff;
+    }
 
-      h1 {
-        font-size: clamp(2rem, 5vw, 4rem);
-        line-height: 1;
-        letter-spacing: 0;
-      }
+    aside h1 {
+      margin: 0 0 8px;
+      font-size: 20px;
+      line-height: 1.18;
+      letter-spacing: 0;
+    }
 
-      h2 {
-        font-size: 1.05rem;
-        margin-bottom: 12px;
-      }
+    aside p {
+      margin: 0 0 18px;
+      color: var(--muted);
+      font-size: 12px;
+    }
 
-      .subtitle {
-        color: var(--muted);
-        max-width: 560px;
-        margin-top: 12px;
-      }
+    nav a {
+      display: block;
+      padding: 8px 10px;
+      border-radius: 7px;
+      color: #324156;
+      font-weight: 700;
+    }
 
-      .badge {
-        border: 1px solid var(--line);
-        background: var(--panel);
-        border-radius: 6px;
-        padding: 8px 10px;
-        color: var(--muted);
-        white-space: nowrap;
-      }
+    nav a:hover {
+      background: #eef4ff;
+      text-decoration: none;
+    }
 
-      .grid {
-        display: grid;
-        grid-template-columns: 1.2fr 0.8fr;
-        gap: 16px;
-      }
+    .nav-group {
+      margin: 16px 0 8px;
+      color: #7b8797;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
 
-      .panel {
-        background: var(--panel);
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        padding: 18px;
-      }
+    main {
+      min-width: 0;
+      padding: 32px 40px 72px;
+    }
 
-      .architecture {
-        display: grid;
-        grid-template-columns: 1fr 1.35fr 1fr;
-        gap: 14px;
-        align-items: stretch;
-      }
+    header,
+    section {
+      max-width: 1260px;
+      margin: 0 auto;
+    }
 
-      .stack {
-        display: grid;
-        gap: 12px;
-      }
+    header {
+      padding-bottom: 22px;
+      border-bottom: 1px solid var(--line);
+    }
 
-      .service {
-        border: 1px solid var(--line);
-        border-left: 5px solid var(--line);
-        border-radius: 8px;
-        background: #fbfcfe;
-        padding: 14px;
-        min-height: 126px;
-      }
+    .eyebrow {
+      margin-bottom: 8px;
+      color: var(--blue);
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
 
-      .service h3 {
-        font-size: 1rem;
-        margin-bottom: 8px;
-      }
+    h2 {
+      margin: 34px 0 14px;
+      font-size: 24px;
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
 
-      .service p,
-      .service li {
-        color: var(--muted);
-        font-size: 0.92rem;
-      }
+    header h2 {
+      margin: 0 0 10px;
+      font-size: 38px;
+      line-height: 1.08;
+    }
 
-      .service ul {
-        margin: 8px 0 0;
-        padding-left: 18px;
-      }
+    h3 {
+      margin: 0 0 10px;
+      font-size: 17px;
+      line-height: 1.3;
+      letter-spacing: 0;
+    }
 
-      .ui {
-        border-left-color: var(--ui);
-      }
+    p { margin: 0 0 13px; }
+    .lead { max-width: 920px; color: #3d4b5f; font-size: 16px; }
 
-      .issue {
-        border-left-color: var(--issue);
-      }
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 18px;
+    }
 
-      .orch {
-        border-left-color: var(--orch);
-      }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      max-width: 100%;
+      padding: 5px 9px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      color: #47566a;
+      font-size: 12px;
+      white-space: nowrap;
+    }
 
-      .future {
-        border-left-color: var(--future);
-      }
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: var(--blue);
+    }
 
-      .flow {
-        display: grid;
-        gap: 10px;
-      }
+    .dot.green { background: var(--green); }
+    .dot.amber { background: var(--amber); }
+    .dot.violet { background: var(--violet); }
+    .dot.red { background: var(--red); }
+    .dot.cyan { background: var(--cyan); }
 
-      .arrow {
-        border: 1px dashed var(--line);
-        border-radius: 8px;
-        padding: 10px;
-        background: #ffffff;
-        color: var(--muted);
-        font-size: 0.9rem;
-      }
+    .section {
+      margin-top: 22px;
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
 
-      .arrow strong {
-        display: block;
-        color: var(--ink);
-        font-size: 0.94rem;
-      }
+    .section > p {
+      max-width: 980px;
+      color: var(--muted);
+    }
 
-      .matrix {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 0.92rem;
-      }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
 
-      .matrix th,
-      .matrix td {
+    .grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+    .card {
+      min-width: 0;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--soft);
+    }
+
+    .card strong {
+      display: block;
+      margin-bottom: 5px;
+      color: #111a2c;
+      font-size: 13px;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    .card span,
+    .card p {
+      color: var(--muted);
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 14px 0;
+    }
+
+    button {
+      appearance: none;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #fff;
+      color: #334155;
+      cursor: pointer;
+      font: inherit;
+      font-weight: 750;
+      padding: 7px 10px;
+    }
+
+    button:hover,
+    button.active {
+      border-color: var(--blue);
+      background: #edf4ff;
+      color: #173d8f;
+    }
+
+    .diagram-shell {
+      overflow-x: auto;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: linear-gradient(180deg, #fbfdff, #f7faff);
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      min-width: 980px;
+      height: auto;
+    }
+
+    .node rect {
+      stroke: #cfd8e6;
+      stroke-width: 1.2;
+      transition: opacity 160ms ease, stroke 160ms ease, stroke-width 160ms ease;
+    }
+
+    .node text,
+    .edge text {
+      fill: #1f2a3d;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .node .small {
+      fill: #5e6c80;
+      font-size: 10.5px;
+      font-weight: 600;
+    }
+
+    .edge path {
+      fill: none;
+      stroke: #8ea0b7;
+      stroke-width: 2;
+      marker-end: url(#arrow);
+      transition: opacity 160ms ease, stroke 160ms ease, stroke-width 160ms ease;
+    }
+
+    .focus-on .node,
+    .focus-on .edge {
+      opacity: 0.24;
+    }
+
+    .focus-on .node.focus,
+    .focus-on .edge.focus {
+      opacity: 1;
+    }
+
+    .focus-on .node.focus rect {
+      stroke: var(--blue);
+      stroke-width: 2.4;
+    }
+
+    .focus-on .edge.focus path {
+      stroke: var(--blue);
+      stroke-width: 3;
+    }
+
+    .status-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 14px;
+    }
+
+    .state-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .state {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+      padding: 6px 8px;
+      color: #38485c;
+      font-size: 12px;
+      font-weight: 750;
+    }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+      counter-reset: step;
+    }
+
+    .step {
+      position: relative;
+      min-height: 150px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfcff;
+    }
+
+    .step::before {
+      counter-increment: step;
+      content: counter(step);
+      display: inline-grid;
+      place-items: center;
+      width: 24px;
+      height: 24px;
+      margin-bottom: 10px;
+      border-radius: 999px;
+      background: var(--blue);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .step b {
+      display: block;
+      margin-bottom: 6px;
+      color: #172033;
+    }
+
+    .step span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th,
+    td {
+      padding: 9px 8px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      color: #4e5e73;
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .tag {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 2px 8px;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .tag.blue { background: var(--blue); }
+    .tag.green { background: var(--green); }
+    .tag.amber { background: var(--amber); }
+    .tag.violet { background: var(--violet); }
+    .tag.cyan { background: var(--cyan); }
+    .tag.red { background: var(--red); }
+
+    .tree {
+      display: grid;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .tree li {
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #fff;
+    }
+
+    .tree ul {
+      margin: 9px 0 0;
+      padding-left: 18px;
+      color: var(--muted);
+    }
+
+    .risk {
+      border-left: 4px solid var(--amber);
+    }
+
+    .risk.red {
+      border-left-color: var(--red);
+    }
+
+    .appendix {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    @media (max-width: 980px) {
+      .layout { grid-template-columns: 1fr; }
+      aside {
+        position: static;
+        height: auto;
+        border-right: 0;
         border-bottom: 1px solid var(--line);
-        padding: 10px 8px;
-        text-align: left;
-        vertical-align: top;
       }
-
-      .matrix th {
-        color: var(--muted);
-        font-weight: 600;
+      main { padding: 22px 18px 48px; }
+      .grid,
+      .grid.two,
+      .grid.four,
+      .status-grid,
+      .flow {
+        grid-template-columns: 1fr;
       }
+    }
 
-      .pill {
-        display: inline-block;
-        border-radius: 999px;
-        padding: 2px 8px;
-        font-size: 0.78rem;
-        font-weight: 700;
-        color: #fff;
-      }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside>
+      <h1>Tasq Design Map</h1>
+      <p>Single-file architecture reference for the current local-first issue tracker and orchestrator boundary.</p>
+      <nav aria-label="Page sections">
+        <div class="nav-group">Collection</div>
+        <a href="../">HTML Visual Guides</a>
+        <div class="nav-group">Map</div>
+        <a href="#overview">Overview</a>
+        <a href="#architecture">Architecture</a>
+        <a href="#structure">Structure</a>
+        <a href="#flow">Flow</a>
+        <div class="nav-group">Contracts</div>
+        <a href="#state">State Ownership</a>
+        <a href="#api">API Surface</a>
+        <a href="#operations">Operations</a>
+        <a href="#risks">Risks</a>
+        <a href="#appendix">Appendix</a>
+      </nav>
+    </aside>
 
-      .pill.issue {
-        background: var(--issue);
-        border: 0;
-      }
-
-      .pill.orch {
-        background: var(--orch);
-        border: 0;
-      }
-
-      .pill.ui {
-        background: var(--ui);
-        border: 0;
-      }
-
-      .sequence {
-        display: grid;
-        grid-template-columns: repeat(5, minmax(0, 1fr));
-        gap: 10px;
-      }
-
-      .step {
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        background: #fbfcfe;
-        padding: 12px;
-        min-height: 140px;
-      }
-
-      .step b {
-        display: block;
-        margin-bottom: 6px;
-      }
-
-      .step span {
-        color: var(--muted);
-        font-size: 0.88rem;
-      }
-
-      .note {
-        margin-top: 16px;
-        color: var(--muted);
-        font-size: 0.9rem;
-      }
-
-      @media (max-width: 920px) {
-        header,
-        .grid,
-        .architecture,
-        .sequence {
-          grid-template-columns: 1fr;
-        }
-
-        header {
-          align-items: start;
-        }
-      }
-    </style>
-  </head>
-  <body>
     <main>
       <header>
-        <div>
-          <h1>Tasq Architecture</h1>
-          <p class="subtitle">Issue management and agent orchestration are separated into two SQLite-backed services. UI clients use the issue-tracker as the only user-facing API.</p>
+        <div class="eyebrow">docs/html/design/index.html</div>
+        <h2>Tasq Architecture and Runtime Boundary</h2>
+        <p class="lead">Tasq separates user-facing issue state from orchestration runtime state. The issue-tracker is the stable API for UI, TUI, CLI, and reconciliation. The orchestrator owns run records, runner events, workspace metadata, and optional loopback inspection.</p>
+        <div class="meta">
+          <span class="pill"><span class="dot green"></span>issue-tracker owns issue data</span>
+          <span class="pill"><span class="dot violet"></span>orchestrator owns run data</span>
+          <span class="pill"><span class="dot amber"></span>clients avoid direct orchestrator coupling</span>
+          <span class="pill"><span class="dot cyan"></span>workspace and runner are runtime boundaries</span>
+          <span class="pill">Generated: 2026-06-15</span>
+          <span class="pill"><a href="../">HTML guide index</a></span>
         </div>
-        <div class="badge">MVP slice: issue-tracker + orchestrator boundary</div>
       </header>
 
-      <section class="grid">
-        <div class="panel">
-          <h2>Service Dependency Map</h2>
-          <div class="architecture" aria-label="Architecture dependency map">
-            <div class="stack">
-              <article class="service ui">
-                <h3>web-ui</h3>
-                <p>Go-served Vite + React operational UI.</p>
-                <ul>
-                  <li>Calls issue-tracker only</li>
-                  <li>Shows issues and latest runs</li>
-                </ul>
-              </article>
-              <article class="service ui">
-                <h3>tui</h3>
-                <p>Go terminal UI.</p>
-                <ul>
-                  <li>Calls issue-tracker only</li>
-                  <li>Supports watch mode</li>
-                </ul>
-              </article>
-            </div>
-
-            <div class="stack">
-              <article class="service issue">
-                <h3>issue-tracker</h3>
-                <p>Source of truth for issue state and display aggregation.</p>
-                <ul>
-                  <li>SQLite: issues, comments, projects, workspaces</li>
-                  <li>Owns issue CRUD, status changes, and summaries</li>
-                  <li>Serves issue data to UI, TUI, CLI, and orchestrator clients</li>
-                </ul>
-              </article>
-              <div class="flow">
-                <div class="arrow"><strong>UI/TUI -> issue-tracker</strong>summary, issue CRUD, status updates</div>
-                <div class="arrow"><strong>orchestrator -> issue-tracker</strong>fetch issues and issue states</div>
-              </div>
-            </div>
-
-            <div class="stack">
-              <article class="service orch">
-                <h3>orchestrator</h3>
-                <p>Source of truth for run state and runner diagnostics.</p>
-                <ul>
-                  <li>SQLite: runs, runner events, workspace metadata, setup failures</li>
-                  <li>Prepares per-issue workspaces</li>
-                  <li>Exposes optional loopback runtime inspection APIs</li>
-                </ul>
-              </article>
-              <article class="service future">
-                <h3>future agent/workspace</h3>
-                <p>Codex app-server and isolated git workspaces.</p>
-                <ul>
-                  <li>JSON-RPC agent protocol</li>
-                  <li>Parallel workspace execution</li>
-                </ul>
-              </article>
-            </div>
-          </div>
-        </div>
-
-        <div class="panel">
-          <h2>State Ownership</h2>
-          <table class="matrix">
-            <thead>
-              <tr>
-                <th>State</th>
-                <th>Owner</th>
-                <th>Notes</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Issue title, body, priority, status</td>
-                <td><span class="pill issue">issue-tracker</span></td>
-                <td>User-facing source of truth.</td>
-              </tr>
-              <tr>
-                <td>Run records and attempts</td>
-                <td><span class="pill orch">orchestrator</span></td>
-                <td>Stored in the orchestrator runstore.</td>
-              </tr>
-              <tr>
-                <td>Rendered dashboard</td>
-                <td><span class="pill ui">web-ui/tui</span></td>
-                <td>No direct orchestrator calls.</td>
-              </tr>
-            </tbody>
-          </table>
+      <section id="overview" class="section">
+        <h2>Overview</h2>
+        <p>The design keeps issue management, run orchestration, and agent execution as separate ownership areas. This lets humans and agents share one issue API without making UI clients depend on transient runner state.</p>
+        <div class="grid four">
+          <article class="card">
+            <strong>User-facing API</strong>
+            <span>web-ui, tui, and tq use issue-tracker as the primary API boundary.</span>
+          </article>
+          <article class="card">
+            <strong>Runtime state</strong>
+            <span>orchestrator stores runs, events, workspaces, and setup failures in its own SQLite database.</span>
+          </article>
+          <article class="card">
+            <strong>Local-first data</strong>
+            <span>service state lives under local SQLite databases and files beneath TQ_HOME.</span>
+          </article>
+          <article class="card">
+            <strong>Agent boundary</strong>
+            <span>future Codex app-server work is isolated behind runner and workspace manager responsibilities.</span>
+          </article>
         </div>
       </section>
 
-      <section class="panel" style="margin-top: 16px;">
-        <h2>Execution Sequence</h2>
-        <div class="sequence">
+      <section id="architecture" class="section">
+        <h2>Architecture</h2>
+        <p>Use the focus buttons to highlight one responsibility path. The diagram is inline SVG, so the page remains useful without external libraries.</p>
+        <div class="toolbar" aria-label="Architecture focus controls">
+          <button class="active" data-focus="all">All</button>
+          <button data-focus="issue">Issue path</button>
+          <button data-focus="run">Run path</button>
+          <button data-focus="workspace">Workspace path</button>
+          <button data-focus="ui">UI path</button>
+        </div>
+        <div id="architectureDiagram" class="diagram-shell">
+          <svg viewBox="0 0 1180 620" role="img" aria-labelledby="archTitle archDesc">
+            <title id="archTitle">Tasq service dependency map</title>
+            <desc id="archDesc">Clients call issue-tracker for issue state. Orchestrator owns run state and uses workspace and runner boundaries for future agent execution.</desc>
+            <defs>
+              <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+                <path d="M0,0 L0,6 L9,3 z" fill="#8ea0b7"></path>
+              </marker>
+            </defs>
+
+            <rect x="25" y="40" width="250" height="520" rx="14" fill="#f6f8fc" stroke="#d9e0ea"></rect>
+            <text x="45" y="72" fill="#526174" font-size="13" font-weight="800">Clients and tools</text>
+
+            <g class="node" data-focus="ui issue">
+              <rect x="55" y="110" width="170" height="72" rx="8" fill="#fff7e8"></rect>
+              <text x="75" y="139">web-ui</text>
+              <text x="75" y="160" class="small">React SPA served by Go</text>
+            </g>
+            <g class="node" data-focus="ui issue">
+              <rect x="55" y="210" width="170" height="72" rx="8" fill="#fff7e8"></rect>
+              <text x="75" y="239">tui</text>
+              <text x="75" y="260" class="small">terminal issue board</text>
+            </g>
+            <g class="node" data-focus="issue">
+              <rect x="55" y="310" width="170" height="72" rx="8" fill="#fff7e8"></rect>
+              <text x="75" y="339">tq</text>
+              <text x="75" y="360" class="small">agent-friendly CLI</text>
+            </g>
+            <g class="node" data-focus="workspace">
+              <rect x="55" y="410" width="170" height="72" rx="8" fill="#fff7e8"></rect>
+              <text x="75" y="439">project repo</text>
+              <text x="75" y="460" class="small">workflow + git source</text>
+            </g>
+
+            <rect x="340" y="40" width="250" height="520" rx="14" fill="#f3fbf8" stroke="#cce5dc"></rect>
+            <text x="360" y="72" fill="#23715d" font-size="13" font-weight="800">Issue management</text>
+            <g class="node" data-focus="issue ui">
+              <rect x="370" y="132" width="190" height="118" rx="10" fill="#eaf8f2"></rect>
+              <text x="394" y="166">issue-tracker</text>
+              <text x="394" y="190" class="small">issues, projects, comments</text>
+              <text x="394" y="210" class="small">summary API + attachment metadata</text>
+            </g>
+            <g class="node" data-focus="issue">
+              <rect x="370" y="330" width="190" height="100" rx="10" fill="#ffffff"></rect>
+              <text x="394" y="364">SQLite + files</text>
+              <text x="394" y="388" class="small">issue DB</text>
+              <text x="394" y="408" class="small">TQ_HOME attachments</text>
+            </g>
+
+            <rect x="655" y="40" width="250" height="520" rx="14" fill="#f7f3ff" stroke="#ddd4f1"></rect>
+            <text x="675" y="72" fill="#6d4cb1" font-size="13" font-weight="800">Orchestration runtime</text>
+            <g class="node" data-focus="run">
+              <rect x="685" y="130" width="190" height="122" rx="10" fill="#f2ecff"></rect>
+              <text x="709" y="164">orchestrator</text>
+              <text x="709" y="188" class="small">run lifecycle</text>
+              <text x="709" y="208" class="small">workflow resolution</text>
+              <text x="709" y="228" class="small">loopback inspection API</text>
+            </g>
+            <g class="node" data-focus="run">
+              <rect x="685" y="330" width="190" height="100" rx="10" fill="#ffffff"></rect>
+              <text x="709" y="364">orchestrator DB</text>
+              <text x="709" y="388" class="small">runs + runner events</text>
+              <text x="709" y="408" class="small">workspace metadata</text>
+            </g>
+
+            <rect x="965" y="40" width="190" height="520" rx="14" fill="#effbff" stroke="#c8e4ed"></rect>
+            <text x="985" y="72" fill="#0d7285" font-size="13" font-weight="800">Agent boundary</text>
+            <g class="node" data-focus="workspace run">
+              <rect x="990" y="128" width="140" height="92" rx="10" fill="#e9f8fc"></rect>
+              <text x="1010" y="162">workspace</text>
+              <text x="1010" y="186" class="small">sanitized per issue</text>
+              <text x="1010" y="204" class="small">git worktree/source</text>
+            </g>
+            <g class="node" data-focus="workspace run">
+              <rect x="990" y="270" width="140" height="92" rx="10" fill="#e9f8fc"></rect>
+              <text x="1010" y="304">runner</text>
+              <text x="1010" y="328" class="small">Codex app-server</text>
+              <text x="1010" y="346" class="small">JSON-RPC progress</text>
+            </g>
+
+            <g class="edge" data-focus="ui issue">
+              <path d="M225 146 C280 146 300 172 370 172"></path>
+              <text x="252" y="135">summary + issue mutations</text>
+            </g>
+            <g class="edge" data-focus="ui issue">
+              <path d="M225 246 C280 246 300 210 370 210"></path>
+            </g>
+            <g class="edge" data-focus="issue">
+              <path d="M225 346 C290 346 306 226 370 226"></path>
+            </g>
+            <g class="edge" data-focus="issue">
+              <path d="M465 250 L465 330"></path>
+              <text x="478" y="296">persists</text>
+            </g>
+            <g class="edge" data-focus="run issue">
+              <path d="M685 175 C630 175 615 175 560 175"></path>
+              <text x="596" y="162">fetches issue state</text>
+            </g>
+            <g class="edge" data-focus="run">
+              <path d="M780 252 L780 330"></path>
+              <text x="792" y="296">records</text>
+            </g>
+            <g class="edge" data-focus="workspace run">
+              <path d="M875 188 C930 188 940 174 990 174"></path>
+              <text x="900" y="158">creates</text>
+            </g>
+            <g class="edge" data-focus="workspace run">
+              <path d="M1060 220 L1060 270"></path>
+              <text x="1072" y="250">executes</text>
+            </g>
+            <g class="edge" data-focus="workspace run">
+              <path d="M990 316 C930 316 925 220 875 220"></path>
+              <text x="900" y="340">events</text>
+            </g>
+            <g class="edge" data-focus="workspace">
+              <path d="M225 446 C540 540 820 520 990 204"></path>
+              <text x="455" y="535">repo source / workflow contract</text>
+            </g>
+          </svg>
+        </div>
+      </section>
+
+      <section id="structure" class="section">
+        <h2>Structure</h2>
+        <p>The repository keeps command entry points, issue domain code, and orchestration runtime packages separated. The HTML view is intentionally static; the source files below are the durable references.</p>
+        <div class="grid two">
+          <article class="card">
+            <h3>Command entry points</h3>
+            <ul class="tree">
+              <li><code>cmd/issue-tracker</code> - user-facing API service</li>
+              <li><code>cmd/orchestrator</code> - run orchestration process</li>
+              <li><code>cmd/tq</code> - CLI wrapper around issue-tracker API</li>
+              <li><code>cmd/tasq-tui</code> - terminal UI client</li>
+              <li><code>cmd/web</code> - Go web server and React frontend</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Internal ownership packages</h3>
+            <ul class="tree">
+              <li><code>internal/issue</code>
+                <ul>
+                  <li><code>api</code>, <code>domain/entity</code>, <code>store</code></li>
+                </ul>
+              </li>
+              <li><code>internal/orchestrator</code>
+                <ul>
+                  <li><code>coordinator</code>, <code>runner</code>, <code>runstore</code>, <code>workspace</code>, <code>workflow</code></li>
+                </ul>
+              </li>
+              <li><code>internal/cli/tq</code> - CLI command behavior</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section id="flow" class="section">
+        <h2>Flow</h2>
+        <p>The orchestration path is intentionally read-through from issue-tracker and write-through to orchestrator runstore. Issue status is not mutated directly by the orchestrator.</p>
+        <div class="flow">
           <article class="step">
-            <b>1. Ready issue</b>
-            <span>User moves an issue to an active state in the issue-tracker.</span>
+            <b>Issue becomes actionable</b>
+            <span>A user or agent updates issue status through issue-tracker APIs or tq.</span>
           </article>
           <article class="step">
-            <b>2. Fetch issue</b>
-            <span>Orchestrator reads candidate issues and current issue states through the issue-tracker API.</span>
+            <b>Orchestrator reconciles</b>
+            <span>The orchestrator reads candidate issues and workflow configuration.</span>
           </article>
           <article class="step">
-            <b>3. Run record</b>
-            <span>Orchestrator stores a run in its SQLite database and records runner events as diagnostics.</span>
+            <b>Workspace is prepared</b>
+            <span>A sanitized per-issue workspace is created and metadata is persisted.</span>
           </article>
           <article class="step">
-            <b>4. Runtime API</b>
-            <span>The optional loopback API reads active runs and recent runner events from the runstore.</span>
+            <b>Runner executes</b>
+            <span>Future Codex app-server work reports progress as runner events.</span>
           </article>
           <article class="step">
-            <b>5. Summary</b>
-            <span>Issue-tracker continues serving issue summaries to web-ui and tui from its own issue data.</span>
+            <b>Inspection stays local</b>
+            <span>Run records and diagnostics are exposed by optional loopback APIs.</span>
+          </article>
+        </div>
+      </section>
+
+      <section id="state" class="section">
+        <h2>State Ownership</h2>
+        <div class="status-grid">
+          <article class="card">
+            <h3><span class="tag green">issue-tracker</span> Issue state</h3>
+            <p>Issue state is user-facing and belongs to the tracker database. The orchestrator reads it but does not directly mutate it.</p>
+            <div class="state-list">
+              <span class="state">backlog</span>
+              <span class="state">ready</span>
+              <span class="state">in_progress</span>
+              <span class="state">review</span>
+              <span class="state">done</span>
+              <span class="state">blocked</span>
+              <span class="state">failed</span>
+            </div>
+          </article>
+          <article class="card">
+            <h3><span class="tag violet">orchestrator</span> Run state</h3>
+            <p>Run state is operational history and diagnostics. It stays in the orchestrator runstore with runner events and workspace metadata.</p>
+            <div class="state-list">
+              <span class="state">queued</span>
+              <span class="state">running</span>
+              <span class="state">succeeded</span>
+              <span class="state">failed</span>
+              <span class="state">cancelled</span>
+            </div>
+          </article>
+        </div>
+        <table style="margin-top: 16px;">
+          <thead>
+            <tr>
+              <th>State / artifact</th>
+              <th>Owner</th>
+              <th>Storage</th>
+              <th>Mutation path</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Issue title, body, priority, status, assignee</td>
+              <td><span class="tag green">issue-tracker</span></td>
+              <td>SQLite issue database</td>
+              <td>Issue API, tq, UI, TUI</td>
+            </tr>
+            <tr>
+              <td>Comments and attachment metadata</td>
+              <td><span class="tag green">issue-tracker</span></td>
+              <td>SQLite + files under TQ_HOME</td>
+              <td>Comment and attachment APIs</td>
+            </tr>
+            <tr>
+              <td>Run records, attempts, runner events</td>
+              <td><span class="tag violet">orchestrator</span></td>
+              <td>orchestrator SQLite runstore</td>
+              <td>Coordinator and runner boundary</td>
+            </tr>
+            <tr>
+              <td>Workspace metadata and setup failures</td>
+              <td><span class="tag cyan">workspace</span></td>
+              <td>orchestrator SQLite runstore</td>
+              <td>Workspace manager</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="api" class="section">
+        <h2>API Surface</h2>
+        <p>The issue-tracker is the current stable user-facing API. Orchestrator HTTP is loopback/runtime inspection, not the main client contract.</p>
+        <div class="grid two">
+          <article class="card">
+            <h3>Issue-tracker endpoints</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Area</th>
+                  <th>Representative endpoints</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Health + summary</td>
+                  <td><code>GET /api/v1/health</code>, <code>GET /api/v1/summary</code></td>
+                </tr>
+                <tr>
+                  <td>Projects</td>
+                  <td><code>GET/POST /api/v1/projects</code>, workflow check and override APIs</td>
+                </tr>
+                <tr>
+                  <td>Issues</td>
+                  <td><code>GET/POST /api/v1/issues</code>, <code>PATCH /api/v1/issues/{id}</code>, <code>POST /api/v1/issues/states</code></td>
+                </tr>
+                <tr>
+                  <td>Comments + attachments</td>
+                  <td><code>POST /api/v1/issues/{issueId}/comments</code>, attachment upload/content/delete APIs</td>
+                </tr>
+              </tbody>
+            </table>
+          </article>
+          <article class="card">
+            <h3>Response and CLI contract</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Contract</th>
+                  <th>Shape</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Success JSON</td>
+                  <td><code>{ "data": ..., "meta": {} }</code></td>
+                </tr>
+                <tr>
+                  <td>Error JSON</td>
+                  <td><code>{ "error": { "code": "...", "message": "..." }, "meta": {} }</code></td>
+                </tr>
+                <tr>
+                  <td>CLI default</td>
+                  <td>Human-readable text for terminals</td>
+                </tr>
+                <tr>
+                  <td>CLI tools</td>
+                  <td><code>--output json</code> for agents and scripts</td>
+                </tr>
+              </tbody>
+            </table>
+          </article>
+        </div>
+      </section>
+
+      <section id="operations" class="section">
+        <h2>Operations</h2>
+        <p>Local development has two supported shapes: Docker Compose in one long-lived dev container, and host-only services through tq.</p>
+        <div class="grid three">
+          <article class="card">
+            <strong>Compose development</strong>
+            <span><code>make dev-up</code> starts OpenAPI UI plus issue-tracker, orchestrator, and web in the dev container.</span>
+          </article>
+          <article class="card">
+            <strong>Host-only services</strong>
+            <span><code>tq service start</code> runs tracker, orchestrator, and web on fixed local ports 37651-37653.</span>
+          </article>
+          <article class="card">
+            <strong>Migrations first</strong>
+            <span>Run <code>tq migrate</code> or <code>make run-migrate</code> before starting services when migrations are pending.</span>
+          </article>
+        </div>
+        <table style="margin-top: 16px;">
+          <thead>
+            <tr>
+              <th>Verification</th>
+              <th>Command</th>
+              <th>What it protects</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Go tests</td>
+              <td><code>go test ./...</code></td>
+              <td>Backend domain, stores, API handlers, orchestration packages</td>
+            </tr>
+            <tr>
+              <td>Web build</td>
+              <td><code>cd cmd/web/frontend && npm run build</code></td>
+              <td>React production build and frontend integration</td>
+            </tr>
+            <tr>
+              <td>Web typecheck</td>
+              <td><code>cd cmd/web/frontend && npm run typecheck</code></td>
+              <td>TypeScript contracts and component usage</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="risks" class="section">
+        <h2>Risks / Open Questions</h2>
+        <div class="grid">
+          <article class="card risk">
+            <strong>Tracker sync boundary</strong>
+            <span>External tracker sync is still an open decision: issue-tracker ownership vs provider interface.</span>
+          </article>
+          <article class="card risk">
+            <strong>Transcript storage</strong>
+            <span>Large full-fidelity Codex transcripts may need filesystem artifacts instead of SQLite rows.</span>
+          </article>
+          <article class="card risk red">
+            <strong>Production exposure</strong>
+            <span>Authentication, authorization, and network exposure are explicitly out of the current MVP scope.</span>
+          </article>
+        </div>
+      </section>
+
+      <section id="appendix" class="section">
+        <h2>Appendix</h2>
+        <div class="grid two">
+          <article class="card appendix">
+            <h3>Source references</h3>
+            <ul>
+              <li><code>docs/design/architecture.md</code></li>
+              <li><code>docs/design/api.md</code></li>
+              <li><code>docs/design/operations.md</code></li>
+              <li><code>docs/design/schema.md</code></li>
+              <li><code>cmd/*</code> and <code>internal/*</code> package layout</li>
+            </ul>
+          </article>
+          <article class="card appendix">
+            <h3>Implementation notes</h3>
+            <ul>
+              <li>No CDN libraries are used.</li>
+              <li>All diagrams are inline SVG or HTML/CSS.</li>
+              <li>JavaScript only powers the architecture focus controls.</li>
+              <li>Open directly in a browser; no build step is required.</li>
+            </ul>
           </article>
         </div>
       </section>
     </main>
-  </body>
+  </div>
+
+  <script>
+    const diagram = document.getElementById('architectureDiagram');
+    const buttons = document.querySelectorAll('.toolbar button[data-focus]');
+
+    function setFocus(target) {
+      buttons.forEach((button) => {
+        button.classList.toggle('active', button.dataset.focus === target);
+      });
+
+      const elements = diagram.querySelectorAll('.node, .edge');
+      diagram.classList.toggle('focus-on', target !== 'all');
+      elements.forEach((element) => {
+        const groups = (element.dataset.focus || '').split(/\s+/);
+        element.classList.toggle('focus', target === 'all' || groups.includes(target));
+      });
+    }
+
+    buttons.forEach((button) => {
+      button.addEventListener('click', () => setFocus(button.dataset.focus));
+    });
+  </script>
+</body>
 </html>

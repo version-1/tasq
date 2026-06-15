@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tasq HTML ビジュアルガイド</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --ink: #172033;
+      --muted: #5f6c7f;
+      --line: #d9e1eb;
+      --blue: #2864d8;
+      --green: #0c7c66;
+      --amber: #aa6b11;
+      --violet: #7353b6;
+      --cyan: #0d7b92;
+      --shadow: 0 14px 34px rgba(20, 33, 61, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font: 14px/1.7 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    a { color: var(--blue); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    aside {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: auto;
+      padding: 24px 18px;
+      border-right: 1px solid var(--line);
+      background: #fff;
+    }
+
+    aside h1 {
+      margin: 0 0 8px;
+      font-size: 20px;
+      line-height: 1.2;
+    }
+
+    aside p {
+      margin: 0 0 18px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    nav a {
+      display: block;
+      padding: 8px 10px;
+      border-radius: 7px;
+      color: #324156;
+      font-weight: 700;
+    }
+
+    nav a:hover {
+      background: #eef4ff;
+      text-decoration: none;
+    }
+
+    main {
+      min-width: 0;
+      padding: 34px 42px 72px;
+    }
+
+    header,
+    section {
+      max-width: 1260px;
+      margin: 0 auto;
+    }
+
+    header {
+      padding-bottom: 22px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .eyebrow {
+      margin-bottom: 8px;
+      color: var(--blue);
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h2 {
+      margin: 34px 0 14px;
+      font-size: 24px;
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
+
+    header h2 {
+      margin: 0 0 10px;
+      font-size: 38px;
+      line-height: 1.08;
+    }
+
+    h3 {
+      margin: 0 0 8px;
+      font-size: 18px;
+      line-height: 1.3;
+    }
+
+    p { margin: 0 0 13px; }
+    .lead { max-width: 900px; color: #3d4b5f; font-size: 16px; }
+
+    .meta,
+    .links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      max-width: 100%;
+      padding: 5px 9px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      color: #47566a;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .section {
+      margin-top: 22px;
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .card {
+      min-width: 0;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfcff;
+    }
+
+    .card p { color: var(--muted); }
+
+    .tag {
+      display: inline-block;
+      margin: 0 6px 6px 0;
+      border-radius: 999px;
+      padding: 2px 8px;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .tag.blue { background: var(--blue); }
+    .tag.green { background: var(--green); }
+    .tag.amber { background: var(--amber); }
+    .tag.violet { background: var(--violet); }
+    .tag.cyan { background: var(--cyan); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-size: 13px;
+    }
+
+    th,
+    td {
+      padding: 10px 8px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      color: #4e5e73;
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    footer {
+      max-width: 1260px;
+      margin: 26px auto 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    @media (max-width: 960px) {
+      .layout { grid-template-columns: 1fr; }
+      aside {
+        position: static;
+        height: auto;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+      main { padding: 24px 18px 48px; }
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside>
+      <h1>HTML ビジュアルガイド</h1>
+      <p>アーキテクチャ、実行フロー、Symphony 参照資料のためのローカル静的図解です。</p>
+      <nav aria-label="ページ内セクション">
+        <a href="#guides">ガイド</a>
+        <a href="#matrix">一覧</a>
+        <a href="#maintenance">メンテナンス</a>
+      </nav>
+    </aside>
+
+    <main>
+      <header>
+        <div class="eyebrow">docs/html/index.ja.html</div>
+        <h2>Tasq HTML ビジュアルガイド</h2>
+        <p class="lead">このディレクトリには、ブラウザで直接開ける単一ファイルの可視化資料を置いています。Markdown だけでは構造や流れを追いづらい設計レビュー、オンボーディング、議論の補助に使います。</p>
+        <div class="meta">
+          <span class="pill">Generated: 2026-06-15</span>
+          <span class="pill">一次情報は <code>docs/</code> 配下の文書です</span>
+          <span class="pill"><a href="./index.html">English index</a></span>
+        </div>
+      </header>
+
+      <section id="guides" class="section">
+        <h2>ガイド</h2>
+        <div class="grid">
+          <article class="card">
+            <h3><a href="./design/">Tasq Design Map</a></h3>
+            <p>issue-tracker、orchestrator、clients、workspace、runner の責務境界を整理した現在のアーキテクチャマップです。</p>
+            <div class="links">
+              <span class="tag green">CDN なし</span>
+              <span class="tag blue">Inline SVG</span>
+              <span class="tag cyan">Focus 操作</span>
+            </div>
+          </article>
+          <article class="card">
+            <h3><a href="./latest-main-agent-flow/">Latest Main Agent Flow</a></h3>
+            <p>latest main から issue 選択、workspace 準備、runner 実行、run state、完了までの dispatch 経路です。</p>
+            <div class="links">
+              <span class="tag green">CDN なし</span>
+              <span class="tag blue">Inline SVG</span>
+              <span class="tag cyan">Timeline 操作</span>
+              <a class="pill" href="./latest-main-agent-flow/index.ja.md">日本語要約</a>
+            </div>
+          </article>
+          <article class="card">
+            <h3><a href="./orchestrator-structure/">Orchestrator Structure</a></h3>
+            <p>orchestrator の起動配線、coordinator、runner、runstore、workspace handling を package 単位で整理したガイドです。</p>
+            <div class="links">
+              <span class="tag amber">Mermaid CDN</span>
+              <span class="tag violet">Runtime 図</span>
+              <a class="pill" href="./orchestrator-structure/index.ja.html">日本語ページ</a>
+            </div>
+          </article>
+          <article class="card">
+            <h3><a href="./symphony-spec-diagram/">Symphony Service Specification</a></h3>
+            <p>Symphony specification、runtime flow、state model、contracts、safety handling、Tasq deviations のビジュアルガイドです。</p>
+            <div class="links">
+              <span class="tag amber">Mermaid CDN</span>
+              <span class="tag violet">Spec 図</span>
+              <span class="tag blue">Google Fonts</span>
+              <a class="pill" href="./symphony-spec-diagram/index.ja.html">日本語ページ</a>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="matrix" class="section">
+        <h2>一覧</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Path</th>
+              <th>目的</th>
+              <th>一次情報</th>
+              <th>外部依存</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>docs/html/design/index.html</code></td>
+              <td>アーキテクチャと責務境界のマップ</td>
+              <td><code>docs/design/*.md</code>, <code>cmd/*</code>, <code>internal/*</code></td>
+              <td>なし</td>
+            </tr>
+            <tr>
+              <td><code>docs/html/latest-main-agent-flow/index.html</code></td>
+              <td>agent dispatch と完了までの流れ</td>
+              <td><code>origin/main</code> の orchestrator packages</td>
+              <td>なし</td>
+            </tr>
+            <tr>
+              <td><code>docs/html/orchestrator-structure/index.html</code></td>
+              <td>orchestrator package と state structure</td>
+              <td>orchestrator packages と schema</td>
+              <td>Mermaid CDN</td>
+            </tr>
+            <tr>
+              <td><code>docs/html/symphony-spec-diagram/index.html</code></td>
+              <td>Symphony service specification guide</td>
+              <td><code>docs/symphony/SPEC.md</code></td>
+              <td>Google Fonts と Mermaid CDN</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="maintenance" class="section">
+        <h2>メンテナンス</h2>
+        <p>これらのページはレビュー補助であり、独立した仕様ではありません。図解が Markdown の設計文書やコードと食い違う場合は、一次情報を直したうえで HTML を更新します。各ページでは CDN 利用の有無を明示し、ファイルシステムから直接開いても読める状態を保ちます。</p>
+      </section>
+
+      <footer>ローカル HTML 設計成果物の静的 index です。analytics、外部画像、build step はありません。</footer>
+    </main>
+  </div>
+</body>
+</html>
