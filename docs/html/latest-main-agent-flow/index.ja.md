@@ -2,6 +2,7 @@
 
 このメモは `docs/html/latest-main-agent-flow/index.html` の日本語版要約です。
 対象は `origin/main` commit `36437c9` 時点の Tasq Symphony orchestrator です。
+`docs/html/index.ja.html` から、他の HTML ビジュアルガイドと合わせて参照できます。
 
 ## 目的
 
