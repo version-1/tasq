@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en">
+<html lang="ja">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Tasq Design Map</title>
+  <title>Tasq Design Map - 日本語</title>
   <style>
     :root {
       color-scheme: light;
@@ -29,7 +29,7 @@
       margin: 0;
       background: var(--bg);
       color: var(--ink);
-      font: 14px/1.58 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font: 14px/1.68 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
     a { color: var(--blue); text-decoration: none; }
@@ -467,112 +467,110 @@
   <div class="layout">
     <aside>
       <h1>Tasq Design Map</h1>
-      <p>Single-file architecture reference for the current local-first issue tracker and orchestrator boundary.</p>
-      <nav aria-label="Page sections">
+      <p>local-first な issue tracker と orchestrator 境界を説明する単一 HTML の設計リファレンスです。</p>
+      <nav aria-label="ページ内セクション">
         <div class="nav-group">Collection</div>
-        <a href="../">HTML Visual Guides</a>
-        <a href="./index.ja.html">Japanese page</a>
+        <a href="../index.ja.html">HTML ビジュアルガイド</a>
+        <a href="./">English page</a>
         <div class="nav-group">Map</div>
-        <a href="#overview">Overview</a>
-        <a href="#architecture">Architecture</a>
-        <a href="#structure">Structure</a>
-        <a href="#flow">Flow</a>
+        <a href="#overview">概要</a>
+        <a href="#architecture">アーキテクチャ</a>
+        <a href="#structure">構造</a>
+        <a href="#flow">フロー</a>
         <div class="nav-group">Contracts</div>
-        <a href="#state">State Ownership</a>
-        <a href="#api">API Surface</a>
-        <a href="#operations">Operations</a>
-        <a href="#risks">Risks</a>
-        <a href="#appendix">Appendix</a>
+        <a href="#state">状態所有</a>
+        <a href="#api">API surface</a>
+        <a href="#operations">運用</a>
+        <a href="#risks">リスク</a>
+        <a href="#appendix">付録</a>
       </nav>
     </aside>
 
     <main>
       <header>
-        <div class="eyebrow">docs/html/design/index.html</div>
-        <h2>Tasq Architecture and Runtime Boundary</h2>
-        <p class="lead">Tasq separates user-facing issue state from orchestration runtime state. The issue-tracker is the stable API for UI, TUI, CLI, and reconciliation. The orchestrator owns run records, runner events, workspace metadata, and optional loopback inspection.</p>
+        <div class="eyebrow">docs/html/design/index.ja.html</div>
+        <h2>Tasq のアーキテクチャと実行時境界</h2>
+        <p class="lead">Tasq は、ユーザーが扱う issue state と orchestration runtime state を分離します。issue-tracker は UI、TUI、CLI、reconciliation の安定した API であり、orchestrator は run、runner event、workspace metadata、loopback inspection を所有します。</p>
         <div class="meta">
-          <span class="pill"><span class="dot green"></span>issue-tracker owns issue data</span>
-          <span class="pill"><span class="dot violet"></span>orchestrator owns run data</span>
-          <span class="pill"><span class="dot amber"></span>clients avoid direct orchestrator coupling</span>
-          <span class="pill"><span class="dot cyan"></span>workspace and runner are runtime boundaries</span>
+          <span class="pill"><span class="dot green"></span>issue-tracker が issue data を所有</span>
+          <span class="pill"><span class="dot violet"></span>orchestrator が run data を所有</span>
+          <span class="pill"><span class="dot amber"></span>client は orchestrator に直接依存しない</span>
+          <span class="pill"><span class="dot cyan"></span>workspace と runner は runtime boundary</span>
           <span class="pill">Generated: 2026-06-15</span>
-          <span class="pill"><a href="../">HTML guide index</a></span>
-          <span class="pill"><a href="./index.ja.html">Japanese page</a></span>
+          <span class="pill"><a href="../index.ja.html">HTML ビジュアルガイド</a></span>
         </div>
       </header>
 
       <section id="overview" class="section">
-        <h2>Overview</h2>
-        <p>The design keeps issue management, run orchestration, and agent execution as separate ownership areas. This lets humans and agents share one issue API without making UI clients depend on transient runner state.</p>
+        <h2>概要</h2>
+        <p>設計の中心は、issue management、run orchestration、agent execution の責務を分けることです。これにより、人間と agent は同じ issue API を共有しながら、UI client を一時的な runner state に結合せずに済みます。</p>
         <div class="grid four">
           <article class="card">
             <strong>User-facing API</strong>
-            <span>web-ui, tui, and tq use issue-tracker as the primary API boundary.</span>
+            <span>web-ui、tui、tq は issue-tracker を主要な API 境界として使います。</span>
           </article>
           <article class="card">
             <strong>Runtime state</strong>
-            <span>orchestrator stores runs, events, workspaces, and setup failures in its own SQLite database.</span>
+            <span>orchestrator は run、event、workspace、setup failure を自分の SQLite database に保存します。</span>
           </article>
           <article class="card">
             <strong>Local-first data</strong>
-            <span>service state lives under local SQLite databases and files beneath TQ_HOME.</span>
+            <span>service state は TQ_HOME 配下の SQLite database と file に置かれます。</span>
           </article>
           <article class="card">
             <strong>Agent boundary</strong>
-            <span>future Codex app-server work is isolated behind runner and workspace manager responsibilities.</span>
+            <span>将来の Codex app-server 連携は runner と workspace manager の責務境界に閉じます。</span>
           </article>
         </div>
       </section>
 
       <section id="architecture" class="section">
-        <h2>Architecture</h2>
-        <p>Use the focus buttons to highlight one responsibility path. The diagram is inline SVG, so the page remains useful without external libraries.</p>
-        <div class="toolbar" aria-label="Architecture focus controls">
-          <button class="active" data-focus="all">All</button>
-          <button data-focus="issue">Issue path</button>
-          <button data-focus="run">Run path</button>
-          <button data-focus="workspace">Workspace path</button>
-          <button data-focus="ui">UI path</button>
+        <h2>アーキテクチャ</h2>
+        <p>focus button で責務の経路を絞り込めます。この図は依存方向と state ownership を示すためのもので、network topology そのものではありません。</p>
+        <div class="toolbar" aria-label="図の focus 操作">
+          <button class="active" type="button" data-focus="all">All</button>
+          <button type="button" data-focus="issue">Issue path</button>
+          <button type="button" data-focus="run">Run path</button>
+          <button type="button" data-focus="workspace">Workspace path</button>
+          <button type="button" data-focus="ui">UI path</button>
         </div>
-        <div id="architectureDiagram" class="diagram-shell">
-          <svg viewBox="0 0 1180 620" role="img" aria-labelledby="archTitle archDesc">
-            <title id="archTitle">Tasq service dependency map</title>
-            <desc id="archDesc">Clients call issue-tracker for issue state. Orchestrator owns run state and uses workspace and runner boundaries for future agent execution.</desc>
+        <div class="diagram-shell">
+          <svg id="architectureDiagram" viewBox="0 0 1200 600" role="img" aria-labelledby="arch-title arch-desc">
+            <title id="arch-title">Tasq の issue-tracker と orchestrator の責務境界</title>
+            <desc id="arch-desc">client、issue-tracker、orchestrator、workspace、runner、SQLite storage の依存関係を示します。</desc>
             <defs>
               <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
                 <path d="M0,0 L0,6 L9,3 z" fill="#8ea0b7"></path>
               </marker>
             </defs>
 
-            <rect x="25" y="40" width="250" height="520" rx="14" fill="#f6f8fc" stroke="#d9e0ea"></rect>
-            <text x="45" y="72" fill="#526174" font-size="13" font-weight="800">Clients and tools</text>
-
+            <rect x="35" y="40" width="250" height="520" rx="14" fill="#fff8ed" stroke="#e7d3ad"></rect>
+            <text x="55" y="72" fill="#985d0f" font-size="13" font-weight="800">Clients / tools</text>
             <g class="node" data-focus="ui issue">
-              <rect x="55" y="110" width="170" height="72" rx="8" fill="#fff7e8"></rect>
-              <text x="75" y="139">web-ui</text>
-              <text x="75" y="160" class="small">React SPA served by Go</text>
+              <rect x="70" y="120" width="155" height="64" rx="10" fill="#fff"></rect>
+              <text x="92" y="146">web-ui</text>
+              <text x="92" y="166" class="small">React + Go server</text>
             </g>
             <g class="node" data-focus="ui issue">
-              <rect x="55" y="210" width="170" height="72" rx="8" fill="#fff7e8"></rect>
-              <text x="75" y="239">tui</text>
-              <text x="75" y="260" class="small">terminal issue board</text>
+              <rect x="70" y="220" width="155" height="64" rx="10" fill="#fff"></rect>
+              <text x="92" y="246">tui</text>
+              <text x="92" y="266" class="small">terminal client</text>
             </g>
             <g class="node" data-focus="issue">
-              <rect x="55" y="310" width="170" height="72" rx="8" fill="#fff7e8"></rect>
-              <text x="75" y="339">tq</text>
-              <text x="75" y="360" class="small">agent-friendly CLI</text>
+              <rect x="70" y="320" width="155" height="64" rx="10" fill="#fff"></rect>
+              <text x="92" y="346">tq</text>
+              <text x="92" y="366" class="small">CLI / JSON output</text>
             </g>
             <g class="node" data-focus="workspace">
-              <rect x="55" y="410" width="170" height="72" rx="8" fill="#fff7e8"></rect>
-              <text x="75" y="439">project repo</text>
-              <text x="75" y="460" class="small">workflow + git source</text>
+              <rect x="70" y="420" width="155" height="64" rx="10" fill="#fff"></rect>
+              <text x="92" y="446">project repo</text>
+              <text x="92" y="466" class="small">workflow + source</text>
             </g>
 
-            <rect x="340" y="40" width="250" height="520" rx="14" fill="#f3fbf8" stroke="#cce5dc"></rect>
-            <text x="360" y="72" fill="#23715d" font-size="13" font-weight="800">Issue management</text>
+            <rect x="340" y="40" width="250" height="520" rx="14" fill="#effaf6" stroke="#c9e8dd"></rect>
+            <text x="360" y="72" fill="#0c765f" font-size="13" font-weight="800">Issue management</text>
             <g class="node" data-focus="issue ui">
-              <rect x="370" y="132" width="190" height="118" rx="10" fill="#eaf8f2"></rect>
+              <rect x="370" y="130" width="190" height="122" rx="10" fill="#eaf8f4"></rect>
               <text x="394" y="166">issue-tracker</text>
               <text x="394" y="190" class="small">issues, projects, comments</text>
               <text x="394" y="210" class="small">summary API + attachment metadata</text>
@@ -658,17 +656,17 @@
       </section>
 
       <section id="structure" class="section">
-        <h2>Structure</h2>
-        <p>The repository keeps command entry points, issue domain code, and orchestration runtime packages separated. The HTML view is intentionally static; the source files below are the durable references.</p>
+        <h2>構造</h2>
+        <p>command entry point、issue domain、orchestration runtime package は分けて配置されています。この HTML は静的な参照資料であり、下記の source file が一次情報です。</p>
         <div class="grid two">
           <article class="card">
             <h3>Command entry points</h3>
             <ul class="tree">
               <li><code>cmd/issue-tracker</code> - user-facing API service</li>
               <li><code>cmd/orchestrator</code> - run orchestration process</li>
-              <li><code>cmd/tq</code> - CLI wrapper around issue-tracker API</li>
+              <li><code>cmd/tq</code> - issue-tracker API を使う CLI</li>
               <li><code>cmd/tasq-tui</code> - terminal UI client</li>
-              <li><code>cmd/web</code> - Go web server and React frontend</li>
+              <li><code>cmd/web</code> - Go web server と React frontend</li>
             </ul>
           </article>
           <article class="card">
@@ -691,38 +689,38 @@
       </section>
 
       <section id="flow" class="section">
-        <h2>Flow</h2>
-        <p>The orchestration path is intentionally read-through from issue-tracker and write-through to orchestrator runstore. Issue status is not mutated directly by the orchestrator.</p>
+        <h2>フロー</h2>
+        <p>orchestration path は issue-tracker から read-through し、orchestrator runstore へ write-through します。orchestrator は issue status を直接 mutate しません。</p>
         <div class="flow">
           <article class="step">
-            <b>Issue becomes actionable</b>
-            <span>A user or agent updates issue status through issue-tracker APIs or tq.</span>
+            <b>Issue が actionable になる</b>
+            <span>user または agent が issue-tracker API / tq で issue status を更新します。</span>
           </article>
           <article class="step">
-            <b>Orchestrator reconciles</b>
-            <span>The orchestrator reads candidate issues and workflow configuration.</span>
+            <b>Orchestrator が reconcile する</b>
+            <span>candidate issue と workflow configuration を読みます。</span>
           </article>
           <article class="step">
-            <b>Workspace is prepared</b>
-            <span>A sanitized per-issue workspace is created and metadata is persisted.</span>
+            <b>Workspace を準備する</b>
+            <span>issue ごとに sanitize された workspace を作り、metadata を保存します。</span>
           </article>
           <article class="step">
-            <b>Runner executes</b>
-            <span>Future Codex app-server work reports progress as runner events.</span>
+            <b>Runner が実行する</b>
+            <span>将来の Codex app-server work は runner event として進捗を報告します。</span>
           </article>
           <article class="step">
-            <b>Inspection stays local</b>
-            <span>Run records and diagnostics are exposed by optional loopback APIs.</span>
+            <b>Inspection は local に閉じる</b>
+            <span>run record と diagnostics は optional loopback API から参照します。</span>
           </article>
         </div>
       </section>
 
       <section id="state" class="section">
-        <h2>State Ownership</h2>
+        <h2>状態所有</h2>
         <div class="status-grid">
           <article class="card">
             <h3><span class="tag green">issue-tracker</span> Issue state</h3>
-            <p>Issue state is user-facing and belongs to the tracker database. The orchestrator reads it but does not directly mutate it.</p>
+            <p>Issue state は user-facing な状態であり tracker database が所有します。orchestrator は read しますが直接 mutate しません。</p>
             <div class="state-list">
               <span class="state">backlog</span>
               <span class="state">ready</span>
@@ -735,7 +733,7 @@
           </article>
           <article class="card">
             <h3><span class="tag violet">orchestrator</span> Run state</h3>
-            <p>Run state is operational history and diagnostics. It stays in the orchestrator runstore with runner events and workspace metadata.</p>
+            <p>Run state は operational history と diagnostics です。runner event と workspace metadata と一緒に orchestrator runstore に残ります。</p>
             <div class="state-list">
               <span class="state">queued</span>
               <span class="state">running</span>
@@ -785,7 +783,7 @@
 
       <section id="api" class="section">
         <h2>API Surface</h2>
-        <p>The issue-tracker is the current stable user-facing API. Orchestrator HTTP is loopback/runtime inspection, not the main client contract.</p>
+        <p>現在の安定した user-facing API は issue-tracker です。orchestrator HTTP は loopback / runtime inspection 用であり、主要な client contract ではありません。</p>
         <div class="grid two">
           <article class="card">
             <h3>Issue-tracker endpoints</h3>
@@ -836,11 +834,11 @@
                 </tr>
                 <tr>
                   <td>CLI default</td>
-                  <td>Human-readable text for terminals</td>
+                  <td>terminal 向けの human-readable text</td>
                 </tr>
                 <tr>
                   <td>CLI tools</td>
-                  <td><code>--output json</code> for agents and scripts</td>
+                  <td>agent / script 向けに <code>--output json</code> を使います。</td>
                 </tr>
               </tbody>
             </table>
@@ -849,20 +847,20 @@
       </section>
 
       <section id="operations" class="section">
-        <h2>Operations</h2>
-        <p>Local development has two supported shapes: Docker Compose in one long-lived dev container, and host-only services through tq.</p>
+        <h2>運用</h2>
+        <p>local development は Docker Compose の long-lived dev container と、tq による host-only services の 2 形態を想定しています。</p>
         <div class="grid three">
           <article class="card">
             <strong>Compose development</strong>
-            <span><code>make dev-up</code> starts OpenAPI UI plus issue-tracker, orchestrator, and web in the dev container.</span>
+            <span><code>make dev-up</code> は OpenAPI UI、issue-tracker、orchestrator、web を dev container で起動します。</span>
           </article>
           <article class="card">
             <strong>Host-only services</strong>
-            <span><code>tq service start</code> runs tracker, orchestrator, and web on fixed local ports 37651-37653.</span>
+            <span><code>tq service start</code> は tracker、orchestrator、web を local ports 37651-37653 で起動します。</span>
           </article>
           <article class="card">
             <strong>Migrations first</strong>
-            <span>Run <code>tq migrate</code> or <code>make run-migrate</code> before starting services when migrations are pending.</span>
+            <span>migration がある場合は service 起動前に <code>tq migrate</code> または <code>make run-migrate</code> を実行します。</span>
           </article>
         </div>
         <table style="margin-top: 16px;">
@@ -877,45 +875,45 @@
             <tr>
               <td>Go tests</td>
               <td><code>go test ./...</code></td>
-              <td>Backend domain, stores, API handlers, orchestration packages</td>
+              <td>backend domain、store、API handler、orchestration packages</td>
             </tr>
             <tr>
               <td>Web build</td>
               <td><code>cd cmd/web/frontend && npm run build</code></td>
-              <td>React production build and frontend integration</td>
+              <td>React production build と frontend integration</td>
             </tr>
             <tr>
               <td>Web typecheck</td>
               <td><code>cd cmd/web/frontend && npm run typecheck</code></td>
-              <td>TypeScript contracts and component usage</td>
+              <td>TypeScript contracts と component usage</td>
             </tr>
           </tbody>
         </table>
       </section>
 
       <section id="risks" class="section">
-        <h2>Risks / Open Questions</h2>
+        <h2>リスク / 未決事項</h2>
         <div class="grid">
           <article class="card risk">
             <strong>Tracker sync boundary</strong>
-            <span>External tracker sync is still an open decision: issue-tracker ownership vs provider interface.</span>
+            <span>external tracker sync は未決です。issue-tracker ownership と provider interface の切り分けが必要です。</span>
           </article>
           <article class="card risk">
             <strong>Transcript storage</strong>
-            <span>Large full-fidelity Codex transcripts may need filesystem artifacts instead of SQLite rows.</span>
+            <span>大きな Codex transcript は SQLite row ではなく filesystem artifact にした方がよい可能性があります。</span>
           </article>
           <article class="card risk red">
             <strong>Production exposure</strong>
-            <span>Authentication, authorization, and network exposure are explicitly out of the current MVP scope.</span>
+            <span>authentication、authorization、network exposure は現時点の MVP scope 外です。</span>
           </article>
         </div>
       </section>
 
       <section id="appendix" class="section">
-        <h2>Appendix</h2>
+        <h2>付録</h2>
         <div class="grid two">
           <article class="card appendix">
-            <h3>Source references</h3>
+            <h3>参照元</h3>
             <ul>
               <li><code>docs/design/architecture.md</code></li>
               <li><code>docs/design/api.md</code></li>
@@ -925,12 +923,12 @@
             </ul>
           </article>
           <article class="card appendix">
-            <h3>Implementation notes</h3>
+            <h3>実装メモ</h3>
             <ul>
-              <li>No CDN libraries are used.</li>
-              <li>All diagrams are inline SVG or HTML/CSS.</li>
-              <li>JavaScript only powers the architecture focus controls.</li>
-              <li>Open directly in a browser; no build step is required.</li>
+              <li>CDN library は使っていません。</li>
+              <li>図は inline SVG または HTML/CSS です。</li>
+              <li>JavaScript は architecture focus control だけに使っています。</li>
+              <li>build step は不要で、browser で直接開けます。</li>
             </ul>
           </article>
         </div>
