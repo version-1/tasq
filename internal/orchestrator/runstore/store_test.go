@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/version-1/tasq/internal/orchestrator/run"
@@ -13,7 +14,7 @@ import (
 func TestOpenAppliesOrchestratorSchema(t *testing.T) {
 	t.Parallel()
 
-	store, err := Open(context.Background(), filepath.Join(t.TempDir(), "orchestrator.sqlite"))
+	store, err := OpenMigrated(context.Background(), filepath.Join(t.TempDir(), "orchestrator.sqlite"))
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}
@@ -35,11 +36,23 @@ func TestOpenAppliesOrchestratorSchema(t *testing.T) {
 	}
 }
 
+func TestOpenRejectsPendingOrchestratorMigrations(t *testing.T) {
+	t.Parallel()
+
+	_, err := Open(context.Background(), filepath.Join(t.TempDir(), "orchestrator.sqlite"))
+	if err == nil {
+		t.Fatal("open store succeeded, want pending migration error")
+	}
+	if !strings.Contains(err.Error(), "run `tq migrate`") {
+		t.Fatalf("error = %v, want tq migrate guidance", err)
+	}
+}
+
 func TestStoreQueriesActiveRunsAndLatestRunByIssueID(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	store, err := Open(ctx, filepath.Join(t.TempDir(), "orchestrator.sqlite"))
+	store, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "orchestrator.sqlite"))
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}
@@ -106,7 +119,7 @@ func TestStoreRecordsRunnerEventAndWorkspaceMetadata(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	store, err := Open(ctx, filepath.Join(t.TempDir(), "orchestrator.sqlite"))
+	store, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "orchestrator.sqlite"))
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}

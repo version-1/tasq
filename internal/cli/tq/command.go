@@ -71,6 +71,8 @@ func (a app) route(ctx context.Context, args []string, cfg config) error {
 		return a.routeProject(ctx, args[1:], cfg)
 	case "workflow":
 		return a.routeWorkflow(ctx, args[1:], cfg)
+	case "migrate":
+		return a.routeMigrate(ctx, args[1:], cfg)
 	case "web":
 		return a.web(args[1:])
 	case "service":
@@ -602,6 +604,7 @@ func printRootHelp(w io.Writer) {
 	fmt.Fprintln(w, "  comment  add and list issue comments")
 	fmt.Fprintln(w, "  project  add, remove, check, and list projects")
 	fmt.Fprintln(w, "  workflow add, remove, and show project workflow resolution")
+	fmt.Fprintln(w, "  migrate  apply, roll back, and inspect local database migrations")
 	fmt.Fprintln(w, "  web      open the running Web UI in the default browser")
 	fmt.Fprintln(w, "  service  start, stop, and inspect local services")
 	fmt.Fprintln(w, "  logs     show and follow service logs")

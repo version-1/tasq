@@ -840,7 +840,7 @@ func TestAttachmentUploadRejectsInvalidType(t *testing.T) {
 func newTestServer(t *testing.T) *Server {
 	t.Helper()
 
-	issueStore, err := store.Open(context.Background(), filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	issueStore, err := store.OpenMigrated(context.Background(), filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}

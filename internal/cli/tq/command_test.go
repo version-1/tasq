@@ -19,6 +19,7 @@ import (
 	"github.com/version-1/tasq/internal/issue/api"
 	"github.com/version-1/tasq/internal/issue/domain/entity"
 	"github.com/version-1/tasq/internal/issue/store"
+	"github.com/version-1/tasq/internal/orchestrator/runstore"
 )
 
 func TestVersion(t *testing.T) {
@@ -370,6 +371,54 @@ func TestServiceStatusStopped(t *testing.T) {
 	}
 }
 
+func TestMigrateAppliesLocalDatabases(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv(tqconfig.EnvHome, home)
+
+	stdout, stderr, code := runCLI(t, []string{"migrate", "status"})
+	if code != 0 {
+		t.Fatalf("status code=%d stderr=%s", code, stderr)
+	}
+	if !strings.Contains(stdout, "issue-tracker") || !strings.Contains(stdout, "pending") {
+		t.Fatalf("status stdout missing pending migrations: %s", stdout)
+	}
+
+	stdout, stderr, code = runCLI(t, []string{"migrate"})
+	if code != 0 {
+		t.Fatalf("migrate code=%d stderr=%s", code, stderr)
+	}
+	if !strings.Contains(stdout, "applied 20260615000000_init") {
+		t.Fatalf("migrate stdout missing init apply: %s", stdout)
+	}
+
+	issueStore, err := store.Open(context.Background(), tqconfig.IssueTrackerDBPath(home))
+	if err != nil {
+		t.Fatalf("open migrated issue store: %v", err)
+	}
+	_ = issueStore.Close()
+	orchestratorStore, err := runstore.Open(context.Background(), tqconfig.OrchestratorDBPath(home))
+	if err != nil {
+		t.Fatalf("open migrated orchestrator store: %v", err)
+	}
+	_ = orchestratorStore.Close()
+
+	stdout, stderr, code = runCLI(t, []string{"migrate", "down"})
+	if code != 0 {
+		t.Fatalf("down code=%d stderr=%s", code, stderr)
+	}
+	if !strings.Contains(stdout, "rolled back") {
+		t.Fatalf("down stdout missing rollback: %s", stdout)
+	}
+
+	stdout, stderr, code = runCLI(t, []string{"migrate", "status"})
+	if code != 0 {
+		t.Fatalf("status after down code=%d stderr=%s", code, stderr)
+	}
+	if !strings.Contains(stdout, "pending") {
+		t.Fatalf("status after down stdout missing pending migration: %s", stdout)
+	}
+}
+
 func TestServiceStatusJSONRunning(t *testing.T) {
 	t.Setenv(tqconfig.EnvHome, t.TempDir())
 	startedAt := time.Now().Add(-time.Minute).UTC()
@@ -512,7 +561,7 @@ func TestCommentListJSON(t *testing.T) {
 
 func TestCommentCommandsAgainstIssueTrackerAPI(t *testing.T) {
 	ctx := context.Background()
-	issueStore, err := store.Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	issueStore, err := store.OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}
@@ -554,7 +603,7 @@ func TestCommentCommandsAgainstIssueTrackerAPI(t *testing.T) {
 
 func TestIssueCreateWithAttachmentAgainstIssueTrackerAPI(t *testing.T) {
 	ctx := context.Background()
-	issueStore, err := store.Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	issueStore, err := store.OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}
@@ -597,7 +646,7 @@ func TestIssueCreateWithAttachmentAgainstIssueTrackerAPI(t *testing.T) {
 
 func TestCommentAddWithAttachmentAgainstIssueTrackerAPI(t *testing.T) {
 	ctx := context.Background()
-	issueStore, err := store.Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	issueStore, err := store.OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}
@@ -643,7 +692,7 @@ func TestCommentAddWithAttachmentAgainstIssueTrackerAPI(t *testing.T) {
 
 func TestProjectAddCheckRemoveAgainstIssueTrackerAPI(t *testing.T) {
 	ctx := context.Background()
-	issueStore, err := store.Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	issueStore, err := store.OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}
@@ -808,7 +857,7 @@ func TestWorkflowAddFromBodyUpsertsProjectWorkflow(t *testing.T) {
 
 func TestWorkflowAddFileAndBodyOverwriteAgainstIssueTrackerAPI(t *testing.T) {
 	ctx := context.Background()
-	issueStore, err := store.Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	issueStore, err := store.OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}
@@ -907,7 +956,7 @@ func TestWorkflowRemoveRequiresProject(t *testing.T) {
 
 func TestWorkflowShowResolvesPhysicalFile(t *testing.T) {
 	ctx := context.Background()
-	issueStore, err := store.Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	issueStore, err := store.OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}
@@ -947,7 +996,7 @@ func TestWorkflowShowResolvesPhysicalFile(t *testing.T) {
 
 func TestWorkflowShowResolvesDBWorkflow(t *testing.T) {
 	ctx := context.Background()
-	issueStore, err := store.Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	issueStore, err := store.OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}
@@ -998,7 +1047,7 @@ func TestWorkflowShowResolvesDBWorkflow(t *testing.T) {
 
 func TestWorkflowShowResolvesGlobalWorkflow(t *testing.T) {
 	ctx := context.Background()
-	issueStore, err := store.Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	issueStore, err := store.OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}

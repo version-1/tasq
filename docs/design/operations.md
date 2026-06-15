@@ -8,6 +8,8 @@ Docker Compose keeps local development in one long-lived `dev` container and a s
 
 For host-only operation on a personal machine, `tq service start` runs issue-tracker and orchestrator as background processes. It uses fixed local ports `37651` and `37652`, writes discovery state to `$TQ_HOME/system/state.json`, and appends logs under `$TQ_HOME/system/log/`.
 
+Run `tq migrate` before starting services when a database is new or migrations are pending. The services fail fast with guidance to run `tq migrate` instead of applying schema changes automatically.
+
 Recommended commands:
 
 - `make run-issue-tracker`
@@ -20,11 +22,13 @@ Recommended commands:
 
 CLI commands:
 
+- `make run-migrate`
+- `TQ_HOME=./.tasq go run ./cmd/tq migrate`
 - `make run-tq ARGS="issue list"`
 - `make run-tq ARGS="issue get 1"`
 - `TQ_HOME=./.tasq go run ./cmd/tq service status`
 
-`make dev-up` starts the OpenAPI UI and launches the issue-tracker, orchestrator, and web-ui inside the `dev` container. Runtime state is stored under `$TQ_HOME`, which defaults to `/workspace/.tasq` inside the container. `make dev-codex-login` uses device auth and persists Codex authentication in the `codex-home` Docker volume.
+`make dev-up` starts the OpenAPI UI and launches the issue-tracker, orchestrator, and web-ui inside the `dev` container. Runtime state is stored under `$TQ_HOME`, which defaults to `/workspace/.tasq` inside the container. The `run-all` step applies migrations explicitly before starting services. `make dev-codex-login` uses device auth and persists Codex authentication in the `codex-home` Docker volume.
 
 ## Verification
 

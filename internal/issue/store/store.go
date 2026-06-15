@@ -11,8 +11,9 @@ import (
 
 	_ "modernc.org/sqlite"
 
-	"github.com/version-1/tasq/db/schema"
+	"github.com/version-1/tasq/db/migrations"
 	"github.com/version-1/tasq/internal/issue/domain/entity"
+	"github.com/version-1/tasq/internal/migration"
 )
 
 type Store struct {
@@ -31,26 +32,33 @@ func Open(ctx context.Context, path string) (*Store, error) {
 	}
 	db.SetMaxOpenConns(1)
 	store := &Store{db: db}
-	if err := store.migrate(ctx); err != nil {
+	if err := store.checkMigrations(ctx); err != nil {
 		_ = db.Close()
 		return nil, err
 	}
 	return store, nil
 }
 
+func OpenMigrated(ctx context.Context, path string) (*Store, error) {
+	db, err := sql.Open("sqlite", path)
+	if err != nil {
+		return nil, fmt.Errorf("open sqlite: %w", err)
+	}
+	db.SetMaxOpenConns(1)
+	if _, err := migration.NewManager(db, migrations.Files, "issue-tracker").Apply(ctx); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
+	return &Store{db: db}, nil
+}
+
 func (s *Store) Close() error {
 	return s.db.Close()
 }
 
-func (s *Store) migrate(ctx context.Context) error {
-	if err := s.rebuildIssuesForProjectScopeIfNeeded(ctx); err != nil {
-		return err
-	}
-	if _, err := s.db.ExecContext(ctx, schema.IssueTracker); err != nil {
-		return fmt.Errorf("migrate issue tracker sqlite: %w", err)
-	}
-	if err := s.addColumnIfMissing(ctx, "projects", "location", "TEXT NOT NULL DEFAULT ''"); err != nil {
-		return err
+func (s *Store) checkMigrations(ctx context.Context) error {
+	if err := migration.NewManager(s.db, migrations.Files, "issue-tracker").CheckNoPending(ctx); err != nil {
+		return fmt.Errorf("issue tracker sqlite migrations pending: %w", err)
 	}
 	return nil
 }
@@ -658,125 +666,6 @@ func scanProjectWorkflow(row rowScanner) (entity.ProjectWorkflow, error) {
 	item.CreatedAt = parsedCreatedAt
 	item.UpdatedAt = parsedUpdatedAt
 	return item, nil
-}
-
-func (s *Store) addColumnIfMissing(ctx context.Context, table string, column string, definition string) error {
-	exists, err := s.hasColumn(ctx, table, column)
-	if err != nil {
-		return err
-	}
-	if exists {
-		return nil
-	}
-	if _, err := s.db.ExecContext(ctx, `ALTER TABLE `+table+` ADD COLUMN `+column+` `+definition); err != nil {
-		return fmt.Errorf("add %s.%s column: %w", table, column, err)
-	}
-	return nil
-}
-
-func (s *Store) hasColumn(ctx context.Context, table string, column string) (bool, error) {
-	rows, err := s.db.QueryContext(ctx, `PRAGMA table_info(`+table+`)`)
-	if err != nil {
-		return false, fmt.Errorf("inspect %s columns: %w", table, err)
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var cid int
-		var name string
-		var typ string
-		var notNull int
-		var defaultValue any
-		var pk int
-		if err := rows.Scan(&cid, &name, &typ, &notNull, &defaultValue, &pk); err != nil {
-			return false, err
-		}
-		if name == column {
-			return true, nil
-		}
-	}
-	if err := rows.Err(); err != nil {
-		return false, err
-	}
-	return false, nil
-}
-
-func (s *Store) rebuildIssuesForProjectScopeIfNeeded(ctx context.Context) error {
-	hasIssues, err := s.tableExists(ctx, "issues")
-	if err != nil {
-		return err
-	}
-	if !hasIssues {
-		return nil
-	}
-	hasProjectID, err := s.hasColumn(ctx, "issues", "project_id")
-	if err != nil {
-		return err
-	}
-	if hasProjectID {
-		return nil
-	}
-	hasAttachments, err := s.tableExists(ctx, "attachments")
-	if err != nil {
-		return err
-	}
-	hasComments, err := s.tableExists(ctx, "comments")
-	if err != nil {
-		return err
-	}
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if tx != nil {
-			_ = tx.Rollback()
-		}
-	}()
-	statements := []string{}
-	if hasAttachments {
-		statements = append(statements, `DELETE FROM attachments WHERE entity_type IN ('issue', 'comment')`)
-	}
-	if hasComments {
-		statements = append(statements, `DELETE FROM comments`)
-	}
-	statements = append(statements,
-		`DROP TABLE issues`,
-		`CREATE TABLE issues (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			project_id INTEGER NOT NULL,
-			title TEXT NOT NULL,
-			description TEXT NOT NULL DEFAULT '',
-			status TEXT NOT NULL,
-			priority TEXT NOT NULL,
-			assignee TEXT NOT NULL DEFAULT '',
-			created_at TEXT NOT NULL,
-			updated_at TEXT NOT NULL,
-			FOREIGN KEY(project_id) REFERENCES projects(id)
-		)`,
-		`CREATE INDEX IF NOT EXISTS issues_project_id_idx ON issues(project_id)`,
-		`CREATE INDEX IF NOT EXISTS issues_status_idx ON issues(status)`,
-	)
-	for _, statement := range statements {
-		if _, err := tx.ExecContext(ctx, statement); err != nil {
-			return fmt.Errorf("rebuild issues for project scope: %w", err)
-		}
-	}
-	if err := tx.Commit(); err != nil {
-		return err
-	}
-	tx = nil
-	return nil
-}
-
-func (s *Store) tableExists(ctx context.Context, table string) (bool, error) {
-	var exists bool
-	err := s.db.QueryRowContext(ctx, `SELECT EXISTS (
-		SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?
-	)`, table).Scan(&exists)
-	if err != nil {
-		return false, fmt.Errorf("inspect %s table: %w", table, err)
-	}
-	return exists, nil
 }
 
 func nowString() string {

@@ -68,7 +68,8 @@ make dc-exec CMD="go test ./internal/config"
 
 | Target | Purpose |
 |---|---|
-| `make run-all` | 起動済み dev container 内で issue-tracker、orchestrator、Web を起動します。 |
+| `make run-all` | migration を適用してから、起動済み dev container 内で issue-tracker、orchestrator、Web を起動します。 |
+| `make run-migrate` | 起動済み dev container 内で local SQLite migration を適用します。 |
 | `make run-stop` | container を停止せず、dev container 内の Air-managed service processes だけを停止します。 |
 | `make run-issue-tracker` | 起動済み dev container 内で issue-tracker process だけを起動します。 |
 | `make run-is` | `run-issue-tracker` の alias です。 |
@@ -85,6 +86,7 @@ make dc-exec CMD="go test ./internal/config"
 
 ```sh
 make run-is
+make run-migrate
 make run-or
 make run-w
 make run-tq ARGS="issue list"

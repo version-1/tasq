@@ -38,16 +38,6 @@ CREATE TABLE IF NOT EXISTS projects (
 
 CREATE INDEX IF NOT EXISTS projects_key_idx ON projects(key);
 
-CREATE TABLE IF NOT EXISTS project_workflows (
-	project_id INTEGER NOT NULL UNIQUE,
-	frontmatter_json TEXT NOT NULL,
-	body TEXT NOT NULL,
-	checksum TEXT NOT NULL,
-	created_at TEXT NOT NULL,
-	updated_at TEXT NOT NULL,
-	FOREIGN KEY(project_id) REFERENCES projects(id)
-);
-
 CREATE TABLE IF NOT EXISTS attachments (
 	id TEXT PRIMARY KEY,
 	entity_type TEXT NOT NULL,
@@ -60,9 +50,3 @@ CREATE TABLE IF NOT EXISTS attachments (
 );
 
 CREATE INDEX IF NOT EXISTS attachments_entity_idx ON attachments(entity_type, entity_id);
-
-CREATE TABLE IF NOT EXISTS schema_migrations (
-	version TEXT PRIMARY KEY,
-	name TEXT NOT NULL,
-	applied_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-);

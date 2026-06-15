@@ -446,7 +446,7 @@ func (t *fakeTracker) commentsForIssue(tb testing.TB, id int64) []entity.Comment
 
 func openTestStore(t *testing.T) *runstore.Store {
 	t.Helper()
-	store, err := runstore.Open(context.Background(), filepath.Join(t.TempDir(), "orchestrator.sqlite"))
+	store, err := runstore.OpenMigrated(context.Background(), filepath.Join(t.TempDir(), "orchestrator.sqlite"))
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}

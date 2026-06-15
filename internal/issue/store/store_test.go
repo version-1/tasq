@@ -15,7 +15,7 @@ import (
 func TestOpenAppliesIssueTrackerSchema(t *testing.T) {
 	t.Parallel()
 
-	store, err := Open(context.Background(), filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	store, err := OpenMigrated(context.Background(), filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}
@@ -39,86 +39,15 @@ func TestOpenAppliesIssueTrackerSchema(t *testing.T) {
 	}
 }
 
-func TestOpenDeletesLegacyIssuesWhenProjectIDIsMissing(t *testing.T) {
+func TestOpenRejectsPendingIssueTrackerMigrations(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
-	path := filepath.Join(t.TempDir(), "issue-tracker.sqlite")
-	db, err := sql.Open("sqlite", path)
-	if err != nil {
-		t.Fatalf("open sqlite: %v", err)
+	_, err := Open(context.Background(), filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err == nil {
+		t.Fatal("open store succeeded, want pending migration error")
 	}
-	if _, err := db.ExecContext(ctx, `
-		CREATE TABLE issues (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			title TEXT NOT NULL,
-			description TEXT NOT NULL DEFAULT '',
-			status TEXT NOT NULL,
-			priority TEXT NOT NULL,
-			assignee TEXT NOT NULL DEFAULT '',
-			created_at TEXT NOT NULL,
-			updated_at TEXT NOT NULL
-		);
-		CREATE TABLE comments (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			issue_id INTEGER NOT NULL,
-			author TEXT NOT NULL,
-			type TEXT NOT NULL,
-			body TEXT NOT NULL,
-			created_at TEXT NOT NULL
-		);
-		CREATE TABLE attachments (
-			id TEXT PRIMARY KEY,
-			entity_type TEXT NOT NULL,
-			entity_id TEXT NOT NULL,
-			filename TEXT NOT NULL,
-			path TEXT NOT NULL,
-			content_type TEXT NOT NULL,
-			size INTEGER NOT NULL,
-			created_at TEXT NOT NULL
-		);
-		INSERT INTO issues (title, status, priority, created_at, updated_at) VALUES ('Legacy', 'backlog', 'normal', '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z');
-		INSERT INTO comments (issue_id, author, type, body, created_at) VALUES (1, 'codex', 'general', 'legacy', '2026-01-01T00:00:00Z');
-		INSERT INTO attachments (id, entity_type, entity_id, filename, path, content_type, size, created_at) VALUES
-			('issue_att', 'issue', '1', 'issue.png', 'issue.png', 'image/png', 1, '2026-01-01T00:00:00Z'),
-			('comment_att', 'comment', '1', 'comment.png', 'comment.png', 'image/png', 1, '2026-01-01T00:00:00Z'),
-			('other_att', 'run', '1', 'run.png', 'run.png', 'image/png', 1, '2026-01-01T00:00:00Z');
-	`); err != nil {
-		t.Fatalf("seed legacy sqlite: %v", err)
-	}
-	if err := db.Close(); err != nil {
-		t.Fatalf("close sqlite: %v", err)
-	}
-
-	store, err := Open(ctx, path)
-	if err != nil {
-		t.Fatalf("open store: %v", err)
-	}
-	defer store.Close()
-
-	if exists, err := store.hasColumn(ctx, "issues", "project_id"); err != nil || !exists {
-		t.Fatalf("issues.project_id exists = %v err = %v", exists, err)
-	}
-	issues, err := store.Issues(ctx)
-	if err != nil {
-		t.Fatalf("list issues: %v", err)
-	}
-	if len(issues) != 0 {
-		t.Fatalf("issues = %+v, want empty", issues)
-	}
-	var commentCount int
-	if err := store.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM comments`).Scan(&commentCount); err != nil {
-		t.Fatalf("count comments: %v", err)
-	}
-	if commentCount != 0 {
-		t.Fatalf("comment count = %d, want 0", commentCount)
-	}
-	var remainingAttachmentID string
-	if err := store.db.QueryRowContext(ctx, `SELECT id FROM attachments`).Scan(&remainingAttachmentID); err != nil {
-		t.Fatalf("read remaining attachment: %v", err)
-	}
-	if remainingAttachmentID != "other_att" {
-		t.Fatalf("remaining attachment = %q", remainingAttachmentID)
+	if !strings.Contains(err.Error(), "run `tq migrate`") {
+		t.Fatalf("error = %v, want tq migrate guidance", err)
 	}
 }
 
@@ -126,7 +55,7 @@ func TestProjectWorkflowCRUD(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	store, err := Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	store, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}
@@ -217,7 +146,7 @@ func TestDeleteProjectDeletesProjectWorkflow(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	store, err := Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	store, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}
@@ -244,7 +173,7 @@ func TestProjectWorkflowRequiresExistingProject(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	store, err := Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	store, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}
@@ -264,7 +193,7 @@ func TestProjectWorkflowRejectsInvalidInput(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	store, err := Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	store, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}
@@ -301,7 +230,7 @@ func TestAttachmentStoreCRUD(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	store, err := Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	store, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}
@@ -380,7 +309,7 @@ func TestCreateComment(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	store, err := Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	store, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}
@@ -424,7 +353,7 @@ func TestCreateCommentRejectsInvalidInput(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	store, err := Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	store, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}
@@ -469,7 +398,7 @@ func TestCreateCommentRequiresExistingIssue(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	store, err := Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	store, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}
@@ -490,7 +419,7 @@ func TestCommentsByIssueID(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	store, err := Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	store, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}
@@ -530,7 +459,7 @@ func TestCommentsByIssueIDClampsLimit(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	store, err := Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	store, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}
@@ -557,7 +486,7 @@ func TestProjectCRUD(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	store, err := Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	store, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}
@@ -640,7 +569,7 @@ func TestDeleteProjectRejectsLinkedIssues(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	store, err := Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	store, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}
@@ -662,7 +591,7 @@ func TestDeleteProjectWorkflowRemovesOverride(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	store, err := Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	store, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}
@@ -692,7 +621,7 @@ func TestDeleteProjectWorkflowAllowsMissingOverride(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	store, err := Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	store, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}
@@ -708,7 +637,7 @@ func TestDeleteProjectRemovesWorkflowOverride(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	store, err := Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	store, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}
@@ -737,7 +666,7 @@ func TestDeleteProjectRemovesWorkflowOverride(t *testing.T) {
 func TestProjectsReturnsEmptyArray(t *testing.T) {
 	t.Parallel()
 
-	store, err := Open(context.Background(), filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	store, err := OpenMigrated(context.Background(), filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}
@@ -764,7 +693,7 @@ func TestIssuesByStates(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	store, err := Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	store, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}
@@ -809,7 +738,7 @@ func TestIssuesByFilterFiltersByProject(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	store, err := Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	store, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}
@@ -849,7 +778,7 @@ func TestIssueStatesByIDs(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	store, err := Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	store, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}
@@ -898,7 +827,7 @@ func TestIssueStatesByIDsWithEmptyIDsDoesNotQuery(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	store, err := Open(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	store, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}
@@ -921,7 +850,7 @@ func TestIssueStatesByIDsWithEmptyIDsDoesNotQuery(t *testing.T) {
 func TestSummaryReturnsColumnsWithoutRuns(t *testing.T) {
 	t.Parallel()
 
-	store, err := Open(context.Background(), filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	store, err := OpenMigrated(context.Background(), filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}

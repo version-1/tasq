@@ -181,10 +181,15 @@ dc-exec: dev-check ## Run CMD in the running dev container. Example: make dc-exe
 .PHONY: run-all
 run-all: dev-check ## Start issue-tracker, orchestrator, and Web inside the running dev container.
 	$(MAKE) run-stop
+	$(MAKE) run-migrate
 	$(DEV_EXEC) env AIR_VERSION="$(AIR_VERSION)" scripts/dev/run.sh issue-tracker
 	$(MAKE) run-ready-issue-tracker
 	$(DEV_EXEC) env AIR_VERSION="$(AIR_VERSION)" scripts/dev/run.sh orchestrator
 	$(MAKE) run-web
+
+.PHONY: run-migrate
+run-migrate: dev-check ## Apply local SQLite migrations inside the running dev container.
+	$(DEV_EXEC) sh -c 'go run ./cmd/tq migrate'
 
 .PHONY: run-ready-issue-tracker
 run-ready-issue-tracker: dev-check
