@@ -50,6 +50,11 @@
   padding: 16px;
 }
 
+.approvalItem {
+  border-color: var(--warning);
+  box-shadow: inset 3px 0 0 var(--warning), 0 1px 2px rgb(0 0 0 / 8%);
+}
+
 .eventHeader {
   align-items: center;
   display: flex;
@@ -61,6 +66,14 @@
   color: var(--primary-black);
   font-size: 14px;
   font-weight: 700;
+}
+
+.approvalBadge {
+  background: color-mix(in srgb, var(--warning) 14%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--warning) 48%, var(--border));
+  border-radius: 999px;
+  color: var(--primary-black);
+  padding: 3px 10px;
 }
 
 .eventTime {
@@ -98,6 +111,32 @@
 .markdown a {
   color: var(--primary-black);
   overflow-wrap: anywhere;
+}
+
+.approvalRequest {
+  display: grid;
+  gap: 10px;
+}
+
+.approvalReason {
+  color: var(--primary-black);
+  font-size: 15px;
+  line-height: 1.45;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.approvalCommand {
+  background: var(--extra-light-gray);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 0;
+  overflow: auto;
+  padding: 12px;
+  white-space: pre-wrap;
 }
 
 @media (max-width: 720px) {

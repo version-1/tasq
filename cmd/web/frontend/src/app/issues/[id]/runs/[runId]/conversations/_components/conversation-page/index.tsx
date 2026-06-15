@@ -14,6 +14,11 @@ type LoadState =
   | { kind: "empty" }
   | { kind: "error"; message: string };
 
+type ApprovalRequestDetails = {
+  reason: string;
+  command: string;
+};
+
 export function ConversationPage() {
   const { t } = useTranslation();
   const { id, runId } = useParams();
@@ -100,9 +105,22 @@ function ConversationEvents({ events }: { events: OrchestratorConversationEvent[
   return (
     <ol className={styles.timeline}>
       {events.map((event, index) => (
-        <li key={`${event.at}-${event.event}-${index}`} className={styles.timelineItem}>
+        <li
+          key={`${event.at}-${event.event}-${index}`}
+          className={[
+            styles.timelineItem,
+            event.event === "item/commandExecution/requestApproval" ? styles.approvalItem : "",
+          ].join(" ")}
+        >
           <div className={styles.eventHeader}>
-            <span className={styles.eventType}>{eventLabel(event.event, t)}</span>
+            <span
+              className={[
+                styles.eventType,
+                event.event === "item/commandExecution/requestApproval" ? styles.approvalBadge : "",
+              ].join(" ")}
+            >
+              {eventLabel(event.event, t)}
+            </span>
             <span className={styles.eventTime}>{formatDateTime(event.at)}</span>
           </div>
           {event.event === "turn_completed" ? (
@@ -111,6 +129,8 @@ function ConversationEvents({ events }: { events: OrchestratorConversationEvent[
               content={extractAggregatedOutput(event.payload_json)}
               emptyText={event.message || t("issues.detailPage.emptyConversationEvent")}
             />
+          ) : event.event === "item/commandExecution/requestApproval" ? (
+            <ApprovalRequest event={event} />
           ) : (
             <p className={styles.statusMessage}>
               {event.message || t(`runStatuses.${event.event}`)}
@@ -122,11 +142,59 @@ function ConversationEvents({ events }: { events: OrchestratorConversationEvent[
   );
 }
 
+function ApprovalRequest({ event }: { event: OrchestratorConversationEvent }) {
+  const { t } = useTranslation();
+  const details = extractApprovalRequestDetails(event.payload_json);
+  const reason = details.reason || event.message || t("issues.detailPage.approvalRequestReasonFallback");
+  const command = details.command || t("issues.detailPage.approvalRequestCommandFallback");
+
+  return (
+    <section className={styles.approvalRequest} aria-label={t("issues.detailPage.approvalRequest")}>
+      <h3 className={styles.approvalReason}>{reason}</h3>
+      <pre className={styles.approvalCommand}>
+        <code>{command}</code>
+      </pre>
+    </section>
+  );
+}
+
 function eventLabel(event: OrchestratorConversationEvent["event"], t: (key: string) => string): string {
   if (event === "turn_completed") {
     return t("issues.detailPage.turnCompleted");
   }
   return t(`runStatuses.${event}`);
+}
+
+function extractApprovalRequestDetails(payloadJSON: string): ApprovalRequestDetails {
+  if (payloadJSON.trim() === "") {
+    return { reason: "", command: "" };
+  }
+  try {
+    const payload = JSON.parse(payloadJSON) as unknown;
+    return {
+      reason: findStringField(payload, "reason"),
+      command: findStringField(payload, "command"),
+    };
+  } catch {
+    return { reason: "", command: "" };
+  }
+}
+
+function findStringField(value: unknown, fieldName: string): string {
+  if (!value || typeof value !== "object") {
+    return "";
+  }
+  const record = value as Record<string, unknown>;
+  if (typeof record[fieldName] === "string") {
+    return record[fieldName];
+  }
+  for (const child of Object.values(record)) {
+    const result = findStringField(child, fieldName);
+    if (result !== "") {
+      return result;
+    }
+  }
+  return "";
 }
 
 function extractAggregatedOutput(payloadJSON: string): string {
