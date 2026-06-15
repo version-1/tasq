@@ -58,9 +58,13 @@
 }
 
 .eventType {
+  align-items: center;
   color: var(--primary-black);
+  display: inline-flex;
+  flex-wrap: wrap;
   font-size: 14px;
   font-weight: 700;
+  gap: 8px;
 }
 
 .eventTime {
@@ -68,10 +72,39 @@
   font-size: 13px;
 }
 
+.eventCommand {
+  background: var(--extra-light-gray);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+  font-weight: 600;
+  max-width: min(100%, 72ch);
+  overflow-wrap: anywhere;
+  padding: 3px 6px;
+}
+
 .statusMessage {
   color: var(--text);
   font-size: 14px;
   margin: 0;
+}
+
+.itemBody {
+  display: grid;
+  gap: 10px;
+}
+
+.exitCode {
+  background: rgb(220 38 38 / 10%);
+  border: 1px solid rgb(220 38 38 / 22%);
+  border-radius: 6px;
+  color: var(--danger);
+  font-size: 13px;
+  font-weight: 700;
+  margin: 0;
+  padding: 8px 10px;
 }
 
 .markdown {
