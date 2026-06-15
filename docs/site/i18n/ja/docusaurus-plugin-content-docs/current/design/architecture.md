@@ -12,7 +12,7 @@ Tasq は、issue の管理と orchestrator run state の観測を行う local-fi
 ## Goals
 
 - issue state と run state を別概念として保ち、それぞれの owner を分ける。
-- web-ui、tui、agent-facing CLI tool が同じ user-facing API surface を使えるようにする。
+- web-ui と agent-facing CLI tool が同じ user-facing API surface を使えるようにする。
 - tracker API を issue、project、workspace、summary data に集中させる。
 - orchestration runtime state を orchestrator local に保つ。
 
@@ -40,16 +40,9 @@ Responsibilities:
 
 Web UI の構造と styling convention は source repository の [docs/design/web.md](https://github.com/version-1/tasq/blob/main/docs/design/web.md) を参照してください。
 
-### tui
+### planned terminal client
 
-TUI は同じ issue-tracker API のための Go terminal client です。
-
-Responsibilities:
-
-- issue-tracker から issue summary を取得する。
-- issue column を描画する。
-- one-shot rendering と watch-mode rendering をサポートする。
-- orchestrator へ直接アクセスしない。
+Terminal client は計画中です。公開 docs-site では、準備が整うまで操作方法や利用手順を扱いません。
 
 ### tq
 
@@ -76,7 +69,7 @@ Responsibilities:
 - issue を作成、編集、一覧表示する。
 - attachment metadata を SQLite に保存し、attachment bytes を `$TQ_HOME` 配下に保存する。
 - orchestrator や tool の reconciliation 向けに issue state を返す。
-- UI/TUI summary API を提供する。
+- UI summary API を提供する。
 
 issue-tracker は issue status、priority、title、description、assignee、comment、attachment、project の source of truth です。
 Linked issue が存在する project は削除できません。
@@ -127,8 +120,8 @@ orchestrator は issue-tracker の work queue や event receiver endpoint を使
 
 ```text
 web-ui ─┐
-tui ────┼─ issue-tracker ── SQLite: issues, comments, attachments, projects
-tq ─────┘
+tq ─────┼─ issue-tracker ── SQLite: issues, comments, attachments, projects
+planned terminal client -. planned .-┘
                  │
                  └─ $TQ_HOME/system/data/attachments
 
@@ -174,7 +167,7 @@ orchestrator は issue status を直接変更しません。issue status の変�
 - issue と project のための issue-tracker SQLite table。
 - issue-tracker attachment metadata in SQLite and image bytes under `$TQ_HOME`。
 - run、runner event、workspace metadata、workspace setup failure のための orchestrator SQLite table。
-- web-ui と tui が利用する issue-tracker summary API。
+- web-ui が利用する issue-tracker summary API。
 - `tq` が利用する issue CRUD API。
 - `attachment://<id>` image reference を含む Markdown issue description と comment body。
 - Codex runner lifecycle: app-server startup、live-thread turn、enabled 時の continuation turn、terminal run status reporting。

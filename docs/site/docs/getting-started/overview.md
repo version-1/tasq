@@ -14,7 +14,7 @@ It keeps the human issue workflow simple while giving agents a structured comman
 ## What Tasq Provides
 
 - A local issue tracker backed by SQLite.
-- A `tq` CLI for scripts, agents, and terminal workflows.
+- A `tq` CLI for scripts, agents, and local workflows.
 - A Web UI for scanning issues, changing status, and inspecting task details.
 - An orchestrator boundary for run history, workspaces, and future agent execution.
 - Repository workflow documents that describe how work should be performed.

@@ -34,8 +34,9 @@
   <text class="label" x="115" y="229">tq CLI</text>
   <rect class="client" x="70" y="275" width="170" height="56" rx="12"/>
   <text class="label" x="108" y="309">Web UI</text>
-  <rect class="client" x="70" y="355" width="170" height="56" rx="12"/>
-  <text class="label" x="126" y="389">TUI</text>
+  <rect class="client" x="70" y="355" width="170" height="56" rx="12" opacity="0.48"/>
+  <text class="label" x="88" y="384">TUI planned</text>
+  <text class="tiny" x="102" y="402">not documented yet</text>
 
   <rect class="panel" x="380" y="120" width="300" height="178"/>
   <text class="label" x="410" y="158">Issue Tracker</text>
@@ -68,7 +69,7 @@
 
   <path class="line" d="M240 223 C300 223, 312 209, 378 209"/>
   <path class="line" d="M240 303 C300 303, 312 236, 378 236"/>
-  <path class="line" d="M240 383 C300 383, 312 263, 378 263"/>
+  <path class="muted" d="M240 383 C300 383, 312 263, 378 263"/>
   <path class="muted" d="M240 303 C320 330, 310 438, 378 438"/>
   <path class="line" d="M680 210 C720 210, 735 213, 798 213"/>
   <path class="line" d="M680 245 C720 250, 735 293, 798 293"/>
