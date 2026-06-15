@@ -371,6 +371,51 @@ func TestServiceStatusStopped(t *testing.T) {
 	}
 }
 
+func TestServiceStartFailsBeforeStartingServicesWhenMigrationsPending(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv(tqconfig.EnvHome, home)
+
+	stdout, stderr, code := runCLI(t, []string{"service", "start"})
+	if code != 1 {
+		t.Fatalf("code=%d stderr=%s", code, stderr)
+	}
+	if stdout != "" {
+		t.Fatalf("expected empty stdout: %s", stdout)
+	}
+	message := decodeCLIError(t, stderr)
+	for _, want := range []string{
+		"migration pre-flight check failed",
+		"issue-tracker:20260615000000_init",
+		"orchestrator:20260615000000_init",
+		"run `tq migrate`",
+	} {
+		if !strings.Contains(message, want) {
+			t.Fatalf("error missing %q: %s", want, message)
+		}
+	}
+	for _, logName := range []string{"issue-tracker.log", "orchestrator.log", "web.log"} {
+		path := filepath.Join(tqconfig.LogDir(home), logName)
+		if _, err := os.Stat(path); err == nil {
+			t.Fatalf("service log was created before migration pre-flight failed: %s", path)
+		} else if !os.IsNotExist(err) {
+			t.Fatalf("stat %s: %v", path, err)
+		}
+	}
+}
+
+func TestServiceMigrationPreflightPassesAfterMigrate(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv(tqconfig.EnvHome, home)
+
+	stdout, stderr, code := runCLI(t, []string{"migrate"})
+	if code != 0 {
+		t.Fatalf("migrate code=%d stdout=%s stderr=%s", code, stdout, stderr)
+	}
+	if err := checkMigrationTargetsNoPending(context.Background()); err != nil {
+		t.Fatalf("pre-flight after migrate: %v", err)
+	}
+}
+
 func TestMigrateAppliesLocalDatabases(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv(tqconfig.EnvHome, home)

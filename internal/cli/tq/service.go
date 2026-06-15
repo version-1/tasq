@@ -89,6 +89,9 @@ func (a app) serviceStart(ctx context.Context, args []string, cfg config) error 
 	if state.Web != nil && processAlive(state.Web.PID) {
 		return usageError("web is already running")
 	}
+	if err := checkMigrationTargetsNoPending(ctx); err != nil {
+		return fmt.Errorf("migration pre-flight check failed: %w", err)
+	}
 
 	issueAddr := "127.0.0.1:" + strconv.Itoa(tqconfig.DefaultIssueTrackerPort)
 	orchestratorAddr := "127.0.0.1:" + strconv.Itoa(tqconfig.DefaultOrchestratorPort)

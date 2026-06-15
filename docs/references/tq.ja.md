@@ -159,7 +159,7 @@ make run-tq ARGS="comment list 1"
 
 ### `service start`
 
-issue-tracker と orchestrator を host-local background process として起動します。この command は issue-tracker を先に起動し、health endpoint を待ってから orchestrator を起動します。Log は `$TQ_HOME/system/log/` 配下へ追記されます。
+issue-tracker、orchestrator、web を host-local background process として起動します。Service process を起動する前に、local issue-tracker / orchestrator database を開いて pending migration を確認します。Pending migration があれば、`tq migrate` の実行を促して即座に終了します。Pending がなければ issue-tracker を先に起動し、health endpoint を待ってから orchestrator と web を起動します。Log は `$TQ_HOME/system/log/` 配下へ追記されます。
 
 ```sh
 TQ_HOME=./.tasq go run ./cmd/tq service start
@@ -171,6 +171,7 @@ Default service ports:
 |---|---:|---|
 | issue-tracker | `37651` | `$TQ_HOME/system/log/issue-tracker.log` |
 | orchestrator | `37652` | `$TQ_HOME/system/log/orchestrator.log` |
+| web | `37653` | `$TQ_HOME/system/log/web.log` |
 
 ### `service status`
 

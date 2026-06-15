@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	_ "modernc.org/sqlite"
 
@@ -146,6 +147,27 @@ func withMigrationTargets(ctx context.Context, fn func(context.Context, migrateT
 		results = append(results, result)
 	}
 	return results, nil
+}
+
+func checkMigrationTargetsNoPending(ctx context.Context) error {
+	var pending []string
+	_, err := withMigrationTargets(ctx, func(ctx context.Context, target migrateTarget, manager migration.Manager) (migrateResult, error) {
+		migrations, err := manager.Pending(ctx)
+		if err != nil {
+			return migrateResult{}, err
+		}
+		for _, item := range migrations {
+			pending = append(pending, target.Name+":"+migrationLabel(item.Version, item.Name))
+		}
+		return migrateResult{Database: target.Name, Path: target.Path}, nil
+	})
+	if err != nil {
+		return err
+	}
+	if len(pending) > 0 {
+		return fmt.Errorf("pending migrations: %s; run `tq migrate` before starting services", strings.Join(pending, ", "))
+	}
+	return nil
 }
 
 func writeMigrateResults(w io.Writer, format string, heading string, results []migrateResult) error {
