@@ -14,6 +14,7 @@ const config: Config = {
 
   onBrokenLinks: 'throw',
   markdown: {
+    mermaid: true,
     hooks: {
       onBrokenMarkdownLinks: 'throw',
     },
@@ -49,6 +50,8 @@ const config: Config = {
     ],
   ],
 
+  themes: ['@docusaurus/theme-mermaid'],
+
   themeConfig: {
     navbar: {
       title: 'Tasq',
@@ -58,6 +61,16 @@ const config: Config = {
           sidebarId: 'docsSidebar',
           position: 'left',
           label: 'Docs',
+        },
+        {
+          to: '/guides/workflow-configuration',
+          label: 'Guides',
+          position: 'left',
+        },
+        {
+          to: '/reference/cli-reference',
+          label: 'Reference',
+          position: 'left',
         },
         {
           type: 'localeDropdown',
@@ -81,8 +94,16 @@ const config: Config = {
               to: '/',
             },
             {
-              label: 'CLI Reference',
-              to: '/cli-reference',
+              label: 'Concepts',
+              to: '/getting-started/concepts/overview',
+            },
+            {
+              label: 'Guides',
+              to: '/guides/workflow-configuration',
+            },
+            {
+              label: 'Reference',
+              to: '/reference/cli-reference',
             },
           ],
         },

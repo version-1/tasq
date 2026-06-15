@@ -34,10 +34,11 @@ http://localhost:3000/tasq/
 ```text
 docs/site/
   docs/                    Docusaurus の docs コンテンツ。
-    design/                リポジトリ docs から取り込む architecture / design ページ。
-    cli-reference.md       CLI reference ページ。
-    getting-started.md     Getting started ページ。
-    setup-guide.md         ローカル Codex / agent setup guide。
+    getting-started/       Overview、QuickStart、setup、concepts。
+    guides/                利用者向け task / operations guide。
+    reference/             CLI、API、configuration、schema reference。
+    contributing/          local development と verification guidance。
+  static/img/              静的な図表や docs image。
   i18n/ja/                 Docusaurus の日本語 localized content。
   src/
     css/custom.css         サイト全体のテーマ上書き。
@@ -56,17 +57,18 @@ docs/site/
 
 ## コンテンツ構成
 
-公開される docs のソースは `docs/site/docs/` に置きます。現在のサイトには次のページがあります。
+公開される docs のソースは `docs/site/docs/` に置きます。docs-site は利用者向けドキュメントの正とします。リポジトリの `docs/design/` 配下にある内部設計ドキュメントは、開発者向けの設計記録として別管理し、より低レベルの実装詳細を含む場合があります。
 
-- `getting-started.md`
-- `setup-guide.md`
-- `cli-reference.md`
-- `design/architecture.md`
-- `design/api.md`
-- `design/operations.md`
-- `design/schema.md`
+現在の英語 docs-site は 17 ページ構成です。
+
+- Getting Started: Overview、QuickStart、Setup Guide、5 つの Concepts ページ。
+- Guides: Workflow Configuration、Web UI Operations。
+- Reference: CLI Reference、API、Configuration、Schema。
+- Contributing: Development Setup、Running Locally、Testing。
 
 sidebar は明示的に管理しています。`docs/site/docs/` に新しいページを追加し、そのページを navigation に表示したい場合は `sidebars.ts` も更新してください。
+
+通常の図表には Mermaid を使います。よりリッチな静的 overview が必要なページでは、手書き SVG を `static/img/` 配下に置きます。
 
 ## ローカライズ
 
