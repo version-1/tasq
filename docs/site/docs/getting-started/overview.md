@@ -7,23 +7,59 @@ sidebar_position: 1
 
 # Overview
 
-Tasq is a local-first issue tracking and agent orchestration workspace for developers who want task state, automation state, and review handoff to stay close to the repository.
+Tasq is an AI coding-agent task manager for running multiple implementation tasks in parallel with Claude Code, Codex, and similar agents.
 
-It keeps the human issue workflow simple while giving agents a structured command-line and API surface. A task can move from backlog to review through `tq`, the Web UI, or another client without each tool inventing its own storage format.
+It creates an isolated workspace for each task and supports the workflow from task registration, agent execution, state management, review, and integration.
+
+## Problem
+
+AI coding agents make it possible to work on multiple implementation tasks at the same time. The bottleneck moves from writing code to managing parallel work.
+
+### Human Context Switching
+
+Agents can run in parallel, but humans still need to track which tasks were assigned, which agents are running, how far each task has progressed, and what should be reviewed next.
+
+### Workspace Conflicts
+
+Running multiple agents in one repository checkout can create branch switching issues, unfinished-change conflicts, and overlapping file edits.
+
+### Repeated Setup Work
+
+Each agent task often needs the same preparation steps: create a branch, create a worktree, verify dependencies, and run the right setup commands.
+
+## Solution
+
+Tasq manages executable tasks as a queue and creates agent-ready workspaces for tasks that are ready to run.
+
+```text
+Backlog
+   |
+   v
+ Ready
+   |
+   v
+ tasq
+   |
+   +------------+------------+
+   |            |            |
+ Agent       Agent        Agent
+   |            |            |
+Task A      Task B       Task C
+```
 
 ## What Tasq Provides
 
-- A local issue tracker backed by SQLite.
-- A `tq` CLI for scripts, agents, and local workflows.
-- A Web UI for scanning issues, changing status, and inspecting task details.
-- An orchestrator boundary for run history, workspaces, and future agent execution.
-- Repository workflow documents that describe how work should be performed.
+- Task management for implementation work.
+- Isolated Git worktrees for agent execution.
+- Parallel agent execution without sharing one mutable checkout.
+- Review workflow support from running work to reviewed output.
+- A local issue tracker, `tq` CLI, Web UI, and orchestration boundary for run history and workspace metadata.
 
-## Why Local First
+## Goal
 
-Tasq is designed for private repositories, local agent runners, and work that should not require a hosted tracker before it can be organized. The issue-tracker and orchestrator run on loopback ports, store data under `TQ_HOME`, and expose APIs that local tools can compose.
+Tasq is not only about faster code generation. It is about reducing the management cost introduced by parallel AI-agent work.
 
-This keeps setup lightweight and makes it possible to test workflow automation without introducing hosted infrastructure, organization-wide credentials, or external tracker synchronization.
+It gives developers one workflow for task management, workspace isolation, and agent execution.
 
 ## Documentation Map
 
