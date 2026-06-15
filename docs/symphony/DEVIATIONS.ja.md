@@ -70,8 +70,8 @@ Table notes:
 
 Symphony との差分:
 
-- `WORKFLOW.md` は orchestrator process startup 時に一度だけ load されます。Dynamic watch/reload と、
-  変更された settings の runtime re-application は延期されています。
+- Effective `WORKFLOW.md` は issue の queue または dispatch 時に project ごとに解決されます。
+  すでに実行中の work に対する dynamic watch/reload は延期されています。
 - Unknown front matter fields は forward compatibility のために無視されます。
 - `workspace.source` はサポートされません。Tasq は `workspace.root` 配下に Git worktree で issue
   workspaces を作成します。
@@ -107,7 +107,8 @@ implementation ではありません。
 実装済み、または進行中:
 
 - Symphony front matter の小さな supported subset を使った workflow file loading。
-- `WORKFLOW.md` は process startup 時にのみ load されます。runtime reload は意図的に延期されています。
+- Effective workflow resolution は project ごとに queue/dispatch 時点で行われます。すでに実行中の
+  work に対する runtime reload は意図的に延期されています。
 - Workspace root resolution と sanitized per-issue workspace directories。
 - `hooks.timeout_ms` を含む workspace lifecycle hooks。
 - simulated implementation と Codex app-server subprocess implementation を持つ runner interface。
@@ -149,8 +150,7 @@ issue-tracker API で解決し、同じ relative suffix を使って referenced 
 を作成します。例: `<Project.Location>/.worktrees/agents/issue-42`。
 
 Workspace branches は `agent/<workspace-key>` を使います。例: `agent/issue-42`。Cleanup は
-`git worktree remove --force` を使い、対応する local branch を best-effort で削除し、orchestrator
-startup 時に `git worktree prune` を実行します。
+`git worktree remove --force` を使い、対応する local branch を best-effort で削除します。
 
 ## Workflow Path Selection
 

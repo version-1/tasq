@@ -6,11 +6,14 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/version-1/tasq/internal/issue/domain/entity"
 	"github.com/version-1/tasq/internal/orchestrator/run"
 	"github.com/version-1/tasq/internal/orchestrator/runstore"
+	"github.com/version-1/tasq/internal/orchestrator/workflow"
 	"github.com/version-1/tasq/internal/orchestrator/workspace"
 )
 
@@ -30,13 +33,14 @@ type Store interface {
 }
 
 type WorkspaceManager interface {
-	CreateForIssueInProjectLocation(identifier string, projectLocation string) (workspace.Workspace, error)
+	CreateForIssueInProjectLocationWithConfig(identifier string, projectLocation string, root string, hooks workspace.HookConfig) (workspace.Workspace, error)
 }
 
 type Poller struct {
 	tracker        Tracker
 	store          Store
 	workspaces     WorkspaceManager
+	workflow       WorkflowResolver
 	dispatcher     PollDispatcher
 	interval       time.Duration
 	maxActiveRuns  int
@@ -52,6 +56,7 @@ type PollerConfig struct {
 	Tracker        Tracker
 	Store          Store
 	Workspaces     WorkspaceManager
+	Workflow       WorkflowResolver
 	Dispatcher     PollDispatcher
 	Interval       time.Duration
 	MaxActiveRuns  int
@@ -68,6 +73,9 @@ func NewPoller(config PollerConfig) (*Poller, error) {
 	if config.Workspaces == nil {
 		return nil, errors.New("workspace manager is required")
 	}
+	if config.Workflow == nil {
+		return nil, errors.New("workflow resolver is required")
+	}
 	if config.Interval <= 0 {
 		return nil, errors.New("poll interval must be positive")
 	}
@@ -81,6 +89,7 @@ func NewPoller(config PollerConfig) (*Poller, error) {
 		tracker:        config.Tracker,
 		store:          config.Store,
 		workspaces:     config.Workspaces,
+		workflow:       config.Workflow,
 		dispatcher:     config.Dispatcher,
 		interval:       config.Interval,
 		maxActiveRuns:  config.MaxActiveRuns,
@@ -171,7 +180,17 @@ func (p *Poller) queueIssue(ctx context.Context, issue entity.Issue) (run.Run, e
 	if err != nil {
 		return run.Run{}, fmt.Errorf("fetch project %d for %s: %w", issue.ProjectID, identifier, err)
 	}
-	workspaceInfo, err := p.workspaces.CreateForIssueInProjectLocation(identifier, project.Location)
+	definition, err := p.workflow.Resolve(ctx, project.ID)
+	if err != nil {
+		_ = p.store.RecordWorkspaceSetupFailure(ctx, issue.ID, identifier, "", err.Error())
+		return run.Run{}, fmt.Errorf("resolve workflow for project %d: %w", project.ID, err)
+	}
+	workspaceRoot, err := projectWorkspaceRoot(definition, project.Location)
+	if err != nil {
+		_ = p.store.RecordWorkspaceSetupFailure(ctx, issue.ID, identifier, "", err.Error())
+		return run.Run{}, fmt.Errorf("resolve workspace root for %s: %w", identifier, err)
+	}
+	workspaceInfo, err := p.workspaces.CreateForIssueInProjectLocationWithConfig(identifier, project.Location, workspaceRoot, hookConfig(definition.Config))
 	if err != nil {
 		_ = p.store.RecordWorkspaceSetupFailure(ctx, issue.ID, identifier, "", err.Error())
 		return run.Run{}, fmt.Errorf("create workspace for %s: %w", identifier, err)
@@ -217,4 +236,29 @@ func (p *Poller) nextAttempt(ctx context.Context, issueID int64) (int, error) {
 
 func issueIdentifier(issueID int64) string {
 	return fmt.Sprintf("issue-%d", issueID)
+}
+
+func projectWorkspaceRoot(definition workflow.Definition, projectLocation string) (string, error) {
+	root := definition.Config.WorkspaceRoot
+	if strings.TrimSpace(projectLocation) == "" || strings.TrimSpace(definition.Path) == "" {
+		return root, nil
+	}
+	rel, err := filepath.Rel(filepath.Dir(definition.Path), root)
+	if err != nil {
+		return "", err
+	}
+	if rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return root, nil
+	}
+	return filepath.Join(projectLocation, rel), nil
+}
+
+func hookConfig(config workflow.Config) workspace.HookConfig {
+	return workspace.HookConfig{
+		AfterCreate:  config.HookAfterCreate,
+		BeforeRun:    config.HookBeforeRun,
+		AfterRun:     config.HookAfterRun,
+		BeforeRemove: config.HookBeforeRemove,
+		Timeout:      config.HookTimeout,
+	}
 }

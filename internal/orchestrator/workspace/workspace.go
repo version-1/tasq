@@ -16,6 +16,8 @@ type Manager struct {
 	hooks    HookConfig
 }
 
+type ProjectManager struct{}
+
 type Workspace struct {
 	Path         string
 	WorkspaceKey string
@@ -104,6 +106,26 @@ func (m *Manager) CreateForIssue(identifier string) (Workspace, error) {
 }
 
 func (m *Manager) CreateForIssueInProjectLocation(identifier string, projectLocation string) (Workspace, error) {
+	return m.CreateForIssueInProjectLocationWithConfig(identifier, projectLocation, m.root, m.hooks)
+}
+
+func (m *Manager) CreateForIssueInProjectLocationWithConfig(identifier string, projectLocation string, root string, hooks HookConfig) (Workspace, error) {
+	manager, err := NewManagerWithHooks(root, hooks)
+	if err != nil {
+		return Workspace{}, err
+	}
+	return manager.createForIssueInProjectLocation(identifier, projectLocation)
+}
+
+func (ProjectManager) CreateForIssueInProjectLocationWithConfig(identifier string, projectLocation string, root string, hooks HookConfig) (Workspace, error) {
+	manager, err := NewManagerWithHooks(root, hooks)
+	if err != nil {
+		return Workspace{}, err
+	}
+	return manager.createForIssueInProjectLocation(identifier, projectLocation)
+}
+
+func (m *Manager) createForIssueInProjectLocation(identifier string, projectLocation string) (Workspace, error) {
 	root, err := m.rootForProjectLocation(projectLocation)
 	if err != nil {
 		return Workspace{}, err

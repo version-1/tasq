@@ -23,7 +23,6 @@ import (
 
 func main() {
 	dbPath := flag.String("db", "", "SQLite database path")
-	workflowPath := flag.String("workflow", "WORKFLOW.md", "Symphony workflow file path")
 	issueTrackerURL := flag.String("issue-tracker", "", "issue-tracker API base URL; enables polling when set")
 	httpPort := flag.Int("port", -1, "orchestrator HTTP server port; overrides workflow server.port when >= 0")
 	flag.Parse()
@@ -53,7 +52,7 @@ func main() {
 		}
 	}()
 
-	definition, err := workflow.Load(*workflowPath)
+	definition, err := workflow.Load(tqconfig.WorkflowPath(home))
 	if err != nil {
 		log.Fatalf("load workflow: %v", err)
 	}
@@ -69,19 +68,6 @@ func main() {
 	var refresher httpserver.Refresher
 	var dispatcher *coordinator.Dispatcher
 	if resolvedIssueTrackerURL != "" {
-		workspaceManager, err := workspace.NewManagerWithHooks(definition.Config.WorkspaceRoot, workspace.HookConfig{
-			AfterCreate:  definition.Config.HookAfterCreate,
-			BeforeRun:    definition.Config.HookBeforeRun,
-			AfterRun:     definition.Config.HookAfterRun,
-			BeforeRemove: definition.Config.HookBeforeRemove,
-			Timeout:      definition.Config.HookTimeout,
-		})
-		if err != nil {
-			log.Fatalf("create workspace manager: %v", err)
-		}
-		if err := workspaceManager.Prune(); err != nil {
-			log.Fatalf("prune workspace manager: %v", err)
-		}
 		trackerClient := tracker.NewClient(resolvedIssueTrackerURL)
 		syncResult, err := workflowsync.SyncProjectWorkflows(ctx, trackerClient)
 		if err != nil {
@@ -102,7 +88,8 @@ func main() {
 		poller, err := coordinator.NewPoller(coordinator.PollerConfig{
 			Tracker:        trackerClient,
 			Store:          store,
-			Workspaces:     workspaceManager,
+			Workspaces:     workspace.ProjectManager{},
+			Workflow:       workflowResolver,
 			Dispatcher:     dispatcher,
 			Interval:       definition.Config.PollInterval,
 			MaxActiveRuns:  effectiveMaxConcurrentRuns,
