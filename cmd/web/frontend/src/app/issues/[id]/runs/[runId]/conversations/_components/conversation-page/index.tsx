@@ -16,6 +16,11 @@ type LoadState =
 
 type Translator = (key: string, options?: Record<string, unknown>) => string;
 
+type ApprovalRequestDetails = {
+  reason: string;
+  command: string;
+};
+
 export function ConversationPage() {
   const { t } = useTranslation();
   const { id, runId } = useParams();
@@ -102,7 +107,13 @@ function ConversationEvents({ events }: { events: OrchestratorConversationEvent[
   return (
     <ol className={styles.timeline}>
       {events.map((event, index) => (
-        <li key={`${event.at}-${event.event}-${index}`} className={styles.timelineItem}>
+        <li
+          key={`${event.at}-${event.event}-${index}`}
+          className={[
+            styles.timelineItem,
+            event.event === "item/commandExecution/requestApproval" ? styles.approvalItem : "",
+          ].join(" ")}
+        >
           <div className={styles.eventHeader}>
             <EventTitle event={event} t={t} />
             <span className={styles.eventTime}>{formatDateTime(event.at)}</span>
@@ -121,6 +132,14 @@ function EventTitle({
   event: OrchestratorConversationEvent;
   t: Translator;
 }) {
+  if (event.event === "item/commandExecution/requestApproval") {
+    return (
+      <span className={[styles.eventType, styles.approvalBadge].join(" ")}>
+        {eventLabel(event.event, t)}
+      </span>
+    );
+  }
+
   if (event.event !== "item/completed") {
     return <span className={styles.eventType}>{eventLabel(event.event, t)}</span>;
   }
@@ -168,10 +187,35 @@ function EventBody({
     );
   }
 
+  if (event.event === "item/commandExecution/requestApproval") {
+    return <ApprovalRequest event={event} t={t} />;
+  }
+
   return (
     <p className={styles.statusMessage}>
       {event.message || t(`runStatuses.${event.event}`)}
     </p>
+  );
+}
+
+function ApprovalRequest({
+  event,
+  t,
+}: {
+  event: OrchestratorConversationEvent;
+  t: Translator;
+}) {
+  const details = extractApprovalRequestDetails(event.payload_json);
+  const reason = details.reason || event.message || t("issues.detailPage.approvalRequestReasonFallback");
+  const command = details.command || t("issues.detailPage.approvalRequestCommandFallback");
+
+  return (
+    <section className={styles.approvalRequest} aria-label={t("issues.detailPage.approvalRequest")}>
+      <h3 className={styles.approvalReason}>{reason}</h3>
+      <pre className={styles.approvalCommand}>
+        <code>{command}</code>
+      </pre>
+    </section>
   );
 }
 
@@ -185,6 +229,17 @@ function eventLabel(event: OrchestratorConversationEvent["event"], t: Translator
 function extractAggregatedOutput(payloadJSON: string): string {
   const payload = parsePayloadJSON(payloadJSON);
   return typeof payload === "string" ? payload : findAggregatedOutput(payload);
+}
+
+function extractApprovalRequestDetails(payloadJSON: string): ApprovalRequestDetails {
+  const payload = parsePayloadJSON(payloadJSON);
+  if (typeof payload === "string") {
+    return { reason: "", command: "" };
+  }
+  return {
+    reason: findStringField(payload, "reason"),
+    command: findStringField(payload, "command"),
+  };
 }
 
 type ItemCompletedView = {

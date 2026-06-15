@@ -114,6 +114,9 @@ const resources = {
         detailPage: {
           backToIssue: "Issue に戻る",
           backToList: "一覧に戻る",
+          approvalRequest: "承認リクエスト",
+          approvalRequestCommandFallback: "コマンド情報なし",
+          approvalRequestReasonFallback: "承認が必要です",
           commentCount: "{{count}} 件",
           comments: "コメント",
           conversation: "会話履歴",
@@ -486,6 +489,9 @@ const resources = {
         detailPage: {
           backToIssue: "Back to issue",
           backToList: "Back to list",
+          approvalRequest: "Approval request",
+          approvalRequestCommandFallback: "No command details",
+          approvalRequestReasonFallback: "Approval is required",
           commentCount: "{{count}} comments",
           comments: "Comments",
           conversation: "Conversation history",

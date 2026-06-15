@@ -1,6 +1,7 @@
 import { render, screen, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { OrchestratorConversation } from "@/lib/types";
 import { ConversationPage } from "./index";
 
 const api = vi.hoisted(() => ({
@@ -10,9 +11,11 @@ const api = vi.hoisted(() => ({
 
 vi.mock("@/lib/api", () => api);
 
-function renderConversationPage() {
+function renderConversationPage(conversation: OrchestratorConversation) {
+  api.fetchOrchestratorConversation.mockResolvedValue(conversation);
+
   render(
-    <MemoryRouter initialEntries={["/issues/48/runs/run-1/conversations"]}>
+    <MemoryRouter initialEntries={[`/issues/${conversation.issue_id}/runs/${conversation.run_id}/conversations`]}>
       <Routes>
         <Route
           path="/issues/:id/runs/:runId/conversations"
@@ -23,14 +26,14 @@ function renderConversationPage() {
   );
 }
 
-describe("ConversationPage item completed events", () => {
+describe("ConversationPage", () => {
   beforeEach(() => {
     api.fetchOrchestratorConversation.mockReset();
     api.fetchOrchestratorIssueRuntime.mockReset();
   });
 
   it("renders item completed command execution content in chronological order", async () => {
-    api.fetchOrchestratorConversation.mockResolvedValue({
+    renderConversationPage({
       issue_identifier: "issue-48",
       issue_id: "48",
       run_id: "run-1",
@@ -64,8 +67,6 @@ describe("ConversationPage item completed events", () => {
       ],
     });
 
-    renderConversationPage();
-
     await screen.findByText("Conversation history · run-1");
     const items = screen.getAllByRole("listitem");
 
@@ -81,7 +82,7 @@ describe("ConversationPage item completed events", () => {
   });
 
   it("renders text items without a zero exit code indicator", async () => {
-    api.fetchOrchestratorConversation.mockResolvedValue({
+    renderConversationPage({
       issue_identifier: "issue-48",
       issue_id: "48",
       run_id: "run-1",
@@ -101,8 +102,6 @@ describe("ConversationPage item completed events", () => {
       ],
     });
 
-    renderConversationPage();
-
     const item = await screen.findByRole("listitem");
 
     expect(within(item).getByText("text")).toBeInTheDocument();
@@ -112,7 +111,7 @@ describe("ConversationPage item completed events", () => {
   });
 
   it("uses a fallback header for unknown completed item types", async () => {
-    api.fetchOrchestratorConversation.mockResolvedValue({
+    renderConversationPage({
       issue_identifier: "issue-48",
       issue_id: "48",
       run_id: "run-1",
@@ -131,11 +130,71 @@ describe("ConversationPage item completed events", () => {
       ],
     });
 
-    renderConversationPage();
-
     const item = await screen.findByRole("listitem");
 
     expect(within(item).getByText("customThing")).toBeInTheDocument();
     expect(within(item).getByText("custom body")).toBeInTheDocument();
+  });
+
+  it("renders command approval requests with the reason and command only", async () => {
+    renderConversationPage({
+      issue_identifier: "issue-49",
+      issue_id: "49",
+      run_id: "run-approval",
+      events: [
+        {
+          at: "2026-06-15T03:00:00Z",
+          event: "item/commandExecution/requestApproval",
+          message: "approval requested",
+          payload_json: JSON.stringify({
+            reason: "needs elevated filesystem access",
+            command: "npm run build",
+            availableDecisions: ["approve", "deny"],
+            proposedExecpolicyAmendment: { sandbox_permissions: "require_escalated" },
+          }),
+        },
+      ],
+    });
+
+    const item = await screen.findByRole("listitem");
+    const approvalRequest = within(item).getByRole("region", { name: "Approval request" });
+
+    expect(within(item).getByText("approval requested")).toBeInTheDocument();
+    expect(
+      within(approvalRequest).getByRole("heading", { name: "needs elevated filesystem access" }),
+    ).toBeInTheDocument();
+    expect(within(approvalRequest).getByText("npm run build")).toBeInTheDocument();
+    expect(screen.queryByText("availableDecisions")).not.toBeInTheDocument();
+    expect(screen.queryByText("proposedExecpolicyAmendment")).not.toBeInTheDocument();
+  });
+
+  it("finds approval request details nested under params", async () => {
+    renderConversationPage({
+      issue_identifier: "issue-49",
+      issue_id: "49",
+      run_id: "run-nested-approval",
+      events: [
+        {
+          at: "2026-06-15T03:00:00Z",
+          event: "item/commandExecution/requestApproval",
+          message: "",
+          payload_json: JSON.stringify({
+            id: 1,
+            method: "item/commandExecution/requestApproval",
+            params: {
+              command: "make test",
+              reason: "needs command approval",
+            },
+          }),
+        },
+      ],
+    });
+
+    const approvalRequest = await screen.findByRole("region", { name: "Approval request" });
+
+    expect(
+      within(approvalRequest).getByRole("heading", { name: "needs command approval" }),
+    ).toBeInTheDocument();
+    expect(within(approvalRequest).getByText("make test")).toBeInTheDocument();
   });
 });
