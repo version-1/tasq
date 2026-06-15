@@ -14,6 +14,8 @@ type LoadState =
   | { kind: "empty" }
   | { kind: "error"; message: string };
 
+type Translator = (key: string, options?: Record<string, unknown>) => string;
+
 type ApprovalRequestDetails = {
   reason: string;
   command: string;
@@ -113,37 +115,96 @@ function ConversationEvents({ events }: { events: OrchestratorConversationEvent[
           ].join(" ")}
         >
           <div className={styles.eventHeader}>
-            <span
-              className={[
-                styles.eventType,
-                event.event === "item/commandExecution/requestApproval" ? styles.approvalBadge : "",
-              ].join(" ")}
-            >
-              {eventLabel(event.event, t)}
-            </span>
+            <EventTitle event={event} t={t} />
             <span className={styles.eventTime}>{formatDateTime(event.at)}</span>
           </div>
-          {event.event === "turn_completed" ? (
-            <Markdown
-              className={styles.markdown}
-              content={extractAggregatedOutput(event.payload_json)}
-              emptyText={event.message || t("issues.detailPage.emptyConversationEvent")}
-            />
-          ) : event.event === "item/commandExecution/requestApproval" ? (
-            <ApprovalRequest event={event} />
-          ) : (
-            <p className={styles.statusMessage}>
-              {event.message || t(`runStatuses.${event.event}`)}
-            </p>
-          )}
+          <EventBody event={event} t={t} />
         </li>
       ))}
     </ol>
   );
 }
 
-function ApprovalRequest({ event }: { event: OrchestratorConversationEvent }) {
-  const { t } = useTranslation();
+function EventTitle({
+  event,
+  t,
+}: {
+  event: OrchestratorConversationEvent;
+  t: Translator;
+}) {
+  if (event.event === "item/commandExecution/requestApproval") {
+    return (
+      <span className={[styles.eventType, styles.approvalBadge].join(" ")}>
+        {eventLabel(event.event, t)}
+      </span>
+    );
+  }
+
+  if (event.event !== "item/completed") {
+    return <span className={styles.eventType}>{eventLabel(event.event, t)}</span>;
+  }
+
+  const item = itemCompletedView(event.payload_json);
+  return (
+    <span className={styles.eventType}>
+      {item.type}
+      {item.command ? <code className={styles.eventCommand}>{item.command}</code> : null}
+    </span>
+  );
+}
+
+function EventBody({
+  event,
+  t,
+}: {
+  event: OrchestratorConversationEvent;
+  t: Translator;
+}) {
+  if (event.event === "turn_completed") {
+    return (
+      <Markdown
+        className={styles.markdown}
+        content={extractAggregatedOutput(event.payload_json)}
+        emptyText={event.message || t("issues.detailPage.emptyConversationEvent")}
+      />
+    );
+  }
+
+  if (event.event === "item/completed") {
+    const item = itemCompletedView(event.payload_json);
+    const content = [item.aggregatedOutput, item.text].filter(Boolean).join("\n\n");
+    return (
+      <div className={styles.itemBody}>
+        <Markdown
+          className={styles.markdown}
+          content={content}
+          emptyText={event.message || t("issues.detailPage.emptyConversationEvent")}
+        />
+        {item.exitCode !== null && item.exitCode !== 0 ? (
+          <p className={styles.exitCode}>{t("issues.detailPage.exitCode", { code: item.exitCode })}</p>
+        ) : null}
+      </div>
+    );
+  }
+
+  if (event.event === "item/commandExecution/requestApproval") {
+    return <ApprovalRequest event={event} t={t} />;
+  }
+
+  return (
+    <p className={styles.statusMessage}>
+      {event.message || t(`runStatuses.${event.event}`)}
+    </p>
+  );
+}
+
+function ApprovalRequest({
+  event,
+  t,
+}: {
+  event: OrchestratorConversationEvent;
+  t: Translator;
+}) {
   const details = extractApprovalRequestDetails(event.payload_json);
   const reason = details.reason || event.message || t("issues.detailPage.approvalRequestReasonFallback");
   const command = details.command || t("issues.detailPage.approvalRequestCommandFallback");
@@ -158,52 +219,57 @@ function ApprovalRequest({ event }: { event: OrchestratorConversationEvent }) {
   );
 }
 
-function eventLabel(event: OrchestratorConversationEvent["event"], t: (key: string) => string): string {
+function eventLabel(event: OrchestratorConversationEvent["event"], t: Translator): string {
   if (event === "turn_completed") {
     return t("issues.detailPage.turnCompleted");
   }
   return t(`runStatuses.${event}`);
 }
 
-function extractApprovalRequestDetails(payloadJSON: string): ApprovalRequestDetails {
-  if (payloadJSON.trim() === "") {
-    return { reason: "", command: "" };
-  }
-  try {
-    const payload = JSON.parse(payloadJSON) as unknown;
-    return {
-      reason: findStringField(payload, "reason"),
-      command: findStringField(payload, "command"),
-    };
-  } catch {
-    return { reason: "", command: "" };
-  }
-}
-
-function findStringField(value: unknown, fieldName: string): string {
-  if (!value || typeof value !== "object") {
-    return "";
-  }
-  const record = value as Record<string, unknown>;
-  if (typeof record[fieldName] === "string") {
-    return record[fieldName];
-  }
-  for (const child of Object.values(record)) {
-    const result = findStringField(child, fieldName);
-    if (result !== "") {
-      return result;
-    }
-  }
-  return "";
-}
-
 function extractAggregatedOutput(payloadJSON: string): string {
+  const payload = parsePayloadJSON(payloadJSON);
+  return typeof payload === "string" ? payload : findAggregatedOutput(payload);
+}
+
+function extractApprovalRequestDetails(payloadJSON: string): ApprovalRequestDetails {
+  const payload = parsePayloadJSON(payloadJSON);
+  if (typeof payload === "string") {
+    return { reason: "", command: "" };
+  }
+  return {
+    reason: findStringField(payload, "reason"),
+    command: findStringField(payload, "command"),
+  };
+}
+
+type ItemCompletedView = {
+  type: string;
+  command: string;
+  aggregatedOutput: string;
+  text: string;
+  exitCode: number | null;
+};
+
+function itemCompletedView(payloadJSON: string): ItemCompletedView {
+  const payload = parsePayloadJSON(payloadJSON);
+  const item = typeof payload === "string" ? null : findItemPayload(payload);
+  const source = item ?? (isRecord(payload) ? payload : null);
+
+  return {
+    type: findStringField(source, "type") || "item/completed",
+    command: findStringField(source, "command"),
+    aggregatedOutput: source ? findAggregatedOutput(source) : "",
+    text: findStringField(source, "text"),
+    exitCode: findNumberField(source, "exitCode"),
+  };
+}
+
+function parsePayloadJSON(payloadJSON: string): unknown {
   if (payloadJSON.trim() === "") {
-    return "";
+    return {};
   }
   try {
-    const payload = JSON.parse(payloadJSON) as unknown;
-    return findAggregatedOutput(payload);
+    return JSON.parse(payloadJSON) as unknown;
   } catch {
     return payloadJSON;
   }
@@ -229,6 +295,63 @@ function findAggregatedOutput(value: unknown): string {
     }
   }
   return "";
+}
+
+function findItemPayload(value: unknown): Record<string, unknown> | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+  if (isRecord(value.item)) {
+    return value.item;
+  }
+  if (typeof value.type === "string") {
+    return value;
+  }
+  for (const child of Object.values(value)) {
+    const item = findItemPayload(child);
+    if (item) {
+      return item;
+    }
+  }
+  return null;
+}
+
+function findStringField(value: unknown, field: string): string {
+  if (!isRecord(value)) {
+    return "";
+  }
+  const direct = value[field];
+  if (typeof direct === "string") {
+    return direct;
+  }
+  for (const child of Object.values(value)) {
+    const result = findStringField(child, field);
+    if (result !== "") {
+      return result;
+    }
+  }
+  return "";
+}
+
+function findNumberField(value: unknown, field: string): number | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+  const direct = value[field];
+  if (typeof direct === "number" && Number.isFinite(direct)) {
+    return direct;
+  }
+  for (const child of Object.values(value)) {
+    const result = findNumberField(child, field);
+    if (result !== null) {
+      return result;
+    }
+  }
+  return null;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
 function formatDateTime(value: string): string {
