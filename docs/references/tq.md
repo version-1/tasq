@@ -159,7 +159,7 @@ make run-tq ARGS="comment list 1"
 
 ### `service start`
 
-Start issue-tracker and orchestrator as host-local background processes. The command starts issue-tracker first, waits for its health endpoint, and then starts orchestrator. Logs are appended under `$TQ_HOME/system/log/`.
+Start issue-tracker, orchestrator, and web as host-local background processes. Before starting any service process, the command opens the local issue-tracker and orchestrator databases and checks for pending migrations. If any migration is pending, it exits immediately with guidance to run `tq migrate`. Otherwise, it starts issue-tracker first, waits for its health endpoint, then starts orchestrator and web. Logs are appended under `$TQ_HOME/system/log/`.
 
 ```sh
 TQ_HOME=./.tasq go run ./cmd/tq service start
@@ -171,6 +171,7 @@ Default service ports:
 |---|---:|---|
 | issue-tracker | `37651` | `$TQ_HOME/system/log/issue-tracker.log` |
 | orchestrator | `37652` | `$TQ_HOME/system/log/orchestrator.log` |
+| web | `37653` | `$TQ_HOME/system/log/web.log` |
 
 ### `service status`
 
