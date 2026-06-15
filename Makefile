@@ -1,5 +1,6 @@
 COMPOSE ?= docker compose
 BROWSER_OPEN ?= open
+DOCS_SITE_URL ?= http://localhost:3000/tasq/
 TQ_HOME ?= ./.tasq
 ISSUE_TRACKER_PORT ?=
 ORCHESTRATOR_PORT ?=
@@ -96,6 +97,24 @@ dev-reset-db: dev-check ## Reset local SQLite data. Usage: make dev-reset-db CON
 dev-openapi: dev-check ## Start only the OpenAPI UI Compose service and print assigned URLs.
 	OPENAPI_PORT=$(OPENAPI_PORT) $(COMPOSE) up -d openapi
 	$(MAKE) dev-ports
+
+.PHONY: dev-docs
+dev-docs: ## Install docs-site dependencies and start the Docusaurus dev server.
+	cd docs/site && npm install && npm start
+
+.PHONY: dev-docs-build
+dev-docs-build: ## Install docs-site dependencies and build the static docs-site.
+	cd docs/site && npm install && npm run build
+
+.PHONY: dev-docs-open
+dev-docs-open: ## Open the docs-site dev server in a browser.
+	@opener="$(BROWSER_OPEN)"; \
+	if ! command -v "$$opener" >/dev/null 2>&1; then \
+		echo "browser opener '$$opener' is not available"; \
+		exit 0; \
+	fi; \
+	printf "opening docs-site: %s\n" "$(DOCS_SITE_URL)"; \
+	"$$opener" "$(DOCS_SITE_URL)" >/dev/null 2>&1 || true
 
 .PHONY: dev-ports
 dev-ports: dev-check ## Show assigned local URLs for dev services.
