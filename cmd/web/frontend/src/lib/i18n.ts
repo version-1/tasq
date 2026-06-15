@@ -225,6 +225,8 @@ const resources = {
       runStatuses: {
         cancelled: "キャンセル",
         failed: "失敗",
+        "item/commandExecution/requestApproval": "承認リクエスト",
+        "item/completed": "項目完了",
         queued: "待機中",
         running: "実行中",
         starting: "開始中",
@@ -594,6 +596,8 @@ const resources = {
       runStatuses: {
         cancelled: "cancelled",
         failed: "failed",
+        "item/commandExecution/requestApproval": "approval requested",
+        "item/completed": "item completed",
         queued: "queued",
         running: "running",
         starting: "starting",

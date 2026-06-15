@@ -86,8 +86,9 @@ paths:
         - Runtime Debug
       summary: Get conversation events for one run.
       description: |
-        Returns chronological run status transition events and `turn_completed`
-        events for a run that belongs to the requested issue identifier.
+        Returns chronological run status transition events, `turn_completed`,
+        `item/completed`, and `item/commandExecution/requestApproval` events for
+        a run that belongs to the requested issue identifier.
       responses:
         "200":
           description: Conversation events for the run.
@@ -407,6 +408,8 @@ components:
             - succeeded
             - failed
             - cancelled
+            - item/completed
+            - item/commandExecution/requestApproval
         message:
           type: string
           example: turn_id=turn-1

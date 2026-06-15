@@ -301,7 +301,15 @@ func (s *Store) ConversationEvents(ctx context.Context, runID string) ([]run.Run
 	rows, err := s.db.QueryContext(ctx, `SELECT id, run_id, event_type, message, payload_json, occurred_at
 		FROM runner_events
 		WHERE run_id = ?
-			AND event_type IN ('turn_completed', 'running', 'succeeded', 'failed', 'cancelled')
+			AND event_type IN (
+				'running',
+				'turn_completed',
+				'succeeded',
+				'failed',
+				'cancelled',
+				'item/completed',
+				'item/commandExecution/requestApproval'
+			)
 		ORDER BY id ASC`, runID)
 	if err != nil {
 		return nil, fmt.Errorf("list conversation events: %w", err)

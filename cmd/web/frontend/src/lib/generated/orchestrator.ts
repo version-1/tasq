@@ -153,6 +153,8 @@ export const ConversationEventEvent = {
   succeeded: 'succeeded',
   failed: 'failed',
   cancelled: 'cancelled',
+  'item/completed': 'item/completed',
+  'item/commandExecution/requestApproval': 'item/commandExecution/requestApproval',
 } as const;
 
 export interface ConversationEvent {
@@ -356,8 +358,9 @@ export const getApiV1IssueIdentifier = async (issueIdentifier: string, options?:
 
 
 /**
- * Returns chronological run status transition events and `turn_completed`
-events for a run that belongs to the requested issue identifier.
+ * Returns chronological run status transition events, `turn_completed`,
+`item/completed`, and `item/commandExecution/requestApproval` events for
+a run that belongs to the requested issue identifier.
 
  * @summary Get conversation events for one run.
  */
