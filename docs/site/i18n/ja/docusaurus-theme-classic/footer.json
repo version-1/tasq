@@ -11,9 +11,17 @@
     "message": "はじめに",
     "description": "The label of footer link with label=Getting Started linking to /"
   },
-  "link.item.label.CLI Reference": {
-    "message": "CLI リファレンス",
-    "description": "The label of footer link with label=CLI Reference linking to /cli-reference"
+  "link.item.label.Concepts": {
+    "message": "概念",
+    "description": "The label of footer link with label=Concepts linking to /getting-started/concepts/overview"
+  },
+  "link.item.label.Guides": {
+    "message": "ガイド",
+    "description": "The label of footer link with label=Guides linking to /guides/workflow-configuration"
+  },
+  "link.item.label.Reference": {
+    "message": "リファレンス",
+    "description": "The label of footer link with label=Reference linking to /reference/cli-reference"
   },
   "link.item.label.GitHub": {
     "message": "GitHub",
