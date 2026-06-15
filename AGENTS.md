@@ -7,8 +7,8 @@ Ask questions to clarify ambiguous instructions.
 
 # Documentation
 
-- Write documentation in English and Japanese. 
-  - Engish Documentation is the primary source of truth for development and design decisions.
+- Write documentation in English and Japanese.
+  - English documentation is the primary source of truth for development and design decisions.
   - All documents linked from AGENTS.md must also be written in English.
   - Create two documents for each topic, one in English and one in Japanese, and keep them synchronized.
 - See [docs/development.md](docs/development.md) for repository workflow, task flow, documentation update rules, and component workflow links.
