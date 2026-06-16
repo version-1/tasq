@@ -1,11 +1,11 @@
 .stack {
   display: grid;
-  gap: 16px;
+  gap: 10px;
   pointer-events: none;
   position: fixed;
   right: 24px;
   top: 24px;
-  width: min(520px, calc(100vw - 48px));
+  width: min(400px, calc(100vw - 48px));
   z-index: 1000;
 }
 
@@ -13,16 +13,16 @@
   align-items: flex-start;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-left: 5px solid var(--toast-accent);
-  border-radius: 12px;
-  box-shadow: 0 14px 32px rgb(0 0 0 / 12%);
+  border-left: 4px solid var(--toast-accent);
+  border-radius: 10px;
+  box-shadow: 0 10px 24px rgb(0 0 0 / 12%);
   color: var(--text);
   display: grid;
-  gap: 18px;
+  gap: 12px;
   grid-template-columns: auto minmax(0, 1fr) auto;
-  min-height: 92px;
+  min-height: 72px;
   overflow: hidden;
-  padding: 20px 24px;
+  padding: 14px 16px;
   pointer-events: auto;
 }
 
@@ -44,9 +44,9 @@
   border-radius: 999px;
   color: var(--toast-icon-color);
   display: inline-flex;
-  height: 56px;
+  height: 40px;
   justify-content: center;
-  width: 56px;
+  width: 40px;
 }
 
 .statusIcon {
@@ -55,14 +55,14 @@
 
 .content {
   display: grid;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
-  padding-top: 2px;
+  padding-top: 0;
 }
 
 .title {
   color: var(--text);
-  font-size: 18px;
+  font-size: 15px;
   font-weight: 800;
   line-height: 1.2;
   margin: 0;
@@ -70,7 +70,7 @@
 
 .message {
   color: var(--muted);
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 400;
   line-height: 1.45;
   margin: 0;
@@ -85,10 +85,10 @@
   color: var(--muted);
   display: inline-flex;
   flex: 0 0 auto;
-  height: 30px;
+  height: 26px;
   justify-content: center;
   padding: 0;
-  width: 30px;
+  width: 26px;
 }
 
 .dismiss:hover,
@@ -106,22 +106,22 @@
   }
 
   .toast {
-    gap: 12px;
+    gap: 10px;
     grid-template-columns: auto minmax(0, 1fr) auto;
-    min-height: 82px;
-    padding: 16px;
+    min-height: 68px;
+    padding: 12px 14px;
   }
 
   .iconBubble {
-    height: 44px;
-    width: 44px;
+    height: 36px;
+    width: 36px;
   }
 
   .title {
-    font-size: 16px;
+    font-size: 14px;
   }
 
   .message {
-    font-size: 14px;
+    font-size: 13px;
   }
 }

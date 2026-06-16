@@ -39,7 +39,7 @@ function ToastItem({
   return (
     <article className={`${styles.toast} ${styles[toast.type]}`} role="status">
       <span className={styles.iconBubble} aria-hidden="true">
-        <StatusIcon className={styles.statusIcon} size={26} strokeWidth={2.5} />
+        <StatusIcon className={styles.statusIcon} size={20} strokeWidth={2.5} />
       </span>
       <div className={styles.content}>
         <p className={styles.title}>{t(titleKey)}</p>
@@ -52,7 +52,7 @@ function ToastItem({
         title={t("toast.dismiss")}
         onClick={() => onDismiss(toast.id)}
       >
-        <X aria-hidden="true" size={22} strokeWidth={2} />
+        <X aria-hidden="true" size={18} strokeWidth={2} />
       </button>
     </article>
   );
