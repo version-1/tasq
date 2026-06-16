@@ -1,6 +1,16 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { issueFixtures } from "@/mocks/fixtures/issues";
+import type { IssueSummary } from "@/lib/types";
 import { IssueDetail } from "./index";
+
+function summaryIssue(index: number, commentCount = 0): IssueSummary {
+  return {
+    ...issueFixtures[index],
+    stats: {
+      commentCount,
+    },
+  };
+}
 
 const meta = {
   title: "Issue/Detail",
@@ -13,7 +23,7 @@ const meta = {
     ),
   ],
   args: {
-    issue: issueFixtures[0],
+    issue: summaryIssue(0, 2),
     onStatusChange: async () => undefined,
   },
 } satisfies Meta<typeof IssueDetail>;
@@ -26,14 +36,14 @@ export const Default: Story = {};
 
 export const Unassigned: Story = {
   args: {
-    issue: issueFixtures[3],
+    issue: summaryIssue(3),
   },
 };
 
 export const EmptyDescription: Story = {
   args: {
     issue: {
-      ...issueFixtures[0],
+      ...summaryIssue(0),
       description: "",
     },
   },

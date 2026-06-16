@@ -9,7 +9,14 @@ const summary: Summary = {
   columns: issueStatuses.map((status) => ({
     status,
     title: status,
-    issues: issueFixtures.filter((issue) => issue.status === status),
+    issues: issueFixtures
+      .filter((issue) => issue.status === status)
+      .map((issue) => ({
+        ...issue,
+        stats: {
+          commentCount: issue.id % 3,
+        },
+      })),
   })),
 };
 
