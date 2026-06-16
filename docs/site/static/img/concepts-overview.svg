@@ -25,18 +25,15 @@
     </style>
   </defs>
   <rect class="bg" x="0" y="0" width="1120" height="620"/>
-  <text class="title" x="48" y="58">Tasq local-first documentation model</text>
-  <text class="small" x="48" y="86">Issue state is user-facing. Run state is runtime-facing. Clients compose through local APIs.</text>
+  <text class="title" x="48" y="58">Tasq agent workflow model</text>
+  <text class="small" x="48" y="86">Task state, run state, and isolated workspaces stay separated for parallel AI-agent work.</text>
 
-  <rect class="panel" x="40" y="125" width="250" height="350"/>
+  <rect class="panel" x="40" y="125" width="250" height="260"/>
   <text class="label" x="68" y="162">Clients</text>
   <rect class="client" x="70" y="195" width="170" height="56" rx="12"/>
   <text class="label" x="115" y="229">tq CLI</text>
   <rect class="client" x="70" y="275" width="170" height="56" rx="12"/>
   <text class="label" x="108" y="309">Web UI</text>
-  <rect class="client" x="70" y="355" width="170" height="56" rx="12" opacity="0.48"/>
-  <text class="label" x="88" y="384">TUI planned</text>
-  <text class="tiny" x="102" y="402">not documented yet</text>
 
   <rect class="panel" x="380" y="120" width="300" height="178"/>
   <text class="label" x="410" y="158">Issue Tracker</text>
@@ -47,8 +44,8 @@
 
   <rect class="panel" x="380" y="365" width="300" height="178"/>
   <text class="label" x="410" y="403">Orchestrator</text>
-  <text class="small" x="410" y="435">Runs, runner events, workspace</text>
-  <text class="small" x="410" y="457">metadata, runtime inspection</text>
+  <text class="small" x="410" y="435">Runs, runner events, isolated</text>
+  <text class="small" x="410" y="457">workspace metadata, inspection</text>
   <rect class="orchestrator" x="410" y="480" width="230" height="42" rx="10"/>
   <text class="small" x="448" y="506">Runtime state API</text>
 
@@ -69,7 +66,6 @@
 
   <path class="line" d="M240 223 C300 223, 312 209, 378 209"/>
   <path class="line" d="M240 303 C300 303, 312 236, 378 236"/>
-  <path class="muted" d="M240 383 C300 383, 312 263, 378 263"/>
   <path class="muted" d="M240 303 C320 330, 310 438, 378 438"/>
   <path class="line" d="M680 210 C720 210, 735 213, 798 213"/>
   <path class="line" d="M680 245 C720 250, 735 293, 798 293"/>

@@ -102,6 +102,10 @@ dev-openapi: dev-check ## Start only the OpenAPI UI Compose service and print as
 dev-docs: ## Install docs-site dependencies and start the Docusaurus dev server.
 	cd docs/site && npm install && npm start
 
+.PHONY: dev-docs-ja
+dev-docs-ja: ## Install docs-site dependencies and start the Japanese Docusaurus dev server.
+	cd docs/site && npm install && npm run start:ja
+
 .PHONY: dev-docs-build
 dev-docs-build: ## Install docs-site dependencies and build the static docs-site.
 	cd docs/site && npm install && npm run build

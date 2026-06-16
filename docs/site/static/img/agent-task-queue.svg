@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="420" viewBox="0 0 920 420" role="img" aria-labelledby="title desc">
+  <title id="title">Tasq task queue to parallel agent workspaces</title>
+  <desc id="desc">Backlog tasks become ready work, tasq creates isolated workspaces, and multiple agents work on separate tasks in parallel.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M1,1 L11,6 L1,11 Z" fill="#59718f"/>
+    </marker>
+    <filter id="softShadow" x="-10%" y="-20%" width="120%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#14213d" flood-opacity="0.12"/>
+    </filter>
+    <style>
+      .label { font: 700 18px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #172033; }
+      .small { font: 500 13px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #5d6b7f; }
+      .mono { font: 700 13px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; fill: #243044; }
+      .edge { fill: none; stroke: #59718f; stroke-width: 2.4; marker-end: url(#arrow); }
+      .dash { stroke-dasharray: 7 7; }
+    </style>
+  </defs>
+
+  <rect width="920" height="420" rx="22" fill="#f5f7fb"/>
+
+  <g filter="url(#softShadow)">
+    <rect x="52" y="72" width="162" height="84" rx="14" fill="#ffffff" stroke="#d8e0eb"/>
+    <text x="133" y="107" text-anchor="middle" class="label">Backlog</text>
+    <text x="133" y="132" text-anchor="middle" class="small">ideas and requested work</text>
+  </g>
+
+  <g filter="url(#softShadow)">
+    <rect x="286" y="72" width="162" height="84" rx="14" fill="#ffffff" stroke="#d8e0eb"/>
+    <text x="367" y="107" text-anchor="middle" class="label">Ready</text>
+    <text x="367" y="132" text-anchor="middle" class="small">executable tasks</text>
+  </g>
+
+  <g filter="url(#softShadow)">
+    <rect x="520" y="58" width="174" height="112" rx="16" fill="#eaf8f4" stroke="#95d5c2"/>
+    <text x="607" y="101" text-anchor="middle" class="label">tasq</text>
+    <text x="607" y="126" text-anchor="middle" class="small">queue + workspace manager</text>
+    <text x="607" y="148" text-anchor="middle" class="mono">tq issue ready</text>
+  </g>
+
+  <path d="M214 114 H276" class="edge"/>
+  <path d="M448 114 H510" class="edge"/>
+
+  <path d="M607 170 C607 212 178 212 178 252" class="edge"/>
+  <path d="M607 170 C607 212 460 212 460 252" class="edge"/>
+  <path d="M607 170 C607 212 742 212 742 252" class="edge"/>
+
+  <g filter="url(#softShadow)">
+    <rect x="76" y="252" width="204" height="116" rx="16" fill="#fff8ed" stroke="#e7c891"/>
+    <text x="178" y="290" text-anchor="middle" class="label">Agent A</text>
+    <text x="178" y="316" text-anchor="middle" class="small">Task A</text>
+    <text x="178" y="342" text-anchor="middle" class="mono">.worktrees/task-a</text>
+  </g>
+
+  <g filter="url(#softShadow)">
+    <rect x="358" y="252" width="204" height="116" rx="16" fill="#eef4ff" stroke="#a9c3f5"/>
+    <text x="460" y="290" text-anchor="middle" class="label">Agent B</text>
+    <text x="460" y="316" text-anchor="middle" class="small">Task B</text>
+    <text x="460" y="342" text-anchor="middle" class="mono">.worktrees/task-b</text>
+  </g>
+
+  <g filter="url(#softShadow)">
+    <rect x="640" y="252" width="204" height="116" rx="16" fill="#f3efff" stroke="#c6b7ef"/>
+    <text x="742" y="290" text-anchor="middle" class="label">Agent C</text>
+    <text x="742" y="316" text-anchor="middle" class="small">Task C</text>
+    <text x="742" y="342" text-anchor="middle" class="mono">.worktrees/task-c</text>
+  </g>
+
+  <path d="M80 196 H840" fill="none" stroke="#d8e0eb" stroke-width="1.4" class="dash"/>
+  <text x="83" y="224" class="small">one task queue</text>
+  <text x="664" y="224" class="small">isolated workspaces for parallel execution</text>
+</svg>

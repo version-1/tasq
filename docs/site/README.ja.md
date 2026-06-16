@@ -10,6 +10,7 @@
 
 ```sh
 make dev-docs
+make dev-docs-ja
 make dev-docs-build
 make dev-docs-open
 ```
@@ -19,15 +20,28 @@ make dev-docs-open
 ```sh
 npm install
 npm start
+npm run start:ja
 npm run build
 npm run serve
 ```
 
-開発サーバーは Docusaurus のデフォルトポートと、設定済みの base URL を使います。
+英語の開発サーバーは Docusaurus のデフォルトポートと、設定済みの base URL を使います。
 
 ```text
 http://localhost:3000/tasq/
 ```
+
+localized content を preview する場合は、日本語の開発サーバーを別に起動します。
+
+```sh
+npm run start:ja
+```
+
+```text
+http://localhost:3000/tasq/ja/
+```
+
+Docusaurus の `start` は一度に 1 locale だけを serve します。全 locale を含む production build を preview したい場合は、`npm run build` のあとに `npm run serve` を使ってください。
 
 ## ディレクトリ構成
 
