@@ -49,6 +49,6 @@ Task management、workspace isolation、agent execution を 1 つの workflow �
 
 ## Documentation Map
 
-動作する service までの最短経路が必要な場合は [QuickStart](quickstart.md) から始めてください。Codex と local command permissions を繰り返しの agent work 向けに準備する場合は [Setup Guide](setup-guide.md) を使います。
+動作する service までの最短経路が必要な場合は [QuickStart](pathname:///getting-started/quickstart) から始めてください。Codex と local command permissions を繰り返しの agent work 向けに準備する場合は [Setup Guide](pathname:///getting-started/setup-guide) を使います。
 
-[Concepts](concepts/overview.md) pages は architecture を説明します。[Guides](../guides/workflow-configuration.md) pages は一般的な operation を扱います。[Reference](../reference/cli-reference.md) pages は commands、APIs、configuration、schemas を定義します。
+[Concepts](pathname:///getting-started/concepts/overview) pages は architecture を説明します。[Guides](pathname:///guides/workflow-configuration) pages は一般的な operation を扱います。[Reference](pathname:///reference/cli-reference) pages は commands、APIs、configuration、schemas を定義します。

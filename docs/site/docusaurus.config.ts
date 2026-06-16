@@ -5,6 +5,7 @@ import type * as Preset from '@docusaurus/preset-classic';
 const config: Config = {
   title: 'Tasq',
   tagline: 'Local-first issue tracking for agents and developers',
+  favicon: 'img/tasq-logo.png',
 
   url: 'https://version-1.github.io',
   baseUrl: '/tasq/',
@@ -55,6 +56,12 @@ const config: Config = {
   themeConfig: {
     navbar: {
       title: 'Tasq',
+      logo: {
+        alt: 'Tasq logo',
+        src: 'img/tasq-logo.png',
+        width: 32,
+        height: 32,
+      },
       items: [
         {
           type: 'docSidebar',

@@ -49,6 +49,6 @@ It gives developers one workflow for task management, workspace isolation, and a
 
 ## Documentation Map
 
-Start with [QuickStart](quickstart.md) when you want the shortest path to a running service. Use [Setup Guide](setup-guide.md) when preparing Codex and local command permissions for repeated agent work.
+Start with [QuickStart](pathname:///getting-started/quickstart) when you want the shortest path to a running service. Use [Setup Guide](pathname:///getting-started/setup-guide) when preparing Codex and local command permissions for repeated agent work.
 
-The [Concepts](concepts/overview.md) pages explain the architecture. The [Guides](../guides/workflow-configuration.md) pages cover common operations. The [Reference](../reference/cli-reference.md) pages define commands, APIs, configuration, and schemas.
+The [Concepts](pathname:///getting-started/concepts/overview) pages explain the architecture. The [Guides](pathname:///guides/workflow-configuration) pages cover common operations. The [Reference](pathname:///reference/cli-reference) pages define commands, APIs, configuration, and schemas.
