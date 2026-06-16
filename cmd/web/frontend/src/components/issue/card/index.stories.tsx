@@ -24,7 +24,6 @@ const meta = {
   ],
   args: {
     issue: summaryIssue(1, 3),
-    commentCount: 3,
     onStatusChange: async () => undefined,
     runCount: 2,
   },
@@ -69,9 +68,8 @@ export const BacklogQuickAction: Story = {
   },
 };
 
-export const WithoutMetrics: Story = {
+export const WithoutRunCount: Story = {
   args: {
-    commentCount: undefined,
     runCount: undefined,
   },
 };
