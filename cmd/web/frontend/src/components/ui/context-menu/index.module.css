@@ -1,0 +1,52 @@
+.root {
+  position: relative;
+}
+
+.menu {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 14%);
+  display: grid;
+  gap: 4px;
+  min-width: 188px;
+  padding: 8px;
+  position: absolute;
+  right: 0;
+  top: 40px;
+  z-index: 10;
+}
+
+.groupLabel {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 400;
+  padding: 4px 8px;
+}
+
+.item {
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  color: var(--text);
+  padding: 8px;
+  text-align: left;
+}
+
+.item:hover:not(:disabled),
+.item:focus-visible:not(:disabled) {
+  background: var(--extra-light-gray);
+}
+
+.item:disabled {
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+.help {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+  margin: 0;
+  padding: 4px 8px;
+}

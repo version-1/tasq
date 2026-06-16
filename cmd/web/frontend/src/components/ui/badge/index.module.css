@@ -1,0 +1,64 @@
+.badge {
+  align-items: center;
+  display: inline-flex;
+  font-size: 14px;
+  gap: 4px;
+  min-width: 0;
+}
+
+.project {
+  background: #eef6f8;
+  border-radius: 8px;
+  color: #14636f;
+  font-weight: 400;
+  max-width: min(64%, 340px);
+  overflow: hidden;
+  padding: 4px 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.priority-high {
+  --badge-accent: #d97706;
+  --badge-bg: #fef3c7;
+  --badge-text: #92400e;
+}
+
+.priority-normal {
+  --badge-accent: #0284c7;
+  --badge-bg: #e0f2fe;
+  --badge-text: #075985;
+}
+
+.priority-low {
+  --badge-accent: #9ca3af;
+  --badge-bg: #f3f4f6;
+  --badge-text: #4b5563;
+}
+
+.priority-high,
+.priority-normal,
+.priority-low {
+  background: var(--badge-bg);
+  border-radius: 999px;
+  color: var(--badge-text);
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+}
+
+.priority-high svg,
+.priority-low svg {
+  color: var(--badge-accent);
+}
+
+.priority-normal span {
+  background: var(--badge-accent);
+}
+
+@media (max-width: 900px) {
+  .project {
+    max-width: 100%;
+  }
+}
