@@ -7,48 +7,48 @@ sidebar_position: 1
 
 # 概要
 
-Tasq は、Claude Code、Codex などの AI coding agent で複数の実装タスクを並列実行するための task manager です。
+Tasq は、Claude Code、Codex、および同種のエージェントで複数の実装タスクを並列実行するための AI コーディングエージェント向けタスクマネージャーです。
 
-タスクごとに独立した workspace を作成し、task registration、agent execution、state management、review、integration までの workflow を支援します。
+各タスクに分離された workspace を作成し、タスク登録、エージェント実行、状態管理、レビュー、統合までの workflow を支援します。
 
-## Problem
+## 問題
 
-AI coding agents により、複数の実装タスクを同時に進められるようになりました。ボトルネックは code generation そのものから、並列作業の管理へ移ります。
+AI コーディングエージェントによって、複数の実装タスクを同時に進められるようになります。ボトルネックはコードを書くことから、並列作業を管理することへ移ります。
 
-### 人間側の Context Switching
+### 人間側のコンテキストスイッチ
 
-Agent は並列で実行できますが、人間はどのタスクを依頼したか、どの agent が実行中か、各タスクがどこまで進んでいるか、次に何を review すべきかを追う必要があります。
+エージェントは並列実行できますが、人間はどのタスクを割り当てたか、どのエージェントが実行中か、各タスクがどこまで進んだか、次に何をレビューすべきかを追跡する必要があります。
 
-### Workspace Conflicts
+### Workspace の競合
 
-複数 agent を 1 つの repository checkout で動かすと、branch switching、未完了変更の衝突、重複した file edits が起きやすくなります。
+1 つの repository checkout で複数のエージェントを動かすと、ブランチ切り替えの問題、未完了変更の衝突、重複したファイル編集が発生する可能性があります。
 
-### 繰り返しの Setup Work
+### 繰り返しのセットアップ作業
 
-Agent task ごとに、branch 作成、worktree 作成、dependencies の確認、適切な setup commands の実行が必要になりがちです。
+各エージェントタスクでは、ブランチを作成する、worktree を作成する、依存関係を確認する、適切なセットアップコマンドを実行する、という同じ準備手順がしばしば必要です。
 
-## Solution
+## 解決策
 
-Tasq は executable tasks を queue として管理し、ready になったタスクに対して agent-ready な workspace を作成します。
+Tasq は実行可能なタスクを queue として管理し、実行準備ができたタスクのためにエージェントがすぐ使える workspace を作成します。
 
-![Tasq task queue to parallel agent workspaces](/img/agent-task-queue.svg)
+![Tasq のタスクキューから並列エージェント workspace への流れ](/img/agent-task-queue.svg)
 
 ## Tasq が提供するもの
 
-- 実装作業の task management。
-- Agent execution のための isolated Git worktrees。
-- 1 つの mutable checkout を共有しない parallel agent execution。
-- Running work から reviewed output までの review workflow support。
-- Local issue tracker、`tq` CLI、Web UI、run history と workspace metadata のための orchestration boundary。
+- 実装作業のタスク管理。
+- エージェント実行用に分離された Git worktree。
+- 1 つの変更可能な checkout を共有しない並列エージェント実行。
+- 実行中の作業からレビュー済みの成果物までを扱うレビュー workflow。
+- run history と workspace metadata のための local issue tracker、`tq` CLI、Web UI、orchestration boundary。
 
-## Goal
+## 目標
 
-Tasq は code generation を速くするためだけのものではありません。parallel AI-agent work によって増える management cost を下げるための tool です。
+Tasq は単にコード生成を速くするためのものではありません。並列 AI エージェント作業によって生じる管理コストを減らすためのものです。
 
-Task management、workspace isolation、agent execution を 1 つの workflow として扱えるようにします。
+開発者に、タスク管理、workspace 分離、エージェント実行のための 1 つの workflow を提供します。
 
-## Documentation Map
+## ドキュメントマップ
 
-動作する service までの最短経路が必要な場合は [QuickStart](pathname:///getting-started/quickstart) から始めてください。Codex と local command permissions を繰り返しの agent work 向けに準備する場合は [Setup Guide](pathname:///getting-started/setup-guide) を使います。
+サービスを最短で起動したい場合は [クイックスタート](pathname:///getting-started/quickstart) から始めてください。Codex と local command permissions を繰り返しのエージェント作業に向けて準備する場合は [セットアップガイド](pathname:///getting-started/setup-guide) を使ってください。
 
-[Concepts](pathname:///getting-started/concepts/overview) pages は architecture を説明します。[Guides](pathname:///guides/workflow-configuration) pages は一般的な operation を扱います。[Reference](pathname:///reference/cli-reference) pages は commands、APIs、configuration、schemas を定義します。
+[概念](pathname:///getting-started/concepts/overview)ページは architecture を説明します。[ガイド](pathname:///guides/workflow-configuration)ページは一般的な操作を扱います。[リファレンス](pathname:///reference/cli-reference)ページはコマンド、API、設定、schema を定義します。

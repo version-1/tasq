@@ -6,17 +6,17 @@ sidebar_position: 5
 
 # tq CLI
 
-`tq` は、Tasq への安定した local interface を必要とする agents、scripts、developers のための command-line interface です。
+`tq` は、Tasq に対して stable local interface を必要とする agent、script、developer のための command-line interface です。
 
-issue-tracker APIs、local service management、project registration、workflow configuration、migrations、logs、Web UI launch behavior を wrap します。
+issue-tracker API、local service management、project registration、workflow configuration、migration、log、Web UI launch behavior を wrap します。
 
 ## 設計目標
 
-- common issue operations を scriptable に保つ。
+- common issue operation を scriptable に保つ。
 - default では human-readable output を返す。
-- tools と agents 向けに `--output json` を support する。
-- すべての command に API URL を渡さなくても local service URLs を解決する。
-- issue commands から direct orchestration mutations を避ける。
+- tool と agent のために `--output json` を support する。
+- すべての command に API URL を渡さなくても local service URL を resolve できるようにする。
+- issue command から direct orchestration mutation を避ける。
 
 ## API URL の解決
 
@@ -33,4 +33,4 @@ flowchart TD
 
 ## 主な操作面
 
-`tq issue` と `tq comment` は issue-tracker data に対して動作します。`tq project` は repositories を登録し、workflow setup を validate します。`tq workflow` は project workflow overrides を管理します。`tq service`、`tq logs`、`tq migrate` は local runtime state に対して動作します。
+`tq issue` と `tq comment` は issue-tracker data を操作します。`tq project` は repository を登録し、workflow setup を validate します。`tq workflow` は project workflow override を管理します。`tq service`、`tq logs`、`tq migrate` は local runtime state を操作します。

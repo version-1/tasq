@@ -1,14 +1,14 @@
 ---
 id: running-locally
-title: Running Locally
+title: ローカル実行
 sidebar_position: 2
 ---
 
-# Running Locally
+# ローカル実行
 
-full issue-tracker、orchestrator、Web flow を試す必要がある場合は local services を使います。
+full issue-tracker、orchestrator、Web flow を exercise する必要がある場合は、local service を使います。
 
-## Service Modes
+## Service mode
 
 ```mermaid
 flowchart LR
@@ -23,7 +23,7 @@ flowchart LR
   Dev --> CWeb[web :3000]
 ```
 
-## Host Commands
+## Host command
 
 ```sh
 tq migrate
@@ -34,17 +34,17 @@ tq logs orchestrator -n 200
 tq logs web -n 200
 ```
 
-local session が終わったら services を停止します。
+local session が終わったら service を停止します。
 
 ```sh
 tq service stop
 ```
 
-## Compose Commands
+## Compose command
 
 ```sh
 make dev-up
 make dev-ports
 ```
 
-Compose では、`make run-web` が Go Web server を起動し、backend URLs は dev container 内の issue-tracker と orchestrator を指します。
+Compose では、`make run-web` が Go Web server を起動し、backend URL は dev container 内の issue-tracker と orchestrator を指します。

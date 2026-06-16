@@ -1,33 +1,33 @@
 ---
 id: schema
-title: Schema
+title: スキーマ
 sidebar_position: 4
 ---
 
-# Schema
+# スキーマ
 
-Tasq は create と update operations において store layer で entity data を validate します。この reference は clients が守るべき public field constraints を要約します。
+Tasq は create operation と update operation で、store layer において entity data を validate します。この reference は、client が守るべき public field constraint を要約します。
 
-## Issue Tracker Entities
-
-| Entity | Required fields | Key constraints |
-| --- | --- | --- |
-| Issue | `projectId`, `title` | title 1-500 chars、description max 10,000 chars、immutable project ownership |
-| Comment | `issueId`, `author`, `body` | body 1-10,000 chars、type defaults to `general` |
-| Attachment | `entityType`, `entityId`, `file` | image PNG/JPEG/GIF/WebP、max 5 MiB |
-| Project | `key`, `name`, `location` | key format、name 1-200 chars、absolute location |
-| ProjectWorkflow | `projectId`, `frontmatter`, `body`, `checksum` | one workflow override per project |
-
-## Orchestrator Entities
+## Issue tracker entity
 
 | Entity | Required fields | Key constraints |
 | --- | --- | --- |
-| Run | `issueId`, `attempt`, `orchestratorId` | run ID generated、status defaults to `queued` |
-| RunnerEvent | `runId`, `occurredAt` | payload JSON must be valid when present |
-| WorkspaceMetadata | `workspaceKey`, `issueId`, `path`, `createdNow` | paths must be absolute |
-| WorkspaceSetupFailure | `issueId`, `error` | records setup failure context |
+| Issue | `projectId`, `title` | title は 1-500 chars、description は max 10,000 chars、project ownership は immutable |
+| Comment | `issueId`, `author`, `body` | body は 1-10,000 chars、type の default は `general` |
+| Attachment | `entityType`, `entityId`, `file` | image は PNG/JPEG/GIF/WebP、max 5 MiB |
+| Project | `key`, `name`, `location` | key format、name は 1-200 chars、location は absolute |
+| ProjectWorkflow | `projectId`, `frontmatter`, `body`, `checksum` | project ごとに workflow override は 1 つ |
 
-## Enums
+## Orchestrator entity
+
+| Entity | Required fields | Key constraints |
+| --- | --- | --- |
+| Run | `issueId`, `attempt`, `orchestratorId` | run ID は generated、status の default は `queued` |
+| RunnerEvent | `runId`, `occurredAt` | payload JSON は存在する場合 valid でなければならない |
+| WorkspaceMetadata | `workspaceKey`, `issueId`, `path`, `createdNow` | path は absolute でなければならない |
+| WorkspaceSetupFailure | `issueId`, `error` | setup failure context を記録する |
+
+## Enum
 
 | Field | Values |
 | --- | --- |
@@ -48,4 +48,4 @@ flowchart TD
   Payload[50,000 chars] --> JSON[runner event payload JSON]
 ```
 
-absolute path fields は `/` で始まる必要があります。`tq project add` のような clients は、target filesystem に access できる場合に local directory existence を確認します。
+Absolute path field は `/` で始まる必要があります。`tq project add` などの client は、target filesystem に access できる場合に local directory の存在を確認します。

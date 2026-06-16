@@ -1,22 +1,22 @@
 ---
 id: testing
-title: Testing
+title: テスト
 sidebar_position: 3
 ---
 
-# Testing
+# テスト
 
-まず narrowest useful verification を実行し、shared behavior、contracts、persistence、user-facing flows に影響する変更では checks を広げます。
+まず最も狭く有用な verification を実行し、変更が shared behavior、contract、persistence、user-facing flow に影響する場合は check を広げます。
 
-## Go Tests
+## Go test
 
 ```sh
 go test ./...
 ```
 
-iteration 中は targeted packages を使い、shared behavior を変更した場合は handoff 前に full suite を実行します。
+iteration 中は targeted package を使い、shared behavior を変更した場合は handoff 前に full suite を実行します。
 
-## Web UI Checks
+## Web UI check
 
 ```sh
 cd cmd/web/frontend
@@ -24,9 +24,9 @@ npm run typecheck
 npm run build
 ```
 
-OpenAPI contracts を変更した場合は `npm run generate:api` で API clients を regenerate します。
+OpenAPI contract を変更した場合は `npm run generate:api` で API client を再生成します。
 
-## Docs Site Checks
+## Docs site check
 
 ```sh
 cd docs/site
@@ -35,9 +35,9 @@ npm run build
 
 repository-level workflow では、`make dev-docs-build` が docs-site build を wrap します。
 
-## Manual Verification
+## Manual verification
 
-1. `make dev-up` で dev environment を起動するか、`tq service start` で host services を起動します。
-2. `tq` または Web UI で issues を作成・更新します。
-3. issue summaries が status changes を反映することを確認します。
-4. orchestrator が enabled の場合は、orchestrator runtime inspection に到達できることを確認します。
+1. `make dev-up` で dev environment を起動するか、`tq service start` で host service を起動します。
+2. `tq` または Web UI で issue を作成・更新します。
+3. issue summary に status change が反映されることを確認します。
+4. orchestrator が有効な場合、orchestrator runtime inspection に到達できることを確認します。

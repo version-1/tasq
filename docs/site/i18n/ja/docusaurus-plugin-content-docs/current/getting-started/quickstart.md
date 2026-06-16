@@ -6,7 +6,7 @@ sidebar_position: 2
 
 # クイックスタート
 
-この手順では fresh checkout から Tasq を起動し、最初の issue を作成します。
+この手順では、新しい checkout から Tasq を起動し、最初の issue を作成します。
 
 ## CLI をビルドする
 
@@ -20,7 +20,7 @@ tq version
 
 ## ローカル状態を初期化する
 
-Tasq は local state を `TQ_HOME` 配下に保存します。未設定の場合、Tasq は `~/.tasq` を使います。
+Tasq はローカル状態を `TQ_HOME` 配下に保存します。未設定の場合、Tasq は `~/.tasq` を使います。
 
 ```sh
 export TQ_HOME="$PWD/.tasq"
@@ -29,11 +29,11 @@ tq service start
 tq service status
 ```
 
-`tq service start` は issue-tracker、orchestrator、Web server を local loopback ports で起動し、discovery state を `$TQ_HOME/system/state.json` に書き込みます。
+`tq service start` は issue-tracker、orchestrator、Web server を local loopback port で起動し、discovery state を `$TQ_HOME/system/state.json` に書き込みます。
 
-## Project を登録する
+## プロジェクトを登録する
 
-現在の repository を登録し、issues を project に scope できるようにします。
+現在の repository を登録し、issue を project に紐付けられるようにします。
 
 ```sh
 tq project add --key tasq .
@@ -64,4 +64,4 @@ tq issue update 1 --status review
 tq web
 ```
 
-Web UI は local service がすでに動いていることを前提にします。開けない場合は `tq service status` を確認し、`tq logs web` で logs を調べてください。
+Web UI は local service がすでに起動していることを前提にします。開けない場合は `tq service status` を確認し、`tq logs web` で log を調べてください。

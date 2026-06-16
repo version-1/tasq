@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1120" height="620" viewBox="0 0 1120 620" role="img" aria-labelledby="title desc">
   <title id="title">Tasq の概念マップ</title>
-  <desc id="desc">clients、issue tracker、orchestrator、storage、workspace boundaries を示す図。</desc>
+  <desc id="desc">client、issue tracker、orchestrator、storage、workspace boundary を示す図。</desc>
   <defs>
     <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
       <path d="M2,2 L10,6 L2,10 Z" fill="#2f4b7c"/>
@@ -25,11 +25,11 @@
     </style>
   </defs>
   <rect class="bg" x="0" y="0" width="1120" height="620"/>
-  <text class="title" x="48" y="58">Tasq agent workflow model</text>
-  <text class="small" x="48" y="86">Task state、run state、isolated workspaces を分離し、AI agent の並列作業を扱います。</text>
+  <text class="title" x="48" y="58">Tasq のエージェント workflow model</text>
+  <text class="small" x="48" y="86">Task state、run state、isolated workspace を分離し、AI agent の並列作業を扱います。</text>
 
   <rect class="panel" x="40" y="125" width="250" height="260"/>
-  <text class="label" x="68" y="162">Clients</text>
+  <text class="label" x="68" y="162">Client</text>
   <rect class="client" x="70" y="195" width="170" height="56" rx="12"/>
   <text class="label" x="115" y="229">tq CLI</text>
   <rect class="client" x="70" y="275" width="170" height="56" rx="12"/>
@@ -37,20 +37,20 @@
 
   <rect class="panel" x="380" y="120" width="300" height="178"/>
   <text class="label" x="410" y="158">Issue Tracker</text>
-  <text class="small" x="410" y="190">Projects、issues、comments、</text>
-  <text class="small" x="410" y="212">attachments、board summaries</text>
+  <text class="small" x="410" y="190">Project、issue、comment、</text>
+  <text class="small" x="410" y="212">attachment、board summary</text>
   <rect class="tracker" x="410" y="235" width="230" height="42" rx="10"/>
   <text class="small" x="450" y="261">User workflow API</text>
 
   <rect class="panel" x="380" y="365" width="300" height="178"/>
   <text class="label" x="410" y="403">Orchestrator</text>
-  <text class="small" x="410" y="435">Runs、runner events、isolated</text>
+  <text class="small" x="410" y="435">Run、runner event、isolated</text>
   <text class="small" x="410" y="457">workspace metadata、inspection</text>
   <rect class="orchestrator" x="410" y="480" width="230" height="42" rx="10"/>
   <text class="small" x="448" y="506">Runtime state API</text>
 
   <rect class="panel" x="770" y="115" width="300" height="400"/>
-  <text class="label" x="800" y="153">Local Storage</text>
+  <text class="label" x="800" y="153">Local storage</text>
   <rect class="store" x="800" y="185" width="220" height="56" rx="12"/>
   <text class="small" x="846" y="209">issues.sqlite</text>
   <text class="tiny" x="836" y="228">issue-tracker data</text>
@@ -74,5 +74,5 @@
 
   <rect x="48" y="530" width="1024" height="54" rx="14" fill="#eef2ff" stroke="#818cf8"/>
   <text class="small" x="72" y="553">Boundary rule:</text>
-  <text class="tiny" x="72" y="573">Issue status changes は issue-tracker を通ります。Run lifecycle と workspace details は orchestrator に留まります。</text>
+  <text class="tiny" x="72" y="573">Issue status change は issue-tracker を通ります。Run lifecycle と workspace detail は orchestrator に留まります。</text>
 </svg>

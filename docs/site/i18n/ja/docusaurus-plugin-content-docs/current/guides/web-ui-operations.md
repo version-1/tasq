@@ -6,9 +6,9 @@ sidebar_position: 2
 
 # Web UI Operations
 
-Web UI は local issue operations の browser surface です。複数 issues の scan、status 変更、Markdown rendering 付きの descriptions と comments の review に特に有用です。
+Web UI は local issue operation のための browser surface です。複数の issue を scan する、status を変更する、Markdown rendering 付きで description や comment を review する場合に特に有用です。
 
-## Local Services を起動する
+## Local service を起動する
 
 ```sh
 tq migrate
@@ -16,15 +16,15 @@ tq service start
 tq service status
 ```
 
-services が動作してから Web UI を開きます。
+service が起動したら Web UI を開きます。
 
 ```sh
 tq web
 ```
 
-## Runtime Ports
+## Runtime port
 
-host-only service mode は fixed local ports を使います。
+Host-only service mode は固定 local port を使います。
 
 | Service | Port |
 | --- | ---: |
@@ -32,7 +32,7 @@ host-only service mode は fixed local ports を使います。
 | orchestrator | `37652` |
 | web | `37653` |
 
-Discovery metadata は `$TQ_HOME/system/state.json` に書き込まれ、logs は `$TQ_HOME/system/log/` 配下に書き込まれます。
+Discovery metadata は `$TQ_HOME/system/state.json` に書き込まれ、log は `$TQ_HOME/system/log/` 配下に書き込まれます。
 
 ## Troubleshooting
 
@@ -48,4 +48,4 @@ flowchart TD
   Migrations -->|no| Ports[Confirm local ports are available]
 ```
 
-Web UI は読み込めるが issue data が missing の場合は、project が登録済みであることと、`tq issue list --project <key>` が期待する issues を返すことを確認してください。
+Web UI は読み込めるが issue data が表示されない場合は、project が登録済みであることと、`tq issue list --project <key>` が期待する issue を返すことを確認してください。

@@ -6,23 +6,23 @@ sidebar_position: 2
 
 # Orchestrator
 
-orchestrator は agent run history と runtime inspection data を記録します。workspaces、runner events、将来の Codex app-server execution の boundary です。
+orchestrator は agent run history と runtime inspection data を記録します。workspace、runner event、将来の Codex app-server execution の boundary です。
 
 ## 責務
 
-- 自身の SQLite database に run records を作成する。
-- orchestration に使う repository workflow configuration を読み込む。
-- configured workspace root 配下に sanitized per-issue workspaces を作成する。
-- runner events と workspace metadata を記録する。
-- runtime state と run details のための optional loopback HTTP APIs を公開する。
+- 独自の SQLite database に run record を作成する。
+- orchestration で使う repository workflow configuration を読み込む。
+- configured workspace root 配下に sanitized per-issue workspace を作成する。
+- runner event と workspace metadata を記録する。
+- runtime state と run detail のための optional loopback HTTP API を公開する。
 
 ## 所有しないもの
 
-orchestrator は issue title、description、status、priority、assignee、comments、attachments を所有しません。これらの fields は issue-tracker に属します。
+orchestrator は issue title、description、status、priority、assignee、comment、attachment を所有しません。これらの field は issue-tracker に属します。
 
-orchestrator は user-facing workflow state も決定しません。run が failed になっても issue は `in_progress` のままにできますし、人間が run record を変更せずに issue を `blocked` へ移動することもできます。
+orchestrator は user-facing workflow state も決定しません。run が fail しても issue は `in_progress` のままにできますし、人間が run record を変更せずに issue を `blocked` に移動することもできます。
 
-## Run Lifecycle
+## Run lifecycle
 
 ```mermaid
 stateDiagram-v2
@@ -41,4 +41,4 @@ stateDiagram-v2
 
 ## Workspace の役割
 
-Workspaces は agents に isolated execution directories を提供します。orchestrator は setup failures の debug、paths の recovery、run とその原因になった issue の接続に十分な workspace metadata を保存します。
+Workspace は agent に isolated execution directory を提供します。orchestrator は setup failure を debug し、path を recover し、run をその原因になった issue に接続するために十分な workspace metadata を保存します。

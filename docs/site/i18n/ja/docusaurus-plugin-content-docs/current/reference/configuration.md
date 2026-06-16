@@ -1,20 +1,20 @@
 ---
 id: configuration
-title: Configuration
+title: 設定
 sidebar_position: 3
 ---
 
-# Configuration
+# 設定
 
-Tasq は machine-level configuration、runtime state、service logs、SQLite data の local home directory として `TQ_HOME` を使います。
+Tasq は `TQ_HOME` を machine-level configuration、runtime state、service log、SQLite data のための local home directory として使います。
 
-default では `TQ_HOME` は `~/.tasq` に解決されます。repository-local development では workspace directory に設定してください。
+default では、`TQ_HOME` は `~/.tasq` に解決されます。repository-local development では workspace directory に設定してください。
 
 ```sh
 export TQ_HOME="$PWD/.tasq"
 ```
 
-## Directory Layout
+## Directory layout
 
 ```text
 $TQ_HOME/
@@ -32,7 +32,7 @@ $TQ_HOME/
         └── attachments/
 ```
 
-`config/` は user-editable です。`system/` は Tasq processes が管理します。
+`config/` は user-editable です。`system/` は Tasq process が管理します。
 
 ## config.yaml
 
@@ -44,11 +44,11 @@ max_concurrent_agents: 3
 | Field | Default | Description |
 | --- | ---: | --- |
 | `author` | `$USER` | `--author` と `TQ_AUTHOR` が未設定の場合の default comment author。 |
-| `max_concurrent_agents` | `10` | orchestrator runs に対する machine-wide concurrency limit。 |
+| `max_concurrent_agents` | `10` | orchestrator run の machine-wide concurrency limit。 |
 
 ## state.json
 
-running services は discovery metadata を `system/state.json` に書き込みます。
+実行中の service は discovery metadata を `system/state.json` に書き込みます。
 
 ```json
 {
@@ -71,6 +71,6 @@ running services は discovery metadata を `system/state.json` に書き込み�
 
 | Value | Resolution |
 | --- | --- |
-| Issue-tracker API URL | `--api-url`, `TQ_API_URL`, `state.json`, `http://localhost:37651` |
-| Comment author | `--author`, `TQ_AUTHOR`, `config.yaml author`, `$USER` |
+| Issue-tracker API URL | `--api-url`、`TQ_API_URL`、`state.json`、`http://localhost:37651` |
+| Comment author | `--author`、`TQ_AUTHOR`、`config.yaml author`、`$USER` |
 | Orchestrator concurrency | workflow と `config.yaml max_concurrent_agents` の小さい方 |

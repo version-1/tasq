@@ -6,7 +6,7 @@ sidebar_position: 1
 
 # Workflow Configuration
 
-Tasq は workflow documents を使って、agents が project でどう作業すべきかを説明します。workflow は project-local file、stored project override、または global fallback から取得できます。
+Tasq は workflow document を使って、project 内で agent がどのように作業すべきかを記述します。workflow は project-local file、保存された project override、または global fallback から解決できます。
 
 ## 解決順序
 
@@ -21,13 +21,13 @@ flowchart TD
   Global -->|no| Missing[No workflow configured]
 ```
 
-## Project Workflow Files
+## Project workflow file
 
-workflow を codebase と一緒に動かしたい場合は、repository に `WORKFLOW.md` を置いてください。review rules、verification commands、task flow が project と一緒に versioned されるため、local development ではこれが最も簡単な model です。
+workflow を codebase と一緒に移動させたい場合は、repository に `WORKFLOW.md` を置きます。review rule、verification command、task flow が project と一緒に version 管理されるため、local development では最も扱いやすい model です。
 
-## Stored Overrides
+## 保存された override
 
-repository を変更せずに project が machine-local workflow changes を必要とする場合は、stored override を使います。
+repository を変更せずに machine-local workflow change が必要な project では、保存された override を使います。
 
 ```sh
 tq workflow add --project tasq --file WORKFLOW.md
@@ -35,8 +35,8 @@ tq workflow show --project tasq
 tq workflow remove --project tasq
 ```
 
-stored workflow を削除すると、project は file-based resolution に戻ります。
+保存された workflow を削除すると、project は file-based resolution に戻ります。
 
 ## 実践的な指針
 
-workflow documents は operational に保ってください。branch policy、required verification、issue synchronization、handoff expectations を定義するべきです。workflow files に長い design explanations を置くことは避け、代わりに documentation へ link してください。
+workflow document は operational に保ってください。branch policy、required verification、issue synchronization、handoff expectation を定義します。長い design explanation は workflow file に置かず、documentation へ link してください。
