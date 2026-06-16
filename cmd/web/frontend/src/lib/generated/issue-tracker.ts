@@ -225,12 +225,21 @@ export interface IssueStatesInput {
   ids: number[];
 }
 
-export type IssueSummary = Issue;
+export interface IssueStats {
+  /** @minimum 0 */
+  commentCount: number;
+}
+
+export type IssueSummaryAllOf = {
+  stats: IssueStats;
+};
+
+export type IssueSummary = Issue & IssueSummaryAllOf;
 
 export interface Column {
   status: IssueStatus;
   title: string;
-  issues: Issue[];
+  issues: IssueSummary[];
 }
 
 export interface Summary {

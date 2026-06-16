@@ -69,6 +69,7 @@ export function IssueBoard({
                     <IssueCard
                       key={issue.id}
                       issue={issue}
+                      commentCount={issue.stats.commentCount}
                       onStatusChange={onStatusChange}
                     />
                   ))

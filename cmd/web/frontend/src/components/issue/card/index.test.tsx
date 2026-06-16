@@ -17,6 +17,9 @@ const issue: IssueSummary = {
   assignee: "web",
   createdAt: "2026-06-01T00:00:00.000Z",
   updatedAt: "2026-06-01T00:00:00.000Z",
+  stats: {
+    commentCount: 0,
+  },
 };
 
 function renderCard(props: Partial<Parameters<typeof IssueCard>[0]> = {}) {
