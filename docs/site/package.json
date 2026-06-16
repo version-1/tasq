@@ -6,7 +6,8 @@
     "build": "docusaurus build",
     "clear": "docusaurus clear",
     "serve": "docusaurus serve",
-    "start": "docusaurus start"
+    "start": "docusaurus start",
+    "start:ja": "docusaurus start --locale ja"
   },
   "dependencies": {
     "@docusaurus/core": "^3.10.1",

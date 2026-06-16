@@ -10,6 +10,7 @@ Run these commands from the repository root:
 
 ```sh
 make dev-docs
+make dev-docs-ja
 make dev-docs-build
 make dev-docs-open
 ```
@@ -19,15 +20,28 @@ Run these commands from `docs/site/` when working directly inside the Docusaurus
 ```sh
 npm install
 npm start
+npm run start:ja
 npm run build
 npm run serve
 ```
 
-The development server uses the Docusaurus default port and the configured base URL:
+The English development server uses the Docusaurus default port and the configured base URL:
 
 ```text
 http://localhost:3000/tasq/
 ```
+
+Start the Japanese development server separately when previewing localized content:
+
+```sh
+npm run start:ja
+```
+
+```text
+http://localhost:3000/tasq/ja/
+```
+
+Docusaurus `start` serves one locale at a time. Use `npm run build` followed by `npm run serve` when you need to preview the production build with all locales.
 
 ## Directory Layout
 
