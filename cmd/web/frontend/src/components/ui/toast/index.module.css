@@ -13,7 +13,7 @@
   align-items: flex-start;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-left: 4px solid var(--toast-accent);
+  border-left: 6px solid var(--toast-accent);
   border-radius: 10px;
   box-shadow: 0 10px 24px rgb(0 0 0 / 12%);
   color: var(--text);
