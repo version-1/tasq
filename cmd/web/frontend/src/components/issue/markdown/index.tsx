@@ -2,6 +2,8 @@
 
 import ReactMarkdown from "react-markdown";
 import rehypeSanitize from "rehype-sanitize";
+import remarkGfm from "remark-gfm";
+import styles from "./index.module.css";
 
 type MarkdownProps = {
   content: string;
@@ -15,8 +17,18 @@ export function Markdown({ content, emptyText, className }: MarkdownProps) {
     return <p className={className}>{emptyText}</p>;
   }
   return (
-    <div className={className}>
-      <ReactMarkdown rehypePlugins={[rehypeSanitize]}>{markdown}</ReactMarkdown>
+    <div className={[styles.markdown, className].filter(Boolean).join(" ")}>
+      <ReactMarkdown
+        components={{
+          table: ({ children }) => <table className={styles.table}>{children}</table>,
+          td: ({ children }) => <td className={styles.tableCell}>{children}</td>,
+          th: ({ children }) => <th className={styles.tableHeader}>{children}</th>,
+        }}
+        rehypePlugins={[rehypeSanitize]}
+        remarkPlugins={[remarkGfm]}
+      >
+        {markdown}
+      </ReactMarkdown>
     </div>
   );
 }

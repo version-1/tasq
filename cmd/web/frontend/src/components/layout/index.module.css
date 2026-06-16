@@ -7,6 +7,7 @@
 .shell {
   min-height: 100vh;
   padding: 24px;
+  background: #fbfbfb;
   min-width: 0;
 }
 
@@ -29,3 +30,4 @@
     padding: 16px;
   }
 }
+

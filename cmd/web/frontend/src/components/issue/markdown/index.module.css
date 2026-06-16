@@ -1,0 +1,24 @@
+.markdown {
+  overflow-wrap: anywhere;
+}
+
+.table {
+  border-collapse: collapse;
+  margin: 16px 0;
+  max-width: 100%;
+  width: 100%;
+}
+
+.tableHeader,
+.tableCell {
+  border: 1px solid var(--border);
+  padding: 8px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.tableHeader {
+  background: var(--extra-light-gray);
+  color: var(--text);
+  font-weight: 700;
+}

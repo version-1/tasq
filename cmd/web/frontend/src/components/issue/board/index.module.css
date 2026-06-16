@@ -1,6 +1,9 @@
 .board {
+  background: #fbfbfb;
   display: grid;
   gap: 16px;
+  min-height: 100%;
+  padding: 16px;
 }
 
 .boardToolbar {

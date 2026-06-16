@@ -103,6 +103,14 @@ const resources = {
           todo: "To Do",
           view: "表示",
         },
+        card: {
+          actionsLabel: "{{title}} の操作",
+          changeStatus: "ステータス変更",
+          commentCount: "{{count}} コメント",
+          currentStatus: "{{status}}（現在）",
+          runCount: "{{count}} runs",
+          statusLocked: "{{status}} は Web UI から変更できません",
+        },
         detail: {
           issueStatus: "Issue ステータス",
           openDetail: "詳細ページを開く",
@@ -477,6 +485,14 @@ const resources = {
           sort: "Sort",
           todo: "To Do",
           view: "View",
+        },
+        card: {
+          actionsLabel: "Issue actions for {{title}}",
+          changeStatus: "Change status",
+          commentCount: "{{count}} comments",
+          currentStatus: "{{status}} (current)",
+          runCount: "{{count}} runs",
+          statusLocked: "{{status}} cannot be changed from the Web UI",
         },
         detail: {
           issueStatus: "Issue Status",
