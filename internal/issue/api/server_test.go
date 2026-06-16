@@ -449,6 +449,38 @@ func TestOptionsResponseStaysEmpty(t *testing.T) {
 	}
 }
 
+func TestSummaryIncludesIssueStats(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer(t)
+	withComments := createIssue(t, server, "Issue with comments", entity.StatusReady)
+	withoutComments := createIssue(t, server, "Issue without comments", entity.StatusReady)
+	createComment(t, server, withComments.ID, "first comment")
+	createComment(t, server, withComments.ID, "second comment")
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/summary", nil)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d", rec.Code)
+	}
+	summary := decodeData[entity.Summary](t, rec)
+	statsByIssueID := map[int64]entity.IssueStats{}
+	for _, column := range summary.Columns {
+		for _, issue := range column.Issues {
+			statsByIssueID[issue.ID] = issue.Stats
+		}
+	}
+	if statsByIssueID[withComments.ID].CommentCount != 2 {
+		t.Fatalf("comment count for issue with comments = %d, want 2", statsByIssueID[withComments.ID].CommentCount)
+	}
+	if statsByIssueID[withoutComments.ID].CommentCount != 0 {
+		t.Fatalf("comment count for issue without comments = %d, want 0", statsByIssueID[withoutComments.ID].CommentCount)
+	}
+}
+
 func TestIssuesFiltersByStates(t *testing.T) {
 	t.Parallel()
 
