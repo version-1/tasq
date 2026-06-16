@@ -482,6 +482,43 @@ func TestCommentsByIssueIDClampsLimit(t *testing.T) {
 	}
 }
 
+func TestCommentCountsByIssueID(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer store.Close()
+
+	project := createTestProject(t, store, "COUNTS")
+	withComments, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "With comments"})
+	if err != nil {
+		t.Fatalf("create issue with comments: %v", err)
+	}
+	withoutComments, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Without comments"})
+	if err != nil {
+		t.Fatalf("create issue without comments: %v", err)
+	}
+	for _, body := range []string{"first", "second"} {
+		if _, err := store.CreateComment(ctx, entity.CreateCommentInput{IssueID: withComments.ID, Author: "tester", Body: body}); err != nil {
+			t.Fatalf("create comment: %v", err)
+		}
+	}
+
+	counts, err := store.commentCountsByIssueID(ctx)
+	if err != nil {
+		t.Fatalf("count comments: %v", err)
+	}
+	if counts[withComments.ID] != 2 {
+		t.Fatalf("comment count for issue with comments = %d, want 2", counts[withComments.ID])
+	}
+	if _, ok := counts[withoutComments.ID]; ok {
+		t.Fatalf("comment count includes issue without comments: %+v", counts)
+	}
+}
+
 func TestProjectCRUD(t *testing.T) {
 	t.Parallel()
 
