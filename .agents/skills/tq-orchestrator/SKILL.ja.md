@@ -21,12 +21,30 @@ tasq のオーケストレータ層として issue tracker から ready な issu
 
 # 手順
 
-1. ユーザに polling の間隔を確認する。（デフォルト: 30 秒）
-2. **Monitor tool** で `./scripts/poller.sh` を実行し、tq issue tracker から ready な issue を取得する。
-3. Ready な issue が存在する場合、`scripts/poller.sh` が通知 json を出力する
-4. json 出力を受け取ったら、issue id を json から抽出し、Workflow Template をもとに作業を subagents に引き渡す
+1. ユーザに polling の間隔（秒）を確認する。（デフォルト: 30）
+2. **Monitor tool** で `tq issue watch --interval <秒>` を実行する。tq issue tracker から ready な issue を polling し、stdout に1行1 JSON エンベロープを出力する（1行が Monitor の1通知になる）。
+3. Ready な issue を検出すると event エンベロープを出力する（下記「出力プロトコル」参照）。同じ issue は `--seen-ttl` が経過するまで再出力されない。
+4. event エンベロープを受け取ったら、`body.id` から issue id を読み取り、Workflow Template をもとに作業を subagents に引き渡す
   - subagents への引き渡しが完了したら、issue のステータスを `tq issue update <issue_id> --status in_progress` で in_progress に変更する。
   - subagent の名前を `tq comment add <issue_id> --author claude-code --body "<comment>"` で issue にコメントとして残す。
+
+# 出力プロトコル
+
+> [!NOTE]
+> `tq issue watch` は experimental なコマンドです。最悪削除しても CLI の他機能に影響しないよう、意図的に独立させてあります。
+
+`tq issue watch` はグローバルの `--output` フラグを無視し、常に1行1 JSON を次の3種いずれかで出力する:
+
+- `{"type":"error","body":"<message>"}` — 一時的な polling 失敗。ループは継続する。常に出力。
+- `{"type":"event","eventType":"issue-ready","body":<issue>}` — ready な issue を検出。`body` は issue の全フィールド。常に出力。
+- `{"type":"info","body":"<message>"}` — 起動時の設定値と各周回のサマリ。`--verbose` 指定時のみ出力。
+
+フラグ:
+- `--interval <秒>`: polling 間隔（デフォルト 30）。
+- `--seen-ttl <秒>`: 同じ issue の再出力を抑制する期間（デフォルト 900。`--interval` より大きいこと）。
+- `--verbose`: info エンベロープも出力する。
+
+ループは停止されるまで（SIGINT・kill・Monitor の timeout）回り続け、自発的には終了しない。
 
 # Workflow Template
 

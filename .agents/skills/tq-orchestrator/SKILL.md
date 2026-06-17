@@ -21,12 +21,30 @@ Provide the orchestrator layer for tasq: poll ready issues from the issue tracke
 
 # Procedure
 
-1. Ask the user for the polling interval (default: 30 seconds).
-2. Use the **Monitor tool** to run `./scripts/poller.sh` and fetch ready issues from the tq issue tracker.
-3. When a ready issue exists, `scripts/poller.sh` emits a notification JSON.
-4. When you receive the JSON output, extract the issue id from it and hand the work off to subagents based on the Workflow Template.
+1. Ask the user for the polling interval in seconds (default: 30).
+2. Use the **Monitor tool** to run `tq issue watch --interval <seconds>`. It polls ready issues from the tq issue tracker and emits one JSON envelope per line on stdout (each line becomes one Monitor notification).
+3. When a ready issue is detected, an event envelope is emitted (see Output protocol below). The same issue is not re-emitted until `--seen-ttl` elapses.
+4. When you receive an event envelope, read the issue id from `body.id` and hand the work off to subagents based on the Workflow Template.
   - Once the hand-off to the subagent is complete, change the issue status to in_progress with `tq issue update <issue_id> --status in_progress`.
   - Record the subagent name as a comment on the issue with `tq comment add <issue_id> --author claude-code --body "<comment>"`.
+
+# Output protocol
+
+> [!NOTE]
+> `tq issue watch` is an experimental command. It is intentionally isolated so it can be removed without affecting the rest of the CLI.
+
+`tq issue watch` ignores the global `--output` flag and always writes one JSON object per line in one of three shapes:
+
+- `{"type":"error","body":"<message>"}` — a transient polling failure. The loop keeps running; always emitted.
+- `{"type":"event","eventType":"issue-ready","body":<issue>}` — a ready issue was detected. `body` is the full issue payload; always emitted.
+- `{"type":"info","body":"<message>"}` — startup config and per-cycle summary. Emitted only when `--verbose` is set.
+
+Flags:
+- `--interval <seconds>`: polling interval (default 30).
+- `--seen-ttl <seconds>`: suppress re-emitting the same issue for this duration (default 900; must be greater than `--interval`).
+- `--verbose`: also emit info envelopes.
+
+The loop runs until it is stopped (SIGINT, kill, or the Monitor timeout); it does not exit on its own.
 
 # Workflow Template
 
