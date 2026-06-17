@@ -174,6 +174,8 @@ func (a app) routeIssue(ctx context.Context, args []string, cfg config) error {
 	switch action {
 	case "list":
 		return a.issueList(ctx, args[1:], cfg)
+	case "watch":
+		return a.issueWatch(ctx, args[1:])
 	case "get":
 		return a.issueGet(ctx, args[1:], cfg)
 	case "create":
@@ -618,6 +620,7 @@ func printIssueHelp(w io.Writer) {
 	fmt.Fprintln(w, "  create   Create an issue (--project KEY required)")
 	fmt.Fprintln(w, "  get      Get an issue by ID")
 	fmt.Fprintln(w, "  list     List issues (--project KEY optional)")
+	fmt.Fprintln(w, "  watch    Poll ready issues and emit JSON events (--interval, --seen-ttl, --verbose)")
 	fmt.Fprintln(w, "  update   Update an issue")
 	fmt.Fprintln(w, "  close    Mark an issue as done")
 	fmt.Fprintln(w, "  cancel   Mark an issue as cancelled")
