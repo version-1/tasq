@@ -153,3 +153,6 @@ vite.config.ts.timestamp-*
 *.sqlite
 *.sqlite-shm
 *.sqlite-wal
+
+# Claude Code local settings (per-developer)
+.claude/settings.local.json
