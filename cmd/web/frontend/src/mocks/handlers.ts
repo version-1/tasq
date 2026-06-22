@@ -16,6 +16,7 @@ import {
   createProject,
   getOrchestratorConversation,
   getIssue,
+  getProjectWorkflow,
   listComments,
   listIssueStates,
   listIssues,
@@ -48,6 +49,17 @@ export const handlers = [
     }
 
     return jsonOk(project, 201);
+  }),
+
+  http.get(`${apiBase}/projects/:id/workflow`, ({ params }) => {
+    const id = numericParam(params.id);
+    const workflow = getProjectWorkflow(id);
+
+    if (!workflow) {
+      return jsonError("projects.workflow.not_found", `Workflow for project ${id} was not found.`, 404);
+    }
+
+    return jsonOk(workflow);
   }),
 
   http.get(`${apiBase}/issues`, ({ request }) => {

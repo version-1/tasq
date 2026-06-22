@@ -6,7 +6,7 @@ This document defines local structure rules for the React/Vite frontend under `c
 
 Routes are declared manually in `src/App.tsx` with `react-router-dom`.
 
-Use path parameters for scoped resource pages and detail pages. Issue lists use `/issues` for all projects and `/projects/:projectKey/issues` for a single project. Issue details use `/issues/:id` and the source files live under `src/app/issues/[id]/`.
+Use path parameters for scoped resource pages and detail pages. Issue lists use `/issues` for all projects and `/projects/:projectKey/issues` for a single project. Project detail pages use `/projects/:projectKey` and redirect to `/projects/:projectKey/issues`; their fixed tabs are `/projects/:projectKey/issues` and `/projects/:projectKey/settings`. Issue details use `/issues/:id` and the source files live under `src/app/issues/[id]/`.
 
 ## Component Placement
 
@@ -50,3 +50,5 @@ issue/
     index.tsx
     index.module.css
 ```
+
+Project detail tab pages live under `src/app/projects/[projectKey]/`. Keep tab-specific UI in each route's `_components` directory. The settings tab is read-only and renders the synchronized `ProjectWorkflow` from `GET /api/v1/projects/{id}/workflow`; do not add local `WORKFLOW.md` file reads in frontend code.

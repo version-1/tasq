@@ -174,6 +174,19 @@ const resources = {
         normal: "normal",
         urgent: "urgent",
       },
+      projectSettings: {
+        body: "WORKFLOW.md",
+        emptyBody: "WORKFLOW.md の本文はありません",
+        emptyFrontmatter: "frontmatter は登録されていません",
+        failedToLoadWorkflow: "WORKFLOW.md を読み込めません",
+        frontmatter: "Frontmatter",
+        loadingWorkflow: "WORKFLOW.md を読み込み中",
+        projectNotFound: "Project が見つかりません",
+        projectNotFoundDetail: "Project key {{key}} は登録されていません",
+        syncedAt: "同期時刻",
+        workflowUnavailable: "WORKFLOW.md は未同期です",
+        workflowUnavailableDetail: "workflow sync が完了するとここに表示されます",
+      },
       settings: {
         apiOrigin: "API origin",
         language: "表示言語",
@@ -359,6 +372,9 @@ const resources = {
             },
             list: {
               internal_error: "Project 一覧を読み込めません",
+            },
+            workflow: {
+              not_found: "WORKFLOW.md が見つかりません",
             },
             update: {
               invalid_id: "Project ID が不正です",
@@ -557,6 +573,19 @@ const resources = {
         normal: "normal",
         urgent: "urgent",
       },
+      projectSettings: {
+        body: "WORKFLOW.md",
+        emptyBody: "WORKFLOW.md has no body.",
+        emptyFrontmatter: "No frontmatter is registered.",
+        failedToLoadWorkflow: "Could not load WORKFLOW.md",
+        frontmatter: "Frontmatter",
+        loadingWorkflow: "Loading WORKFLOW.md",
+        projectNotFound: "Project not found",
+        projectNotFoundDetail: "Project key {{key}} is not registered.",
+        syncedAt: "Synced at",
+        workflowUnavailable: "WORKFLOW.md has not been synced",
+        workflowUnavailableDetail: "It will appear here after workflow sync completes.",
+      },
       settings: {
         apiOrigin: "API origin",
         language: "Display language",
@@ -742,6 +771,9 @@ const resources = {
             },
             list: {
               internal_error: "Could not load projects",
+            },
+            workflow: {
+              not_found: "WORKFLOW.md was not found",
             },
             update: {
               invalid_id: "Project ID is invalid",
