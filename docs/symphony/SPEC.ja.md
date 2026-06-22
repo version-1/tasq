@@ -526,11 +526,13 @@ reconciliation は毎 tick 実行され、stall detection と tracker state refr
 
 stall detection では、event があれば `last_codex_timestamp`、なければ `started_at` から `elapsed_ms` を計算します。`elapsed_ms > codex.stall_timeout_ms` なら worker を terminate し retry を queue します。`stall_timeout_ms <= 0` の場合は skip します。
 
-tracker state refresh では running issue ID の current issue state を fetch します。terminal なら worker を terminate して workspace cleanup、active なら in-memory issue snapshot を update、active でも terminal でもなければ cleanup なしで terminate します。refresh failure の場合は worker を running のままにし、次 tick で再試行します。
+tracker state refresh では running issue ID の current issue state を fetch します。terminal なら worker を terminate して workspace cleanup を行い、workspace-scoped coding-agent artifact、persisted thread/rollout state、後続 run がその state に reconnect できる resume pointer も同じ terminal cleanup の責務で破棄します。active なら in-memory issue snapshot を update、active でも terminal でもなければ cleanup なしで terminate します。refresh failure の場合は worker を running のままにし、次 tick で再試行します。
 
 ### 8.6 Startup Terminal Workspace Cleanup
 
-service startup 時、terminal states の issue を query し、返された issue identifier ごとに workspace directory を remove します。terminal issue fetch が失敗した場合は warning を log して startup を続行します。
+service startup 時、terminal states の issue を query し、返された issue identifier ごとに workspace directory を remove します。さらに、その issue の persisted coding-agent thread/rollout artifact と orchestrator-owned resume pointer を delete または invalidate します。terminal issue fetch が失敗した場合は warning を log して startup を続行します。
+
+これにより、restart 後に stale terminal workspace と resumable terminal-issue conversation が蓄積しないようにします。
 
 ## 9. Workspace Management and Safety
 
@@ -584,13 +586,13 @@ default command は `codex app-server` です。approval policy、sandbox policy
 
 ### 10.2 Session Startup Responsibilities
 
-startup は対象 Codex app-server contract に従います。Symphony client はさらに、per-issue workspace で app-server subprocess を起動し、protocol に従って session/thread/turn を開始し、cwd を受け取る protocol field では absolute per-issue workspace path を渡し、first turn は rendered issue prompt、continuation turn は同じ live thread に continuation guidance を送ります。実装が文書化した approval/sandbox policy を対象 protocol の supported field で渡し、可能なら issue-identifying metadata を title/session metadata に含めます。
+startup は対象 Codex app-server contract に従います。Symphony client はさらに、per-issue workspace で app-server subprocess を起動し、protocol に従って session/thread/turn を開始し、cwd を受け取る protocol field では absolute per-issue workspace path を渡し、first turn は rendered issue prompt を使います。previous worker run から resume する場合は fresh app-server subprocess を起動して persisted thread identity に reconnect し、previous subprocess を worker run をまたいで alive にしません。continuation turn は同じ live thread に continuation guidance を送ります。実装が文書化した approval/sandbox policy を対象 protocol の supported field で渡し、可能なら issue-identifying metadata を title/session metadata に含めます。
 
-`thread_id` と `turn_id` は対象 protocol から抽出し、`session_id = "<thread_id>-<turn_id>"` を emit します。1 worker run 内の continuation turn は同じ `thread_id` を reuse します。
+`thread_id` と `turn_id` は対象 protocol から抽出し、`session_id = "<thread_id>-<turn_id>"` を emit します。1 worker run 内の continuation turn は同じ `thread_id` を reuse します。persisted `thread_id` は issue が non-terminal の間だけ再利用できます。Terminal issue cleanup は、future dispatch が同じ issue から開始される前に persisted thread/rollout state を remove し、resume pointer を clear しなければなりません。
 
 ### 10.3 Streaming Turn Processing
 
-client は active turn が terminate するまで対象 Codex app-server protocol に従って update を処理します。protocol completion は success、protocol failure/cancellation、turn timeout、subprocess exit は failure です。continuation が必要な場合は同じ live thread で別 turn を開始し、app-server subprocess は worker run の終了まで alive に保つべきです。stdio transport では protocol stream と diagnostic stderr handling を分離します。
+client は active turn が terminate するまで対象 Codex app-server protocol に従って update を処理します。protocol completion は success、protocol failure/cancellation、turn timeout、subprocess exit は failure です。continuation が必要な場合は同じ live thread で別 turn を開始し、app-server subprocess は worker run の終了まで alive に保つべきです。app-server subprocess を issue-lifetime process と扱ってはなりません。worker exit では常に subprocess を close し、後続 retry や continuation retry は別 subprocess を起動して persisted protocol state を使って resume します。stdio transport では protocol stream と diagnostic stderr handling を分離します。
 
 ### 10.4 Emitted Runtime Events
 
@@ -770,7 +772,7 @@ dispatch validation failure は new dispatch を skip し、service を alive �
 
 current design は scheduler state を意図的に in-memory とします。restart recovery とは、tracker state を poll し、preserved workspace を reuse して有用な運用を再開できることを意味します。retry timer、running session、live worker state が process restart を越えて survive することは意味しません。
 
-restart 後は retry timer も running session も復元せず、startup terminal workspace cleanup、fresh polling of active issues、eligible work の re-dispatch により recover します。
+restart 後は retry timer も running session も復元せず、startup terminal workspace cleanup、fresh polling of active issues、eligible work の re-dispatch により recover します。Active issue は、対象 protocol が resume を support する場合、previous worker run の persisted coding-agent thread state を resume してもよいです。Terminal issue は cleanup 後に previous coding-agent state を resume してはならず、後で reopened または active work として再作成された場合は thread state なしで開始します。
 
 ### 14.4 Operator Intervention Points
 
@@ -862,11 +864,11 @@ candidate fetch active states/project slug、Linear `slugId` filter、empty stat
 
 ### 17.4 Orchestrator Dispatch, Reconciliation, and Retry
 
-dispatch sort、Todo blocker rule、active/non-active/terminal reconciliation、normal/abnormal worker exit retry、backoff cap、retry queue entry contents、stall detection、slot exhaustion requeue、snapshot API behavior を test します。
+dispatch sort、Todo blocker rule、active/non-active/terminal reconciliation、normal/abnormal worker exit retry、backoff cap、retry queue entry contents、stall detection、slot exhaustion requeue、snapshot API behavior を test します。Terminal state の test は running agent stop、workspace cleanup、thread/rollout artifact removal、resume pointer invalidation を確認します。
 
 ### 17.5 Coding-Agent App-Server Client
 
-workspace cwd launch、targeted Codex protocol startup、policy payload、thread/turn identity extraction、timeouts、transport framing、stderr separation、approval/user-input policy、unsupported tool call handling、usage/rate-limit extraction、client-side tools と `linear_graphql` extension を test します。
+workspace cwd launch、targeted Codex protocol startup、policy payload、thread/turn identity extraction、timeouts、transport framing、stderr separation、approval/user-input policy、unsupported tool call handling、usage/rate-limit extraction、client-side tools と `linear_graphql` extension を test します。Worker run 間の retry/resume は、後続 process が previous `thread_id` を targeted resume request で受け取り、同じ workspace `cwd` を使い、original issue prompt ではなく continuation guidance で next turn を開始することを test しなければなりません。Terminal cleanup は、workspace-local thread/rollout file の削除と resume pointer の invalidation の両方を test し、cleanup 済み terminal issue の後続 dispatch が stale `thread_id` を受け取らないことを確認しなければなりません。
 
 ### 17.6 Observability
 
@@ -894,6 +896,7 @@ valid credentials と network access がある場合、real tracker smoke test �
 - workspace lifecycle hooks と timeout config。
 - JSON line protocol の coding-agent app-server subprocess client。
 - `codex.command` config、strict prompt rendering、retry queue、reconciliation、terminal workspace cleanup。
+- terminal issue の thread/rollout cleanup と resume pointer invalidation。
 - `issue_id`, `issue_identifier`, `session_id` を含む structured logs。
 - operator-visible observability。
 

@@ -36,6 +36,26 @@ Stdio transport は v2 app-server JSON-RPC line protocol を使います。
 - Failure として扱う `error`、subprocess exit、context cancellation、response timeout、turn
   timeout。
 
+Process lifetime は引き続き run-scoped です。Tasq は successful run、failed run、timed-out run
+を含め、各 runner run の終了時に app-server subprocess を close します。したがって retry をまたぐ
+resume は、issue lifetime のために long-lived worker process を保持するのではなく、stored thread ID
+に別 process から reconnect する動作です。
+
+Persistent thread と rollout state は workspace-scoped runtime state として扱います。Terminal issue
+cleanup は per-issue workspace を remove し、その issue の runstore resume pointer を invalidate
+しなければなりません。これにより、後続 dispatch が workspace-local artifact 削除済みの thread に
+reconnect できないようにします。Non-terminal retry は issue の latest stored thread ID を再利用してよいです。
+
+この lifecycle の verification coverage は次の通りです。
+
+- `internal/orchestrator/runner`: resumed run が stored `threadId` で `thread/resume` を送信し、
+  workspace `cwd` を使い、`session_started` を emit し、continuation guidance で turn を開始する。
+- `internal/orchestrator/coordinator`: dispatch が latest persisted thread ID を retry task に渡し、
+  新しく emit された `thread_id` を永続化する。
+- Terminal cleanup tests は cleanup contract の両面を assert しなければなりません。
+  workspace-local thread/rollout artifact が remove され、同じ issue の後続 dispatch が stale
+  resume thread ID を受け取らないことを確認します。
+
 Websocket transport は OpenAI Codex app-server 契約
 <https://developers.openai.com/codex/app-server/> に従います。
 

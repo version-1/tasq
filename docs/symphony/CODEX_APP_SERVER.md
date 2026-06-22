@@ -34,6 +34,25 @@ The stdio transport uses the v2 app-server JSON-RPC line protocol:
 - `turn/completed` notification as success.
 - `error`, subprocess exit, context cancellation, response timeout, or turn timeout as failure.
 
+Process lifetime remains run-scoped. Tasq closes the app-server subprocess at the end of each runner
+run, including successful runs, failed runs, and timed-out runs. Resume across retries is therefore a
+different process reconnecting to a stored thread ID, not a long-lived worker process kept alive for
+the issue lifetime.
+
+Persistent thread and rollout state is treated as workspace-scoped runtime state. Terminal issue
+cleanup must remove the per-issue workspace and invalidate the runstore resume pointer for that
+issue, so a later dispatch cannot reconnect to a thread whose workspace-local artifacts were already
+deleted. Non-terminal retries may reuse the latest stored thread ID for the issue.
+
+Verification coverage for this lifecycle is:
+
+- `internal/orchestrator/runner`: a resumed run sends `thread/resume` with the stored `threadId`,
+  uses the workspace `cwd`, emits `session_started`, and starts the turn with continuation guidance.
+- `internal/orchestrator/coordinator`: dispatch passes the latest persisted thread ID to a retry
+  task and persists newly emitted `thread_id` values.
+- Terminal cleanup tests must assert both sides of the cleanup contract: workspace-local
+  thread/rollout artifacts are removed and later dispatch does not receive a stale resume thread ID.
+
 The websocket transport follows the OpenAI Codex app-server contract documented at
 <https://developers.openai.com/codex/app-server/>:
 
