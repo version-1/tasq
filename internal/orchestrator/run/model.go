@@ -18,6 +18,7 @@ type Run struct {
 	IssueID        int64     `json:"issueId"`
 	Status         Status    `json:"status"`
 	Workspace      string    `json:"workspace"`
+	ThreadID       string    `json:"threadId,omitempty"`
 	Attempt        int       `json:"attempt"`
 	Error          string    `json:"error"`
 	OrchestratorID string    `json:"orchestratorId"`

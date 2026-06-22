@@ -22,6 +22,7 @@ func TestStateReturnsActiveRuns(t *testing.T) {
 			IssueID:   7,
 			Status:    run.StatusRunning,
 			Workspace: "/tmp/workspaces/issue-7",
+			ThreadID:  "thread-7",
 			CreatedAt: now,
 			UpdatedAt: now,
 		}},
@@ -48,6 +49,7 @@ func TestStateReturnsActiveRuns(t *testing.T) {
 		} `json:"counts"`
 		Running []struct {
 			IssueIdentifier string `json:"issue_identifier"`
+			SessionID       string `json:"session_id"`
 			State           string `json:"state"`
 			TurnCount       int    `json:"turn_count"`
 		} `json:"running"`
@@ -58,7 +60,7 @@ func TestStateReturnsActiveRuns(t *testing.T) {
 	if payload.Counts.Running != 1 || len(payload.Running) != 1 {
 		t.Fatalf("payload = %+v", payload)
 	}
-	if payload.Running[0].IssueIdentifier != "issue-7" || payload.Running[0].State != "running" || payload.Running[0].TurnCount != 1 {
+	if payload.Running[0].IssueIdentifier != "issue-7" || payload.Running[0].SessionID != "thread-7" || payload.Running[0].State != "running" || payload.Running[0].TurnCount != 1 {
 		t.Fatalf("running row = %+v", payload.Running[0])
 	}
 }

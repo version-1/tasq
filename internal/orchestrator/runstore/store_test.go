@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/version-1/tasq/db/migrations"
+	"github.com/version-1/tasq/internal/migration"
 	"github.com/version-1/tasq/internal/orchestrator/run"
 )
 
@@ -33,6 +35,34 @@ func TestOpenAppliesOrchestratorSchema(t *testing.T) {
 		if !schemaObjectExists(t, store, name) {
 			t.Fatalf("schema object %q does not exist", name)
 		}
+	}
+	if !schemaColumnExists(t, store, "runs", "thread_id") {
+		t.Fatal("runs.thread_id column does not exist")
+	}
+}
+
+func TestOrchestratorThreadIDMigrationRollsBack(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "orchestrator.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer store.Close()
+	if !schemaColumnExists(t, store, "runs", "thread_id") {
+		t.Fatal("runs.thread_id column does not exist after migrate up")
+	}
+
+	rolledBack, err := migration.NewManager(store.db, migrations.Files, "orchestrator").Down(ctx)
+	if err != nil {
+		t.Fatalf("migration down: %v", err)
+	}
+	if rolledBack == nil || rolledBack.Version != "20260615000001" {
+		t.Fatalf("rolled back = %+v, want 20260615000001", rolledBack)
+	}
+	if schemaColumnExists(t, store, "runs", "thread_id") {
+		t.Fatal("runs.thread_id column still exists after rollback")
 	}
 }
 
@@ -112,6 +142,53 @@ func TestStoreQueriesActiveRunsAndLatestRunByIssueID(t *testing.T) {
 	}
 	if runsForIssue[0].RunID != latestForIssue.RunID || runsForIssue[1].RunID != running.RunID {
 		t.Fatalf("runs order = %+v", runsForIssue)
+	}
+}
+
+func TestStorePersistsThreadIDAndFindsLatestResumeThreadByIssueID(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "orchestrator.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer store.Close()
+
+	withoutThread := createRun(t, ctx, store, 7)
+	if withoutThread.ThreadID != "" {
+		t.Fatalf("thread id = %q, want empty", withoutThread.ThreadID)
+	}
+	first, err := store.CreateRun(ctx, CreateRunInput{
+		IssueID:        7,
+		Workspace:      "/tmp/workspace",
+		ThreadID:       "thread-first",
+		Attempt:        2,
+		OrchestratorID: "orchestrator",
+	})
+	if err != nil {
+		t.Fatalf("create first threaded run: %v", err)
+	}
+	if first.ThreadID != "thread-first" {
+		t.Fatalf("created thread id = %q", first.ThreadID)
+	}
+	updated, err := store.UpdateRunThreadID(ctx, withoutThread.RunID, "thread-latest")
+	if err != nil {
+		t.Fatalf("update run thread id: %v", err)
+	}
+	if updated.ThreadID != "thread-latest" {
+		t.Fatalf("updated thread id = %q", updated.ThreadID)
+	}
+
+	threadID, err := store.LatestResumeThreadIDByIssueID(ctx, 7)
+	if err != nil {
+		t.Fatalf("latest resume thread id: %v", err)
+	}
+	if threadID != "thread-first" {
+		t.Fatalf("latest thread id = %q, want thread-first", threadID)
+	}
+	if _, err := store.LatestResumeThreadIDByIssueID(ctx, 99); !errors.Is(err, sql.ErrNoRows) {
+		t.Fatalf("missing latest thread error = %v, want sql.ErrNoRows", err)
 	}
 }
 
@@ -211,6 +288,34 @@ func schemaObjectExists(t *testing.T, store *Store, name string) bool {
 		t.Fatalf("query schema object %q: %v", name, err)
 	}
 	return exists
+}
+
+func schemaColumnExists(t *testing.T, store *Store, table string, column string) bool {
+	t.Helper()
+
+	rows, err := store.db.Query(`PRAGMA table_info(` + table + `)`)
+	if err != nil {
+		t.Fatalf("query columns for %s: %v", table, err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var cid int
+		var name string
+		var columnType string
+		var notNull int
+		var defaultValue sql.NullString
+		var pk int
+		if err := rows.Scan(&cid, &name, &columnType, &notNull, &defaultValue, &pk); err != nil {
+			t.Fatalf("scan column for %s: %v", table, err)
+		}
+		if name == column {
+			return true
+		}
+	}
+	if err := rows.Err(); err != nil {
+		t.Fatalf("iterate columns for %s: %v", table, err)
+	}
+	return false
 }
 
 func createRun(t *testing.T, ctx context.Context, store *Store, issueID int64) run.Run {

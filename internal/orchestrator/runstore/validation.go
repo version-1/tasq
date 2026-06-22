@@ -12,6 +12,7 @@ import (
 
 const (
 	maxRunIDLength            = 200
+	maxRunThreadIDLength      = 200
 	maxRunWorkspaceLength     = 1000
 	maxRunErrorLength         = 10000
 	maxOrchestratorIDLength   = 200
@@ -28,6 +29,9 @@ func ValidateCreateRun(input CreateRunInput) error {
 	}
 	if runeCount(input.Workspace) > maxRunWorkspaceLength {
 		return errors.New("workspace must be 1000 characters or fewer")
+	}
+	if runeCount(input.ThreadID) > maxRunThreadIDLength {
+		return errors.New("threadId must be 200 characters or fewer")
 	}
 	if input.Attempt < 0 {
 		return errors.New("attempt must be greater than or equal to 0")

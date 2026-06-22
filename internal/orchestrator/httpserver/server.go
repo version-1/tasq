@@ -345,7 +345,7 @@ func (s *Server) runRowFromEvents(storedRun run.Run, events []run.RunnerEvent) (
 	lastMessage := ""
 	var lastEventAt *time.Time
 	turnCount := 0
-	sessionID := ""
+	sessionID := storedRun.ThreadID
 	for _, event := range events {
 		lastEvent = event.EventType
 		lastMessage = event.Message

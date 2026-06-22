@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS runs (
 	issue_id INTEGER NOT NULL,
 	status TEXT NOT NULL,
 	workspace TEXT NOT NULL DEFAULT '',
+	thread_id TEXT NULL,
 	attempt INTEGER NOT NULL DEFAULT 0,
 	error TEXT NOT NULL DEFAULT '',
 	orchestrator_id TEXT NOT NULL,

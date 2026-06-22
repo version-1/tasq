@@ -1,0 +1,1 @@
+ALTER TABLE runs ADD COLUMN thread_id TEXT NULL;
