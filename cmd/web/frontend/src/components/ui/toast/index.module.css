@@ -1,68 +1,127 @@
 .stack {
-  position: fixed;
-  top: 16px;
-  right: 16px;
-  z-index: 1000;
   display: grid;
   gap: 10px;
-  width: min(360px, calc(100vw - 32px));
   pointer-events: none;
+  position: fixed;
+  right: 24px;
+  top: 24px;
+  width: min(400px, calc(100vw - 48px));
+  z-index: 1000;
 }
 
 .toast {
-  display: flex;
   align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  min-height: 72px;
-  padding: 12px;
-  border: 1px solid var(--border);
-  border-left-width: 4px;
-  border-radius: 8px;
   background: var(--surface);
-  box-shadow: 0 12px 32px rgb(0 0 0 / 14%);
+  border: 1px solid var(--border);
+  border-left: 6px solid var(--toast-accent);
+  border-radius: 10px;
+  box-shadow: 0 10px 24px rgb(0 0 0 / 12%);
   color: var(--text);
+  display: grid;
+  gap: 12px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  min-height: 72px;
+  overflow: hidden;
+  padding: 14px 16px;
   pointer-events: auto;
 }
 
 .error {
-  border-left-color: var(--danger);
+  --toast-accent: #dc2626;
+  --toast-icon-bg: #fee2e2;
+  --toast-icon-color: #dc2626;
 }
 
 .success {
-  border-left-color: var(--ok);
+  --toast-accent: #16a34a;
+  --toast-icon-bg: #dcfce7;
+  --toast-icon-color: #15803d;
+}
+
+.iconBubble {
+  align-items: center;
+  background: var(--toast-icon-bg);
+  border-radius: 999px;
+  color: var(--toast-icon-color);
+  display: inline-flex;
+  height: 40px;
+  justify-content: center;
+  width: 40px;
+}
+
+.statusIcon {
+  color: currentcolor;
 }
 
 .content {
   display: grid;
   gap: 4px;
   min-width: 0;
+  padding-top: 0;
 }
 
 .title {
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.2;
   margin: 0;
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1.3;
 }
 
 .message {
-  margin: 0;
   color: var(--muted);
   font-size: 13px;
+  font-weight: 400;
   line-height: 1.45;
+  margin: 0;
   overflow-wrap: anywhere;
 }
 
 .dismiss {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  color: var(--muted);
   display: inline-flex;
   flex: 0 0 auto;
-  align-items: center;
+  height: 26px;
   justify-content: center;
-  width: 28px;
-  height: 28px;
   padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--muted);
+  width: 26px;
+}
+
+.dismiss:hover,
+.dismiss:focus-visible {
+  background: var(--extra-light-gray);
+  color: var(--text);
+}
+
+@media (max-width: 720px) {
+  .stack {
+    gap: 14px;
+    right: 16px;
+    top: 16px;
+    width: calc(100vw - 32px);
+  }
+
+  .toast {
+    gap: 10px;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    min-height: 68px;
+    padding: 12px 14px;
+  }
+
+  .iconBubble {
+    height: 36px;
+    width: 36px;
+  }
+
+  .title {
+    font-size: 14px;
+  }
+
+  .message {
+    font-size: 13px;
+  }
 }

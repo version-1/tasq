@@ -1,4 +1,4 @@
-import { X } from "lucide-react";
+import { CircleAlert, CircleCheck, X } from "lucide-react";
 import { useSyncExternalStore } from "react";
 import { useTranslation } from "react-i18next";
 import { toastStore, type Toast } from "@/lib/toast";
@@ -34,9 +34,13 @@ function ToastItem({
 }) {
   const { t } = useTranslation();
   const titleKey = toast.type === "error" ? "toast.error.title" : "toast.success.title";
+  const StatusIcon = toast.type === "error" ? CircleAlert : CircleCheck;
 
   return (
     <article className={`${styles.toast} ${styles[toast.type]}`} role="status">
+      <span className={styles.iconBubble} aria-hidden="true">
+        <StatusIcon className={styles.statusIcon} size={20} strokeWidth={2.5} />
+      </span>
       <div className={styles.content}>
         <p className={styles.title}>{t(titleKey)}</p>
         <p className={styles.message}>{toast.message}</p>
@@ -48,7 +52,7 @@ function ToastItem({
         title={t("toast.dismiss")}
         onClick={() => onDismiss(toast.id)}
       >
-        <X aria-hidden="true" size={16} strokeWidth={2} />
+        <X aria-hidden="true" size={18} strokeWidth={2} />
       </button>
     </article>
   );

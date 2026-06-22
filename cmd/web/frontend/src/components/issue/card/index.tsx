@@ -1,7 +1,14 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import type { IssueStatus, IssueSummary, Priority } from "@/lib/types";
+import { Badge } from "@/components/ui/badge";
+import {
+  ContextMenu,
+  ContextMenuGroupLabel,
+  ContextMenuHelp,
+  ContextMenuItem,
+} from "@/components/ui/context-menu";
 import { IconProxy, type IconProxyName } from "@/components/ui/icon-proxy";
 import styles from "./index.module.css";
 
@@ -66,64 +73,31 @@ export function IssueCard({
     },
   ];
 
-  useEffect(() => {
-    if (!isMenuOpen) {
-      return;
-    }
-
-    function closeMenuOnOutsidePointerDown(event: PointerEvent) {
-      const card = cardRef.current;
-      if (!card || !(event.target instanceof Node) || card.contains(event.target)) {
-        return;
-      }
-      setIsMenuOpen(false);
-    }
-
-    document.addEventListener("pointerdown", closeMenuOnOutsidePointerDown);
-    return () => {
-      document.removeEventListener("pointerdown", closeMenuOnOutsidePointerDown);
-    };
-  }, [isMenuOpen]);
-
   return (
     <article className={styles.taskCard} ref={cardRef}>
       <div className={styles.titleRow}>
         <Link className={styles.taskTitle} to={`/issues/${issue.id}`}>
           #{issue.id} {issue.title}
         </Link>
-        <button
-          aria-controls={isMenuOpen ? menuID : undefined}
-          aria-expanded={isMenuOpen}
-          aria-haspopup="menu"
-          aria-label={menuLabel}
-          className={styles.menuButton}
-          title={menuLabel}
-          type="button"
-          onClick={() => setIsMenuOpen((current) => !current)}
-        >
-          <IconProxy name="ellipsis" size={16} />
-        </button>
-      </div>
-
-      <div className={styles.metaRow}>
-        <span className={styles.projectKey}>
-          <IconProxy name="folder" size={17} strokeWidth={2.3} />
-          {issue.projectKey}
-        </span>
-        <span className={priorityClassName(issue.priority)}>
-          <PriorityIcon priority={issue.priority} />
-          {t(`priorities.${issue.priority}`)}
-        </span>
-      </div>
-
-      {isMenuOpen ? (
-        <div
-          aria-label={menuLabel}
-          className={styles.actionMenu}
+        <ContextMenu
+          boundaryRef={cardRef}
           id={menuID}
-          role="menu"
+          isOpen={isMenuOpen}
+          label={menuLabel}
+          onOpenChange={setIsMenuOpen}
+          trigger={(triggerProps) => (
+            <button
+              {...triggerProps}
+              aria-label={menuLabel}
+              className={styles.menuButton}
+              title={menuLabel}
+              type="button"
+            >
+              <IconProxy name="ellipsis" size={16} />
+            </button>
+          )}
         >
-          <div className={styles.menuGroupLabel}>{t("issues.card.changeStatus")}</div>
+          <ContextMenuGroupLabel>{t("issues.card.changeStatus")}</ContextMenuGroupLabel>
           {statusOptions.map((status) => {
             const isCurrent = status === issue.status;
             const isDisabled = isCurrent || !canChangeStatus;
@@ -132,28 +106,37 @@ export function IssueCard({
               : t(`statuses.${status}`);
 
             return (
-              <button
+              <ContextMenuItem
                 key={status}
-                aria-label={isDisabled && !isCurrent ? lockedStatusLabel : itemLabel}
-                className={styles.menuItem}
                 disabled={isDisabled}
-                role="menuitem"
+                label={isDisabled && !isCurrent ? lockedStatusLabel : itemLabel}
                 title={isDisabled && !isCurrent ? lockedStatusLabel : itemLabel}
-                type="button"
-                onClick={() => {
+                onSelect={() => {
                   setIsMenuOpen(false);
                   void onStatusChange(issue.id, status);
                 }}
               >
                 {itemLabel}
-              </button>
+              </ContextMenuItem>
             );
           })}
           {!canChangeStatus && statusOptions.length === 1 ? (
-            <p className={styles.menuHelp}>{lockedStatusLabel}</p>
+            <ContextMenuHelp>{lockedStatusLabel}</ContextMenuHelp>
           ) : null}
-        </div>
-      ) : null}
+        </ContextMenu>
+      </div>
+
+      <div className={styles.metaRow}>
+        <Badge
+          variant="project"
+          icon={<IconProxy name="folder" size={17} strokeWidth={2.3} />}
+        >
+          {issue.projectKey}
+        </Badge>
+        <Badge variant={priorityBadgeVariant(issue.priority)} icon={<PriorityIcon priority={issue.priority} />}>
+          {t(`priorities.${issue.priority}`)}
+        </Badge>
+      </div>
 
       <div className={styles.footerRow}>
         <div className={styles.metrics}>
@@ -200,8 +183,14 @@ function PriorityIcon({ priority }: { priority: Priority }) {
   return <IconProxy name={icon} size={16} strokeWidth={2.4} />;
 }
 
-function priorityClassName(priority: IssueSummary["priority"]): string {
-  return `${styles.priority} ${styles[`priority-${priority}`]}`;
+function priorityBadgeVariant(priority: IssueSummary["priority"]): "priority-high" | "priority-normal" | "priority-low" {
+  if (priority === "high" || priority === "urgent") {
+    return "priority-high";
+  }
+  if (priority === "low") {
+    return "priority-low";
+  }
+  return "priority-normal";
 }
 
 function quickActionClassName(status: IssueStatus): string {

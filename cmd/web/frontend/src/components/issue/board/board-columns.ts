@@ -12,7 +12,7 @@ export const boardColumns: BoardColumn[] = [
   {
     key: "draft",
     titleKey: "issues.board.draft",
-    statuses: ["backlog", "blocked", "failed", "cancelled", "duplicate"],
+    statuses: ["backlog", "blocked"],
   },
   { key: "todo", titleKey: "issues.board.todo", statuses: ["ready"] },
   {
@@ -20,5 +20,5 @@ export const boardColumns: BoardColumn[] = [
     titleKey: "issues.board.inProgress",
     statuses: ["in_progress"],
   },
-  { key: "inReview", titleKey: "issues.board.inReview", statuses: ["review"] },
+  { key: "inReview", titleKey: "issues.board.inReview", statuses: ["review", "failed"] },
 ];
