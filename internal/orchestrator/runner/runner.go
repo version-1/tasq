@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os/exec"
 	"regexp"
 	"strconv"
 	"strings"
@@ -17,6 +16,8 @@ import (
 
 	"github.com/version-1/tasq/internal/issue/domain/entity"
 	"github.com/version-1/tasq/internal/orchestrator/run"
+	"github.com/version-1/tasq/internal/orchestrator/runner/transport"
+	"github.com/version-1/tasq/internal/orchestrator/runner/transport/stdio"
 	"github.com/version-1/tasq/internal/orchestrator/workspace"
 )
 
@@ -94,7 +95,7 @@ func (r CodexRunner) Run(ctx context.Context, task Task) Result {
 		return Result{Status: run.StatusFailed, Error: err.Error()}
 	}
 	defer session.close()
-	emit(task, "process_started", fmt.Sprintf("pid=%d", session.pid()), "")
+	emit(task, "process_started", session.identifier(), "")
 
 	if err := session.request(ctx, task.ReadTimeout, "initialize", map[string]any{
 		"clientInfo": map[string]any{
@@ -151,13 +152,11 @@ func (r CodexRunner) Run(ctx context.Context, task Task) Result {
 }
 
 type session struct {
-	cmd      *exec.Cmd
-	stdin    io.WriteCloser
+	conn     transport.Connection
 	mu       sync.Mutex
 	nextID   int64
 	closing  atomic.Bool
 	messages chan rpcMessage
-	done     chan error
 }
 
 type rpcMessage struct {
@@ -175,77 +174,53 @@ type rpcError struct {
 }
 
 func startSession(ctx context.Context, task Task) (*session, error) {
-	cmd := exec.CommandContext(ctx, "bash", "-lc", task.Command)
-	cmd.Dir = task.Workspace.Path
-	stdin, err := cmd.StdinPipe()
+	conn, err := stdio.Start(ctx, task.Command, task.Workspace.Path)
 	if err != nil {
-		return nil, fmt.Errorf("create stdin pipe: %w", err)
-	}
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		return nil, fmt.Errorf("create stdout pipe: %w", err)
-	}
-	stderr, err := cmd.StderrPipe()
-	if err != nil {
-		return nil, fmt.Errorf("create stderr pipe: %w", err)
-	}
-	if err := cmd.Start(); err != nil {
-		return nil, fmt.Errorf("start codex app-server: %w", err)
+		return nil, err
 	}
 	s := &session{
-		cmd:      cmd,
-		stdin:    stdin,
+		conn:     conn,
 		messages: make(chan rpcMessage, 64),
-		done:     make(chan error, 1),
 	}
-	go s.readStdout(stdout, task)
-	go readStderr(stderr, task)
-	go func() {
-		s.done <- cmd.Wait()
-		close(s.done)
-	}()
+	go s.readFrames(task)
+	go readStderr(conn.Stderr(), task)
 	return s, nil
 }
 
-func (s *session) pid() int {
-	if s.cmd.Process == nil {
-		return 0
-	}
-	return s.cmd.Process.Pid
+func (s *session) identifier() string {
+	return s.conn.Identifier()
 }
 
 func (s *session) close() {
 	s.closing.Store(true)
-	_ = s.stdin.Close()
-	if s.cmd.Process != nil {
-		_ = s.cmd.Process.Kill()
-	}
-	<-s.done
+	_ = s.conn.Close()
 }
 
-func (s *session) readStdout(stdout io.Reader, task Task) {
+func (s *session) readFrames(task Task) {
 	defer close(s.messages)
 
-	scanner := bufio.NewScanner(stdout)
-	scanner.Buffer(make([]byte, 0, 64*1024), 10*1024*1024)
-	for scanner.Scan() {
+	for {
+		frame, err := s.conn.Receive(context.Background())
+		if err != nil {
+			if s.closing.Load() {
+				return
+			}
+			message := "EOF"
+			if !errors.Is(err, io.EOF) {
+				message = err.Error()
+			}
+			emit(task, s.conn.FrameSource()+"_closed", message, "")
+			return
+		}
 		var message rpcMessage
-		if err := json.Unmarshal(scanner.Bytes(), &message); err != nil {
-			line := string(scanner.Bytes())
-			emitMalformedStdout(task, line, err)
-			s.messages <- rpcMessage{Method: "malformed", Params: append([]byte(nil), scanner.Bytes()...)}
+		if err := json.Unmarshal(frame, &message); err != nil {
+			line := string(frame)
+			emitMalformedFrame(task, s.conn.FrameSource(), line, err)
+			s.messages <- rpcMessage{Method: "malformed", Params: append([]byte(nil), frame...)}
 			continue
 		}
 		s.messages <- message
 	}
-	if s.closing.Load() {
-		return
-	}
-	message := "EOF"
-	if err := scanner.Err(); err != nil {
-		message = err.Error()
-	}
-	emit(task, "stdout_closed", message, "")
 }
 
 func readStderr(stderr io.Reader, task Task) {
@@ -256,7 +231,7 @@ func readStderr(stderr io.Reader, task Task) {
 	}
 }
 
-func emitMalformedStdout(task Task, line string, err error) {
+func emitMalformedFrame(task Task, source string, line string, err error) {
 	payload, marshalErr := json.Marshal(map[string]string{
 		"error": err.Error(),
 	})
@@ -264,7 +239,7 @@ func emitMalformedStdout(task Task, line string, err error) {
 	if marshalErr == nil {
 		payloadJSON = string(payload)
 	}
-	emit(task, "stdout_malformed", truncateText(line, 10000), payloadJSON)
+	emit(task, source+"_malformed", truncateText(line, 10000), payloadJSON)
 }
 
 func (s *session) request(ctx context.Context, timeout time.Duration, method string, params any, output any) error {
@@ -278,16 +253,13 @@ func (s *session) request(ctx context.Context, timeout time.Duration, method str
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		case err := <-s.done:
-			if err == nil {
-				return errors.New("codex app-server exited")
-			}
-			return fmt.Errorf("codex app-server exited: %w", err)
+		case err := <-s.conn.Done():
+			return appServerExitedError("codex app-server exited", err)
 		case <-timer.C:
 			return fmt.Errorf("%s response_timeout", method)
 		case message, ok := <-s.messages:
 			if !ok {
-				return fmt.Errorf("%s stdout_closed_before_response", method)
+				return fmt.Errorf("%s %s_closed_before_response", method, s.conn.FrameSource())
 			}
 			if message.Method != "" && message.ID != nil {
 				_ = s.write(map[string]any{
@@ -350,16 +322,13 @@ func (s *session) waitTurn(ctx context.Context, timeout time.Duration, task Task
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		case err := <-s.done:
-			if err == nil {
-				return errors.New("codex app-server exited before turn completion")
-			}
-			return fmt.Errorf("codex app-server exited before turn completion: %w", err)
+		case err := <-s.conn.Done():
+			return appServerExitedError("codex app-server exited before turn completion", err)
 		case <-timer.C:
 			return errors.New("turn_timeout")
 		case message, ok := <-s.messages:
 			if !ok {
-				return errors.New("stdout_closed_before_turn_completion")
+				return fmt.Errorf("%s_closed_before_turn_completion", s.conn.FrameSource())
 			}
 			if message.Method == "" {
 				continue
@@ -429,10 +398,14 @@ func (s *session) write(message any) error {
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if _, err := s.stdin.Write(append(raw, '\n')); err != nil {
-		return fmt.Errorf("write app-server request: %w", err)
+	return s.conn.Send(context.Background(), raw)
+}
+
+func appServerExitedError(message string, err error) error {
+	if err == nil {
+		return errors.New(message)
 	}
-	return nil
+	return fmt.Errorf("%s: %w", message, err)
 }
 
 func notificationMatches(raw json.RawMessage, threadID string, turnID string) bool {
