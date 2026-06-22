@@ -4,6 +4,17 @@ Status: Draft v1 (language-agnostic)
 
 Purpose: Define a service that orchestrates coding agents to get project work done.
 
+## How to Read This Document
+
+This specification defines the contract for implementing Symphony.
+
+If you are reading it for the first time, start with Sections 1 through 3 for the purpose and system
+overview.
+
+Then read Sections 4 through 6 for the data model and `WORKFLOW.md` contract. During implementation,
+use Section 7 and later for the state machine, workspaces, agent runner, tracker integration, and
+observability.
+
 ## Normative Language
 
 The key words `MUST`, `MUST NOT`, `REQUIRED`, `SHOULD`, `SHOULD NOT`, `RECOMMENDED`, `MAY`, and
