@@ -12,6 +12,13 @@ command で生成される schema に基づきます。
 codex app-server generate-json-schema --out <dir>
 ```
 
+Resume support は Codex CLI 0.141.0 から生成した v2 schema に基づきます。`thread/resume` は
+必須の `threadId` string を受け取ります。Schema は in-memory history と rollout path による
+resume input もサポートしますが、schema は可能な限り thread ID を使うことを推奨しており、runstore
+もその identifier を永続化するため、Tasq は `threadId` を使います。`ThreadResumeResponse` は
+`ThreadStartResponse` と同じ `thread` response shape を持つため、runner は start/resume のどちらでも
+返された `thread.id` を後続 turn path に使います。
+
 Runner は Codex orchestration と transport framing を分離します。Orchestration layer は JSON-RPC
 request ID、response correlation、thread/turn sequencing、approval denial policy、runner event
 emission を所有します。Transport implementation は connection lifecycle と byte-frame send/receive
@@ -40,6 +47,11 @@ Process lifetime は引き続き run-scoped です。Tasq は successful run、f
 を含め、各 runner run の終了時に app-server subprocess を close します。したがって retry をまたぐ
 resume は、issue lifetime のために long-lived worker process を保持するのではなく、stored thread ID
 に別 process から reconnect する動作です。
+
+`ephemeral: false` は Tasq の resume contract に必須です。Codex は `ephemeral` を thread を disk に
+materialize するかどうかとして定義しており、ephemeral thread は後続 subprocess から `threadId` で
+load できません。そのため new thread は persistent thread として作成し、retry は issue が
+non-terminal の間だけ `thread/resume` を使います。
 
 Persistent thread と rollout state は workspace-scoped runtime state として扱います。Terminal issue
 cleanup は per-issue workspace を remove し、その issue の runstore resume pointer を invalidate
