@@ -24,7 +24,8 @@ The stdio transport uses the v2 app-server JSON-RPC line protocol:
 
 - `initialize` with `clientInfo` and `experimentalApi`.
 - `initialized` notification after initialize succeeds.
-- `thread/start` with the absolute workspace path as `cwd`.
+- `thread/start` with the absolute workspace path as `cwd` and a persistent thread
+  (`ephemeral: false`) so later runs can resume it by thread ID.
 - `turn/start` with the same `cwd`, the returned `threadId`, and one text input containing the
   rendered workflow prompt.
 - `turn/completed` notification as success.
