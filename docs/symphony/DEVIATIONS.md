@@ -122,6 +122,13 @@ Implemented or in progress:
   thread/rollout artifact cleanup.
 - Operator-facing logs for workspace setup failures.
 
+Resolved implementation gaps:
+
+- The earlier Codex runner implementation created app-server threads with `ephemeral: true`, which
+  prevented later `threadId` resume because the thread was not materialized on disk. Tasq now creates
+  persistent Codex threads with `ephemeral: false`, persists the returned `thread_id`, and resumes
+  eligible non-terminal retries with `thread/resume`.
+
 Not yet implemented:
 
 - Dynamic `WORKFLOW.md` reload.
