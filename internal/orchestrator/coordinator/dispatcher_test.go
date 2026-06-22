@@ -70,6 +70,9 @@ func TestDispatcherCompletesSuccessfulRun(t *testing.T) {
 	if task.Issue.ID != 42 || task.RunID != storedRun.RunID || task.Workspace.Path == "" {
 		t.Fatalf("task = %+v", task)
 	}
+	if task.ResumeThreadID != "" {
+		t.Fatalf("resume thread id = %q, want empty", task.ResumeThreadID)
+	}
 }
 
 func TestDispatcherPersistsSessionStartedThreadID(t *testing.T) {
@@ -97,6 +100,47 @@ func TestDispatcherPersistsSessionStartedThreadID(t *testing.T) {
 	}
 	if updated.ThreadID != "thread-42" {
 		t.Fatalf("thread id = %q, want thread-42", updated.ThreadID)
+	}
+}
+
+func TestDispatcherPassesLatestResumeThreadIDToRunner(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store := openTestStore(t)
+	previousRun, err := store.CreateRun(ctx, runstore.CreateRunInput{
+		IssueID:        42,
+		Workspace:      filepath.Join(t.TempDir(), "issue-42"),
+		ThreadID:       "thread-previous",
+		Attempt:        1,
+		OrchestratorID: "test-orchestrator",
+	})
+	if err != nil {
+		t.Fatalf("create previous run: %v", err)
+	}
+	if _, err := store.UpdateRunStatus(ctx, previousRun.RunID, run.StatusFailed, "blocked"); err != nil {
+		t.Fatalf("mark previous failed: %v", err)
+	}
+	storedRun, err := store.CreateRun(ctx, runstore.CreateRunInput{
+		IssueID:        42,
+		Workspace:      filepath.Join(t.TempDir(), "issue-42"),
+		Attempt:        2,
+		OrchestratorID: "test-orchestrator",
+	})
+	if err != nil {
+		t.Fatalf("create retry run: %v", err)
+	}
+	testRunner := &recordingRunner{result: runner.Result{Status: run.StatusSucceeded}}
+	dispatcher := newTestDispatcher(t, store, testRunner, []entity.Issue{{ID: 42, Status: entity.StatusReady, Title: "Run task"}})
+
+	if err := dispatcher.Dispatch(ctx, []run.Run{storedRun}); err != nil {
+		t.Fatalf("dispatch: %v", err)
+	}
+	shutdownDispatcher(t, dispatcher)
+
+	task := testRunner.firstTask(t)
+	if task.ResumeThreadID != "thread-previous" {
+		t.Fatalf("resume thread id = %q, want thread-previous", task.ResumeThreadID)
 	}
 }
 

@@ -32,6 +32,7 @@ type Task struct {
 	Workspace      workspace.Workspace
 	PromptTemplate string
 	TaskWorkPrompt *bool
+	ResumeThreadID string
 	MaxTurns       int
 	ContinueTurns  bool
 	Command        string
@@ -85,9 +86,13 @@ func (r CodexRunner) Run(ctx context.Context, task Task) Result {
 	if task.Workspace.Path == "" {
 		return Result{Status: run.StatusFailed, Error: "workspace path is required"}
 	}
-	prompt, err := renderPrompt(task)
-	if err != nil {
-		return Result{Status: run.StatusFailed, Error: err.Error()}
+	prompt := continuationGuidance
+	if task.ResumeThreadID == "" {
+		var err error
+		prompt, err = renderPrompt(task)
+		if err != nil {
+			return Result{Status: run.StatusFailed, Error: err.Error()}
+		}
 	}
 	session, err := startSession(ctx, task)
 	if err != nil {
@@ -112,23 +117,11 @@ func (r CodexRunner) Run(ctx context.Context, task Task) Result {
 	if err := session.notify("initialized", map[string]any{}); err != nil {
 		return Result{Status: run.StatusFailed, Error: err.Error()}
 	}
-	var threadStart struct {
-		Thread struct {
-			ID string `json:"id"`
-		} `json:"thread"`
-	}
-	if err := session.request(ctx, task.ReadTimeout, "thread/start", map[string]any{
-		"cwd":          task.Workspace.Path,
-		"ephemeral":    false,
-		"serviceName":  "tasq-orchestrator",
-		"threadSource": "user",
-	}, &threadStart); err != nil {
+	threadID, err := session.createOrResumeThread(ctx, task)
+	if err != nil {
 		return Result{Status: run.StatusFailed, Error: err.Error()}
 	}
-	if threadStart.Thread.ID == "" {
-		return Result{Status: run.StatusFailed, Error: "thread/start returned empty thread id"}
-	}
-	emit(task, "session_started", "thread_id="+threadStart.Thread.ID, "")
+	emit(task, "session_started", "thread_id="+threadID, "")
 
 	maxTurns := 1
 	if task.ContinueTurns && task.MaxTurns > 1 {
@@ -137,14 +130,14 @@ func (r CodexRunner) Run(ctx context.Context, task Task) Result {
 	for turnNumber := 1; turnNumber <= maxTurns; turnNumber++ {
 		turnPrompt := prompt
 		if turnNumber > 1 {
-			turnPrompt = "Continue the same task in this live thread. Do not repeat completed work. Stop when the workflow is ready for handoff."
+			turnPrompt = continuationGuidance
 		}
-		turnID, err := session.startTurn(ctx, task, threadStart.Thread.ID, turnPrompt)
+		turnID, err := session.startTurn(ctx, task, threadID, turnPrompt)
 		if err != nil {
 			return Result{Status: run.StatusFailed, Error: err.Error()}
 		}
 		emit(task, "turn_started", fmt.Sprintf("turn_id=%s turn_number=%d", turnID, turnNumber), "")
-		if err := session.waitTurn(ctx, task.TurnTimeout, task, threadStart.Thread.ID, turnID); err != nil {
+		if err := session.waitTurn(ctx, task.TurnTimeout, task, threadID, turnID); err != nil {
 			return Result{Status: run.StatusFailed, Error: err.Error()}
 		}
 	}
@@ -294,6 +287,36 @@ func (s *session) notify(method string, params any) error {
 	return s.write(map[string]any{"method": method, "params": params})
 }
 
+func (s *session) createOrResumeThread(ctx context.Context, task Task) (string, error) {
+	method := "thread/start"
+	params := map[string]any{
+		"cwd":          task.Workspace.Path,
+		"ephemeral":    false,
+		"serviceName":  "tasq-orchestrator",
+		"threadSource": "user",
+	}
+	if task.ResumeThreadID != "" {
+		method = "thread/resume"
+		params = map[string]any{
+			"cwd":      task.Workspace.Path,
+			"threadId": task.ResumeThreadID,
+		}
+	}
+
+	var response struct {
+		Thread struct {
+			ID string `json:"id"`
+		} `json:"thread"`
+	}
+	if err := s.request(ctx, task.ReadTimeout, method, params, &response); err != nil {
+		return "", err
+	}
+	if response.Thread.ID == "" {
+		return "", fmt.Errorf("%s returned empty thread id", method)
+	}
+	return response.Thread.ID, nil
+}
+
 func (s *session) startTurn(ctx context.Context, task Task, threadID string, prompt string) (string, error) {
 	var turnStart struct {
 		Turn struct {
@@ -441,6 +464,8 @@ const defaultTaskWorkPrompt = "Use `tq` to keep the issue tracker synchronized:\
 	"\n" +
 	"Run the installed `tq` binary from `PATH`. Do not use `go run ./cmd/tq` for\n" +
 	"tracker synchronization."
+
+const continuationGuidance = "Continue the same task in this live thread. Do not repeat completed work. Stop when the workflow is ready for handoff."
 
 func renderPrompt(task Task) (string, error) {
 	prompt := task.PromptTemplate
