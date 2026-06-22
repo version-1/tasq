@@ -22,11 +22,14 @@ Recommended commands:
 
 CLI commands:
 
+- `make build-tq`
 - `make run-migrate`
 - `TQ_HOME=./.tasq go run ./cmd/tq migrate`
 - `make run-tq ARGS="issue list"`
 - `make run-tq ARGS="issue get 1"`
 - `TQ_HOME=./.tasq go run ./cmd/tq service status`
+
+`make build-tq` は host 用の `tq` binary を `./bin/tq` に build し、release build と同じ `buildCommit` ldflags variable を通じて現在の short commit hash を `tq version` に注入します。
 
 `make dev-up` は OpenAPI UI を起動し、`dev` container 内で issue-tracker、orchestrator、web-ui を起動します。Runtime state は `$TQ_HOME` 配下に保存され、container 内の default は `/workspace/.tasq` です。`run-all` step は service 起動前に migration を明示的に適用します。`make dev-codex-login` は device auth を使い、Codex authentication を `codex-home` Docker volume に永続化します。
 

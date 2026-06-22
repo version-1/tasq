@@ -21,6 +21,8 @@ Use `make help` to print the prefix guide and sectioned target list generated fr
 | `RELEASE_REPO` | `version-1/tasq` | GitHub repository used when installing `tq` from release assets. |
 | `TQ_INSTALL_DIR` | `$HOME/.local/bin` | Directory where release install targets place the `tq` binary. |
 | `TQ_INSTALL_NAME` | `tq` | Installed command name for the release `tq` binary. Managed service executables are installed next to it with fixed names. |
+| `TQ_BUILD_COMMIT` | current short Git commit | Commit value injected into host `tq` builds through ldflags. |
+| `TQ_BUILD_LDFLAGS` | `buildCommit` ldflags assignment | Go linker flags used by `make build-tq`. |
 | `AIR_VERSION` | `v1.52.3` | Air version used to run Go services in watch mode. |
 
 Example with fixed ports:
@@ -33,6 +35,7 @@ ISSUE_TRACKER_PORT=8080 ORCHESTRATOR_PORT=8081 OPENAPI_PORT=8082 WEB_PORT=3000 m
 
 | Target | Purpose |
 |---|---|
+| `make build-tq` | Build the host `tq` binary at `./bin/tq` with the current short commit hash injected into `tq version`. |
 | `make dev-up` | Start the `dev` container and OpenAPI UI, start issue-tracker, orchestrator, and Web in the background, then print URLs. |
 | `make dev-restart` | Stop Compose services and run `dev-up` again. |
 | `make dev-down` | Stop Compose services. |

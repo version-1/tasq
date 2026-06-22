@@ -30,7 +30,7 @@ make dev-ports
 host-only local operation では、`tq` を build し、`TQ_HOME` を設定し、migrations を適用して services を起動します。
 
 ```sh
-go build -o ./bin/tq ./cmd/tq
+make build-tq
 export PATH="$PWD/bin:$PATH"
 export TQ_HOME="$PWD/.tasq"
 tq migrate

@@ -15,6 +15,8 @@ RELEASE_REMOTE ?= origin
 RELEASE_REPO ?= version-1/tasq
 TQ_INSTALL_DIR ?= $(HOME)/.local/bin
 TQ_INSTALL_NAME ?= tq
+TQ_BUILD_COMMIT ?= $(shell git rev-parse --short HEAD 2>/dev/null || printf unknown)
+TQ_BUILD_LDFLAGS ?= -X github.com/version-1/tasq/internal/cli/tq.buildCommit=$(TQ_BUILD_COMMIT)
 
 export TQ_HOME
 
@@ -30,6 +32,7 @@ help: ## Show target prefixes and available targets.
 	@printf "  run-*  Processes and commands that run inside the dev container.\n"
 	@printf "\nGeneral:\n"
 	@awk 'BEGIN {FS = ":.*## "}; /^help:.*## / {printf "%-28s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+	@awk 'BEGIN {FS = ":.*## "}; /^build-[a-zA-Z0-9_-]+:.*## / {printf "%-28s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 	@printf "\ndev-* targets:\n"
 	@awk 'BEGIN {FS = ":.*## "}; /^dev-[a-zA-Z0-9_-]+:.*## / {printf "%-28s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 	@printf "\ndc-* targets:\n"
@@ -54,6 +57,11 @@ install-tq: ## Install tq from the latest formal release, or a specific tag. Usa
 .PHONY: install-tq-prerelease
 install-tq-prerelease: ## Install tq from the latest prerelease, or a specific tag. Usage: make install-tq-prerelease version=v0.1.0-pre.1
 	@TQ_RELEASE_REPO="$(RELEASE_REPO)" TQ_INSTALL_DIR="$(TQ_INSTALL_DIR)" TQ_INSTALL_NAME="$(TQ_INSTALL_NAME)" sh scripts/install-tq-release.sh prerelease "$(version)"
+
+.PHONY: build-tq
+build-tq: ## Build tq for the host into ./bin/tq.
+	@mkdir -p bin
+	go build -ldflags "$(TQ_BUILD_LDFLAGS)" -o ./bin/tq ./cmd/tq
 
 .PHONY: dev-check
 dev-check:

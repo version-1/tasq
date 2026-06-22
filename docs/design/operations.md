@@ -22,11 +22,14 @@ Recommended commands:
 
 CLI commands:
 
+- `make build-tq`
 - `make run-migrate`
 - `TQ_HOME=./.tasq go run ./cmd/tq migrate`
 - `make run-tq ARGS="issue list"`
 - `make run-tq ARGS="issue get 1"`
 - `TQ_HOME=./.tasq go run ./cmd/tq service status`
+
+`make build-tq` builds the host `tq` binary at `./bin/tq` and injects the current short commit hash into `tq version` through the same `buildCommit` ldflags variable used by release builds.
 
 `make dev-up` starts the OpenAPI UI and launches the issue-tracker, orchestrator, and web-ui inside the `dev` container. Runtime state is stored under `$TQ_HOME`, which defaults to `/workspace/.tasq` inside the container. The `run-all` step applies migrations explicitly before starting services. `make dev-codex-login` uses device auth and persists Codex authentication in the `codex-home` Docker volume.
 
