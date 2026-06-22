@@ -24,7 +24,8 @@ Stdio transport は v2 app-server JSON-RPC line protocol を使います。
 
 - `clientInfo` と `experimentalApi` を含む `initialize`。
 - initialize 成功後の `initialized` notification。
-- Absolute workspace path を `cwd` として渡す `thread/start`。
+- Absolute workspace path を `cwd` として渡し、後続 run が thread ID で resume できるよう
+  persistent thread (`ephemeral: false`) を作る `thread/start`。
 - 同じ `cwd`、返された `threadId`、rendered workflow prompt を含む 1 つの text input を渡す
   `turn/start`。
 - Success として扱う `turn/completed` notification。

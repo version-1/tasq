@@ -28,6 +28,23 @@ while IFS= read -r line; do
       echo '{"id":1,"result":{"codexHome":"/tmp/codex","platformFamily":"unix","platformOs":"linux","userAgent":"fake"}}'
       ;;
     3)
+      case "$line" in
+        *'"method":"thread/start"'*)
+          ;;
+        *)
+          echo "expected thread/start request: $line" >&2
+          exit 2
+          ;;
+      esac
+      case "$line" in
+        *'"ephemeral":false'*)
+          touch "$PWD/thread-materialized"
+          ;;
+        *)
+          echo "thread/start did not request a persistent thread: $line" >&2
+          exit 2
+          ;;
+      esac
       echo '{"id":2,"result":{"thread":{"id":"thread-1"},"approvalPolicy":"never","approvalsReviewer":"user","cwd":"'"$PWD"'","model":"fake","modelProvider":"fake","sandbox":{"type":"readOnly"}}}'
       ;;
     4)
@@ -62,6 +79,9 @@ done
 	}
 	if len(events) == 0 {
 		t.Fatal("expected runner events")
+	}
+	if _, err := os.Stat(filepath.Join(dir, "thread-materialized")); err != nil {
+		t.Fatalf("expected mock app-server to materialize persistent thread: %v", err)
 	}
 }
 
