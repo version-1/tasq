@@ -1,12 +1,12 @@
 # Tasq API
 
-このドキュメントでは user-facing な issue-tracker API を扱います。所有境界と component responsibility は [architecture.ja.md](architecture.ja.md) を参照してください。local development と verification は [operations.ja.md](operations.ja.md) を参照してください。
+このドキュメントでは、ユーザー向けの issue-tracker API を扱います。所有境界とコンポーネントの責務は [architecture.ja.md](architecture.ja.md) を参照してください。ローカル開発と検証は [operations.ja.md](operations.ja.md) を参照してください。
 
 ## API Surface
 
-issue-tracker は user-facing API です。
+issue-tracker はユーザー向け API です。
 
-現在の issue-tracker endpoint:
+現在の issue-tracker エンドポイント:
 
 - `GET /api/v1/health`
 - `GET /api/v1/summary`
@@ -32,13 +32,13 @@ issue-tracker は user-facing API です。
 - `GET /api/v1/attachments/{id}/content`
 - `DELETE /api/v1/attachments/{id}`
 
-Attachment upload は `entity_type`、`entity_id`、`file` を持つ multipart form data を受け取ります。最初の実装では PNG、JPEG、GIF、WebP image file を 5 MiB までサポートします。Attachment bytes は `$TQ_HOME/system/data/attachments` 配下に保存し、SQLite には metadata と relative path を保存します。Issue と comment text は `![screenshot](attachment://att_...)` のような Markdown image link で attachment を参照します。
+添付ファイルのアップロードは、`entity_type`、`entity_id`、`file` を持つ multipart form data を受け取ります。最初の実装では PNG、JPEG、GIF、WebP の画像ファイルを 5 MiB までサポートします。添付ファイルのバイト列は `$TQ_HOME/system/data/attachments` 配下に保存し、SQLite にはメタデータと相対パスを保存します。課題とコメントの本文は、`![screenshot](attachment://att_...)` のような Markdown image link で添付ファイルを参照します。
 
-Issue は必ず 1 つの project に属します。`POST /api/v1/issues` は `projectId` を必須とし、issue response は `projectId` と `projectKey` の両方を返します。`GET /api/v1/issues` は optional query parameter として `states` と `project_id` を受け取ります。`project_id` を省略した場合は全 project の issue を一覧表示します。
+課題は必ず 1 つのプロジェクトに属します。`POST /api/v1/issues` は `projectId` を必須とし、課題のレスポンスは `projectId` と `projectKey` の両方を返します。`GET /api/v1/issues` は任意の query parameter として `states` と `project_id` を受け取ります。`project_id` を省略した場合は、すべてのプロジェクトの課題を一覧表示します。
 
-JSON success response は `{ "data": ..., "meta": {} }` を使います。JSON error response は `{ "error": { "code": "...", "message": "..." }, "meta": {} }` を使います。
+JSON の成功レスポンスは `{ "data": ..., "meta": {} }` を使います。JSON のエラーレスポンスは `{ "error": { "code": "...", "message": "..." }, "meta": {} }` を使います。
 
-`tq` CLI は issue CRUD endpoint を次の command で wrap します。
+`tq` CLI は課題 CRUD エンドポイントを次のコマンドでラップします。
 
 - `tq issue list [--project <project-key>]`
 - `tq issue get <id>`
@@ -58,6 +58,6 @@ JSON success response は `{ "data": ..., "meta": {} }` を使います。JSON e
 - `tq workflow remove --project <project-key>`
 - `tq workflow show --project <project-key> [--json]`
 
-`tq` は default では human-readable output を使い、`--output json` が指定された場合は JSON output を使います。
+`tq` は既定では人が読みやすい出力を使い、`--output json` が指定された場合は JSON 出力を使います。
 
-orchestrator は `--port` または `server.port` で有効化したときに runtime inspection 用の optional loopback HTTP API を公開します。Issue runtime detail response は historical run summaries を含み、各 run は Codex app-server thread が永続化された後に `thread_id` を含む場合があります。
+orchestrator は、`--port` または `server.port` で有効化したときに、実行時調査用の任意の loopback HTTP API を公開します。課題の実行時詳細レスポンスには過去の実行サマリーが含まれます。各実行は、Codex app-server thread が永続化された後に `thread_id` を含む場合があります。
