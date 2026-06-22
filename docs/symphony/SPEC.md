@@ -692,6 +692,9 @@ Distinct terminal reasons are important because retry logic and logs differ.
 - Reconciliation runs before dispatch on every tick.
 - Restart recovery is tracker-driven and filesystem-driven (without a durable orchestrator DB).
 - Startup terminal cleanup removes stale workspaces for issues already in terminal states.
+- Terminal cleanup also owns workspace-scoped coding-agent artifacts, including persisted
+  thread/rollout state and any resume pointers that would allow a later run to reconnect to that
+  state.
 
 ## 8. Polling, Scheduling, and Reconciliation
 
@@ -803,9 +806,12 @@ When the service starts:
 
 1. Query tracker for issues in terminal states.
 2. For each returned issue identifier, remove the corresponding workspace directory.
-3. If the terminal-issues fetch fails, log a warning and continue startup.
+3. Delete or invalidate persisted coding-agent thread/rollout artifacts for that issue, including
+   any orchestrator-owned resume pointer.
+4. If the terminal-issues fetch fails, log a warning and continue startup.
 
-This prevents stale terminal workspaces from accumulating after restarts.
+This prevents stale terminal workspaces and resumable terminal-issue conversations from
+accumulating after restarts.
 
 ## 9. Workspace Management and Safety
 
@@ -951,6 +957,8 @@ client to:
 - Supply the absolute per-issue workspace path as the thread/turn working directory wherever the
   targeted protocol accepts cwd.
 - Start the first turn with the rendered issue prompt.
+- When resuming from a previous worker run, start a fresh app-server subprocess and reconnect to the
+  persisted thread identity; do not keep the previous subprocess alive across worker runs.
 - Start later in-worker continuation turns on the same live thread with continuation guidance rather
   than resending the original issue prompt.
 - Supply the implementation's documented approval and sandbox policy using fields supported by the
@@ -965,6 +973,9 @@ Session identifiers:
 - Extract `turn_id` from each turn identity returned by the targeted Codex app-server protocol.
 - Emit `session_id = "<thread_id>-<turn_id>"`
 - Reuse the same `thread_id` for all continuation turns inside one worker run
+- Persisted `thread_id` values are reusable only while the issue remains non-terminal. Terminal issue
+  cleanup MUST remove the persisted thread/rollout state and clear any resume pointer before future
+  dispatch can start from the same issue.
 
 ### 10.3 Streaming Turn Processing
 
@@ -985,6 +996,9 @@ Continuation processing:
   live thread using the targeted protocol.
 - The app-server subprocess SHOULD remain alive across those continuation turns and be stopped only
   when the worker run is ending.
+- The app-server subprocess MUST NOT be treated as an issue-lifetime process. Worker exit always
+  closes the subprocess; later retries or continuation retries resume by starting another subprocess
+  and using persisted protocol state.
 
 Transport handling requirements:
 
@@ -1585,6 +1599,10 @@ After restart:
   - startup terminal workspace cleanup
   - fresh polling of active issues
   - re-dispatching eligible work
+- Active issues may resume persisted coding-agent thread state from a previous worker run when the
+  targeted protocol supports resume.
+- Terminal issues must not resume previous coding-agent state after cleanup; they start from no
+  thread state if they are later reopened or re-created as active work.
 
 ### 14.4 Operator Intervention Points
 
@@ -1983,7 +2001,8 @@ Unless otherwise noted, Sections 17.1 through 17.7 are `Core Conformance`. Bulle
 - `Todo` issue with terminal blockers is eligible
 - Active-state issue refresh updates running entry state
 - Non-active state stops running agent without workspace cleanup
-- Terminal state stops running agent and cleans workspace
+- Terminal state stops running agent, cleans workspace, removes thread/rollout artifacts, and
+  invalidates resume pointers
 - Reconciliation with no running issues is a no-op
 - Normal worker exit schedules a short continuation retry (attempt 1)
 - Abnormal worker exit increments retries with 10s-based exponential backoff
@@ -2004,6 +2023,11 @@ Unless otherwise noted, Sections 17.1 through 17.7 are `Core Conformance`. Bulle
 - Policy-related startup payloads use the implementation's documented approval/sandbox settings
 - Thread and turn identities exposed by the targeted protocol are extracted and used to emit
   `session_started`
+- Retry/resume across worker runs starts a distinct app-server subprocess, sends the previous
+  `thread_id` through the targeted resume request, keeps the same workspace `cwd`, and starts the
+  turn with continuation guidance instead of the original issue prompt
+- Terminal cleanup removes workspace-scoped thread/rollout artifacts and invalidates stored resume
+  pointers, so later dispatch for the same issue receives no stale `thread_id`
 - Request/response read timeout is enforced
 - Turn timeout is enforced
 - Transport framing required by the targeted protocol is handled correctly
@@ -2083,6 +2107,7 @@ Use the same validation profiles as Section 17:
 - Configurable retry backoff cap (`agent.max_retry_backoff_ms`, default 5m)
 - Reconciliation that stops runs on terminal/non-active tracker states
 - Workspace cleanup for terminal issues (startup sweep + active transition)
+- Thread/rollout cleanup for terminal issues, including invalidating resume pointers
 - Structured logs with `issue_id`, `issue_identifier`, and `session_id`
 - Operator-visible observability (structured logs; OPTIONAL snapshot/status surface)
 
