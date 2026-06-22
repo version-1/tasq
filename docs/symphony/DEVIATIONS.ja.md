@@ -119,11 +119,21 @@ implementation ではありません。
 - stdio と websocket transport implementation を持つ Codex app-server transport contract。
 - SQLite runner event logging と workspace metadata records。
 - live Codex app-server thread に対する config-gated continuation turns。
+- fresh app-server subprocess を起動し、persisted thread state に reconnect する worker run 間の
+  retry/resume。
 - capped exponential backoff を使う in-process retry scheduling。
 - terminal/non-active issue states と stall handling のための active-run reconciliation。
 - 初回 workspace creation 時の Git worktree workspace creation。
-- cleanup metadata を伴う terminal および failed/cancelled workspace cleanup。
+- cleanup metadata を伴う terminal および failed/cancelled workspace cleanup。stale
+  thread/rollout artifact cleanup を含みます。
 - workspace setup failures の operator-facing logs。
+
+解消済みの実装 gap:
+
+- 以前の Codex runner implementation は `ephemeral: true` で app-server threads を作成していたため、
+  thread が disk に materialize されず、後続の `threadId` resume ができませんでした。Tasq は現在、
+  persistent Codex threads を `ephemeral: false` で作成し、返された `thread_id` を永続化し、
+  eligible non-terminal retries で `thread/resume` を使います。
 
 未実装:
 
@@ -158,6 +168,31 @@ issue-tracker API で解決し、同じ relative suffix を使って referenced 
 
 Workspace branches は `agent/<workspace-key>` を使います。例: `agent/issue-42`。Cleanup は
 `git worktree remove --force` を使い、対応する local branch を best-effort で削除します。
+
+## Codex Thread Resume Lifecycle
+
+Symphony は、1 worker run 内の live Codex app-server thread に対する continuation turns を説明します。
+Tasq はこの lifecycle を拡張し、separate worker runs をまたいで eligible non-terminal work を resume
+できるだけの thread state を永続化します。
+
+Tasq が previous worker run を resume するときは、新しい app-server subprocess を起動し、persisted
+`thread_id` を使って reconnect し、同じ workspace `cwd` を維持し、original issue prompt ではなく
+continuation guidance を送ります。Previous app-server subprocess は issue-lifetime process として
+扱われません。Worker exit は常にそれを close します。
+
+Persisted `thread_id` values は、issue が non-terminal の間だけ再利用できます。Terminal issue cleanup
+は、persisted thread/rollout state と orchestrator-owned resume pointers を含む workspace-scoped
+coding-agent artifacts を remove します。同じ issue が後で reopen される、または active work として
+再作成される場合、dispatch は stale thread state なしで開始します。
+
+SPEC.md の以下のセクションと乖離します:
+
+| Section | Symphony の前提 | Tasq の振る舞い |
+| --- | --- | --- |
+| §7.7, §8.1 | Terminal cleanup は stale workspace directories を中心に扱う | Terminal cleanup は thread/rollout artifacts も remove し、resume pointers を invalidate する |
+| §10.2–10.3 | Continuation state は 1 worker run 内の live app-server subprocess に scope される | Worker run 間の retry/resume は fresh subprocess を起動し、persisted thread state を通じて reconnect する |
+| §14.3 | Restart recovery は workspace cleanup 後に eligible work を re-dispatch する | Active issues は persisted Codex thread state を resume できる。Terminal issues は stale state を resume しないよう cleanup される |
+| §17.1, §17.6, §18 | Conformance は workspace cleanup と live-thread continuation を対象にする | Tasq は cross-worker resume と terminal thread/rollout cleanup も検証する |
 
 ## Workflow Path Selection
 

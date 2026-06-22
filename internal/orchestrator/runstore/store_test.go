@@ -192,6 +192,51 @@ func TestStorePersistsThreadIDAndFindsLatestResumeThreadByIssueID(t *testing.T) 
 	}
 }
 
+func TestStoreInvalidatesResumeThreadIDsWhenWorkspaceCleanupIsMarked(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "orchestrator.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer store.Close()
+
+	storedRun, err := store.CreateRun(ctx, CreateRunInput{
+		IssueID:        7,
+		Workspace:      "/tmp/workspace",
+		ThreadID:       "thread-stale",
+		Attempt:        1,
+		OrchestratorID: "orchestrator",
+	})
+	if err != nil {
+		t.Fatalf("create threaded run: %v", err)
+	}
+	if err := store.UpsertWorkspaceMetadata(ctx, WorkspaceMetadataInput{
+		WorkspaceKey: "issue-7",
+		IssueID:      7,
+		Path:         "/tmp/workspace",
+		CreatedNow:   true,
+		SourcePath:   "/tmp/repo",
+	}); err != nil {
+		t.Fatalf("upsert workspace metadata: %v", err)
+	}
+	if err := store.MarkWorkspaceCleanup(ctx, "issue-7", "removed", ""); err != nil {
+		t.Fatalf("mark workspace cleanup: %v", err)
+	}
+
+	if _, err := store.LatestResumeThreadIDByIssueID(ctx, 7); !errors.Is(err, sql.ErrNoRows) {
+		t.Fatalf("latest resume thread error = %v, want sql.ErrNoRows", err)
+	}
+	updated, err := store.RunByRunID(ctx, storedRun.RunID)
+	if err != nil {
+		t.Fatalf("run by run id: %v", err)
+	}
+	if updated.ThreadID != "" {
+		t.Fatalf("thread id after cleanup = %q, want empty", updated.ThreadID)
+	}
+}
+
 func TestStoreRecordsRunnerEventAndWorkspaceMetadata(t *testing.T) {
 	t.Parallel()
 
