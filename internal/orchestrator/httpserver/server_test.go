@@ -96,6 +96,7 @@ func TestIssueDetailReturnsRuns(t *testing.T) {
 			RunID:     "run-latest",
 			IssueID:   12,
 			Status:    run.StatusSucceeded,
+			ThreadID:  "thread-latest",
 			Attempt:   2,
 			CreatedAt: now,
 			UpdatedAt: now,
@@ -119,9 +120,10 @@ func TestIssueDetailReturnsRuns(t *testing.T) {
 	var payload struct {
 		IssueIdentifier string `json:"issue_identifier"`
 		Runs            []struct {
-			RunID   string `json:"run_id"`
-			Status  string `json:"status"`
-			Attempt int    `json:"attempt"`
+			RunID    string `json:"run_id"`
+			ThreadID string `json:"thread_id,omitempty"`
+			Status   string `json:"status"`
+			Attempt  int    `json:"attempt"`
 		} `json:"runs"`
 	}
 	if err := json.NewDecoder(rec.Body).Decode(&payload); err != nil {
@@ -132,6 +134,12 @@ func TestIssueDetailReturnsRuns(t *testing.T) {
 	}
 	if payload.Runs[0].RunID != "run-latest" || payload.Runs[1].RunID != "run-previous" {
 		t.Fatalf("runs = %+v", payload.Runs)
+	}
+	if payload.Runs[0].ThreadID != "thread-latest" {
+		t.Fatalf("thread id = %q, want thread-latest", payload.Runs[0].ThreadID)
+	}
+	if payload.Runs[1].ThreadID != "" {
+		t.Fatalf("empty thread id = %q, want empty", payload.Runs[1].ThreadID)
 	}
 }
 

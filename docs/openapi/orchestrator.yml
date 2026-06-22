@@ -300,6 +300,11 @@ components:
         run_id:
           type: string
           example: run_123abc
+        thread_id:
+          type: string
+          minLength: 1
+          description: Optional Codex app-server thread identifier. Omitted until a run has a persisted thread.
+          example: thread_abc123
         status:
           $ref: "#/components/schemas/RunState"
         attempt:

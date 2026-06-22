@@ -33,7 +33,13 @@ export function RunsSection({ issueID, error, isLoading, runs }: RunsSectionProp
               className={styles.runRow}
               to={`/issues/${issueID}/conversations?runId=${encodeURIComponent(run.run_id)}`}
             >
-              <span className={styles.runID}>{run.run_id}</span>
+              <span className={styles.runIdentity}>
+                <span className={styles.runID}>{run.run_id}</span>
+                <span className={styles.threadID}>
+                  <span className={styles.threadLabel}>{t("issues.detailPage.threadID")}</span>{" "}
+                  {run.thread_id?.trim() ? run.thread_id : t("issues.detailPage.noThreadID")}
+                </span>
+              </span>
               <span className={styles.runMeta}>
                 {t(`runStatuses.${run.status}`)} · {t("issues.attempt")} {run.attempt}
               </span>

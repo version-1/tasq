@@ -60,4 +60,4 @@ JSON success response は `{ "data": ..., "meta": {} }` を使います。JSON e
 
 `tq` は default では human-readable output を使い、`--output json` が指定された場合は JSON output を使います。
 
-orchestrator は `--port` または `server.port` で有効化したときに runtime inspection 用の optional loopback HTTP API を公開します。
+orchestrator は `--port` または `server.port` で有効化したときに runtime inspection 用の optional loopback HTTP API を公開します。Issue runtime detail response は historical run summaries を含み、各 run は Codex app-server thread が永続化された後に `thread_id` を含む場合があります。

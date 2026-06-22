@@ -101,6 +101,11 @@ export interface AttemptSummary {
 
 export interface IssueRunSummary {
   run_id: string;
+  /**
+   * Optional Codex app-server thread identifier. Omitted until a run has a persisted thread.
+   * @minLength 1
+   */
+  thread_id?: string;
   status: RunState;
   /** @minimum 0 */
   attempt: number;
