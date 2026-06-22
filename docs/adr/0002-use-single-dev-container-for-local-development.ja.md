@@ -1,58 +1,58 @@
-# ADR-0002: Local development では単一 dev container を使う
+# ADR-0002: ローカル開発では単一の開発コンテナを使う
 
 ## Context
 
-これまでの Tasq local development は、issue-tracker、orchestrator、Web、Go tooling を別々の Compose service として起動していた。この構成は service ごとの境界を見やすくする一方で、command を host で実行するか container で実行するかによって、`localhost`、service name、`TQ_HOME`、`system/state.json` の意味が変わっていた。
+これまでの Tasq ローカル開発では、issue-tracker、orchestrator、Web、Go tooling を別々の Compose service として起動していた。この構成はサービスごとの境界を見やすくする一方で、コマンドをホストで実行するかコンテナで実行するかによって、`localhost`、service name、`TQ_HOME`、`system/state.json` の意味が変わっていた。
 
-特に agent 開発では混乱しやすい。orchestrator は `codex app-server` を起動し、`tq`、TUI、Web、issue-tracker、orchestrator は同じ issue-tracker endpoint を安定して解決する必要がある。host と container で同じ `TQ_HOME` を共有すると、一方の network namespace でしか使えない address が state に保存される可能性がある。
+特にエージェント開発では混乱しやすい。orchestrator は `codex app-server` を起動し、`tq`、TUI、Web、issue-tracker、orchestrator は同じ issue-tracker エンドポイントを安定して解決する必要がある。ホストとコンテナで同じ `TQ_HOME` を共有すると、一方のネットワーク名前空間でしか使えないアドレスが状態に保存される可能性がある。
 
-また、Codex には isolation boundary が必要である。agent runner を host で直接動かすと、filesystem や credential exposure の範囲を推論しづらくなる。
+また、Codex には分離境界が必要である。エージェント runner をホストで直接動かすと、ファイルシステムや認証情報がさらされる範囲を推論しづらくなる。
 
 ## Decision
 
-Local development では、単一の `dev` container と standalone な `openapi` documentation UI service を使う。
+ローカル開発では、単一の `dev` コンテナと standalone な `openapi` documentation UI service を使う。
 
-`dev` container 内で issue-tracker、orchestrator、Web、`tq`、TUI、Codex CLI を同じ container namespace 上で動かす。次を使う。
+`dev` コンテナ内で issue-tracker、orchestrator、Web、`tq`、TUI、Codex CLI を同じコンテナ名前空間上で動かす。次を使う。
 
 - `TQ_HOME=/workspace/.tasq`
 - `CODEX_HOME=/home/codex/.codex`
-- 固定 non-root user
-- Go cache、Web `node_modules`、Codex credential 用の named volume
+- 固定の非 root ユーザー
+- Go cache、Web `node_modules`、Codex 認証情報用の named volume
 
-Codex authentication は dev container 内で `codex login --device-auth` を実行して行う。認証情報は `codex-home` named volume に保存する。Device auth により、container 内にだけ存在する localhost callback へ browser が redirect して失敗する問題を避ける。Docker image には credential を含めず、default workflow では host の Codex credential を mount しない。
+Codex の認証は `dev` コンテナ内で `codex login --device-auth` を実行して行う。認証情報は `codex-home` named volume に保存する。Device auth により、コンテナ内にだけ存在する localhost callback へブラウザーがリダイレクトして失敗する問題を避ける。Docker image には認証情報を含めず、既定のワークフローではホストの Codex 認証情報をマウントしない。
 
-Process management は Makefile に残す。Makefile は issue-tracker、orchestrator、Web を dev container 内で起動し、background log を `.tmp/dev-logs/` に保存し、TUI は interactive command として扱う。
+プロセス管理は Makefile に残す。Makefile は issue-tracker、orchestrator、Web を `dev` コンテナ内で起動し、バックグラウンドログを `.tmp/dev-logs/` に保存し、TUI は対話型コマンドとして扱う。
 
-Default development Compose file から、issue-tracker、orchestrator、Web、Go tools の分割 service を削除する。
+既定の development Compose file から、issue-tracker、orchestrator、Web、Go tools の分割 service を削除する。
 
 ## Alternatives
 
-### Split Compose services を維持する
+### 分割 Compose services を維持する
 
-Service ごとに container を分ける topology は分かりやすく、Compose logs も扱いやすい。しかし default dev workflow としては host/container address translation が残り、`TQ_HOME` state sharing が複雑になるため採用しない。
+Service ごとにコンテナを分ける構成は分かりやすく、Compose logs も扱いやすい。しかし既定の開発ワークフローとしてはホストとコンテナ間のアドレス変換が残り、`TQ_HOME` の状態共有が複雑になるため採用しない。
 
-### すべて host で動かす
+### すべてホストで動かす
 
-`localhost` と host path は自然になるが、Codex 周りの container isolation boundary がなくなり、local dependencies の再現性も落ちる。advanced manual workflow としては可能だが default にはしない。
+`localhost` とホストパスは自然になるが、Codex 周りのコンテナ分離境界がなくなり、ローカル依存関係の再現性も落ちる。高度な手動ワークフローとしては可能だが既定にはしない。
 
 ### Process manager を使う
 
-supervisord、overmind、foreman などで dev container 内の複数 process を管理できる。初回 migration では Makefile-based process management で十分なため、追加 runtime dependency は導入しない。
+supervisord、overmind、foreman などで `dev` コンテナ内の複数プロセスを管理できる。初回移行では Makefile ベースのプロセス管理で十分なため、追加の実行時依存関係は導入しない。
 
 ## Consequences
 
-Local development は単一 network namespace を使うため、`state.json` が `127.0.0.1` を指しても、dev container 内の issue-tracker、orchestrator、`tq`、TUI から同じ意味で解決できる。
+ローカル開発は単一のネットワーク名前空間を使うため、`state.json` が `127.0.0.1` を指しても、`dev` コンテナ内の issue-tracker、orchestrator、`tq`、TUI から同じ意味で解決できる。
 
-Dev container は Codex の isolation boundary でもある。`codex-home` volume は secret-bearing local state として扱う。この volume を削除すると再 login が必要になる。
+`dev` コンテナは Codex の分離境界でもある。`codex-home` volume は秘密情報を含むローカル状態として扱う。この volume を削除すると再 login が必要になる。
 
-Default の `make tq` は dev container 内で実行される。endpoint consistency は改善するが、project path を永続化する command では注意が必要である。container workspace path が見える可能性があるため、project record の durable model としては ADR-0001 の host-local path 方針を維持する。
+既定の `make tq` は `dev` コンテナ内で実行される。エンドポイントの一貫性は改善するが、project path を永続化するコマンドでは注意が必要である。コンテナのワークスペースパスが見える可能性があるため、project record の永続モデルとしては ADR-0001 のホストローカルパス方針を維持する。
 
-Process lifecycle は Makefile が所有する。二重起動対策は狭い process pattern に依存し、background log は `.tmp/dev-logs/` に保存される。
+プロセスライフサイクルは Makefile が所有する。二重起動対策は狭いプロセスパターンに依存し、バックグラウンドログは `.tmp/dev-logs/` に保存される。
 
 旧 Compose service name に依存していた script や開発習慣は、dev-container target へ移行する必要がある。
 
 ## ADR-0001 との関係
 
-ADR-0001 は project と workspace path の durable product model を記録している。つまり、それらは container runtime path ではなく host-local absolute path である。この ADR は default local development topology を変更するが、その durable model は置き換えない。
+ADR-0001 は project と workspace path の永続的な製品モデルを記録している。つまり、それらはコンテナ実行時パスではなくホストローカルの絶対パスである。この ADR は既定のローカル開発構成を変更するが、その永続モデルは置き換えない。
 
-そのため、新しい dev-container workflow で project-path persistence command を default の `make tq` flow に含める前に、host-aware な path strategy が必要である。それまでは、project-path command は `/workspace` をそのまま永続化するのではなく、host-aware workflow として扱う。
+そのため、新しい dev-container workflow で project-path 永続化コマンドを既定の `make tq` flow に含める前に、ホストを考慮したパス戦略が必要である。それまでは、project-path コマンドは `/workspace` をそのまま永続化するのではなく、ホストを考慮するワークフローとして扱う。

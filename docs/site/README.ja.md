@@ -1,8 +1,8 @@
 # Tasq Docs Site
 
-このディレクトリには、Tasq の Docusaurus ドキュメントサイトがあります。サイトは、リポジトリ内の `docs/` にある開発者向け・利用者向けドキュメントを公開用に整理します。
+このディレクトリには、Tasq の Docusaurus ドキュメントサイトがあります。このサイトは、リポジトリ内の `docs/` にある開発者向け・利用者向けドキュメントを公開用に整理して提供します。
 
-英語ドキュメントを一次情報として扱います。トピックを追加・変更する場合は、日本語ドキュメントも同期してください。
+英語ドキュメントを一次情報として扱います。トピックを追加または変更する場合は、日本語ドキュメントも同期してください。
 
 ## コマンド
 
@@ -25,13 +25,13 @@ npm run build
 npm run serve
 ```
 
-英語の開発サーバーは Docusaurus のデフォルトポートと、設定済みの base URL を使います。
+英語の開発サーバーは Docusaurus の既定ポートと、設定済みのベース URL を使います。
 
 ```text
 http://localhost:3000/tasq/
 ```
 
-localized content を preview する場合は、日本語の開発サーバーを別に起動します。
+ローカライズされたコンテンツをプレビューする場合は、日本語の開発サーバーを別に起動します。
 
 ```sh
 npm run start:ja
@@ -41,22 +41,22 @@ npm run start:ja
 http://localhost:3000/tasq/ja/
 ```
 
-Docusaurus の `start` は一度に 1 locale だけを serve します。全 locale を含む production build を preview したい場合は、`npm run build` のあとに `npm run serve` を使ってください。
+Docusaurus の `start` は一度に 1 つの locale だけを配信します。すべての locale を含む本番ビルドをプレビューしたい場合は、`npm run build` のあとに `npm run serve` を使ってください。
 
 ## ディレクトリ構成
 
 ```text
 docs/site/
   docs/                    Docusaurus の docs コンテンツ。
-    getting-started/       Overview、QuickStart、setup、concepts。
-    guides/                利用者向け task / operations guide。
-    reference/             CLI、API、configuration、schema reference。
-    contributing/          local development と verification guidance。
-  static/img/              静的な図表や docs image。
-  i18n/ja/                 Docusaurus の日本語 localized content。
+    getting-started/       概要、QuickStart、セットアップ、コンセプト。
+    guides/                利用者向けのタスクと運用ガイド。
+    reference/             CLI、API、設定、スキーマのリファレンス。
+    contributing/          ローカル開発と検証のガイド。
+  static/img/              静的な図表やその他のドキュメント画像。
+  i18n/ja/                 Docusaurus の日本語ローカライズコンテンツ。
   src/
     css/custom.css         サイト全体のテーマ上書き。
-  docusaurus.config.ts     サイト設定、base URL、locale、navbar、footer。
+  docusaurus.config.ts     サイト設定、ベース URL、locale、navbar、footer。
   sidebars.ts              docs sidebar の構成。
   package.json             npm scripts と Docusaurus 依存。
   package-lock.json        npm 依存グラフの lockfile。
@@ -66,7 +66,7 @@ docs/site/
 次のディレクトリは生成物で、ソースファイルではありません。
 
 - `node_modules/` は `npm install` で作成されます。
-- `.docusaurus/` は Docusaurus の開発・build 時に作成されます。
+- `.docusaurus/` は Docusaurus の開発時と build 時に作成されます。
 - `build/` は `npm run build` で作成されます。
 
 ## コンテンツ構成
@@ -82,7 +82,7 @@ docs/site/
 
 sidebar は明示的に管理しています。`docs/site/docs/` に新しいページを追加し、そのページを navigation に表示したい場合は `sidebars.ts` も更新してください。
 
-通常の図表には Mermaid を使います。よりリッチな静的 overview が必要なページでは、手書き SVG を `static/img/` 配下に置きます。
+通常の図表には Mermaid を使います。より情報量の多い静的 overview が必要なページでは、手書き SVG を `static/img/` 配下に置きます。
 
 ## ローカライズ
 
@@ -98,4 +98,4 @@ Docusaurus page では、英語 source を `docs/site/docs/` に置き、日本�
 - navigation 構成は `sidebars.ts` に置きます。
 - 見た目の調整は `src/css/custom.css` または page-local な CSS module に置きます。
 - `.docusaurus/`、`build/`、`node_modules/` 配下の生成物は編集しません。
-- サイトの content、configuration、styling に影響する変更は、公開前に `make dev-docs-build` を実行してください。
+- サイトのコンテンツ、設定、スタイルに影響する変更は、公開前に `make dev-docs-build` を実行してください。

@@ -1,85 +1,77 @@
-# ADR-0006: App-server を workspace-write sandbox で起動する
+# ADR-0006: App-server を workspace-write サンドボックスで起動する
 
 ## Context
 
-Tasq は local dev container 内から Codex app-server を起動する。この topology では、container が agent execution、credential、mounted file、network access に対する最初の isolation boundary になる。
+Tasq はローカル開発用コンテナ内から Codex app-server を起動する。この構成では、コンテナがエージェント実行、認証情報、マウントされたファイル、ネットワークアクセスに対する最初の分離境界になる。
 
-Codex も generated shell command を sandbox 実行できる。しかし現在の dev-container environment では、`pwd` や `git status` のような command が Bubblewrap の namespace error で失敗することがある。
+Codex も生成したシェルコマンドをサンドボックス内で実行できる。しかし現在の開発コンテナ環境では、`pwd` や `git status` のようなコマンドが Bubblewrap の名前空間エラーで失敗することがある。
 
 ```text
 bwrap: No permissions to create a new namespace
 ```
 
-この failure により、Codex は低リスクな repository inspection command でも command approval を request する。Tasq は approval workflow により issue を blocked にする。Unknown または broad request で blocked にするのは正しいが、基本的な workspace inspection で繰り返し blocked になると local orchestration が使いにくくなる。
+この失敗により、Codex は低リスクなリポジトリ確認コマンドでもコマンド承認を要求する。Tasq は承認ワークフローにより課題を `blocked` にする。未知の要求や広すぎる要求で `blocked` にするのは正しいが、基本的なワークスペース確認で繰り返し `blocked` になると、ローカルオーケストレーションが使いにくくなる。
 
-Codex の Linux sandbox は、runtime image に distribution-provided な `bubblewrap` package が
-ある場合に最も安定する。
+Codex の Linux サンドボックスは、実行時イメージにディストリビューション提供の `bubblewrap` パッケージがある場合に最も安定する。
 
 ## Decision
 
-Repository workflow は Codex app-server を次の command で起動する。
+リポジトリのワークフローでは、Codex app-server を次のコマンドで起動する。
 
 ```sh
 codex --sandbox workspace-write app-server
 ```
 
-これにより、Tasq run では app-server が default で workspace-write sandbox posture を使う。
+これにより、Tasq の実行では app-server が既定で workspace-write サンドボックスの姿勢を使う。
 
-Tasq は ADR-0005 の approval workflow を維持する。Codex が command-execution または file-change approval を request した場合、Tasq は request を cancel し、run を `approval_required` で failed にし、最新 state が still-runnable の issue を request details 付きで blocked にする。
+Tasq は ADR-0005 の承認ワークフローを維持する。Codex がコマンド実行またはファイル変更の承認を要求した場合、Tasq はその要求をキャンセルし、実行を `approval_required` で `failed` にし、最新状態がまだ実行可能な課題を要求の詳細付きで `blocked` にする。
 
-Dev container は local development の primary isolation boundary として扱う。Project は Bubblewrap namespace creation を動かすためだけに dev container を default で privileged にしない。Dev image には distribution-provided な `bubblewrap` package を入れ、Codex が bundled fallback helper に依存しないようにする。Dev service は container 内で Bubblewrap が user namespace を作成できるように、Docker default seccomp profile を `security_opt: ["seccomp=unconfined"]` で無効化する。
+開発コンテナは、ローカル開発における主要な分離境界として扱う。プロジェクトは、Bubblewrap の名前空間作成を動かすためだけに開発コンテナを既定で特権化しない。開発イメージにはディストリビューション提供の `bubblewrap` パッケージを入れ、Codex が同梱のフォールバックヘルパーに依存しないようにする。開発サービスは、コンテナ内で Bubblewrap がユーザー名前空間を作成できるように、Docker の既定 seccomp プロファイルを `security_opt: ["seccomp=unconfined"]` で無効化する。
 
-Repository-managed な Codex rules は `codex/rules/` に置き、dev container 内の
-`/home/codex/.codex/rules` へ read-only mount する。`CODEX_HOME` の残りは `codex-home`
-named volume のままにし、authentication、personal settings、将来の generated approval
-decision を repository に保存しない。
+リポジトリ管理の Codex rules は `codex/rules/` に置き、開発コンテナ内の `/home/codex/.codex/rules` へ読み取り専用でマウントする。`CODEX_HOME` の残りは `codex-home` named volume のままにし、認証情報、個人設定、将来生成される承認判断をリポジトリに保存しない。
 
 ## Alternatives
 
-### App-server command に explicit sandbox を指定しない
+### App-server コマンドに明示的なサンドボックスを指定しない
 
-Sandbox behavior が Codex default と local config に委ねられる。明示性が低く、host や container の違いによって local Tasq behavior を再現しづらくなる。
+サンドボックスの挙動が Codex の既定値とローカル設定に委ねられる。明示性が低く、ホストやコンテナの違いによってローカル Tasq の挙動を再現しづらくなる。
 
-### Dev container を privileged にする
+### 開発コンテナを特権化する
 
-Bubblewrap が namespace を作れる可能性は上がるが、container boundary が弱くなる。Container を primary local isolation layer として扱う以上、routine development の default としては tradeoff が悪い。
+Bubblewrap が名前空間を作れる可能性は上がるが、コンテナ境界が弱くなる。コンテナをローカルの主要な分離層として扱う以上、日常的な開発の既定値としてはトレードオフが悪い。
 
-### Docker default seccomp profile を維持する
+### Docker の既定 seccomp プロファイルを維持する
 
-Default の Docker syscall filter は維持できるが、dev container 内で Codex の Linux sandbox が必要とする Bubblewrap user namespace creation ができなくなる。
+Docker の既定のシステムコールフィルターは維持できるが、開発コンテナ内で Codex の Linux サンドボックスが必要とする Bubblewrap のユーザー名前空間作成ができなくなる。
 
 ### Codex bundled Bubblewrap helper に依存する
 
-Dev image の package は減るが、bundled helper も unprivileged user namespace の host/container
-support に依存する。Distribution package を入れることで、runtime setup を想定される Linux
-sandbox path に近づける。
+開発イメージのパッケージは減るが、同梱ヘルパーも特権なしユーザー名前空間に対するホストまたはコンテナ側の対応に依存する。ディストリビューション提供のパッケージを入れることで、実行時の構成を想定される Linux サンドボックスの経路に近づける。
 
 ### Codex sandbox を完全に無効化する
 
-Externally sandboxed environment では approval prompt を減らせる可能性がある。しかし default posture としては広すぎる。必要な場合のみ explicit opt-in profile として導入するべきである。
+外部でサンドボックス化された環境では、承認プロンプトを減らせる可能性がある。しかし既定の姿勢としては広すぎる。必要な場合のみ、明示的なオプトインプロファイルとして導入するべきである。
 
 ### Codex rules または exec policy だけに依存する
 
-Codex rules と exec policy は低リスク command には有用である。しかし runtime sandbox posture を明確にする代替にはならない。また namespace creation failure 後に発生する sandbox-escape approval を完全に covered できるとは限らない。
+Codex rules と exec policy は低リスクなコマンドには有用である。しかし、実行時のサンドボックス姿勢を明確にする代替にはならない。また、名前空間作成の失敗後に発生する sandbox-escape approval を完全に扱えるとは限らない。
 
 ### Codex home 全体を repository から mount する
 
-Shared configuration は確認しやすくなるが、authentication、personal settings、cache、generated state が source control に混ざる risk がある。Repository から mount するのは shared rules のみにする。
+共有設定は確認しやすくなるが、認証情報、個人設定、キャッシュ、生成された状態がソース管理に混ざるリスクがある。リポジトリからマウントするのは共有 rules のみにする。
 
 ## Consequences
 
-Local Tasq run は documented かつ reproducible な Codex sandbox mode を持つ。
+ローカルの Tasq 実行は、文書化され再現可能な Codex サンドボックスモードを持つ。
 
-Codex は per-issue workspace 内で basic workspace write access を持つ。一方で、より broad な approval request は引き続き blocked issue work になる。
+Codex は課題ごとのワークスペース内で基本的なワークスペース書き込み権限を持つ。一方で、より広い承認要求は引き続き `blocked` な課題作業になる。
 
-Project は default で privileged container を避け続ける。Developer が別の sandbox posture を必要とする場合は、explicit opt-in workflow または profile として導入する。
+プロジェクトは既定で特権コンテナを避け続ける。開発者が別のサンドボックス姿勢を必要とする場合は、明示的なオプトインワークフローまたはプロファイルとして導入する。
 
-Dev image は distribution-provided な `bubblewrap` package を含み、dev service は Docker default
-seccomp filter を無効化する。Host または Docker runtime により namespace creation が引き続き
-denied される場合、それは image に tool がない問題ではなく environment capability の問題として扱う。
+開発イメージはディストリビューション提供の `bubblewrap` パッケージを含み、開発サービスは Docker の既定 seccomp フィルターを無効化する。ホストまたは Docker 実行時により名前空間作成が引き続き拒否される場合、それはイメージにツールがない問題ではなく、環境の能力の問題として扱う。
 
-Shared baseline command rules は repository 上で review できる。Rules mount は read-only なので、Codex は runtime に新しい approval rule をそこへ永続化できない。将来の generated approval decision には、別の structured store または volume-backed local rules path が必要である。
+共有の基本コマンド rules はリポジトリ上でレビューできる。Rules のマウントは読み取り専用なので、Codex は実行時に新しい承認 rule をそこへ永続化できない。将来生成される承認判断には、別の構造化ストアまたは volume-backed なローカル rules パスが必要である。
 
 ## Notes
 
-この ADR は ADR-0002 の single dev-container topology と ADR-0005 の blocked approval workflow を補完する。
+この ADR は ADR-0002 の単一開発コンテナ構成と ADR-0005 の `blocked` 承認ワークフローを補完する。

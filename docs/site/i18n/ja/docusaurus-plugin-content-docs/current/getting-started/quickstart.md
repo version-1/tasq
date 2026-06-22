@@ -13,7 +13,7 @@ sidebar_position: 2
 ```sh
 git clone https://github.com/version-1/tasq.git
 cd tasq
-go build -o ./bin/tq ./cmd/tq
+make build-tq
 export PATH="$PWD/bin:$PATH"
 tq version
 ```
