@@ -25,9 +25,13 @@ Stdio transport は v2 app-server JSON-RPC line protocol を使います。
 - `clientInfo` と `experimentalApi` を含む `initialize`。
 - initialize 成功後の `initialized` notification。
 - Absolute workspace path を `cwd` として渡し、後続 run が thread ID で resume できるよう
-  persistent thread (`ephemeral: false`) を作る `thread/start`。
-- 同じ `cwd`、返された `threadId`、rendered workflow prompt を含む 1 つの text input を渡す
-  `turn/start`。
+  runner task に resume thread ID が無い場合に persistent thread (`ephemeral: false`) を作る
+  `thread/start`。
+- Runner task に previous run から取得した resume thread ID がある場合、stored `threadId` と
+  absolute workspace path を `cwd` として渡す `thread/resume`。
+- 同じ `cwd`、返された `threadId`、1 つの text input を渡す `turn/start`。New thread には
+  rendered workflow prompt を渡します。Resumed thread には original issue prompt ではなく
+  continuation guidance を渡します。
 - Success として扱う `turn/completed` notification。
 - Failure として扱う `error`、subprocess exit、context cancellation、response timeout、turn
   timeout。

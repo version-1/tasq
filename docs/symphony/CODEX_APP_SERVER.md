@@ -25,9 +25,12 @@ The stdio transport uses the v2 app-server JSON-RPC line protocol:
 - `initialize` with `clientInfo` and `experimentalApi`.
 - `initialized` notification after initialize succeeds.
 - `thread/start` with the absolute workspace path as `cwd` and a persistent thread
-  (`ephemeral: false`) so later runs can resume it by thread ID.
-- `turn/start` with the same `cwd`, the returned `threadId`, and one text input containing the
-  rendered workflow prompt.
+  (`ephemeral: false`) when the runner task has no resume thread ID.
+- `thread/resume` with the stored `threadId` and the absolute workspace path as `cwd` when the
+  runner task has a resume thread ID from a previous run.
+- `turn/start` with the same `cwd`, the returned `threadId`, and one text input. New threads receive
+  the rendered workflow prompt. Resumed threads receive continuation guidance instead of the original
+  issue prompt.
 - `turn/completed` notification as success.
 - `error`, subprocess exit, context cancellation, response timeout, or turn timeout as failure.
 
