@@ -306,6 +306,7 @@ function buildIssueRuns(issue: Issue): IssueRuntimeResponse["runs"] {
   return [
     {
       run_id: `run-${issue.id}-latest`,
+      thread_id: `thread-${issue.id}-latest`,
       status,
       attempt: 1,
       created_at: issue.createdAt,

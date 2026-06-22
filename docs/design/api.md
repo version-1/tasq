@@ -60,4 +60,4 @@ The `tq` CLI wraps issue CRUD endpoints with these commands:
 
 `tq` uses human-readable output by default and JSON output when `--output json` is set.
 
-The orchestrator exposes an optional loopback HTTP API for runtime inspection when enabled with `--port` or `server.port`.
+The orchestrator exposes an optional loopback HTTP API for runtime inspection when enabled with `--port` or `server.port`. Its issue runtime detail response includes historical run summaries; each run may include `thread_id` once the Codex app-server thread has been persisted.

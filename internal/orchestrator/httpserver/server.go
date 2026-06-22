@@ -135,6 +135,7 @@ type attemptsPayload struct {
 
 type issueRunRow struct {
 	RunID     string    `json:"run_id"`
+	ThreadID  string    `json:"thread_id,omitempty"`
 	Status    string    `json:"status"`
 	Attempt   int       `json:"attempt"`
 	CreatedAt time.Time `json:"created_at"`
@@ -224,6 +225,7 @@ func (s *Server) issue(w http.ResponseWriter, r *http.Request) {
 	for _, issueRun := range runs {
 		runRows = append(runRows, issueRunRow{
 			RunID:     issueRun.RunID,
+			ThreadID:  issueRun.ThreadID,
 			Status:    string(issueRun.Status),
 			Attempt:   issueRun.Attempt,
 			CreatedAt: issueRun.CreatedAt,

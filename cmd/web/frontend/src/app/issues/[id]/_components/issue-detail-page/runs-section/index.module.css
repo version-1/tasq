@@ -60,11 +60,29 @@
   background: var(--extra-light-gray);
 }
 
+.runIdentity {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
 .runID {
   color: var(--primary-black);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
   font-size: 13px;
   overflow-wrap: anywhere;
+}
+
+.threadID {
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.threadLabel {
+  color: var(--text);
+  font-family: inherit;
 }
 
 .runMeta,
