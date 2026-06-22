@@ -2,6 +2,7 @@ import {
   getApiV1IssuesId,
   getApiV1IssuesIssueIdComments,
   getApiV1Projects,
+  getApiV1ProjectsIdWorkflow,
   getApiV1Summary,
   patchApiV1IssuesId,
   postApiV1Issues,
@@ -13,6 +14,7 @@ import {
   type Issue,
   type IssueStatus,
   type Project,
+  type ProjectWorkflow,
   type Summary,
 } from "@/lib/generated/issue-tracker";
 import {
@@ -86,6 +88,13 @@ export function fetchComments(
 
 export function fetchProjects(options?: ApiRequestOptions): Promise<Project[]> {
   return unwrapResponse(getApiV1Projects(noStore), options);
+}
+
+export function fetchProjectWorkflow(
+  projectID: number,
+  options?: ApiRequestOptions,
+): Promise<ProjectWorkflow> {
+  return unwrapResponse(getApiV1ProjectsIdWorkflow(projectID, noStore), options);
 }
 
 export function createProject(input: CreateProjectInput, options?: ApiRequestOptions): Promise<Project> {

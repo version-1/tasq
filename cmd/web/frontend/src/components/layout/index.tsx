@@ -292,10 +292,12 @@ export function useLayoutShellData(): LayoutShellData {
 export function ShellLayout({
   children,
   shellData,
+  showAddTaskButton = true,
   showViewNavigation = true,
 }: {
   children: ReactNode;
   shellData: LayoutShellData;
+  showAddTaskButton?: boolean;
   showViewNavigation?: boolean;
 }) {
   const { t } = useTranslation();
@@ -314,6 +316,7 @@ export function ShellLayout({
           projectName={shellData.title}
           issueCount={shellData.summary ? shellData.issues.length : null}
           onAddTask={() => shellData.onAddIssue("backlog")}
+          showAddTaskButton={showAddTaskButton}
           showViewNavigation={showViewNavigation}
         />
 
@@ -396,7 +399,7 @@ function activePageFromPathname(pathname: string): TasqPage {
 }
 
 function issueScopeFromPathname(pathname: string): IssueScope {
-  const match = /^\/projects\/([^/]+)\/issues\/?$/.exec(pathname);
+  const match = /^\/projects\/([^/]+)(?:\/(?:issues|settings))?\/?$/.exec(pathname);
   if (!match) {
     return { kind: "all" };
   }
