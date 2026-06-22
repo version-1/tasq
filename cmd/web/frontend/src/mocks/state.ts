@@ -179,7 +179,12 @@ export function buildSummary(): Summary {
   return {
     columns: summaryColumnFixtures.map((column) => ({
       ...column,
-      issues: listIssues({ states: [column.status] }),
+      issues: listIssues({ states: [column.status] }).map((issue) => ({
+        ...issue,
+        stats: {
+          commentCount: comments.filter((comment) => comment.issueId === issue.id).length,
+        },
+      })),
     })),
     generatedAt: new Date().toISOString(),
   };

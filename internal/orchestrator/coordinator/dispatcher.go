@@ -2,10 +2,12 @@ package coordinator
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -36,7 +38,9 @@ type IssueTracker interface {
 
 type DispatchStore interface {
 	UpdateRunStatus(ctx context.Context, runID string, status run.Status, errText string) (run.Run, error)
+	UpdateRunThreadID(ctx context.Context, runID string, threadID string) (run.Run, error)
 	RecordRunnerEvent(ctx context.Context, runID string, eventType string, message string, payloadJSON string) error
+	LatestResumeThreadIDByIssueID(ctx context.Context, issueID int64) (string, error)
 }
 
 type WorkflowResolver interface {
@@ -139,7 +143,11 @@ func (d *Dispatcher) Dispatch(ctx context.Context, activeRuns []run.Run) error {
 			d.release(queuedRun.RunID)
 			return fmt.Errorf("resolve workflow for project %d run %s: %w", issue.ProjectID, queuedRun.RunID, err)
 		}
-		task := d.taskForRun(queuedRun, issue, definition)
+		task, err := d.taskForRun(ctx, queuedRun, issue, definition)
+		if err != nil {
+			d.release(queuedRun.RunID)
+			return err
+		}
 		d.wg.Add(1)
 		go d.startRun(queuedRun, task)
 		availableSlots--
@@ -213,7 +221,13 @@ func (d *Dispatcher) startRun(storedRun run.Run, task runner.Task) {
 	}
 }
 
-func (d *Dispatcher) taskForRun(storedRun run.Run, issue entity.Issue, definition workflow.Definition) runner.Task {
+func (d *Dispatcher) taskForRun(ctx context.Context, storedRun run.Run, issue entity.Issue, definition workflow.Definition) (runner.Task, error) {
+	resumeThreadID, err := d.store.LatestResumeThreadIDByIssueID(ctx, storedRun.IssueID)
+	if errors.Is(err, sql.ErrNoRows) {
+		resumeThreadID = ""
+	} else if err != nil {
+		return runner.Task{}, fmt.Errorf("read resume thread id for issue %d run %s: %w", storedRun.IssueID, storedRun.RunID, err)
+	}
 	return runner.Task{
 		Issue:          issue,
 		Attempt:        storedRun.Attempt,
@@ -221,12 +235,13 @@ func (d *Dispatcher) taskForRun(storedRun run.Run, issue entity.Issue, definitio
 		Workspace:      workspace.Workspace{Path: storedRun.Workspace, WorkspaceKey: issueIdentifier(storedRun.IssueID)},
 		PromptTemplate: definition.PromptTemplate,
 		TaskWorkPrompt: definition.Config.Tasq.TaskWorkPrompt,
+		ResumeThreadID: resumeThreadID,
 		MaxTurns:       definition.Config.MaxTurns,
 		ContinueTurns:  definition.Config.ContinuationTurns,
 		Command:        definition.Config.CodexCommand,
 		ReadTimeout:    definition.Config.CodexReadTimeout,
 		TurnTimeout:    definition.Config.CodexTurnTimeout,
-	}
+	}, nil
 }
 
 func (d *Dispatcher) failRun(storedRun run.Run, message string) {
@@ -280,6 +295,16 @@ func failureCommentBody(runID string, errText string) string {
 func (d *Dispatcher) recordEvent(runID string, eventType string, message string, payloadJSON string) {
 	if err := d.store.RecordRunnerEvent(context.Background(), runID, eventType, message, payloadJSON); err != nil {
 		log.Printf("orchestrator dispatch record event failed run=%s event=%s: %v", runID, eventType, err)
+	}
+	if eventType != "session_started" {
+		return
+	}
+	threadID := strings.TrimPrefix(message, "thread_id=")
+	if threadID == "" || threadID == message {
+		return
+	}
+	if _, err := d.store.UpdateRunThreadID(context.Background(), runID, threadID); err != nil {
+		log.Printf("orchestrator dispatch update thread id failed run=%s: %v", runID, err)
 	}
 }
 

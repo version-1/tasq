@@ -17,7 +17,20 @@ const issue: IssueSummary = {
   assignee: "web",
   createdAt: "2026-06-01T00:00:00.000Z",
   updatedAt: "2026-06-01T00:00:00.000Z",
+  stats: {
+    commentCount: 0,
+  },
 };
+
+function issueWithCommentCount(commentCount: number): IssueSummary {
+  return {
+    ...issue,
+    stats: {
+      ...issue.stats,
+      commentCount,
+    },
+  };
+}
 
 function renderCard(props: Partial<Parameters<typeof IssueCard>[0]> = {}) {
   const onStatusChange = vi.fn(async () => undefined);
@@ -35,7 +48,7 @@ function renderCard(props: Partial<Parameters<typeof IssueCard>[0]> = {}) {
 
 describe("IssueCard", () => {
   it("renders summary fields without the issue body", () => {
-    renderCard({ commentCount: 3, runCount: 2 });
+    renderCard({ issue: issueWithCommentCount(3), runCount: 2 });
 
     expect(screen.getByRole("link", { name: "#24 Wire issue board to generated client" })).toBeInTheDocument();
     expect(screen.queryByText("Issue body should not render in the card.")).not.toBeInTheDocument();
@@ -45,10 +58,15 @@ describe("IssueCard", () => {
     expect(screen.getByLabelText("2 runs")).toHaveTextContent("2");
   });
 
-  it("renders zero metrics when counts are not provided", () => {
+  it("renders zero comment count from issue stats", () => {
     renderCard();
 
     expect(screen.getByLabelText("0 comments")).toHaveTextContent("0");
+  });
+
+  it("renders zero run count when it is not provided", () => {
+    renderCard();
+
     expect(screen.getByLabelText("0 runs")).toHaveTextContent("0");
   });
 

@@ -28,6 +28,23 @@ while IFS= read -r line; do
       echo '{"id":1,"result":{"codexHome":"/tmp/codex","platformFamily":"unix","platformOs":"linux","userAgent":"fake"}}'
       ;;
     3)
+      case "$line" in
+        *'"method":"thread/start"'*)
+          ;;
+        *)
+          echo "expected thread/start request: $line" >&2
+          exit 2
+          ;;
+      esac
+      case "$line" in
+        *'"ephemeral":false'*)
+          touch "$PWD/thread-materialized"
+          ;;
+        *)
+          echo "thread/start did not request a persistent thread: $line" >&2
+          exit 2
+          ;;
+      esac
       echo '{"id":2,"result":{"thread":{"id":"thread-1"},"approvalPolicy":"never","approvalsReviewer":"user","cwd":"'"$PWD"'","model":"fake","modelProvider":"fake","sandbox":{"type":"readOnly"}}}'
       ;;
     4)
@@ -62,6 +79,101 @@ done
 	}
 	if len(events) == 0 {
 		t.Fatal("expected runner events")
+	}
+	if _, err := os.Stat(filepath.Join(dir, "thread-materialized")); err != nil {
+		t.Fatalf("expected mock app-server to materialize persistent thread: %v", err)
+	}
+}
+
+func TestCodexRunnerResumesThreadWhenResumeThreadIDIsSet(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	script := filepath.Join(dir, "fake-app-server.sh")
+	if err := os.WriteFile(script, []byte(`#!/bin/sh
+count=0
+while IFS= read -r line; do
+  count=$((count + 1))
+  case "$count" in
+    1)
+      echo '{"id":1,"result":{"codexHome":"/tmp/codex","platformFamily":"unix","platformOs":"linux","userAgent":"fake"}}'
+      ;;
+    3)
+      case "$line" in
+        *'"method":"thread/resume"'*)
+          ;;
+        *)
+          echo "expected thread/resume request: $line" >&2
+          exit 2
+          ;;
+      esac
+      case "$line" in
+        *'"threadId":"thread-previous"'*'"cwd":"'"$PWD"'"'*|*'"cwd":"'"$PWD"'"'*'"threadId":"thread-previous"'*)
+          ;;
+        *)
+          echo "thread/resume did not include threadId and cwd: $line" >&2
+          exit 2
+          ;;
+      esac
+      case "$line" in
+        *'"thread/start"'*)
+          echo "resume path must not call thread/start: $line" >&2
+          exit 2
+          ;;
+      esac
+      echo '{"id":2,"result":{"thread":{"id":"thread-previous"},"approvalPolicy":"never","approvalsReviewer":"user","cwd":"'"$PWD"'","model":"fake","modelProvider":"fake","sandbox":{"type":"readOnly"}}}'
+      ;;
+    4)
+      case "$line" in
+        *'"method":"turn/start"'*'Continue the same task in this live thread.'*'"threadId":"thread-previous"'*)
+          ;;
+        *)
+          echo "expected resumed continuation turn: $line" >&2
+          exit 2
+          ;;
+      esac
+      case "$line" in
+        *'Original issue prompt'*)
+          echo "resume path must not resend original prompt: $line" >&2
+          exit 2
+          ;;
+      esac
+      echo '{"id":3,"result":{"turn":{"id":"turn-resumed"}}}'
+      echo '{"method":"turn/completed","params":{"threadId":"thread-previous","turn":{"id":"turn-resumed"}}}'
+      ;;
+  esac
+done
+`), 0o755); err != nil {
+		t.Fatalf("write fake app-server: %v", err)
+	}
+	var events []Event
+	result := CodexRunner{}.Run(context.Background(), Task{
+		Attempt: 2,
+		Issue: entity.Issue{
+			ID:          123,
+			Title:       "Runner task",
+			Description: "Wire Codex.",
+		},
+		RunID:          "run-2",
+		Workspace:      workspace.Workspace{Path: dir, WorkspaceKey: "ISSUE-123"},
+		PromptTemplate: "Original issue prompt {{ issue.id }}",
+		ResumeThreadID: "thread-previous",
+		Command:        "sh " + strconv.Quote(script),
+		ReadTimeout:    5 * time.Second,
+		TurnTimeout:    5 * time.Second,
+		OnEvent: func(event Event) {
+			events = append(events, event)
+		},
+	})
+	if result.Status != run.StatusSucceeded {
+		t.Fatalf("status = %q error = %q", result.Status, result.Error)
+	}
+	event, ok := findEvent(events, "session_started")
+	if !ok {
+		t.Fatalf("events = %+v", events)
+	}
+	if event.Message != "thread_id=thread-previous" {
+		t.Fatalf("session started message = %q", event.Message)
 	}
 }
 

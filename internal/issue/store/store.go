@@ -535,6 +535,10 @@ func (s *Store) Summary(ctx context.Context) (entity.Summary, error) {
 	if err != nil {
 		return entity.Summary{}, err
 	}
+	commentCounts, err := s.commentCountsByIssueID(ctx)
+	if err != nil {
+		return entity.Summary{}, err
+	}
 	columns := make([]entity.Column, 0, len(entity.OrderedStatuses()))
 	for _, status := range entity.OrderedStatuses() {
 		column := entity.Column{Status: status, Title: entity.StatusTitle(status), Issues: []entity.IssueSummary{}}
@@ -542,11 +546,38 @@ func (s *Store) Summary(ctx context.Context) (entity.Summary, error) {
 			if item.Status != status {
 				continue
 			}
-			column.Issues = append(column.Issues, entity.IssueSummary{Issue: item})
+			column.Issues = append(column.Issues, entity.IssueSummary{
+				Issue: item,
+				Stats: entity.IssueStats{
+					CommentCount: commentCounts[item.ID],
+				},
+			})
 		}
 		columns = append(columns, column)
 	}
 	return entity.Summary{Columns: columns, GeneratedAt: time.Now().UTC()}, nil
+}
+
+func (s *Store) commentCountsByIssueID(ctx context.Context) (map[int64]int, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT issue_id, COUNT(*) FROM comments GROUP BY issue_id`)
+	if err != nil {
+		return nil, fmt.Errorf("count issue comments: %w", err)
+	}
+	defer rows.Close()
+
+	counts := map[int64]int{}
+	for rows.Next() {
+		var issueID int64
+		var count int
+		if err := rows.Scan(&issueID, &count); err != nil {
+			return nil, fmt.Errorf("scan issue comment count: %w", err)
+		}
+		counts[issueID] = count
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate issue comment counts: %w", err)
+	}
+	return counts, nil
 }
 
 func issueColumns() string {

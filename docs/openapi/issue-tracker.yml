@@ -910,8 +910,23 @@ components:
           items:
             type: integer
             format: int64
+    IssueStats:
+      type: object
+      required:
+        - commentCount
+      properties:
+        commentCount:
+          type: integer
+          minimum: 0
     IssueSummary:
-      $ref: "#/components/schemas/Issue"
+      allOf:
+        - $ref: "#/components/schemas/Issue"
+        - type: object
+          required:
+            - stats
+          properties:
+            stats:
+              $ref: "#/components/schemas/IssueStats"
     Column:
       type: object
       required:

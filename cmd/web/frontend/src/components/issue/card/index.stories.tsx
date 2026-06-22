@@ -1,6 +1,16 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { issueFixtures } from "@/mocks/fixtures/issues";
+import type { IssueSummary } from "@/lib/types";
 import { IssueCard } from "./index";
+
+function summaryIssue(index: number, commentCount = 0): IssueSummary {
+  return {
+    ...issueFixtures[index],
+    stats: {
+      commentCount,
+    },
+  };
+}
 
 const meta = {
   title: "Issue/Card",
@@ -13,8 +23,7 @@ const meta = {
     ),
   ],
   args: {
-    issue: issueFixtures[1],
-    commentCount: 3,
+    issue: summaryIssue(1, 3),
     onStatusChange: async () => undefined,
     runCount: 2,
   },
@@ -35,7 +44,7 @@ export const Readonly: Story = {
 export const InProgressLocked: Story = {
   args: {
     issue: {
-      ...issueFixtures[2],
+      ...summaryIssue(2),
       status: "in_progress",
     },
   },
@@ -44,7 +53,7 @@ export const InProgressLocked: Story = {
 export const ReviewTransitions: Story = {
   args: {
     issue: {
-      ...issueFixtures[3],
+      ...summaryIssue(3),
       status: "review",
     },
   },
@@ -53,15 +62,14 @@ export const ReviewTransitions: Story = {
 export const BacklogQuickAction: Story = {
   args: {
     issue: {
-      ...issueFixtures[1],
+      ...summaryIssue(1),
       status: "backlog",
     },
   },
 };
 
-export const WithoutMetrics: Story = {
+export const WithoutRunCount: Story = {
   args: {
-    commentCount: undefined,
     runCount: undefined,
   },
 };
@@ -69,7 +77,7 @@ export const WithoutMetrics: Story = {
 export const Urgent: Story = {
   args: {
     issue: {
-      ...issueFixtures[1],
+      ...summaryIssue(1),
       id: 9,
       title: "Restore failed workspace orchestration",
       status: "backlog",

@@ -19,6 +19,7 @@ func TestValidateCreateRun(t *testing.T) {
 		{name: "valid", input: CreateRunInput{IssueID: 1, Workspace: "/tmp/workspace", Attempt: 0, OrchestratorID: "orchestrator"}},
 		{name: "missing issue", input: CreateRunInput{Workspace: "/tmp/workspace", OrchestratorID: "orchestrator"}, wantErr: true},
 		{name: "workspace too long", input: CreateRunInput{IssueID: 1, Workspace: strings.Repeat("x", 1001), OrchestratorID: "orchestrator"}, wantErr: true},
+		{name: "thread id too long", input: CreateRunInput{IssueID: 1, ThreadID: strings.Repeat("x", 201), OrchestratorID: "orchestrator"}, wantErr: true},
 		{name: "negative attempt", input: CreateRunInput{IssueID: 1, Attempt: -1, OrchestratorID: "orchestrator"}, wantErr: true},
 		{name: "empty orchestrator", input: CreateRunInput{IssueID: 1}, wantErr: true},
 		{name: "orchestrator too long", input: CreateRunInput{IssueID: 1, OrchestratorID: strings.Repeat("x", 201)}, wantErr: true},

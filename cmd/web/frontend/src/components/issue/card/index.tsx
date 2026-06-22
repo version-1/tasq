@@ -17,7 +17,7 @@ type IssueStatusChangeHandler = (id: number, status: IssueStatus) => Promise<voi
 type IssueMetric = {
   icon: IconProxyName;
   label: string;
-  value: number | undefined;
+  value: number;
 };
 
 const statusTransitionTargets: Partial<Record<IssueStatus, IssueStatus[]>> = {
@@ -44,13 +44,11 @@ export function IssueCard({
   issue,
   onStatusChange,
   readonly = false,
-  commentCount,
   runCount,
 }: {
   issue: IssueSummary;
   onStatusChange: IssueStatusChangeHandler;
   readonly?: boolean;
-  commentCount?: number;
   runCount?: number;
 }) {
   const { t } = useTranslation();
@@ -65,13 +63,13 @@ export function IssueCard({
   const metrics: IssueMetric[] = [
     {
       icon: "message-square",
-      label: t("issues.card.commentCount", { count: commentCount ?? 0 }),
-      value: commentCount,
+      label: t("issues.card.commentCount", { count: issue.stats.commentCount }),
+      value: issue.stats.commentCount,
     },
     {
       icon: "history",
       label: t("issues.card.runCount", { count: runCount ?? 0 }),
-      value: runCount,
+      value: runCount ?? 0,
     },
   ];
 
@@ -150,7 +148,7 @@ export function IssueCard({
               title={metric.label}
             >
               <IconProxy name={metric.icon} size={14} />
-              {metric.value ?? 0}
+              {metric.value}
             </span>
           ))}
         </div>

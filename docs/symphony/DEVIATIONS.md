@@ -78,6 +78,9 @@ Intentional differences from Symphony:
   project template rather than the full Symphony schema.
 - Workflow path selection does not use a process-level explicit workflow path or cwd default.
   Tasq resolves the effective workflow per project, as described in "Workflow Path Selection".
+- Codex app-server orchestration is transport-neutral internally, and Tasq includes stdio and
+  websocket transport packages. Production workflow execution still starts the stdio subprocess
+  transport; runtime transport selection and real Codex websocket server integration are deferred.
 
 ## Workspace Key
 
@@ -107,19 +110,32 @@ Implemented or in progress:
 - Workspace root resolution and sanitized per-issue workspace directories.
 - Workspace lifecycle hooks with `hooks.timeout_ms`.
 - A runner interface with both simulated and Codex app-server subprocess implementations.
+- A Codex app-server transport contract with stdio and websocket transport implementations.
 - SQLite runner event logging and workspace metadata records.
 - Config-gated continuation turns on a live Codex app-server thread.
+- Retry and resume across worker runs by starting a fresh app-server subprocess and reconnecting to
+  persisted thread state.
 - In-process retry scheduling with capped exponential backoff.
 - Active-run reconciliation for terminal/non-active issue states and stall handling.
 - Git worktree workspace creation on first workspace creation.
-- Terminal and failed/cancelled workspace cleanup with cleanup metadata.
+- Terminal and failed/cancelled workspace cleanup with cleanup metadata, including stale
+  thread/rollout artifact cleanup.
 - Operator-facing logs for workspace setup failures.
+
+Resolved implementation gaps:
+
+- The earlier Codex runner implementation created app-server threads with `ephemeral: true`, which
+  prevented later `threadId` resume because the thread was not materialized on disk. Tasq now creates
+  persistent Codex threads with `ephemeral: false`, persists the returned `thread_id`, and resumes
+  eligible non-terminal retries with `thread/resume`.
 
 Not yet implemented:
 
 - Dynamic `WORKFLOW.md` reload.
 - Strict prompt rendering with full variable and filter checking.
 - Token/rate-limit accounting.
+- Runtime selection between stdio and websocket Codex app-server transports.
+- Integration verification against a real Codex websocket app-server.
 - Full optional Symphony HTTP status/API surface.
 
 Tasq supports the workflow front matter fields documented in
@@ -147,6 +163,31 @@ relative suffix, for example `<Project.Location>/.worktrees/agents/issue-42`.
 
 Workspace branches use `agent/<workspace-key>`, for example `agent/issue-42`. Cleanup uses
 `git worktree remove --force` and deletes the corresponding local branch best-effort.
+
+## Codex Thread Resume Lifecycle
+
+Symphony describes continuation turns on a live Codex app-server thread inside one worker run. Tasq
+extends that lifecycle by persisting enough thread state to resume eligible non-terminal work across
+separate worker runs.
+
+When Tasq resumes a previous worker run, it starts a new app-server subprocess, reconnects using the
+persisted `thread_id`, keeps the same workspace `cwd`, and sends continuation guidance instead of the
+original issue prompt. The previous app-server subprocess is not treated as an issue-lifetime
+process; worker exit always closes it.
+
+Persisted `thread_id` values are reusable only while the issue remains non-terminal. Terminal issue
+cleanup removes workspace-scoped coding-agent artifacts, including persisted thread/rollout state and
+orchestrator-owned resume pointers. If the same issue is later reopened or recreated as active work,
+dispatch starts without stale thread state.
+
+This deviates from the following SPEC.md sections:
+
+| Section | Symphony assumption | Tasq behavior |
+| --- | --- | --- |
+| §7.7, §8.1 | Terminal cleanup focuses on stale workspace directories | Terminal cleanup also removes thread/rollout artifacts and invalidates resume pointers |
+| §10.2–10.3 | Continuation state is scoped to one live app-server subprocess inside a worker run | Retry/resume across worker runs starts a fresh subprocess and reconnects through persisted thread state |
+| §14.3 | Restart recovery re-dispatches eligible work after workspace cleanup | Active issues may resume persisted Codex thread state; terminal issues are cleaned so they cannot resume stale state |
+| §17.1, §17.6, §18 | Conformance covers workspace cleanup and live-thread continuation | Tasq additionally verifies cross-worker resume and terminal thread/rollout cleanup |
 
 ## Workflow Path Selection
 

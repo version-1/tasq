@@ -482,6 +482,43 @@ func TestCommentsByIssueIDClampsLimit(t *testing.T) {
 	}
 }
 
+func TestCommentCountsByIssueID(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer store.Close()
+
+	project := createTestProject(t, store, "COUNTS")
+	withComments, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "With comments"})
+	if err != nil {
+		t.Fatalf("create issue with comments: %v", err)
+	}
+	withoutComments, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Without comments"})
+	if err != nil {
+		t.Fatalf("create issue without comments: %v", err)
+	}
+	for _, body := range []string{"first", "second"} {
+		if _, err := store.CreateComment(ctx, entity.CreateCommentInput{IssueID: withComments.ID, Author: "tester", Body: body}); err != nil {
+			t.Fatalf("create comment: %v", err)
+		}
+	}
+
+	counts, err := store.commentCountsByIssueID(ctx)
+	if err != nil {
+		t.Fatalf("count comments: %v", err)
+	}
+	if counts[withComments.ID] != 2 {
+		t.Fatalf("comment count for issue with comments = %d, want 2", counts[withComments.ID])
+	}
+	if _, ok := counts[withoutComments.ID]; ok {
+		t.Fatalf("comment count includes issue without comments: %+v", counts)
+	}
+}
+
 func TestProjectCRUD(t *testing.T) {
 	t.Parallel()
 
@@ -847,16 +884,32 @@ func TestIssueStatesByIDsWithEmptyIDsDoesNotQuery(t *testing.T) {
 	}
 }
 
-func TestSummaryReturnsColumnsWithoutRuns(t *testing.T) {
+func TestSummaryReturnsColumnsWithIssueStats(t *testing.T) {
 	t.Parallel()
 
-	store, err := OpenMigrated(context.Background(), filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	ctx := context.Background()
+	store, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}
 	defer store.Close()
 
-	summary, err := store.Summary(context.Background())
+	project := createTestProject(t, store, "STATS")
+	withComments, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "With comments", Status: entity.StatusReady})
+	if err != nil {
+		t.Fatalf("create issue with comments: %v", err)
+	}
+	withoutComments, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Without comments", Status: entity.StatusReady})
+	if err != nil {
+		t.Fatalf("create issue without comments: %v", err)
+	}
+	for _, body := range []string{"first comment", "second comment"} {
+		if _, err := store.CreateComment(ctx, entity.CreateCommentInput{IssueID: withComments.ID, Author: "tester", Body: body}); err != nil {
+			t.Fatalf("create comment: %v", err)
+		}
+	}
+
+	summary, err := store.Summary(ctx)
 	if err != nil {
 		t.Fatalf("read summary: %v", err)
 	}
@@ -871,6 +924,33 @@ func TestSummaryReturnsColumnsWithoutRuns(t *testing.T) {
 	if _, ok := decoded["runs"]; ok {
 		t.Fatalf("summary json contains runs: %s", payload)
 	}
+	if !strings.Contains(string(payload), `"stats":{"commentCount":2}`) {
+		t.Fatalf("summary json does not contain comment stats: %s", payload)
+	}
+
+	readyColumn, ok := summaryColumn(summary, entity.StatusReady)
+	if !ok {
+		t.Fatalf("ready column was not returned: %+v", summary.Columns)
+	}
+	statsByIssueID := map[int64]entity.IssueStats{}
+	for _, issue := range readyColumn.Issues {
+		statsByIssueID[issue.ID] = issue.Stats
+	}
+	if statsByIssueID[withComments.ID].CommentCount != 2 {
+		t.Fatalf("comment count for issue with comments = %d, want 2", statsByIssueID[withComments.ID].CommentCount)
+	}
+	if statsByIssueID[withoutComments.ID].CommentCount != 0 {
+		t.Fatalf("comment count for issue without comments = %d, want 0", statsByIssueID[withoutComments.ID].CommentCount)
+	}
+}
+
+func summaryColumn(summary entity.Summary, status entity.Status) (entity.Column, bool) {
+	for _, column := range summary.Columns {
+		if column.Status == status {
+			return column, true
+		}
+	}
+	return entity.Column{}, false
 }
 
 func schemaObjectExists(t *testing.T, store *Store, name string) bool {

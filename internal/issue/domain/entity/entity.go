@@ -148,8 +148,13 @@ type UpdateCommentInput struct {
 	Body *string `json:"body"`
 }
 
+type IssueStats struct {
+	CommentCount int `json:"commentCount"`
+}
+
 type IssueSummary struct {
 	Issue
+	Stats IssueStats `json:"stats"`
 }
 
 type Column struct {

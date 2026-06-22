@@ -77,6 +77,22 @@ func (c *apiClient) listIssues(ctx context.Context, projectID *int64) ([]entity.
 	return issues, nil
 }
 
+func (c *apiClient) listIssuesByStates(ctx context.Context, states []entity.Status) ([]entity.Issue, error) {
+	var issues []entity.Issue
+	path := "/api/v1/issues"
+	if len(states) > 0 {
+		parts := make([]string, len(states))
+		for i, state := range states {
+			parts[i] = string(state)
+		}
+		path += "?states=" + url.QueryEscape(strings.Join(parts, ","))
+	}
+	if err := c.do(ctx, http.MethodGet, path, nil, &issues); err != nil {
+		return nil, err
+	}
+	return issues, nil
+}
+
 func (c *apiClient) listProjects(ctx context.Context) ([]entity.Project, error) {
 	var projects []entity.Project
 	if err := c.do(ctx, http.MethodGet, "/api/v1/projects", nil, &projects); err != nil {
