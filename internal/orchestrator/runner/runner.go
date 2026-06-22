@@ -119,7 +119,7 @@ func (r CodexRunner) Run(ctx context.Context, task Task) Result {
 	}
 	if err := session.request(ctx, task.ReadTimeout, "thread/start", map[string]any{
 		"cwd":          task.Workspace.Path,
-		"ephemeral":    true,
+		"ephemeral":    false,
 		"serviceName":  "tasq-orchestrator",
 		"threadSource": "user",
 	}, &threadStart); err != nil {
