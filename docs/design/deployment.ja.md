@@ -2,20 +2,20 @@
 
 English counterpart: [deployment.md](deployment.md).
 
-Tasq は version tag の push を起点に release artifacts を deploy します。Operator が `make prerelease` または `make release` で tag を作成し、GitHub Actions が `v*` tag 用の Release workflow を実行し、GoReleaser が GitHub Release artifacts を公開します。
+Tasq は version tag の push を起点にリリース成果物をデプロイします。ローカルの運用者が `make prerelease` または `make release` でタグを作成し、GitHub Actions が `v*` tag 用の Release workflow を実行し、GoReleaser が GitHub Release の成果物を公開します。
 
 ## Flow Overview
 
-1. Operator が clean working tree から release Make target を実行します。
-2. `Makefile` は tag validation と作成処理を `scripts/release.sh` に委譲します。
-3. Script が local Git tag を作成し、`origin` に push します。
+1. 運用者が clean working tree から release Make target を実行します。
+2. `Makefile` はタグの検証と作成処理を `scripts/release.sh` に委譲します。
+3. スクリプトがローカルの Git tag を作成し、`origin` に push します。
 4. `.github/workflows/release.yml` が `v*` に一致する pushed tag で起動します。
-5. Workflow が Web frontend を build し、Go tests を実行し、その後 GoReleaser を実行します。
-6. GoReleaser が `tq` と managed service executables を build して archives にまとめ、checksums を作成し、GitHub Release を作成または更新します。
+5. workflow が Web frontend を build し、Go tests を実行し、その後 GoReleaser を実行します。
+6. GoReleaser が `tq` と管理対象サービスの実行ファイルを build して archives にまとめ、checksums を作成し、GitHub Release を作成または更新します。
 
 ## Prerelease
 
-Prerelease は、formal stable release として扱わない validation build に使います。
+Prerelease は、正式な安定版 release として扱わない検証用 build に使います。
 
 ```sh
 make prerelease
@@ -27,8 +27,8 @@ make prerelease version=v0.3.0
 - clean working tree を要求します。
 - prerelease base として使う任意の `version` を `vX.Y.Z` 形式で受け付けます。
 - suffix 付きまたは不正な `version` は拒否します。
-- `version` を省略した場合は、`v0.1.0` のような reachable な最新 formal SemVer tag を探します。
-- `version` を省略し、formal tag がない場合は `v0.0.0` に fallback します。
+- `version` を省略した場合は、`v0.1.0` のような到達可能な最新の正式 SemVer tag を探します。
+- `version` を省略し、正式 tag がない場合は `v0.0.0` に fallback します。
 - `v0.3.0-dev.YYYYMMDDTHHmm.<short-sha>` 形式の tag を作成します。
 - tag を `origin` に push します。
 
@@ -36,7 +36,7 @@ GoReleaser には `release.prerelease: auto` を設定しています。その�
 
 ## Formal Release
 
-Formal release は、通常の GitHub Release として提示する stable version に使います。
+Formal release は、通常の GitHub Release として提示する安定版に使います。
 
 ```sh
 make release version=v0.1.1
@@ -69,21 +69,21 @@ binary は `cmd/web/frontend/dist` を embed するため、Release workflow は
 build を実行する必要があります。
 
 `make install-tq` と `make install-tq-prerelease` は `TQ_INSTALL_NAME` を使って `tq` を install し、
-service executables は固定名で同じ directory に install します。`tq service start` は source-based な `go run`
+サービス実行ファイルは固定名で同じ directory に install します。`tq service start` は source-based な `go run`
 service startup に fallback する前に、これらの sibling executables を探します。
 
 ## Failure Handling
 
-Tag 作成前の validation で失敗した場合は、表示された問題を直して同じ command を再実行します。
+tag 作成前の検証で失敗した場合は、表示された問題を直して同じ command を再実行します。
 
-Local tag は作成されたが push に失敗した場合は、まず tag を確認します。
+ローカル tag は作成されたが push に失敗した場合は、まず tag を確認します。
 
 ```sh
 git show <tag>
 git push origin <tag>
 ```
 
-誤った tag が local にだけ作成され、まだ push されていない場合は、その local tag だけを削除します。
+誤った tag がローカルにだけ作成され、まだ push されていない場合は、そのローカル tag だけを削除します。
 
 ```sh
 git tag -d <tag>

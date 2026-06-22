@@ -1,16 +1,16 @@
 # Tasq 運用
 
-このドキュメントでは local development environment、verification command、open design decision を扱います。所有境界と component responsibility は [architecture.ja.md](architecture.ja.md) を参照してください。user-facing API surface は [api.ja.md](api.ja.md) を参照してください。
+このドキュメントでは、ローカル開発環境、検証コマンド、未決定の設計事項を扱います。所有境界とコンポーネントの責務は [architecture.ja.md](architecture.ja.md) を参照してください。ユーザー向け API サーフェスは [api.ja.md](api.ja.md) を参照してください。
 
 ## Development Environment
 
-Docker Compose は local development を長時間起動する `dev` container と standalone OpenAPI UI container に集約します。`dev` container 内では issue-tracker が container port `8080`、orchestrator が container port `8081`、Go Web server が container port `3000` で待ち受けます。
+Docker Compose は、ローカル開発環境を長時間起動する `dev` container と standalone OpenAPI UI container に集約します。`dev` container 内では issue-tracker が container port `8080`、orchestrator が container port `8081`、Go Web サーバーが container port `3000` で待ち受けます。
 
-Personal machine 上の host-only operation では、`tq service start` が issue-tracker、orchestrator、web を background process として起動します。固定 local port `37651`、`37652`、`37653` を使い、discovery state を `$TQ_HOME/system/state.json` に書き込み、log を `$TQ_HOME/system/log/` 配下へ追記します。
+個人マシンでホストのみの運用を行う場合、`tq service start` は issue-tracker、orchestrator、web をバックグラウンドプロセスとして起動します。固定ローカルポート `37651`、`37652`、`37653` を使い、検出用状態を `$TQ_HOME/system/state.json` に書き込み、ログを `$TQ_HOME/system/log/` 配下へ追記します。
 
-Database が新規、または pending migration がある場合は、service 起動前に `tq migrate` を実行します。`tq service start` は service process を起動する前に issue-tracker / orchestrator database を確認し、pending migration があれば `tq migrate` の実行を促して終了します。Service 側も schema change を自動適用せず、同じ guidance で fail fast します。
+データベースが新規の場合、または未適用のマイグレーションがある場合は、サービス起動前に `tq migrate` を実行します。`tq service start` はサービスプロセスを起動する前に issue-tracker と orchestrator のデータベースを確認し、未適用のマイグレーションがあれば `tq migrate` の実行を案内して終了します。サービス側もスキーマ変更を自動適用せず、同じ案内を出して fail fast します。
 
-Recommended commands:
+推奨コマンド:
 
 - `make run-issue-tracker`
 - `make run-orchestrator`
@@ -20,7 +20,7 @@ Recommended commands:
 - `make dev-ports`
 - `make dev-codex-login`
 
-CLI commands:
+CLI コマンド:
 
 - `make build-tq`
 - `make run-migrate`
@@ -29,13 +29,13 @@ CLI commands:
 - `make run-tq ARGS="issue get 1"`
 - `TQ_HOME=./.tasq go run ./cmd/tq service status`
 
-`make build-tq` は host 用の `tq` binary を `./bin/tq` に build し、release build と同じ `buildCommit` ldflags variable を通じて現在の short commit hash を `tq version` に注入します。
+`make build-tq` はホスト用の `tq` binary を `./bin/tq` に build し、release build と同じ `buildCommit` ldflags variable を通じて現在の short commit hash を `tq version` に注入します。
 
-`make dev-up` は OpenAPI UI を起動し、`dev` container 内で issue-tracker、orchestrator、web-ui を起動します。Runtime state は `$TQ_HOME` 配下に保存され、container 内の default は `/workspace/.tasq` です。`run-all` step は service 起動前に migration を明示的に適用します。`make dev-codex-login` は device auth を使い、Codex authentication を `codex-home` Docker volume に永続化します。
+`make dev-up` は OpenAPI UI を起動し、`dev` container 内で issue-tracker、orchestrator、web-ui を起動します。実行時状態は `$TQ_HOME` 配下に保存され、container 内の既定値は `/workspace/.tasq` です。`run-all` step はサービス起動前に migration を明示的に適用します。`make dev-codex-login` は device auth を使い、Codex の認証情報を `codex-home` Docker volume に永続化します。
 
 ## Verification
 
-現在の verification command:
+現在の検証コマンド:
 
 ```sh
 go test ./...
@@ -47,17 +47,17 @@ npm run typecheck
 npm run build
 ```
 
-Manual verification:
+手動検証:
 
-1. `make dev-up` で dev environment を起動する。
-2. UI または `tq` で issue を作成・更新する。
-3. issue-tracker summary が issue status change を反映することを確認する。
-4. 表示された orchestrator URL で runtime inspection を確認する。
+1. `make dev-up` で開発環境を起動する。
+2. UI または `tq` で課題を作成・更新する。
+3. issue-tracker のサマリーに課題の状態変更が反映されることを確認する。
+4. 表示された orchestrator URL で実行時調査機能を確認する。
 
-Web server は `/tracker/*` を issue-tracker に、`/orchestrator/*` を orchestrator に proxy します。Compose では `make run-web` が dev container 内の `127.0.0.1:8080` と `127.0.0.1:8081` を backend URL として Web server を起動します。
+Web サーバーは `/tracker/*` を issue-tracker に、`/orchestrator/*` を orchestrator にプロキシします。Compose では、`make run-web` が dev container 内の `127.0.0.1:8080` と `127.0.0.1:8081` を backend URL として Web サーバーを起動します。
 
 ## Open Decisions
 
-- external tracker sync を issue-tracker 内に置くか provider interface の behind に置くか。
-- Production authentication、authorization、network exposure。
-- large full-fidelity Codex transcript を SQLite に残すか filesystem artifact に移すか。
+- 外部 tracker 同期を issue-tracker 内に置くか、provider interface の背後に置くか。
+- 本番向けの認証、認可、ネットワーク公開。
+- 完全な Codex transcript を SQLite に残すか、filesystem artifact に移すか。

@@ -2,27 +2,25 @@
 
 English counterpart: [configuration.md](configuration.md).
 
-Tasq は machine-level configuration、runtime state、service data の置き場所として `TQ_HOME` を使います。
+Tasq は、マシン単位の設定、実行時状態、サービスデータを置くローカルホームディレクトリとして `TQ_HOME` を使います。
 
-default では `TQ_HOME` は `~/.tasq` に解決されます。development では repository local の directory を指定できます。
+既定では、`TQ_HOME` は `~/.tasq` に解決されます。開発時は、リポジトリ内のローカルディレクトリを指定できます。
 
 ```sh
 TQ_HOME=./.tasq
 ```
 
-Default の Compose development workflow は、tool を `dev` container 内で実行し、
-`TQ_HOME=/workspace/.tasq` を使います。`tq`、TUI、issue-tracker、orchestrator は同じ
-container 内の runtime state を読みます。
+既定の Compose 開発ワークフローでは、`dev` container 内でツールを実行し、
+`TQ_HOME=/workspace/.tasq` を使います。`tq`、TUI、issue-tracker、orchestrator はすべて、その container 内の同じ実行時状態を読みます。
 
-Codex credential は `TQ_HOME` とは分離します。dev container では
+Codex の認証情報は `TQ_HOME` とは分離します。dev container では
 `CODEX_HOME=/home/codex/.codex` を使い、`codex-home` named volume に保存します。
-Container 内で一度 `make dev-codex-login` を実行し、device auth で認証します。`codex-home`
-volume を削除すると login state も削除されます。Device auth を使うことで、container 内にだけ
-存在する localhost callback へ browser が redirect して失敗する問題を避けます。
+container 内で一度 `make dev-codex-login` を実行し、device auth で認証します。`codex-home`
+volume を削除するとログイン状態も削除されます。device auth を使うことで、container 内にだけ存在する localhost callback へブラウザがリダイレクトして失敗する問題を避けます。
 
-Repository-managed な Codex rules は `codex/rules/` に置き、dev container 内の
-`/home/codex/.codex/rules` へ read-only mount します。Authentication、personal override、
-generated approval decision、その他 secret-bearing な Codex state は repository ではなく
+リポジトリ管理の Codex rules は `codex/rules/` に置き、dev container 内の
+`/home/codex/.codex/rules` へ読み取り専用でマウントします。認証情報、個人用の上書き設定、
+生成された承認判断、その他の秘密情報を含む Codex state は、リポジトリではなく
 `codex-home` volume に保持します。
 
 ## Directory Layout
@@ -42,8 +40,8 @@ $TQ_HOME/
         └── orchestrator.sqlite
 ```
 
-`config/` は user-editable です。`system/` は Tasq processes が管理し、上書きされる可能性があります。
-Development service logs は `system/log/` 配下に書き込まれます。`tq service start` は issue-tracker と orchestrator の log をこの directory へ追記します。
+`config/` はユーザーが編集できます。`system/` は Tasq のプロセスが管理し、上書きされる可能性があります。
+開発用サービスログは `system/log/` 配下に書き込まれます。`tq service start` は issue-tracker と orchestrator のログをこのディレクトリへ追記します。
 
 ## config.yaml
 
@@ -54,12 +52,12 @@ max_concurrent_agents: 3
 
 | Field | Default | Description |
 |---|---:|---|
-| `author` | `$USER` | `--author` と `TQ_AUTHOR` が未指定のときに `tq comment add` が使う default author です。 |
-| `max_concurrent_agents` | `10` | orchestrator agent runs の machine-wide concurrency limit です。 |
+| `author` | `$USER` | `--author` と `TQ_AUTHOR` が未指定のときに `tq comment add` が使う既定の author です。 |
+| `max_concurrent_agents` | `10` | orchestrator agent runs に対するマシン全体の同時実行数の上限です。 |
 
 ## state.json
 
-running service は discovery metadata を `system/state.json` に書き込みます。
+実行中のサービスは、検出用メタデータを `system/state.json` に書き込みます。
 
 ```json
 {
@@ -78,7 +76,7 @@ running service は discovery metadata を `system/state.json` に書き込み�
 }
 ```
 
-`tq` と `tasq-tui` は API URL が指定されていない場合に `issue_tracker.addr` を読みます。
+API URL が指定されていない場合、`tq` と `tasq-tui` は `issue_tracker.addr` を読みます。
 
 ## Resolution Order
 
@@ -100,4 +98,4 @@ orchestrator concurrency:
 effective max = min(WORKFLOW.md agent.max_concurrent_agents, config.yaml max_concurrent_agents)
 ```
 
-`WORKFLOW.md` は各 project repository に残します。`$TQ_HOME/config/config.yaml` は machine-wide preferences と limits を保存します。
+`WORKFLOW.md` は各プロジェクトリポジトリに残します。`$TQ_HOME/config/config.yaml` はマシン全体の設定と上限値を保存します。

@@ -2,7 +2,7 @@
 
 ## Worktree 運用
 
-作業はリポジトリ直下の `.worktrees/1` から `.worktrees/n` までの連番ディレクトリに worktree を作成して進めます。
+作業はリポジトリ直下の `.worktrees/1` から `.worktrees/n` までの連番ディレクトリに worktree を作成し、そこを作業ディレクトリとして使います。
 
 同時に複数の作業を行う場合は、作業単位ごとに未使用の番号を割り当て、既存の worktree と混在させないでください。
 
@@ -17,9 +17,9 @@ git worktree add .worktrees/2 <branch>
 
 ## Task Flow
 
-Task の開始から handoff までは、この flow を使います。
+タスクの開始から引き継ぎまでは、この流れを使います。
 
-1. Task scope、expected output、影響しそうな files または components を確認します。
+1. タスクの範囲、期待される成果物、影響しそうなファイルまたはコンポーネントを確認します。
 2. 新しい task branch を作成する作業では、`cmd-start-branch` で作業を開始します。
 3. 編集前に current branch と working tree を確認します。
 
@@ -27,14 +27,14 @@ Task の開始から handoff までは、この flow を使います。
    git status --short --branch
    ```
 
-4. Code または documentation を変更する前に、関連する design document と workflow document を読みます。
+4. code または documentation を変更する前に、関連する設計ドキュメントと workflow document を読みます。
 
    - [docs/design.md](design.md)
    - 変更対象 area の component-level workflow document
 
-5. 既存の component boundary と ownership に合わせて、focused changes を行います。
-6. Contract、setup、developer workflow に影響する場合は、関連 documentation と generated artifacts も更新します。
-7. まず narrowest useful verification を実行し、shared behavior、contract、persistence、user-facing flow に影響する変更では verification を広げます。
+5. 既存のコンポーネント境界と所有関係に合わせて、焦点を絞った変更を行います。
+6. contract、setup、developer workflow に影響する場合は、関連 documentation と generated artifacts も更新します。
+7. まず最小限で有用な検証を実行し、shared behavior、contract、persistence、user-facing flow に影響する変更では検証範囲を広げます。
 8. Pull Request を作成する前に final diff を確認します。
 
    ```sh
@@ -42,8 +42,8 @@ Task の開始から handoff までは、この flow を使います。
    git status --short
    ```
 
-9. `cmd-create-pr` を使って、Task の Pull Request を作成または更新します。
-10. Pull Request URL、changed files、実行した verification、残っている risks または skipped checks を簡潔にまとめて handoff します。
+9. `cmd-create-pr` を使って、タスクの Pull Request を作成または更新します。
+10. Pull Request URL、変更したファイル、実行した検証、残っているリスクまたはスキップした確認を簡潔にまとめて引き継ぎます。
 
 ## GitHub 操作
 
