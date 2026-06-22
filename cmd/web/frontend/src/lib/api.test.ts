@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { toastStore } from "@/lib/toast";
-import { fetchSummary } from "./api";
+import { fetchProjectWorkflow, fetchSummary } from "./api";
 
 const issueTracker = vi.hoisted(() => ({
   getApiV1Summary: vi.fn(),
@@ -8,6 +8,7 @@ const issueTracker = vi.hoisted(() => ({
   getApiV1IssuesId: vi.fn(),
   getApiV1IssuesIssueIdComments: vi.fn(),
   getApiV1Projects: vi.fn(),
+  getApiV1ProjectsIdWorkflow: vi.fn(),
   postApiV1Projects: vi.fn(),
   patchApiV1IssuesId: vi.fn(),
 }));
@@ -23,6 +24,7 @@ describe("api toast handling", () => {
   beforeEach(() => {
     toastStore.clear();
     issueTracker.getApiV1Summary.mockReset();
+    issueTracker.getApiV1ProjectsIdWorkflow.mockReset();
   });
 
   it("shows an i18n error toast for failed responses by default", async () => {
@@ -67,5 +69,28 @@ describe("api toast handling", () => {
     });
 
     expect(toastStore.getSnapshot()).toEqual([]);
+  });
+
+  it("unwraps project workflow responses", async () => {
+    issueTracker.getApiV1ProjectsIdWorkflow.mockResolvedValue({
+      status: 200,
+      data: {
+        data: {
+          projectId: 1,
+          frontmatter: { tasq: { tracker: { default_status: "ready" } } },
+          body: "## Workflow",
+          checksum: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+          createdAt: "2026-06-01T00:00:00.000Z",
+          updatedAt: "2026-06-22T00:00:00.000Z",
+        },
+        meta: {},
+      },
+    });
+
+    await expect(fetchProjectWorkflow(1)).resolves.toMatchObject({
+      projectId: 1,
+      body: "## Workflow",
+      frontmatter: { tasq: { tracker: { default_status: "ready" } } },
+    });
   });
 });

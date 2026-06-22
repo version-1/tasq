@@ -7,6 +7,7 @@ import type {
   IssueState,
   IssueStatus,
   Project,
+  ProjectWorkflow,
   Summary,
   UpdateIssueInput,
 } from "@/lib/generated/issue-tracker";
@@ -27,6 +28,38 @@ type IssueListFilters = {
 
 let projects = clone(projectFixtures);
 let issues = clone(issueFixtures);
+const workflows = new Map<number, ProjectWorkflow>([
+  [
+    1,
+    {
+      projectId: 1,
+      frontmatter: {
+        tasq: {
+          tracker: {
+            default_status: "ready",
+            active_states: ["ready", "in_progress", "review"],
+          },
+          agent: {
+            max_concurrent_agents_by_state: {
+              ready: 2,
+              review: 1,
+            },
+          },
+        },
+        codex: {
+          sandbox: "workspace-write",
+        },
+        hooks: {
+          before_start: ["git fetch origin"],
+        },
+      },
+      body: "## Workflow\n\nUse the tracker issue description as the source of truth.\n\n- Keep progress comments current.\n- Move issues to review after the PR is ready.",
+      checksum: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+      createdAt: "2026-06-01T00:00:00.000Z",
+      updatedAt: "2026-06-22T00:00:00.000Z",
+    },
+  ],
+]);
 let comments = clone(commentFixtures);
 let nextProjectID = nextNumericID(projects);
 let nextIssueID = nextNumericID(issues);
@@ -65,6 +98,10 @@ export function createProject(input: CreateProjectInput): Project | null {
   nextProjectID += 1;
   projects = [...projects, project];
   return clone(project);
+}
+
+export function getProjectWorkflow(projectID: number): ProjectWorkflow | null {
+  return clone(workflows.get(projectID) ?? null);
 }
 
 export function listIssues(filters: IssueListFilters = {}): Issue[] {

@@ -62,6 +62,7 @@ const knownErrorCodes = [
   "projects.get.invalid_input",
   "projects.get.not_found",
   "projects.list.internal_error",
+  "projects.workflow.not_found",
   "projects.update.invalid_id",
   "projects.update.invalid_input",
   "projects.update.invalid_request",

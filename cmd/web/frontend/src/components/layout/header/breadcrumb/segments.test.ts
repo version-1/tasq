@@ -20,6 +20,13 @@ describe("breadcrumbSegmentsFromPathname", () => {
       ],
     },
     {
+      pathname: "/projects/TASQ/settings",
+      segments: [
+        { label: "TASQ", href: "/projects/TASQ/issues" },
+        { label: "Settings" },
+      ],
+    },
+    {
       pathname: "/issues/25",
       segments: [
         { label: "Issues", href: "/issues" },
