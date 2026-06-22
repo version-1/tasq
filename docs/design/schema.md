@@ -103,6 +103,7 @@ Each SQLite database owns a `schema_migrations` table. The migration engine writ
 | IssueID        | `int64`      | yes                | —                  | —           | `> 0`                                                              |
 | Status         | `run.Status` | auto               | yes                | `queued`    | enum: `queued`, `running`, `succeeded`, `failed`, `cancelled`      |
 | Workspace      | `string`     | no                 | —                  | `""`        | max 1,000 chars                                                    |
+| ThreadID       | `string`     | no                 | optional           | `NULL`      | max 200 chars; stores the Codex app-server thread identifier for resume |
 | Attempt        | `int`        | yes                | —                  | —           | `>= 0`                                                             |
 | Error          | `string`     | no                 | —                  | `""`        | max 10,000 chars                                                   |
 | OrchestratorID | `string`     | yes                | —                  | —           | min 1, max 200 chars                                               |
@@ -155,7 +156,7 @@ Recorded via `RecordWorkspaceSetupFailure(ctx, issueID, workspaceKey, path, errT
 
 | Limit       | Fields                                                                 |
 |-------------|------------------------------------------------------------------------|
-| max 200     | Issue.Assignee, Project.Key, Project.Name, Workspace.Name, Run.OrchestratorID, RunnerEvent.RunID, RunnerEvent.EventType, WorkspaceMetadata.WorkspaceKey, WorkspaceSetupFailure.WorkspaceKey |
+| max 200     | Issue.Assignee, Project.Key, Project.Name, Workspace.Name, Run.ThreadID, Run.OrchestratorID, RunnerEvent.RunID, RunnerEvent.EventType, WorkspaceMetadata.WorkspaceKey, WorkspaceSetupFailure.WorkspaceKey |
 | max 500     | Issue.Title                                                            |
 | max 1,000   | Attachment.Path, Project.Location, Workspace.Path, Run.Workspace, WorkspaceMetadata.Path, WorkspaceMetadata.SourcePath, WorkspaceSetupFailure.Path |
 | max 10,000  | Issue.Description, Comment.Body, Project.Description, Run.Error, RunnerEvent.Message, WorkspaceSetupFailure.Error |

@@ -72,6 +72,34 @@ func TestDispatcherCompletesSuccessfulRun(t *testing.T) {
 	}
 }
 
+func TestDispatcherPersistsSessionStartedThreadID(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store := openTestStore(t)
+	storedRun := createQueuedRun(t, store, 42)
+	testRunner := &recordingRunner{
+		result: runner.Result{Status: run.StatusSucceeded},
+		events: []runner.Event{
+			{EventType: "session_started", Message: "thread_id=thread-42"},
+		},
+	}
+	dispatcher := newTestDispatcher(t, store, testRunner, []entity.Issue{{ID: 42, Status: entity.StatusReady, Title: "Run task"}})
+
+	if err := dispatcher.Dispatch(ctx, []run.Run{storedRun}); err != nil {
+		t.Fatalf("dispatch: %v", err)
+	}
+	shutdownDispatcher(t, dispatcher)
+
+	updated, err := store.RunByRunID(ctx, storedRun.RunID)
+	if err != nil {
+		t.Fatalf("run by id: %v", err)
+	}
+	if updated.ThreadID != "thread-42" {
+		t.Fatalf("thread id = %q, want thread-42", updated.ThreadID)
+	}
+}
+
 func TestDispatcherResolvesWorkflowForEachRunProject(t *testing.T) {
 	t.Parallel()
 

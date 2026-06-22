@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -36,6 +37,7 @@ type IssueTracker interface {
 
 type DispatchStore interface {
 	UpdateRunStatus(ctx context.Context, runID string, status run.Status, errText string) (run.Run, error)
+	UpdateRunThreadID(ctx context.Context, runID string, threadID string) (run.Run, error)
 	RecordRunnerEvent(ctx context.Context, runID string, eventType string, message string, payloadJSON string) error
 }
 
@@ -280,6 +282,16 @@ func failureCommentBody(runID string, errText string) string {
 func (d *Dispatcher) recordEvent(runID string, eventType string, message string, payloadJSON string) {
 	if err := d.store.RecordRunnerEvent(context.Background(), runID, eventType, message, payloadJSON); err != nil {
 		log.Printf("orchestrator dispatch record event failed run=%s event=%s: %v", runID, eventType, err)
+	}
+	if eventType != "session_started" {
+		return
+	}
+	threadID := strings.TrimPrefix(message, "thread_id=")
+	if threadID == "" || threadID == message {
+		return
+	}
+	if _, err := d.store.UpdateRunThreadID(context.Background(), runID, threadID); err != nil {
+		log.Printf("orchestrator dispatch update thread id failed run=%s: %v", runID, err)
 	}
 }
 
