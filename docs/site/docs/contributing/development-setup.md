@@ -30,7 +30,7 @@ Recommended development commands include:
 For host-only local operation, build `tq`, set `TQ_HOME`, apply migrations, and start services.
 
 ```sh
-go build -o ./bin/tq ./cmd/tq
+make build-tq
 export PATH="$PWD/bin:$PATH"
 export TQ_HOME="$PWD/.tasq"
 tq migrate

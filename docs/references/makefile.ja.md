@@ -21,6 +21,8 @@ Prefix guide と section 分けされた target 一覧は `make help` で確認�
 | `RELEASE_REPO` | `version-1/tasq` | Release asset から `tq` を install するときに使う GitHub repository。 |
 | `TQ_INSTALL_DIR` | `$HOME/.local/bin` | Release install targets が `tq` binary を配置する directory。 |
 | `TQ_INSTALL_NAME` | `tq` | Release install targets で install する `tq` binary の command name。Managed service executables は固定名で隣に install します。 |
+| `TQ_BUILD_COMMIT` | current short Git commit | Host `tq` build に ldflags 経由で注入する commit value。 |
+| `TQ_BUILD_LDFLAGS` | `buildCommit` ldflags assignment | `make build-tq` が使う Go linker flags。 |
 | `AIR_VERSION` | `v1.52.3` | Go service を watch mode で動かす Air version。 |
 
 固定 port を使う例:
@@ -33,6 +35,7 @@ ISSUE_TRACKER_PORT=8080 ORCHESTRATOR_PORT=8081 OPENAPI_PORT=8082 WEB_PORT=3000 m
 
 | Target | Purpose |
 |---|---|
+| `make build-tq` | Host 用の `tq` binary を `./bin/tq` に build し、現在の short commit hash を `tq version` に注入します。 |
 | `make dev-up` | `dev` container と OpenAPI UI を起動し、issue-tracker、orchestrator、Web を background で起動して URL を表示します。 |
 | `make dev-restart` | Compose services を停止し、再度 `dev-up` を実行します。 |
 | `make dev-down` | Compose services を停止します。 |

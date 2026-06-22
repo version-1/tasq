@@ -13,7 +13,7 @@ This path starts Tasq from a fresh checkout and creates the first issue.
 ```sh
 git clone https://github.com/version-1/tasq.git
 cd tasq
-go build -o ./bin/tq ./cmd/tq
+make build-tq
 export PATH="$PWD/bin:$PATH"
 tq version
 ```
