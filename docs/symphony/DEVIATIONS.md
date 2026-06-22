@@ -78,6 +78,9 @@ Intentional differences from Symphony:
   project template rather than the full Symphony schema.
 - Workflow path selection does not use a process-level explicit workflow path or cwd default.
   Tasq resolves the effective workflow per project, as described in "Workflow Path Selection".
+- Codex app-server orchestration is transport-neutral internally, and Tasq includes stdio and
+  websocket transport packages. Production workflow execution still starts the stdio subprocess
+  transport; runtime transport selection and real Codex websocket server integration are deferred.
 
 ## Workspace Key
 
@@ -107,6 +110,7 @@ Implemented or in progress:
 - Workspace root resolution and sanitized per-issue workspace directories.
 - Workspace lifecycle hooks with `hooks.timeout_ms`.
 - A runner interface with both simulated and Codex app-server subprocess implementations.
+- A Codex app-server transport contract with stdio and websocket transport implementations.
 - SQLite runner event logging and workspace metadata records.
 - Config-gated continuation turns on a live Codex app-server thread.
 - In-process retry scheduling with capped exponential backoff.
@@ -120,6 +124,8 @@ Not yet implemented:
 - Dynamic `WORKFLOW.md` reload.
 - Strict prompt rendering with full variable and filter checking.
 - Token/rate-limit accounting.
+- Runtime selection between stdio and websocket Codex app-server transports.
+- Integration verification against a real Codex websocket app-server.
 - Full optional Symphony HTTP status/API surface.
 
 Tasq supports the workflow front matter fields documented in

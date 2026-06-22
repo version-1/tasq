@@ -82,6 +82,10 @@ Symphony との差分:
   が要求する front matter fields を検証します。
 - Workflow path selection は process-level の explicit workflow path や cwd default を使いません。
   Tasq は "Workflow Path Selection" に記載するように、project ごとに effective workflow を解決します。
+- Codex app-server orchestration は内部的に transport-neutral で、Tasq は stdio と websocket の
+  transport packages を含みます。Production workflow execution はまだ stdio subprocess transport を
+  起動します。Runtime transport selection と実 Codex websocket server との integration verification は
+  deferred です。
 
 ## Workspace Key
 
@@ -112,6 +116,7 @@ implementation ではありません。
 - Workspace root resolution と sanitized per-issue workspace directories。
 - `hooks.timeout_ms` を含む workspace lifecycle hooks。
 - simulated implementation と Codex app-server subprocess implementation を持つ runner interface。
+- stdio と websocket transport implementation を持つ Codex app-server transport contract。
 - SQLite runner event logging と workspace metadata records。
 - live Codex app-server thread に対する config-gated continuation turns。
 - capped exponential backoff を使う in-process retry scheduling。
@@ -125,6 +130,8 @@ implementation ではありません。
 - Dynamic `WORKFLOW.md` reload。
 - full variable と filter checking を伴う strict prompt rendering。
 - Token/rate-limit accounting。
+- stdio と websocket Codex app-server transports の runtime selection。
+- 実 Codex websocket app-server との integration verification。
 - Full optional Symphony HTTP status/API surface。
 
 Tasq は [WORKFLOW_CONTRACT.md](WORKFLOW_CONTRACT.md) に記録されている workflow front matter fields
