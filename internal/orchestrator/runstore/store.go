@@ -231,11 +231,27 @@ type WorkspaceMetadataInput struct {
 
 func (s *Store) MarkWorkspaceCleanup(ctx context.Context, workspaceKey string, status string, errText string) error {
 	now := nowString()
-	_, err := s.db.ExecContext(ctx, `UPDATE workspace_metadata
-		SET cleanup_status = ?, cleanup_at = ?, last_error = ?, updated_at = ?
-		WHERE workspace_key = ?`, status, now, errText, now, workspaceKey)
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin workspace cleanup transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	_, err = tx.ExecContext(ctx, `UPDATE workspace_metadata
+			SET cleanup_status = ?, cleanup_at = ?, last_error = ?, updated_at = ?
+			WHERE workspace_key = ?`, status, now, errText, now, workspaceKey)
 	if err != nil {
 		return fmt.Errorf("mark workspace cleanup: %w", err)
+	}
+	if _, err := tx.ExecContext(ctx, `UPDATE runs
+			SET thread_id = NULL, updated_at = ?
+			WHERE issue_id = (
+				SELECT issue_id FROM workspace_metadata WHERE workspace_key = ?
+			)`, now, workspaceKey); err != nil {
+		return fmt.Errorf("invalidate workspace resume thread ids: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit workspace cleanup transaction: %w", err)
 	}
 	return nil
 }
