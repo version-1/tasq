@@ -15,6 +15,7 @@ const issue: IssueSummary = {
   status: "ready",
   priority: "high",
   assignee: "web",
+  dependency_ids: [],
   createdAt: "2026-06-01T00:00:00.000Z",
   updatedAt: "2026-06-01T00:00:00.000Z",
   stats: {

@@ -53,6 +53,36 @@ func TestIssuesByStatesSkipsRequestForEmptyStates(t *testing.T) {
 	}
 }
 
+func TestQueueGetsIssueQueue(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet || r.URL.Path != "/api/v1/queue" {
+			t.Fatalf("unexpected request %s %s", r.Method, r.URL.Path)
+		}
+		writeTestData(t, w, entity.Queue{
+			Queued: []entity.QueueIssue{
+				{Issue: entity.Issue{ID: 1, Status: entity.StatusReady}},
+			},
+			Pending: []entity.QueueIssue{
+				{Issue: entity.Issue{ID: 2, Status: entity.StatusReady}, BlockedDependencyIDs: []int64{1}},
+			},
+		})
+	}))
+	defer server.Close()
+
+	queue, err := NewClient(server.URL).Queue(context.Background())
+	if err != nil {
+		t.Fatalf("queue: %v", err)
+	}
+	if len(queue.Queued) != 1 || queue.Queued[0].ID != 1 {
+		t.Fatalf("queued = %+v", queue.Queued)
+	}
+	if len(queue.Pending) != 1 || queue.Pending[0].ID != 2 || len(queue.Pending[0].BlockedDependencyIDs) != 1 || queue.Pending[0].BlockedDependencyIDs[0] != 1 {
+		t.Fatalf("pending = %+v", queue.Pending)
+	}
+}
+
 func TestIssueStatesByIDsPostsIDs(t *testing.T) {
 	t.Parallel()
 

@@ -22,6 +22,7 @@ Current issue-tracker endpoints:
 - `GET /api/v1/issues`
 - `POST /api/v1/issues`
 - `POST /api/v1/issues/states`
+- `GET /api/v1/queue`
 - `GET /api/v1/issues/{id}`
 - `PATCH /api/v1/issues/{id}`
 - `GET /api/v1/issues/{issueId}/comments`
@@ -34,7 +35,11 @@ Current issue-tracker endpoints:
 
 Attachment uploads accept multipart form data with `entity_type`, `entity_id`, and `file`. The first implementation supports PNG, JPEG, GIF, and WebP image files up to 5 MiB. Attachment bytes are stored below `$TQ_HOME/system/data/attachments`, while SQLite stores metadata and relative paths. Issue and comment text references attachments with Markdown image links such as `![screenshot](attachment://att_...)`.
 
-Issues belong to exactly one project. `POST /api/v1/issues` requires `projectId`, and issue responses include both `projectId` and `projectKey`. `GET /api/v1/issues` accepts optional `states` and `project_id` query parameters. Omitting `project_id` lists issues across all projects.
+Issues belong to exactly one project. `POST /api/v1/issues` requires `projectId`, and issue responses include both `projectId` and `projectKey`. Issue responses include `dependency_ids`; issues without dependencies return an empty array. `GET /api/v1/issues` accepts optional `states` and `project_id` query parameters. Omitting `project_id` lists issues across all projects.
+
+`PATCH /api/v1/issues/{id}` accepts `dependency_ids` as an optional full replacement field. When omitted, existing dependencies are preserved. Passing an empty array removes all dependencies. The API rejects missing dependency issues, self-dependencies, duplicate dependency IDs, and updates that would create a dependency cycle.
+
+`GET /api/v1/queue` returns ready issues split into `queued` and `pending` arrays. `queued` issues are ready and have no active dependencies; `pending` issues are ready but still have at least one active dependency. Active dependency statuses are `backlog`, `ready`, `in_progress`, and `review`; satisfied dependency statuses are `done`, `cancelled`, `duplicate`, `failed`, and `blocked`. Each array is sorted by priority descending (`urgent`, `high`, `normal`, `low`) and then ID ascending. The endpoint accepts the same `project_id` filter semantics as issue listing. Pending items include `blocked_dependency_ids` for active dependencies that keep the issue pending.
 
 JSON success responses use `{ "data": ..., "meta": {} }`. JSON error responses use `{ "error": { "code": "...", "message": "..." }, "meta": {} }`.
 

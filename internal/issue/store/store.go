@@ -31,6 +31,10 @@ func Open(ctx context.Context, path string) (*Store, error) {
 		return nil, fmt.Errorf("open sqlite: %w", err)
 	}
 	db.SetMaxOpenConns(1)
+	if _, err := db.ExecContext(ctx, `PRAGMA foreign_keys = ON`); err != nil {
+		_ = db.Close()
+		return nil, fmt.Errorf("enable sqlite foreign keys: %w", err)
+	}
 	store := &Store{db: db}
 	if err := store.checkMigrations(ctx); err != nil {
 		_ = db.Close()
@@ -45,6 +49,10 @@ func OpenMigrated(ctx context.Context, path string) (*Store, error) {
 		return nil, fmt.Errorf("open sqlite: %w", err)
 	}
 	db.SetMaxOpenConns(1)
+	if _, err := db.ExecContext(ctx, `PRAGMA foreign_keys = ON`); err != nil {
+		_ = db.Close()
+		return nil, fmt.Errorf("enable sqlite foreign keys: %w", err)
+	}
 	if _, err := migration.NewManager(db, migrations.Files, "issue-tracker").Apply(ctx); err != nil {
 		_ = db.Close()
 		return nil, err
@@ -314,6 +322,10 @@ func (s *Store) IssuesByStates(ctx context.Context, states []entity.Status) ([]e
 }
 
 func (s *Store) IssuesByFilter(ctx context.Context, filter IssueFilter) ([]entity.Issue, error) {
+	return s.issuesByFilterOrder(ctx, filter, `issues.updated_at DESC, issues.id DESC`)
+}
+
+func (s *Store) issuesByFilterOrder(ctx context.Context, filter IssueFilter, orderClause string) ([]entity.Issue, error) {
 	clauses := []string{}
 	args := []any{}
 	if len(filter.States) > 0 {
@@ -336,7 +348,7 @@ func (s *Store) IssuesByFilter(ctx context.Context, filter IssueFilter) ([]entit
 	if len(clauses) > 0 {
 		where = " WHERE " + strings.Join(clauses, " AND ")
 	}
-	rows, err := s.db.QueryContext(ctx, `SELECT `+issueColumns()+` FROM issues JOIN projects ON projects.id = issues.project_id`+where+` ORDER BY issues.updated_at DESC, issues.id DESC`, args...)
+	rows, err := s.db.QueryContext(ctx, `SELECT `+issueColumns()+` FROM issues JOIN projects ON projects.id = issues.project_id`+where+` ORDER BY `+orderClause, args...)
 	if err != nil {
 		return nil, fmt.Errorf("list issues: %w", err)
 	}
@@ -352,6 +364,9 @@ func (s *Store) IssuesByFilter(ctx context.Context, filter IssueFilter) ([]entit
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("iterate issues: %w", err)
+	}
+	if err := s.hydrateIssueDependencyIDs(ctx, issues); err != nil {
+		return nil, err
 	}
 	return issues, nil
 }
@@ -393,6 +408,11 @@ func (s *Store) Issue(ctx context.Context, id int64) (entity.Issue, error) {
 		}
 		return entity.Issue{}, fmt.Errorf("read issue: %w", err)
 	}
+	dependencyIDs, err := s.DependencyIDs(ctx, id)
+	if err != nil {
+		return entity.Issue{}, err
+	}
+	item.DependencyIDs = dependencyIDs
 	return item, nil
 }
 
@@ -401,7 +421,16 @@ func (s *Store) UpdateIssue(ctx context.Context, id int64, input entity.UpdateIs
 	if err != nil {
 		return entity.Issue{}, err
 	}
-	current, err := s.Issue(ctx, id)
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return entity.Issue{}, err
+	}
+	defer func() {
+		if tx != nil {
+			_ = tx.Rollback()
+		}
+	}()
+	current, err := issueByIDTx(ctx, tx, id)
 	if err != nil {
 		return entity.Issue{}, err
 	}
@@ -420,7 +449,7 @@ func (s *Store) UpdateIssue(ctx context.Context, id int64, input entity.UpdateIs
 	if normalized.Assignee != nil {
 		current.Assignee = *normalized.Assignee
 	}
-	_, err = s.db.ExecContext(ctx, `UPDATE issues SET
+	_, err = tx.ExecContext(ctx, `UPDATE issues SET
 		title = ?, description = ?, status = ?, priority = ?, assignee = ?, updated_at = ?
 		WHERE id = ?`,
 		current.Title,
@@ -434,6 +463,15 @@ func (s *Store) UpdateIssue(ctx context.Context, id int64, input entity.UpdateIs
 	if err != nil {
 		return entity.Issue{}, fmt.Errorf("update issue: %w", err)
 	}
+	if normalized.DependencyIDs != nil {
+		if err := setDependencyIDsTx(ctx, tx, id, *normalized.DependencyIDs); err != nil {
+			return entity.Issue{}, err
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return entity.Issue{}, err
+	}
+	tx = nil
 	return s.Issue(ctx, id)
 }
 

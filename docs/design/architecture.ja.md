@@ -71,9 +71,11 @@ Responsibilities:
 - 課題を作成、編集、一覧表示する。
 - 添付ファイルのメタデータを SQLite に保存し、添付ファイルのバイト列を `$TQ_HOME` 配下に保存する。
 - orchestrator やツールの突き合わせに使う課題の状態を返す。
+- issue dependency から ready issue の queue state を計算する。`queued` と `pending` は derived state であり、永続化しない。
 - UI/TUI 向けのサマリー API を提供する。
 
 issue-tracker は課題の状態、優先度、タイトル、説明、担当者、コメント、添付ファイル、プロジェクトの source of truth です。
+issue dependency edge と queue eligibility も issue-tracker が所有します。orchestrator は `GET /api/v1/queue` を読み、返された `queued` issue だけを dispatch します。依存解決は orchestrator 側で重複実装しません。
 関連する課題が存在するプロジェクトは削除できません。
 
 ### orchestrator
@@ -118,11 +120,11 @@ Responsibilities:
 
 ユーザー向けクライアントとエージェント向けワークフローツールは、issue-tracker API のみに依存します。
 
-orchestrator は issue-tracker の作業キューやイベント受信エンドポイントを使いません。過去の実行データと runner-event データは orchestrator の SQLite store に残り、任意の orchestrator HTTP API から参照できます。
+orchestrator は issue-tracker のイベント受信エンドポイントを使いません。過去の実行データと runner-event データは orchestrator の SQLite store に残り、任意の orchestrator HTTP API から参照できます。dispatch eligibility は issue state ownership に属するため、issue-tracker の derived queue endpoint から読み取ります。
 
 ```text
 web-ui ─┐
-tui ────┼─ issue-tracker ── SQLite: issues, comments, attachments, projects
+tui ────┼─ issue-tracker ── SQLite: issues, issue_dependencies, comments, attachments, projects
 tq ─────┘
                  │
                  └─ $TQ_HOME/system/data/attachments

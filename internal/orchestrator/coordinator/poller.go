@@ -20,7 +20,7 @@ import (
 type Tracker interface {
 	Issue(ctx context.Context, id int64) (entity.Issue, error)
 	Project(ctx context.Context, id int64) (entity.Project, error)
-	IssuesByStates(ctx context.Context, states []string) ([]entity.Issue, error)
+	Queue(ctx context.Context) (entity.Queue, error)
 }
 
 type Store interface {
@@ -110,7 +110,7 @@ func (p *Poller) RequestRefresh() {
 }
 
 func (p *Poller) Poll(ctx context.Context) error {
-	issues, err := p.tracker.IssuesByStates(ctx, []string{string(entity.StatusReady)})
+	queue, err := p.tracker.Queue(ctx)
 	if err != nil {
 		return fmt.Errorf("poll issue tracker: %w", err)
 	}
@@ -126,7 +126,8 @@ func (p *Poller) Poll(ctx context.Context) error {
 	created := 0
 	availableSlots := p.maxActiveRuns - len(activeRuns)
 	if availableSlots > 0 {
-		for _, issue := range issues {
+		for _, queuedIssue := range queue.Queued {
+			issue := queuedIssue.Issue
 			if _, ok := activeIssueIDs[issue.ID]; ok {
 				continue
 			}
@@ -148,7 +149,7 @@ func (p *Poller) Poll(ctx context.Context) error {
 			return fmt.Errorf("dispatch active runs: %w", err)
 		}
 	}
-	log.Printf("orchestrator poll complete ready=%d queued=%d active=%d max_active=%d", len(issues), created, len(activeRuns), p.maxActiveRuns)
+	log.Printf("orchestrator poll complete queued_available=%d pending=%d queued=%d active=%d max_active=%d", len(queue.Queued), len(queue.Pending), created, len(activeRuns), p.maxActiveRuns)
 	return nil
 }
 

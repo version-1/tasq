@@ -48,6 +48,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/v1/issues", s.issues)
 	mux.HandleFunc("POST /api/v1/issues", s.createIssue)
 	mux.HandleFunc("POST /api/v1/issues/states", s.issueStates)
+	mux.HandleFunc("GET /api/v1/queue", s.queue)
 	mux.HandleFunc("GET /api/v1/issues/{id}", s.issue)
 	mux.HandleFunc("PATCH /api/v1/issues/{id}", s.updateIssue)
 	mux.HandleFunc("GET /api/v1/issues/{issueId}/comments", s.comments)
@@ -312,13 +313,17 @@ func parseIssueStates(w http.ResponseWriter, r *http.Request) ([]entity.Status, 
 }
 
 func parseIssueProjectID(w http.ResponseWriter, r *http.Request) (*int64, bool) {
+	return parseProjectIDQuery(w, r, "issues.list")
+}
+
+func parseProjectIDQuery(w http.ResponseWriter, r *http.Request, action string) (*int64, bool) {
 	value := r.URL.Query().Get("project_id")
 	if value == "" {
 		return nil, true
 	}
 	id, err := strconv.ParseInt(value, 10, 64)
 	if err != nil || id <= 0 {
-		writeError(w, http.StatusBadRequest, "issues.list.invalid_project_id", errors.New("project_id is invalid"))
+		writeError(w, http.StatusBadRequest, action+".invalid_project_id", errors.New("project_id is invalid"))
 		return nil, false
 	}
 	return &id, true
@@ -385,6 +390,19 @@ func (s *Server) issueStates(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, items)
+}
+
+func (s *Server) queue(w http.ResponseWriter, r *http.Request) {
+	projectID, ok := parseProjectIDQuery(w, r, "queue.list")
+	if !ok {
+		return
+	}
+	queue, err := s.store.Queue(r.Context(), store.IssueFilter{ProjectID: projectID})
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "queue.list.internal_error", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, queue)
 }
 
 func (s *Server) createComment(w http.ResponseWriter, r *http.Request) {

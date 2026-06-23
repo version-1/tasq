@@ -110,6 +110,7 @@ export function createIssue(input: CreateIssueInput): Issue | null {
     status: input.status ?? "backlog",
     priority: input.priority ?? "normal",
     assignee: input.assignee ?? "",
+    dependency_ids: [],
     createdAt: now,
     updatedAt: now,
   };

@@ -71,9 +71,11 @@ Responsibilities:
 - Create, edit, and list issues.
 - Store attachment metadata in SQLite and attachment bytes under `$TQ_HOME`.
 - Return issue states for orchestrator or tool reconciliation.
+- Compute ready-issue queue state from issue dependencies; `queued` and `pending` are derived states and are not persisted.
 - Serve the UI/TUI summary API.
 
 The issue-tracker is the source of truth for issue status, priority, title, description, assignee, comments, attachments, and projects.
+It is also the source of truth for issue dependency edges and queue eligibility. The orchestrator reads `GET /api/v1/queue` and dispatches only the returned `queued` issues; it does not duplicate dependency resolution.
 Projects cannot be deleted while linked issues exist.
 
 ### orchestrator
@@ -118,11 +120,11 @@ The current workspace manager creates sanitized per-issue workspace directories,
 
 User-facing clients and agent-facing workflow tools depend on the issue-tracker API only.
 
-The orchestrator no longer uses issue-tracker work queue or event receiver endpoints. Historical run and runner-event data stays in the orchestrator SQLite store and is exposed by the optional orchestrator HTTP API.
+The orchestrator no longer uses issue-tracker event receiver endpoints. Historical run and runner-event data stays in the orchestrator SQLite store and is exposed by the optional orchestrator HTTP API. Dispatch eligibility is still read from the issue-tracker through the derived queue endpoint because dependency resolution belongs to issue state ownership.
 
 ```text
 web-ui ─┐
-tui ────┼─ issue-tracker ── SQLite: issues, comments, attachments, projects
+tui ────┼─ issue-tracker ── SQLite: issues, issue_dependencies, comments, attachments, projects
 tq ─────┘
                  │
                  └─ $TQ_HOME/system/data/attachments

@@ -145,6 +145,7 @@ export interface Issue {
   status: IssueStatus;
   priority: Priority;
   assignee: string;
+  dependency_ids: number[];
   createdAt: string;
   updatedAt: string;
 }
@@ -213,12 +214,26 @@ export interface CreateIssueInput {
   assignee?: string;
 }
 
+export type QueueIssueAllOf = {
+  /** Active dependency issue IDs that keep a pending issue out of the queued set. */
+  blocked_dependency_ids?: number[];
+};
+
+export type QueueIssue = Issue & QueueIssueAllOf;
+
+export interface Queue {
+  queued: QueueIssue[];
+  pending: QueueIssue[];
+}
+
 export interface UpdateIssueInput {
   title?: string;
   description?: string;
   status?: IssueStatus;
   priority?: Priority;
   assignee?: string;
+  /** Replaces the full dependency set when present. Omit this field to preserve existing dependencies; pass an empty array to clear dependencies. */
+  dependency_ids?: number[];
 }
 
 export interface IssueStatesInput {
@@ -282,6 +297,11 @@ export interface IssueListResponse {
   meta: ApiMeta;
 }
 
+export interface QueueResponse {
+  data: Queue;
+  meta: ApiMeta;
+}
+
 export interface IssueStateListResponse {
   data: IssueState[];
   meta: ApiMeta;
@@ -322,6 +342,13 @@ export type GetApiV1IssuesParams = {
 states?: string;
 /**
  * Project ID used to limit issues to a single project. Omit this parameter to list issues from all projects.
+ */
+project_id?: number;
+};
+
+export type GetApiV1QueueParams = {
+/**
+ * Project ID used to limit queued and pending issues to a single project. Omit this parameter to list queue state across all projects.
  */
 project_id?: number;
 };
@@ -1089,6 +1116,68 @@ export const postApiV1IssuesStates = async (issueStatesInput: IssueStatesInput, 
   
   const data: postApiV1IssuesStatesResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as postApiV1IssuesStatesResponse
+}
+
+
+
+/**
+ * Returns ready issues split into queued and pending derived states. Queued issues have no active dependencies and are sorted by priority descending, then ID ascending. Pending issues still have at least one active dependency.
+ * @summary List dispatchable and pending ready issues.
+ */
+export type getApiV1QueueResponse200 = {
+  data: QueueResponse
+  status: 200
+}
+
+export type getApiV1QueueResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type getApiV1QueueResponse500 = {
+  data: ErrorResponse
+  status: 500
+}
+    
+export type getApiV1QueueResponseSuccess = (getApiV1QueueResponse200) & {
+  headers: Headers;
+};
+export type getApiV1QueueResponseError = (getApiV1QueueResponse400 | getApiV1QueueResponse500) & {
+  headers: Headers;
+};
+
+export type getApiV1QueueResponse = (getApiV1QueueResponseSuccess | getApiV1QueueResponseError)
+
+export const getGetApiV1QueueUrl = (params?: GetApiV1QueueParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/tracker/api/v1/queue?${stringifiedParams}` : `/tracker/api/v1/queue`
+}
+
+export const getApiV1Queue = async (params?: GetApiV1QueueParams, options?: RequestInit): Promise<getApiV1QueueResponse> => {
+  
+  const res = await fetch(getGetApiV1QueueUrl(params),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+  
+  const data: getApiV1QueueResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getApiV1QueueResponse
 }
 
 
