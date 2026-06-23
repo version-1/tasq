@@ -20,17 +20,21 @@ component-name/
 
 component-specific style はその component の `index.module.css` に置きます。`types.ts` のような shared non-component helper は component directory の近くに置いて構いませんが、複数の React component を同じ file に入れることは避けます。
 
-route-local component は各 route の `_components` directory に置きます。page state、hook、feature component を compose する場所であり、再利用する domain UI の共有場所にはしません。
+`src/app/` は route entry file のためだけに使います。route file は layout hook や route parameter から data を取得し、feature component を render して構いませんが、`src/app/` 配下に `_components` directory は作りません。
 
-issue list route では、route composition だけを `src/app/issues/_components/issues-view/` 配下に置きます。
+page-level component と domain-aware component は対応する feature に置きます。
 
 ```text
-issues-view/
-  index.tsx
-  index.module.css
+features/
+  dashboard/components/dashboard-view/
+  issues/components/issues-view/
+  issues/components/issue-detail-page/
+  issues/components/conversation-page/
+  projects/components/workflow-settings-view/
+  settings/components/settings-view/
 ```
 
-top-level の `issues-view/index.tsx` は `IssuesView` component だけを持ち、再利用する issue-domain UI は `src/features/issues/` から import します。
+feature page component は小さな component を compose し、helper type、test、component-specific style は component directory の近くに置きます。
 
 route をまたいで共有する issue-domain UI component は `src/features/issues/components/` 配下に置きます。
 
@@ -52,4 +56,4 @@ features/issues/components/
 
 `src/components/ui/` は shared modal component を含む domain-independent な design-system primitive 用に保ち、`src/components/layout/` は application shell と global layout component 用に保ちます。
 
-project detail tab page は `src/app/projects/[projectKey]/` 配下に置きます。tab-specific UI は各 route の `_components` directory に置きます。settings tab は read-only で、`GET /api/v1/projects/{id}/workflow` から取得した同期済み `ProjectWorkflow` を表示します。frontend code で local `WORKFLOW.md` file を読んではいけません。
+project detail tab route は `src/app/projects/[projectKey]/` 配下に置きます。tab-specific UI は `src/features/projects/components/workflow-settings-view/` のように対応する feature directory に置きます。settings tab は read-only で、`GET /api/v1/projects/{id}/workflow` から取得した同期済み `ProjectWorkflow` を表示します。frontend code で local `WORKFLOW.md` file を読んではいけません。

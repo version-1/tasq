@@ -7,7 +7,7 @@ import { PanelMessage } from "@/components/ui/pannel-message";
 import { useLayoutShellData } from "@/components/layout";
 import { fetchProjectWorkflow } from "@/lib/api";
 import type { ProjectWorkflow } from "@/lib/types";
-import { WorkflowSettingsView } from "./_components/workflow-settings-view";
+import { WorkflowSettingsView } from "@/features/projects/components/workflow-settings-view";
 
 type WorkflowLoadState =
   | { kind: "idle" }

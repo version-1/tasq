@@ -20,21 +20,24 @@ component-name/
 
 Keep component-specific styles in that component's `index.module.css`. Shared non-component helpers may live next to the component directories, such as `types.ts`, but avoid putting multiple React components in the same file.
 
-Route-local components live under each route's `_components` directory. They
-compose page state, hooks, and feature components, but they should not become
-the shared home for reusable domain UI.
+Keep `src/app/` for route entry files only. Route files may load data from
+layout hooks or route parameters, then render feature components, but do not
+create `_components` directories under `src/app/`.
 
-For the issue list route, keep only the route composition under
-`src/app/issues/_components/issues-view/`:
+Page-level and domain-aware components live under the matching feature:
 
 ```text
-issues-view/
-  index.tsx
-  index.module.css
+features/
+  dashboard/components/dashboard-view/
+  issues/components/issues-view/
+  issues/components/issue-detail-page/
+  issues/components/conversation-page/
+  projects/components/workflow-settings-view/
+  settings/components/settings-view/
 ```
 
-The top-level `issues-view/index.tsx` should hold only the `IssuesView`
-component and import reusable issue-domain UI from `src/features/issues/`.
+Feature page components should compose smaller components and keep their helper
+types, tests, and component-specific styles next to the component directory.
 
 Issue-domain UI components shared across routes live under
 `src/features/issues/components/`:
@@ -59,4 +62,9 @@ Keep `src/components/ui/` for domain-independent design-system primitives,
 including shared modal components, and `src/components/layout/` for application
 shell and global layout components.
 
-Project detail tab pages live under `src/app/projects/[projectKey]/`. Keep tab-specific UI in each route's `_components` directory. The settings tab is read-only and renders the synchronized `ProjectWorkflow` from `GET /api/v1/projects/{id}/workflow`; do not add local `WORKFLOW.md` file reads in frontend code.
+Project detail tab routes live under `src/app/projects/[projectKey]/`. Keep
+tab-specific UI in the matching feature directory, such as
+`src/features/projects/components/workflow-settings-view/`. The settings tab is
+read-only and renders the synchronized `ProjectWorkflow` from
+`GET /api/v1/projects/{id}/workflow`; do not add local `WORKFLOW.md` file reads
+in frontend code.
