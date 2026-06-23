@@ -93,6 +93,14 @@ func (c *apiClient) listIssuesByStates(ctx context.Context, states []entity.Stat
 	return issues, nil
 }
 
+func (c *apiClient) issueQueue(ctx context.Context) (entity.Queue, error) {
+	var queue entity.Queue
+	if err := c.do(ctx, http.MethodGet, "/api/v1/queue", nil, &queue); err != nil {
+		return entity.Queue{}, err
+	}
+	return queue, nil
+}
+
 func (c *apiClient) listProjects(ctx context.Context) ([]entity.Project, error) {
 	var projects []entity.Project
 	if err := c.do(ctx, http.MethodGet, "/api/v1/projects", nil, &projects); err != nil {

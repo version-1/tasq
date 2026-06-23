@@ -359,6 +359,24 @@ func IsValidStatus(status Status) bool {
 	}
 }
 
+func IsActiveDependencyStatus(status Status) bool {
+	switch status {
+	case StatusBacklog, StatusReady, StatusInProgress, StatusReview:
+		return true
+	default:
+		return false
+	}
+}
+
+func IsSatisfiedDependencyStatus(status Status) bool {
+	switch status {
+	case StatusDone, StatusCancelled, StatusDuplicate, StatusFailed, StatusBlocked:
+		return true
+	default:
+		return false
+	}
+}
+
 func IsValidPriority(priority Priority) bool {
 	switch priority {
 	case PriorityLow, PriorityNormal, PriorityHigh, PriorityUrgent:

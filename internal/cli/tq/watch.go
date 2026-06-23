@@ -22,7 +22,7 @@ type envelope struct {
 }
 
 // seenSet tracks which issue ids have already been emitted so the watch loop
-// does not re-dispatch the same ready issue every cycle. An entry expires after
+// does not re-dispatch the same queued issue every cycle. An entry expires after
 // ttl (measured from its last emit), after which the issue may be emitted again.
 type seenSet struct {
 	ttl  time.Duration
@@ -69,11 +69,11 @@ type watcher struct {
 	sleep    func(ctx context.Context, d time.Duration) error
 }
 
-// run polls for ready issues until the context is cancelled. Transient fetch
+// run polls for queued issues until the context is cancelled. Transient fetch
 // failures emit an error envelope and the loop continues; only context
 // cancellation stops the loop, which it treats as a clean shutdown.
 func (w *watcher) run(ctx context.Context) error {
-	w.info(fmt.Sprintf("polling started (interval=%s, seen-ttl=%s, states=[%s])", w.interval, w.seen.ttl, entity.StatusReady))
+	w.info(fmt.Sprintf("polling started (interval=%s, seen-ttl=%s, source=queue.queued)", w.interval, w.seen.ttl))
 	for {
 		issues, err := w.fetch(ctx)
 		if err != nil {
@@ -90,7 +90,7 @@ func (w *watcher) run(ctx context.Context) error {
 				}
 			}
 			w.seen.prune()
-			w.info(fmt.Sprintf("polled: found=%d, emitted=%d, skipped(ttl)=%d", len(issues), emitted, len(issues)-emitted))
+			w.info(fmt.Sprintf("polled: queued=%d, emitted=%d, skipped(ttl)=%d", len(issues), emitted, len(issues)-emitted))
 		}
 		if err := w.sleep(ctx, w.interval); err != nil {
 			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
@@ -154,7 +154,15 @@ func (a app) issueWatch(ctx context.Context, args []string) error {
 
 	w := &watcher{
 		fetch: func(ctx context.Context) ([]entity.Issue, error) {
-			return a.client.listIssuesByStates(ctx, []entity.Status{entity.StatusReady})
+			queue, err := a.client.issueQueue(ctx)
+			if err != nil {
+				return nil, err
+			}
+			issues := make([]entity.Issue, 0, len(queue.Queued))
+			for _, issue := range queue.Queued {
+				issues = append(issues, issue.Issue)
+			}
+			return issues, nil
 		},
 		interval: time.Duration(*interval) * time.Second,
 		seen:     newSeenSet(time.Duration(*seenTTL)*time.Second, time.Now),

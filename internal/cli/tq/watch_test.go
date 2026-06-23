@@ -42,6 +42,40 @@ func TestListIssuesByStatesSendsStatesQuery(t *testing.T) {
 	}
 }
 
+func TestIssueQueueGetsQueueEndpoint(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet || r.URL.Path != "/api/v1/queue" {
+			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
+		writeTestJSON(t, w, apiResponse[entity.Queue]{
+			Data: entity.Queue{
+				Queued: []entity.QueueIssue{
+					{Issue: entity.Issue{ID: 1, Status: entity.StatusReady}},
+				},
+				Pending: []entity.QueueIssue{
+					{Issue: entity.Issue{ID: 2, Status: entity.StatusReady}, BlockedDependencyIDs: []int64{3}},
+				},
+			},
+		})
+	}))
+	defer server.Close()
+
+	client, err := newAPIClient(server.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	queue, err := client.issueQueue(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(queue.Queued) != 1 || queue.Queued[0].ID != 1 {
+		t.Fatalf("queued = %+v", queue.Queued)
+	}
+	if len(queue.Pending) != 1 || queue.Pending[0].ID != 2 || len(queue.Pending[0].BlockedDependencyIDs) != 1 || queue.Pending[0].BlockedDependencyIDs[0] != 3 {
+		t.Fatalf("pending = %+v", queue.Pending)
+	}
+}
+
 type testEnvelope struct {
 	Type      string          `json:"type"`
 	EventType string          `json:"eventType"`

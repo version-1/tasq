@@ -1,6 +1,8 @@
-# Stream ready issues for the orchestrator
+# Stream queued issues for the orchestrator
 
-`tq issue watch` is an experimental, NDJSON-only command intended for the orchestrator skill. It polls the issue tracker, emits one JSON envelope per ready issue, and runs until killed.
+`tq issue watch` is an experimental, NDJSON-only command intended for the orchestrator skill. It polls the issue tracker queue endpoint, emits one JSON envelope per queued issue, and runs until killed.
+
+Queued issues are dependency-aware: the issue-tracker derives them from `GET /api/v1/queue` after excluding ready issues that still have active dependencies. Do not use `GET /api/v1/issues?states=ready` for dispatch wiring.
 
 For the full orchestration loop (hand-off rules, branch / worktree setup, status updates after dispatch), use [[tq-orchestrator]]. This file only covers the `tq` invocation.
 

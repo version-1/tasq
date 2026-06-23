@@ -48,7 +48,7 @@ Streams one JSON envelope per line:
 
 | Shape | When emitted |
 | --- | --- |
-| `{"type":"event","eventType":"issue-ready","body":<issue>}` | A ready issue is detected. Always emitted. |
+| `{"type":"event","eventType":"issue-ready","body":<issue>}` | A queued issue from `GET /api/v1/queue` is detected. Always emitted. |
 | `{"type":"error","body":"<message>"}` | Transient polling failure. Loop keeps running. Always emitted. |
 | `{"type":"info","body":"<message>"}` | Startup config and per-cycle summary. Emitted only with `--verbose`. |
 
@@ -59,5 +59,7 @@ Flags:
 | `--interval` | `30` | Polling interval in seconds. Must be positive. |
 | `--seen-ttl` | `900` | Suppress re-emitting the same issue for this many seconds. Must be strictly greater than `--interval`. |
 | `--verbose` | off | Also emit info envelopes. |
+
+`tq issue watch` is dependency-aware: it emits only the `queued` array returned by `GET /api/v1/queue`, not every issue with `status=ready`. Pending issues with active dependencies are intentionally suppressed until the issue-tracker classifies them as queued.
 
 `tq issue watch` ignores `--output`. Run it under the Monitor tool, not a blocking Bash call. See [usecases/watch-and-dispatch.md](../usecases/watch-and-dispatch.md).

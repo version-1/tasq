@@ -764,20 +764,11 @@ func issueIDs(issues []entity.Issue) []int64 {
 func activeDependencyIDs(dependencies []dependencyStatus) []int64 {
 	ids := []int64{}
 	for _, dependency := range dependencies {
-		if isActiveStatus(dependency.Status) {
+		if !entity.IsSatisfiedDependencyStatus(dependency.Status) {
 			ids = append(ids, dependency.DependencyID)
 		}
 	}
 	return ids
-}
-
-func isActiveStatus(status entity.Status) bool {
-	switch status {
-	case entity.StatusBacklog, entity.StatusReady, entity.StatusInProgress, entity.StatusReview:
-		return true
-	default:
-		return false
-	}
 }
 
 func queueIssueOrderClause() string {
