@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { ConversationPage } from "./_components/conversation-page";
+import { ConversationPage } from "@/features/issues/components/conversation-page";
 
 export default function ConversationRoute() {
   return (

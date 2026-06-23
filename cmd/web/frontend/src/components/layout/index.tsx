@@ -10,7 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import { modalIDs } from "@/constants";
-import { ModalOutlet } from "@/components/modal";
+import { ModalOutlet } from "@/components/ui/modal";
 import { PanelMessage } from "@/components/ui/pannel-message";
 import { ToastStack } from "@/components/ui/toast";
 import {

@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { IssueDetailPage } from "./_components/issue-detail-page";
+import { IssueDetailPage } from "@/features/issues/components/issue-detail-page";
 
 export default function IssueDetailRoute() {
   return (

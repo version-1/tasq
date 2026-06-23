@@ -148,6 +148,7 @@ docs/site/build/
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+**/storybook-static/
 
 .worktrees
 .host-git-common

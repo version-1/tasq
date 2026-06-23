@@ -1,54 +1,238 @@
 # Web フロントエンド設計
 
-この文書は `cmd/web/frontend` 配下の React/Vite frontend における local structure rule を定義します。
+この文書は `cmd/web/frontend` 配下の React/Vite application における
+frontend の責務境界と配置ルールを定義します。
+
+目的は、routing、feature UI、app shell UI、汎用 UI primitive を分離することです。新しい code は、まず所有責務で置き場所を決め、その後に再利用範囲で粒度を決めます。
 
 ## Routing
 
 Route は `src/App.tsx` で `react-router-dom` を使って手動定義します。
 
-scoped resource page と detail page には path parameter を使います。issue list は全 project 用に `/issues`、単一 project 用に `/projects/:projectKey/issues` を使います。project detail page は `/projects/:projectKey` を使い、`/projects/:projectKey/issues` に redirect します。project detail の固定 tab は `/projects/:projectKey/issues` と `/projects/:projectKey/settings` です。issue detail は `/issues/:id` を使い、source file は `src/app/issues/[id]/` 配下に置きます。
+`src/app/` tree は route entry file のためだけに使います。route file は route parameter を読み、layout hook を使い、route-level data loading を行い、feature component を render して構いません。`src/app/` 配下に `_components` directory は作りません。
 
-## Component Placement
+scoped resource と detail page には path parameter を使います。
 
-1 component につき 1 file を使います。style を所有する component は次の形の directory に置きます。
+- `/issues` は全 project の issue を表示します。
+- `/projects/:projectKey/issues` は単一 project の issue を表示します。
+- `/projects/:projectKey` は `/projects/:projectKey/issues` に redirect します。
+- `/projects/:projectKey/settings` は project workflow settings を表示します。
+- `/issues/:id` は issue detail page を表示します。
+
+## Top-Level Directories
+
+frontend code を追加または移動するときは、次の責務境界を使います。
+
+```text
+src/
+  app/          route entry file のみ
+  components/   app-shell component と domain-independent UI primitive
+  features/     page-level component と domain-aware feature component
+  lib/          API client、generated type、i18n、store、shared runtime helper
+  mocks/        local/mock 実行用の MSW handler と fixture data
+  stories/      Storybook 専用 fixture builder と helper
+```
+
+dependency direction は単純に保ちます。
+
+- `src/app` は `components`、`features`、`lib` から import できます。
+- `src/features` は `components` と `lib` から import できます。
+- `src/components/ui` は domain-independent に保ちます。
+- `src/components/layout` は app shell、navigation、modal slot、layout-level context を扱えます。
+
+## Architecture Layers
+
+frontend code の置き場所は次の layer として判断します。
+
+```text
+src/app
+src/components
+src/features/<name>/components
+  Presentation layer
+
+src/features/<name>/hooks
+  Application-oriented layer
+  UI state、use-case orchestration、view-model creation を担当する。
+
+src/features/<name>/context
+  Application-oriented layer
+  feature-scoped state と provider を担当する。
+
+src/features/<name>/api
+  Repository / adapter layer
+  feature から見た data access interface を提供する。
+  実体は src/lib/api を wrap する。
+
+src/lib/api
+  Infrastructure layer
+  Orval-generated client、HTTP、error handling、transport boundary を集約する。
+
+src/lib/generated
+  Generated infrastructure detail
+  feature code から直接 import してはいけない。
+```
+
+React hooks は React に依存するため、それ自体を pure domain layer とは扱いません。hook 内の pure domain rule が大きくなる場合は、test しやすい framework-independent function、または feature-owned domain/model module へ切り出します。
+
+## Component Shape
+
+React component は 1 component につき 1 file にします。style を所有する component は次の形の directory に置きます。
 
 ```text
 component-name/
   index.tsx
   index.module.css
+  index.stories.tsx
 ```
 
-component-specific style はその component の `index.module.css` に置きます。`types.ts` のような shared non-component helper は component directory の近くに置いて構いませんが、複数の React component を同じ file に入れることは避けます。
+component-specific style は `index.module.css` に置きます。component-specific test、story、helper type、小さな helper function は、その component の近くに置きます。
 
-issue list UI component は `src/app/issues/_components/issues-view/` 配下で次の pattern に従います。
+`types.ts`、`format.ts`、`rows.ts` のような shared non-component helper は、その feature または component group が所有する場合に component directory の近くへ置いて構いません。
+
+## Route Entries
+
+Route entry は `src/app/**/page.tsx` に置きます。
+
+Route entry は薄く保ちます。Route entry が担当してよいことは次のとおりです。
+
+- route parameter を読む。
+- layout-level data hook を使う。
+- route-specific data loading を行う。
+- render する feature component を選ぶ。
+- `Suspense` や route-level fallback behavior を提供する。
+
+Route entry に reusable UI section、card、table、panel、domain presentation component を置きません。それらは対応する feature directory に置きます。
+
+## Feature Components
+
+Feature component は `src/features/<feature>/components/` に置きます。
+
+Page-level view、domain-aware UI、props や behavior が product domain に結び付く component は feature directory に置きます。
+
+現在の feature component group は次のとおりです。
 
 ```text
-issues-view/
-  index.tsx
-  index.module.css
-  issue-board/
-    index.tsx
-    index.module.css
-  issue-card/
-    index.tsx
-    index.module.css
-  panel-message/
-    index.tsx
-    index.module.css
+features/
+  dashboard/
+    api/
+    hooks/
+    context/
+    components/
+      dashboard-view/
+  issues/
+    api/
+    hooks/
+    context/
+    components/
+      board/
+      card/
+      conversation-page/
+      issue-detail-page/
+      issues-view/
+      pane/
+  projects/
+    api/
+    hooks/
+    context/
+    components/
+      workflow-settings-view/
+  settings/
+    api/
+    hooks/
+    context/
+    components/
+      settings-view/
 ```
 
-top-level の `issues-view/index.tsx` は child component を compose し、`IssuesView` component だけを持つようにします。
+各 feature domain は、責務がある場合に次の subdirectory を所有します。
 
-issue list view の外でも共有される issue UI component は `src/components/issue/` 配下に置きます。
+- `components/` は page-level と domain-aware な React component 用。
+- `hooks/` は feature-specific な state、effect、derived view-model hook 用。
+- `context/` は feature-scoped provider と context value 用。
+- `api/` は `src/lib/api` の上に置く feature-facing request wrapper 用。
+
+template に合わせるためだけに空の subdirectory は作りません。`api`、`hooks`、`context` は、その feature に該当責務の code ができた時点で追加します。Feature page component はより小さな feature component を compose して構いません。view-model helper、test、story は同じ feature area に置きます。
+
+API client は `src/lib/api` から使います。`src/lib/api` が `src/lib/generated` 配下の Orval-generated client を所有します。feature 内で endpoint client を手書きしてはいけません。また、feature code から generated client を直接 import してはいけません。Feature の `api/` module は `src/lib/api` の function を wrap し、feature-specific な名前、request composition、error mapping、view-model conversion を提供して構いませんが、HTTP contract 自体は generated かつ `src/lib/api` に集約された状態を保ちます。
+
+### Feature Placement Policy
+
+feature directory の判断基準は `code-react` の方針を基準にします。Atomic Design は補助観点であり、directory taxonomy にはしません。`atoms` と `molecules` は、domain language を持たず、visual style、variant、layout、interaction state、accessibility だけを表現できる場合に限り design-system layer に置きます。
+
+次のいずれかに当てはまる component は `src/features/<feature>/components/` に置きます。
+
+- issue、project、workflow、dashboard、settings の domain data を受け取る。
+- props に status、priority、assignee、workflow、run、frontmatter などの domain term が入る。
+- domain-specific display rule や許可される user action を表現する。
+- 1 つの feature に属する page-level view または section である。
+- generic UI primitive を組み合わせて product-specific experience を作る。
+
+feature の state と rendering responsibility は分けます。
+
+- route-level URL と loading concern は `src/app/**/page.tsx` に置く。
+- feature view state と derived view model は feature の `hooks/`、または component-local な場合は owning component の近くに置く。
+- feature-scoped provider は feature の `context/` に置く。
+- feature-facing API adapter は feature の `api/` に置き、`src/lib/api` に委譲する。
+- domain vocabulary を持たない reusable display-only UI は `src/components/ui` に置く。
+- API client、generated type、i18n、store、runtime helper は `src/lib` に置く。
+
+同じ component が 2 回使われたという理由だけで `src/components/ui` に昇格しません。feature 外で具体的な再利用があり、product-domain props や behavior なしに表現できる場合だけ昇格します。props が広すぎる、boolean が増える、呼び出し側にとって分かりにくい場合は feature-owned のままにし、domain-free な primitive だけを切り出します。
+
+## Shared UI Components
+
+Domain-independent な UI primitive は `src/components/ui/` に置きます。
+
+issue、project、dashboard の domain concept を知らない再利用 UI はこの directory に置きます。例は次のとおりです。
 
 ```text
-issue/
-  card/
-    index.tsx
-    index.module.css
-  pane/
-    index.tsx
-    index.module.css
+components/ui/
+  badge/
+  button/
+  context-menu/
+  icon-proxy/
+  markdown/
+  modal/
+  pannel-message/
+  switch/
+  toast/
 ```
 
-project detail tab page は `src/app/projects/[projectKey]/` 配下に置きます。tab-specific UI は各 route の `_components` directory に置きます。settings tab は read-only で、`GET /api/v1/projects/{id}/workflow` から取得した同期済み `ProjectWorkflow` を表示します。frontend code で local `WORKFLOW.md` file を読んではいけません。
+Shared Markdown rendering は複数 domain で使うため `components/ui/markdown/` が所有します。Shared modal rendering は generic portal slot を提供するため `components/ui/modal/` が所有します。
+
+Domain-specific label、issue status transition、project workflow table、page-specific layout は `components/ui` に置きません。
+
+## Layout Components
+
+Application shell と global navigation component は `src/components/layout/` に置きます。
+
+この directory は次を所有します。
+
+- sidebar と header
+- layout shell composition
+- layout-level context と hook
+- shell-level dialog の modal entry point
+- default、issue detail、project layout などの route layout wrapper
+
+Feature view は layout shell の中に render できますが、layout component が feature-specific presentation を所有しないようにします。
+
+## Project Workflow Settings
+
+Project workflow settings は `src/features/projects/components/workflow-settings-view/` 配下の feature component で表示します。
+
+settings route は read-only で、`GET /api/v1/projects/{id}/workflow` から取得した同期済み `ProjectWorkflow` を表示します。frontend code で local `WORKFLOW.md` file を読んではいけません。
+
+Workflow frontmatter は tree-friendly な table として表示します。Workflow body content は `src/components/ui/markdown` の shared Markdown renderer を使います。
+
+## Storybook
+
+`src/components/**/index.tsx` と `src/features/**/index.tsx` 配下のすべての React component は、対応する `index.stories.tsx` を持つ必要があります。
+
+Storybook title は所有責務に合わせます。
+
+- `src/components/ui` は `UI/...`
+- `src/components/layout` は `Layout/...`
+- `src/features/<feature>` は `Features/<Feature>/...`
+
+Storybook 専用 fixture と builder は `src/stories/` に置きます。Production code から Storybook helper を import してはいけません。
+
+Storybook static build output は `storybook-static/` に生成されますが、commit してはいけません。

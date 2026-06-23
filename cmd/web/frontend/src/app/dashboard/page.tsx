@@ -1,7 +1,7 @@
 "use client";
 
 import { useLayoutData } from "@/components/layout";
-import { DashboardView } from "./_components/dashboard-view";
+import { DashboardView } from "@/features/dashboard/components/dashboard-view";
 
 export default function DashboardPage() {
   const { summary, issues, refreshIntervalMs } = useLayoutData();
