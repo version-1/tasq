@@ -79,19 +79,45 @@ Page-level view、domain-aware UI、props や behavior が product domain に結
 
 ```text
 features/
-  dashboard/components/dashboard-view/
-  issues/components/
-    board/
-    card/
-    conversation-page/
-    issue-detail-page/
-    issues-view/
-    pane/
-  projects/components/workflow-settings-view/
-  settings/components/settings-view/
+  dashboard/
+    api/
+    hooks/
+    context/
+    components/
+      dashboard-view/
+  issues/
+    api/
+    hooks/
+    context/
+    components/
+      board/
+      card/
+      conversation-page/
+      issue-detail-page/
+      issues-view/
+      pane/
+  projects/
+    api/
+    hooks/
+    context/
+    components/
+      workflow-settings-view/
+  settings/
+    api/
+    hooks/
+    context/
+    components/
+      settings-view/
 ```
 
-Feature page component はより小さな feature component を compose して構いません。view-model helper、test、story は同じ feature area に置きます。
+各 feature domain は、責務がある場合に次の subdirectory を所有します。
+
+- `components/` は page-level と domain-aware な React component 用。
+- `hooks/` は feature-specific な state、effect、derived view-model hook 用。
+- `context/` は feature-scoped provider と context value 用。
+- `api/` は shared client の上に置く feature-facing request wrapper または adapter 用。
+
+template に合わせるためだけに空の subdirectory は作りません。`api`、`hooks`、`context` は、その feature に該当責務の code ができた時点で追加します。Feature page component はより小さな feature component を compose して構いません。view-model helper、test、story は同じ feature area に置きます。
 
 ### Feature Placement Policy
 
@@ -108,7 +134,9 @@ feature directory の判断基準は `code-react` の方針を基準にします
 feature の state と rendering responsibility は分けます。
 
 - route-level URL と loading concern は `src/app/**/page.tsx` に置く。
-- feature view state と derived view model は feature component の近くに置く。
+- feature view state と derived view model は feature の `hooks/`、または component-local な場合は owning component の近くに置く。
+- feature-scoped provider は feature の `context/` に置く。
+- feature-facing API adapter は feature の `api/` に置き、`src/lib` の shared generated client または runtime helper に委譲する。
 - domain vocabulary を持たない reusable display-only UI は `src/components/ui` に置く。
 - API client、generated type、i18n、store、runtime helper は `src/lib` に置く。
 

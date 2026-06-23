@@ -90,18 +90,46 @@ Current feature component groups include:
 
 ```text
 features/
-  dashboard/components/dashboard-view/
-  issues/components/
-    board/
-    card/
-    conversation-page/
-    issue-detail-page/
-    issues-view/
-    pane/
-  projects/components/workflow-settings-view/
-  settings/components/settings-view/
+  dashboard/
+    api/
+    hooks/
+    context/
+    components/
+      dashboard-view/
+  issues/
+    api/
+    hooks/
+    context/
+    components/
+      board/
+      card/
+      conversation-page/
+      issue-detail-page/
+      issues-view/
+      pane/
+  projects/
+    api/
+    hooks/
+    context/
+    components/
+      workflow-settings-view/
+  settings/
+    api/
+    hooks/
+    context/
+    components/
+      settings-view/
 ```
 
+Each feature domain owns these subdirectories when the responsibility exists:
+
+- `components/` for page-level and domain-aware React components;
+- `hooks/` for feature-specific state, effects, and derived view-model hooks;
+- `context/` for feature-scoped providers and context values;
+- `api/` for feature-facing request wrappers or adapters around shared clients.
+
+Do not create empty subdirectories only to match the template. Add `api`,
+`hooks`, or `context` when the feature has code with that responsibility.
 Feature page components may compose smaller feature components. Keep their
 view-model helpers, tests, and stories in the same feature area.
 
@@ -125,7 +153,11 @@ are true:
 Keep feature state and rendering responsibilities separate:
 
 - route-level URL and loading concerns stay in `src/app/**/page.tsx`;
-- feature view state and derived view models stay near the feature component;
+- feature view state and derived view models stay in the feature's `hooks/` or
+  next to the owning component when they are component-local;
+- feature-scoped providers stay in the feature's `context/`;
+- feature-facing API adapters stay in the feature's `api/` and delegate to
+  shared generated clients or runtime helpers in `src/lib`;
 - reusable display-only UI with no domain vocabulary stays in
   `src/components/ui`;
 - API clients, generated types, i18n, stores, and runtime helpers stay in
