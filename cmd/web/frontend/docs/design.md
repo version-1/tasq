@@ -105,6 +105,38 @@ features/
 Feature page components may compose smaller feature components. Keep their
 view-model helpers, tests, and stories in the same feature area.
 
+### Feature Placement Policy
+
+Use the `code-react` guidance as the baseline for feature directories. Atomic
+Design is a supporting lens, not a directory taxonomy. `atoms` and `molecules`
+belong to the design-system layer only when they express visual style, variants,
+layout, interaction state, and accessibility without domain language.
+
+Place a component under `src/features/<feature>/components/` when any of these
+are true:
+
+- it receives issue, project, workflow, dashboard, or settings domain data;
+- its props use domain terms such as status, priority, assignee, workflow, run,
+  or frontmatter;
+- it encodes domain-specific display rules or allowed user actions;
+- it is a page-level view or section that belongs to one feature;
+- it composes generic UI primitives into a product-specific experience.
+
+Keep feature state and rendering responsibilities separate:
+
+- route-level URL and loading concerns stay in `src/app/**/page.tsx`;
+- feature view state and derived view models stay near the feature component;
+- reusable display-only UI with no domain vocabulary stays in
+  `src/components/ui`;
+- API clients, generated types, i18n, stores, and runtime helpers stay in
+  `src/lib`.
+
+Do not promote a feature component into `src/components/ui` just because it is
+used twice. Promote it only when concrete reuse exists outside the feature and
+the component can be expressed without product-domain props or behavior. If
+props become broad, boolean-heavy, or difficult for the caller to understand,
+keep the component feature-owned and extract only the domain-free primitive.
+
 ## Shared UI Components
 
 Domain-independent UI primitives live under `src/components/ui/`.

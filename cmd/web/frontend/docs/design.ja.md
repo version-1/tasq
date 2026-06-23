@@ -93,6 +93,27 @@ features/
 
 Feature page component はより小さな feature component を compose して構いません。view-model helper、test、story は同じ feature area に置きます。
 
+### Feature Placement Policy
+
+feature directory の判断基準は `code-react` の方針を基準にします。Atomic Design は補助観点であり、directory taxonomy にはしません。`atoms` と `molecules` は、domain language を持たず、visual style、variant、layout、interaction state、accessibility だけを表現できる場合に限り design-system layer に置きます。
+
+次のいずれかに当てはまる component は `src/features/<feature>/components/` に置きます。
+
+- issue、project、workflow、dashboard、settings の domain data を受け取る。
+- props に status、priority、assignee、workflow、run、frontmatter などの domain term が入る。
+- domain-specific display rule や許可される user action を表現する。
+- 1 つの feature に属する page-level view または section である。
+- generic UI primitive を組み合わせて product-specific experience を作る。
+
+feature の state と rendering responsibility は分けます。
+
+- route-level URL と loading concern は `src/app/**/page.tsx` に置く。
+- feature view state と derived view model は feature component の近くに置く。
+- domain vocabulary を持たない reusable display-only UI は `src/components/ui` に置く。
+- API client、generated type、i18n、store、runtime helper は `src/lib` に置く。
+
+同じ component が 2 回使われたという理由だけで `src/components/ui` に昇格しません。feature 外で具体的な再利用があり、product-domain props や behavior なしに表現できる場合だけ昇格します。props が広すぎる、boolean が増える、呼び出し側にとって分かりにくい場合は feature-owned のままにし、domain-free な primitive だけを切り出します。
+
 ## Shared UI Components
 
 Domain-independent な UI primitive は `src/components/ui/` に置きます。
