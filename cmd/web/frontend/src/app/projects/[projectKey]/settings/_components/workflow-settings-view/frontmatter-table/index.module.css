@@ -52,13 +52,6 @@
   font-weight: 700;
 }
 
-.branchMarker {
-  color: var(--muted);
-  flex: 0 0 auto;
-  font-size: 12px;
-  line-height: 1;
-}
-
 .keyText {
   min-inline-size: 0;
   overflow-wrap: anywhere;

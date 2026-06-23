@@ -33,9 +33,6 @@ export function FrontmatterTable({ rows }: FrontmatterTableProps) {
                   }`}
                   style={{ "--frontmatter-depth": row.depth } as CSSProperties}
                 >
-                  {row.kind === "branch" ? (
-                    <span className={styles.branchMarker}>{">"}</span>
-                  ) : null}
                   <span className={styles.keyText}>{row.key}</span>
                 </span>
               </th>
