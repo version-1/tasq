@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { Markdown } from "@/features/issues/components/markdown";
+import { Markdown } from "@/components/ui/markdown";
 import styles from "./index.module.css";
 
 type WorkflowBodySectionProps = {

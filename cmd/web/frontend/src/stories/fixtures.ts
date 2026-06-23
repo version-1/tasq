@@ -1,0 +1,89 @@
+import type {
+  Comment,
+  IssueStatus,
+  IssueSummary,
+  OrchestratorIssueRun,
+  Summary,
+} from "@/lib/types";
+import type { LayoutShellData } from "@/components/layout";
+import { issueStatuses } from "@/lib/types";
+import { issueFixtures } from "@/mocks/fixtures/issues";
+import { commentFixtures } from "@/mocks/fixtures/comments";
+import { projectFixtures } from "@/mocks/fixtures/projects";
+
+export const noop = () => undefined;
+export const asyncNoop = async () => undefined;
+
+export function storyIssue(index = 0): IssueSummary {
+  return {
+    ...issueFixtures[index],
+    stats: {
+      commentCount: index + 1,
+    },
+  };
+}
+
+export const storySummary: Summary = {
+  generatedAt: "2026-06-16T00:00:00.000Z",
+  columns: issueStatuses.map((status) => ({
+    status,
+    title: status,
+    issues: issueFixtures
+      .filter((issue) => issue.status === status)
+      .map((issue, index) => ({
+        ...issue,
+        stats: {
+          commentCount: index + 1,
+        },
+      })),
+  })),
+};
+
+export const storyComments: Comment[] = commentFixtures;
+
+export const storyRuns: OrchestratorIssueRun[] = [
+  {
+    run_id: "run-1-latest",
+    status: "running",
+    attempt: 1,
+    thread_id: "thread-story-1",
+    created_at: "2026-06-16T00:00:00.000Z",
+    updated_at: "2026-06-16T00:05:00.000Z",
+  },
+];
+
+export const storyShellData: LayoutShellData = {
+  activePage: "issues",
+  activeProject: projectFixtures[0],
+  addIssueError: "",
+  addIssueInitialStatus: "backlog" as IssueStatus,
+  addProjectError: "",
+  isIssueDetailPage: false,
+  isProjectIssueScope: false,
+  issues: storySummary.columns.flatMap((column) => column.issues),
+  layoutData: {
+    summary: storySummary,
+    issues: storySummary.columns.flatMap((column) => column.issues),
+    selectedIssue: storyIssue(0),
+    refreshIntervalMs: 3000,
+    language: "ja",
+    onRefreshIntervalChange: noop,
+    onLanguageChange: noop,
+    onSelectIssue: noop,
+    onAddIssue: noop,
+    onStatusChange: asyncNoop,
+  },
+  loadState: {
+    kind: "ready",
+    projects: projectFixtures,
+    summary: storySummary,
+  },
+  projects: projectFixtures,
+  summary: storySummary,
+  title: "Tasq",
+  onAddIssue: noop,
+  onAddProject: noop,
+  onCloseModal: noop,
+  onCreateIssue: asyncNoop,
+  onCreateProject: asyncNoop,
+};

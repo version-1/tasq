@@ -50,17 +50,14 @@ features/issues/components/
   card/
     index.tsx
     index.module.css
-  markdown/
-    index.tsx
-    index.module.css
   pane/
     index.tsx
     index.module.css
 ```
 
 Keep `src/components/ui/` for domain-independent design-system primitives,
-including shared modal components, and `src/components/layout/` for application
-shell and global layout components.
+including shared modal and Markdown components, and `src/components/layout/` for
+application shell and global layout components.
 
 Project detail tab routes live under `src/app/projects/[projectKey]/`. Keep
 tab-specific UI in the matching feature directory, such as

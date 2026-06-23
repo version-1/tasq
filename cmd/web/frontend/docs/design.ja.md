@@ -46,14 +46,11 @@ features/issues/components/
   card/
     index.tsx
     index.module.css
-  markdown/
-    index.tsx
-    index.module.css
   pane/
     index.tsx
     index.module.css
 ```
 
-`src/components/ui/` は shared modal component を含む domain-independent な design-system primitive 用に保ち、`src/components/layout/` は application shell と global layout component 用に保ちます。
+`src/components/ui/` は shared modal component と Markdown component を含む domain-independent な design-system primitive 用に保ち、`src/components/layout/` は application shell と global layout component 用に保ちます。
 
 project detail tab route は `src/app/projects/[projectKey]/` 配下に置きます。tab-specific UI は `src/features/projects/components/workflow-settings-view/` のように対応する feature directory に置きます。settings tab は read-only で、`GET /api/v1/projects/{id}/workflow` から取得した同期済み `ProjectWorkflow` を表示します。frontend code で local `WORKFLOW.md` file を読んではいけません。
