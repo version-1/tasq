@@ -6,10 +6,13 @@
 
 .shell {
   max-height: 100vh;
-  overflow-y: scroll;
+  overflow-y: auto;
   padding: 24px;
   background: #fbfbfb;
   min-width: 0;
+}
+
+.content {
 }
 
 .shell h2,

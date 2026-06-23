@@ -13,12 +13,25 @@ import { modalIDs } from "@/constants";
 import { ModalOutlet } from "@/components/modal";
 import { PanelMessage } from "@/components/ui/pannel-message";
 import { ToastStack } from "@/components/ui/toast";
-import { createIssue, createProject, fetchProjects, fetchSummary, updateIssueStatus } from "@/lib/api";
+import {
+  createIssue,
+  createProject,
+  fetchProjects,
+  fetchSummary,
+  updateIssueStatus,
+} from "@/lib/api";
 import "@/lib/i18n";
 import { i18n, type SupportedLanguage } from "@/lib/i18n";
 import { ModalProvider, useModal } from "@/lib/modal";
 import { toast } from "@/lib/toast";
-import type { CreateIssueInput, CreateProjectInput, IssueStatus, IssueSummary, Project, Summary } from "@/lib/types";
+import type {
+  CreateIssueInput,
+  CreateProjectInput,
+  IssueStatus,
+  IssueSummary,
+  Project,
+  Summary,
+} from "@/lib/types";
 import { AddIssueDialog } from "./add-issue-dialog";
 import { AddProjectDialog } from "./add-project-dialog";
 import { Header } from "./header";
@@ -92,16 +105,23 @@ function LayoutContent({ children }: { children: ReactNode }) {
   const isIssueDetailPage = /^\/issues\/\d+$/.test(pathname);
   const [loadState, setLoadState] = useState<LoadState>({ kind: "loading" });
   const [selectedIssueID, setSelectedIssueID] = useState<number | null>(null);
-  const [addIssueInitialStatus, setAddIssueInitialStatus] = useState<IssueStatus>("backlog");
+  const [addIssueInitialStatus, setAddIssueInitialStatus] =
+    useState<IssueStatus>("backlog");
   const [addIssueError, setAddIssueError] = useState("");
   const [addProjectError, setAddProjectError] = useState("");
-  const [refreshIntervalMs, setRefreshIntervalMs] = useState(defaultRefreshIntervalMs);
-  const [language, setLanguage] = useState<SupportedLanguage>(i18n.language === "en" ? "en" : "ja");
+  const [refreshIntervalMs, setRefreshIntervalMs] = useState(
+    defaultRefreshIntervalMs,
+  );
+  const [language, setLanguage] = useState<SupportedLanguage>(
+    i18n.language === "en" ? "en" : "ja",
+  );
   const modal = useModal();
 
   useEffect(() => {
     const stored = window.localStorage.getItem("tasq.refreshIntervalMs");
-    const parsed = stored ? Number.parseInt(stored, 10) : defaultRefreshIntervalMs;
+    const parsed = stored
+      ? Number.parseInt(stored, 10)
+      : defaultRefreshIntervalMs;
     if (Number.isFinite(parsed) && parsed >= 1000) {
       setRefreshIntervalMs(parsed);
     }
@@ -111,26 +131,32 @@ function LayoutContent({ children }: { children: ReactNode }) {
     document.documentElement.lang = language;
   }, [language]);
 
-  const load = useCallback(async (options?: LoadOptions) => {
-    try {
-      const [summary, projects] = await Promise.all([
-        fetchSummary(options),
-        fetchProjects(options),
-      ]);
-      setLoadState({ kind: "ready", projects, summary });
-      setSelectedIssueID((current) => current ?? firstIssueID(summary));
-    } catch (error) {
-      setLoadState((current) => {
-        if (!options?.silent && current.kind === "ready") {
-          return current;
-        }
-        return {
-          kind: "error",
-          message: error instanceof Error ? error.message : t("layout.failedToLoadSummary"),
-        };
-      });
-    }
-  }, [t]);
+  const load = useCallback(
+    async (options?: LoadOptions) => {
+      try {
+        const [summary, projects] = await Promise.all([
+          fetchSummary(options),
+          fetchProjects(options),
+        ]);
+        setLoadState({ kind: "ready", projects, summary });
+        setSelectedIssueID((current) => current ?? firstIssueID(summary));
+      } catch (error) {
+        setLoadState((current) => {
+          if (!options?.silent && current.kind === "ready") {
+            return current;
+          }
+          return {
+            kind: "error",
+            message:
+              error instanceof Error
+                ? error.message
+                : t("layout.failedToLoadSummary"),
+          };
+        });
+      }
+    },
+    [t],
+  );
 
   useEffect(() => {
     void load({ silent: true });
@@ -143,19 +169,21 @@ function LayoutContent({ children }: { children: ReactNode }) {
   const loadedSummary = loadState.kind === "ready" ? loadState.summary : null;
   const projects = loadState.kind === "ready" ? loadState.projects : [];
   const isProjectIssueScope = issueScope.kind === "project";
-  const scopedProject =
-    isProjectIssueScope
-      ? projects.find((project) => project.key === issueScope.projectKey) ?? null
-      : null;
+  const scopedProject = isProjectIssueScope
+    ? (projects.find((project) => project.key === issueScope.projectKey) ??
+      null)
+    : null;
   const activeProject = isProjectIssueScope
     ? scopedProject
     : activePage === "issues"
       ? null
-      : projects[0] ?? null;
+      : (projects[0] ?? null);
   const summary = useMemo(() => {
     if (!loadedSummary) return null;
     if (!isProjectIssueScope) return loadedSummary;
-    return scopedProject ? filterSummaryByProject(loadedSummary, scopedProject.id) : emptySummary(loadedSummary);
+    return scopedProject
+      ? filterSummaryByProject(loadedSummary, scopedProject.id)
+      : emptySummary(loadedSummary);
   }, [isProjectIssueScope, loadedSummary, scopedProject]);
   const issues = useMemo(() => {
     if (!summary) return [];
@@ -183,7 +211,11 @@ function LayoutContent({ children }: { children: ReactNode }) {
       modal.closeModal();
       toast.success({ message: t("toast.success.issueCreated") });
     } catch (error) {
-      setAddIssueError(error instanceof Error ? error.message : t("layout.failedToCreateIssue"));
+      setAddIssueError(
+        error instanceof Error
+          ? error.message
+          : t("layout.failedToCreateIssue"),
+      );
     }
   }
 
@@ -196,7 +228,11 @@ function LayoutContent({ children }: { children: ReactNode }) {
       void navigate(`/projects/${encodeURIComponent(created.key)}/issues`);
       toast.success({ message: t("toast.success.projectCreated") });
     } catch (error) {
-      setAddProjectError(error instanceof Error ? error.message : t("layout.failedToCreateProject"));
+      setAddProjectError(
+        error instanceof Error
+          ? error.message
+          : t("layout.failedToCreateProject"),
+      );
     }
   }
 
@@ -219,7 +255,10 @@ function LayoutContent({ children }: { children: ReactNode }) {
 
   function handleRefreshIntervalChange(nextIntervalMs: number) {
     setRefreshIntervalMs(nextIntervalMs);
-    window.localStorage.setItem("tasq.refreshIntervalMs", String(nextIntervalMs));
+    window.localStorage.setItem(
+      "tasq.refreshIntervalMs",
+      String(nextIntervalMs),
+    );
   }
 
   function handleLanguageChange(nextLanguage: SupportedLanguage) {
@@ -257,7 +296,11 @@ function LayoutContent({ children }: { children: ReactNode }) {
     loadState,
     projects,
     summary,
-    title: issueScopeTitle(issueScope, activeProject?.name ?? null, t("sidebar.allProjects")),
+    title: issueScopeTitle(
+      issueScope,
+      activeProject?.name ?? null,
+      t("sidebar.allProjects"),
+    ),
     onAddIssue: handleAddIssue,
     onAddProject: handleAddProject,
     onCloseModal: handleCloseModal,
@@ -306,7 +349,11 @@ export function ShellLayout({
     <div className={styles.appFrame}>
       <Sidebar
         activePage={shellData.activePage}
-        activeProjectID={shellData.isProjectIssueScope ? shellData.activeProject?.id ?? null : null}
+        activeProjectID={
+          shellData.isProjectIssueScope
+            ? (shellData.activeProject?.id ?? null)
+            : null
+        }
         onAddProject={shellData.onAddProject}
         projects={shellData.projects}
       />
@@ -324,15 +371,22 @@ export function ShellLayout({
           <LayoutModalContent shellData={shellData} />
         </ModalOutlet>
 
-        {shellData.loadState.kind === "loading" ? <PanelMessage title={t("layout.loading")} /> : null}
-        {shellData.loadState.kind === "error" ? (
-          <PanelMessage title={t("layout.apiUnavailable")} detail={shellData.loadState.message} />
-        ) : null}
-        {shellData.layoutData ? (
-          <layoutDataContext.Provider value={shellData.layoutData}>
-            {children}
-          </layoutDataContext.Provider>
-        ) : null}
+        <div className={styles.content}>
+          {shellData.loadState.kind === "loading" ? (
+            <PanelMessage title={t("layout.loading")} />
+          ) : null}
+          {shellData.loadState.kind === "error" ? (
+            <PanelMessage
+              title={t("layout.apiUnavailable")}
+              detail={shellData.loadState.message}
+            />
+          ) : null}
+          {shellData.layoutData ? (
+            <layoutDataContext.Provider value={shellData.layoutData}>
+              {children}
+            </layoutDataContext.Provider>
+          ) : null}
+        </div>
       </main>
     </div>
   );
@@ -399,14 +453,20 @@ function activePageFromPathname(pathname: string): TasqPage {
 }
 
 function issueScopeFromPathname(pathname: string): IssueScope {
-  const match = /^\/projects\/([^/]+)(?:\/(?:issues|settings))?\/?$/.exec(pathname);
+  const match = /^\/projects\/([^/]+)(?:\/(?:issues|settings))?\/?$/.exec(
+    pathname,
+  );
   if (!match) {
     return { kind: "all" };
   }
   return { kind: "project", projectKey: decodeURIComponent(match[1]) };
 }
 
-function issueScopeTitle(issueScope: IssueScope, activeProjectName: string | null, allProjectsTitle: string): string | null {
+function issueScopeTitle(
+  issueScope: IssueScope,
+  activeProjectName: string | null,
+  allProjectsTitle: string,
+): string | null {
   if (issueScope.kind === "project") {
     return activeProjectName ?? issueScope.projectKey;
   }
