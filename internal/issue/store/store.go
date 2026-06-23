@@ -25,12 +25,38 @@ type IssueFilter struct {
 	ProjectID *int64
 }
 
+type dependencyEdge struct {
+	ParentID     int64
+	DependencyID int64
+}
+
+type dependencyStatus struct {
+	DependencyID int64
+	Status       entity.Status
+}
+
+type DependencyCycleError struct {
+	IssueIDs []int64
+}
+
+func (e DependencyCycleError) Error() string {
+	parts := make([]string, 0, len(e.IssueIDs))
+	for _, id := range e.IssueIDs {
+		parts = append(parts, fmt.Sprintf("%d", id))
+	}
+	return "dependency cycle detected: " + strings.Join(parts, " -> ")
+}
+
 func Open(ctx context.Context, path string) (*Store, error) {
 	db, err := sql.Open("sqlite", path)
 	if err != nil {
 		return nil, fmt.Errorf("open sqlite: %w", err)
 	}
 	db.SetMaxOpenConns(1)
+	if _, err := db.ExecContext(ctx, `PRAGMA foreign_keys = ON`); err != nil {
+		_ = db.Close()
+		return nil, fmt.Errorf("enable sqlite foreign keys: %w", err)
+	}
 	store := &Store{db: db}
 	if err := store.checkMigrations(ctx); err != nil {
 		_ = db.Close()
@@ -45,6 +71,10 @@ func OpenMigrated(ctx context.Context, path string) (*Store, error) {
 		return nil, fmt.Errorf("open sqlite: %w", err)
 	}
 	db.SetMaxOpenConns(1)
+	if _, err := db.ExecContext(ctx, `PRAGMA foreign_keys = ON`); err != nil {
+		_ = db.Close()
+		return nil, fmt.Errorf("enable sqlite foreign keys: %w", err)
+	}
 	if _, err := migration.NewManager(db, migrations.Files, "issue-tracker").Apply(ctx); err != nil {
 		_ = db.Close()
 		return nil, err
@@ -314,6 +344,10 @@ func (s *Store) IssuesByStates(ctx context.Context, states []entity.Status) ([]e
 }
 
 func (s *Store) IssuesByFilter(ctx context.Context, filter IssueFilter) ([]entity.Issue, error) {
+	return s.issuesByFilterOrder(ctx, filter, `issues.updated_at DESC, issues.id DESC`)
+}
+
+func (s *Store) issuesByFilterOrder(ctx context.Context, filter IssueFilter, orderClause string) ([]entity.Issue, error) {
 	clauses := []string{}
 	args := []any{}
 	if len(filter.States) > 0 {
@@ -336,7 +370,7 @@ func (s *Store) IssuesByFilter(ctx context.Context, filter IssueFilter) ([]entit
 	if len(clauses) > 0 {
 		where = " WHERE " + strings.Join(clauses, " AND ")
 	}
-	rows, err := s.db.QueryContext(ctx, `SELECT `+issueColumns()+` FROM issues JOIN projects ON projects.id = issues.project_id`+where+` ORDER BY issues.updated_at DESC, issues.id DESC`, args...)
+	rows, err := s.db.QueryContext(ctx, `SELECT `+issueColumns()+` FROM issues JOIN projects ON projects.id = issues.project_id`+where+` ORDER BY `+orderClause, args...)
 	if err != nil {
 		return nil, fmt.Errorf("list issues: %w", err)
 	}
@@ -352,6 +386,9 @@ func (s *Store) IssuesByFilter(ctx context.Context, filter IssueFilter) ([]entit
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("iterate issues: %w", err)
+	}
+	if err := s.hydrateIssueDependencyIDs(ctx, issues); err != nil {
+		return nil, err
 	}
 	return issues, nil
 }
@@ -393,6 +430,11 @@ func (s *Store) Issue(ctx context.Context, id int64) (entity.Issue, error) {
 		}
 		return entity.Issue{}, fmt.Errorf("read issue: %w", err)
 	}
+	dependencyIDs, err := s.DependencyIDs(ctx, id)
+	if err != nil {
+		return entity.Issue{}, err
+	}
+	item.DependencyIDs = dependencyIDs
 	return item, nil
 }
 
@@ -401,7 +443,16 @@ func (s *Store) UpdateIssue(ctx context.Context, id int64, input entity.UpdateIs
 	if err != nil {
 		return entity.Issue{}, err
 	}
-	current, err := s.Issue(ctx, id)
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return entity.Issue{}, err
+	}
+	defer func() {
+		if tx != nil {
+			_ = tx.Rollback()
+		}
+	}()
+	current, err := issueByIDTx(ctx, tx, id)
 	if err != nil {
 		return entity.Issue{}, err
 	}
@@ -420,7 +471,7 @@ func (s *Store) UpdateIssue(ctx context.Context, id int64, input entity.UpdateIs
 	if normalized.Assignee != nil {
 		current.Assignee = *normalized.Assignee
 	}
-	_, err = s.db.ExecContext(ctx, `UPDATE issues SET
+	_, err = tx.ExecContext(ctx, `UPDATE issues SET
 		title = ?, description = ?, status = ?, priority = ?, assignee = ?, updated_at = ?
 		WHERE id = ?`,
 		current.Title,
@@ -434,7 +485,309 @@ func (s *Store) UpdateIssue(ctx context.Context, id int64, input entity.UpdateIs
 	if err != nil {
 		return entity.Issue{}, fmt.Errorf("update issue: %w", err)
 	}
+	if normalized.DependencyIDs != nil {
+		if err := setDependencyIDsTx(ctx, tx, id, *normalized.DependencyIDs); err != nil {
+			return entity.Issue{}, err
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return entity.Issue{}, err
+	}
+	tx = nil
 	return s.Issue(ctx, id)
+}
+
+func (s *Store) DependencyIDs(ctx context.Context, issueID int64) ([]int64, error) {
+	if issueID <= 0 {
+		return nil, errors.New("issueId is required")
+	}
+	rows, err := s.db.QueryContext(ctx, `SELECT dependency_issue_id FROM issue_dependencies WHERE parent_issue_id = ? ORDER BY dependency_issue_id ASC`, issueID)
+	if err != nil {
+		return nil, fmt.Errorf("list issue dependencies: %w", err)
+	}
+	defer rows.Close()
+	ids := []int64{}
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, fmt.Errorf("scan issue dependency: %w", err)
+		}
+		ids = append(ids, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate issue dependencies: %w", err)
+	}
+	return ids, nil
+}
+
+func (s *Store) SetDependencyIDs(ctx context.Context, issueID int64, dependencyIDs []int64) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if tx != nil {
+			_ = tx.Rollback()
+		}
+	}()
+	if err := setDependencyIDsTx(ctx, tx, issueID, dependencyIDs); err != nil {
+		return err
+	}
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	tx = nil
+	return nil
+}
+
+func (s *Store) Queue(ctx context.Context, filter IssueFilter) (entity.Queue, error) {
+	ready := entity.StatusReady
+	filter.States = []entity.Status{ready}
+	issues, err := s.issuesByFilterOrder(ctx, filter, queueIssueOrderClause())
+	if err != nil {
+		return entity.Queue{}, err
+	}
+	dependencies, err := s.dependencyStatusesForParents(ctx, issueIDs(issues))
+	if err != nil {
+		return entity.Queue{}, err
+	}
+	queue := entity.Queue{
+		Queued:  []entity.QueueIssue{},
+		Pending: []entity.QueueIssue{},
+	}
+	for _, item := range issues {
+		blocked := activeDependencyIDs(dependencies[item.ID])
+		if len(blocked) > 0 {
+			queue.Pending = append(queue.Pending, entity.QueueIssue{Issue: item, BlockedDependencyIDs: blocked})
+			continue
+		}
+		queue.Queued = append(queue.Queued, entity.QueueIssue{Issue: item})
+	}
+	return queue, nil
+}
+
+func setDependencyIDsTx(ctx context.Context, tx *sql.Tx, issueID int64, dependencyIDs []int64) error {
+	if issueID <= 0 {
+		return errors.New("issueId is required")
+	}
+	if _, err := issueByIDTx(ctx, tx, issueID); err != nil {
+		return err
+	}
+	seen := map[int64]struct{}{}
+	for _, dependencyID := range dependencyIDs {
+		if dependencyID <= 0 {
+			return errors.New("dependency_ids contains invalid issue id")
+		}
+		if dependencyID == issueID {
+			return DependencyCycleError{IssueIDs: []int64{issueID, issueID}}
+		}
+		if _, ok := seen[dependencyID]; ok {
+			return errors.New("dependency_ids contains duplicate issue id")
+		}
+		seen[dependencyID] = struct{}{}
+		if _, err := issueByIDTx(ctx, tx, dependencyID); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return fmt.Errorf("dependency issue %d not found", dependencyID)
+			}
+			return err
+		}
+	}
+	edges, err := dependencyEdgesTx(ctx, tx)
+	if err != nil {
+		return err
+	}
+	edges = replaceDependencyEdges(edges, issueID, dependencyIDs)
+	if cycle := dependencyCycle(edges, issueID); len(cycle) > 0 {
+		return DependencyCycleError{IssueIDs: cycle}
+	}
+	if _, err := tx.ExecContext(ctx, `DELETE FROM issue_dependencies WHERE parent_issue_id = ?`, issueID); err != nil {
+		return fmt.Errorf("delete issue dependencies: %w", err)
+	}
+	now := nowString()
+	for _, dependencyID := range dependencyIDs {
+		if _, err := tx.ExecContext(ctx, `INSERT INTO issue_dependencies (parent_issue_id, dependency_issue_id, created_at) VALUES (?, ?, ?)`, issueID, dependencyID, now); err != nil {
+			return fmt.Errorf("insert issue dependency: %w", err)
+		}
+	}
+	return nil
+}
+
+func issueByIDTx(ctx context.Context, tx *sql.Tx, id int64) (entity.Issue, error) {
+	row := tx.QueryRowContext(ctx, `SELECT `+issueColumns()+` FROM issues JOIN projects ON projects.id = issues.project_id WHERE issues.id = ?`, id)
+	item, err := scanIssue(row)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return entity.Issue{}, sql.ErrNoRows
+		}
+		return entity.Issue{}, fmt.Errorf("read issue: %w", err)
+	}
+	return item, nil
+}
+
+func dependencyEdgesTx(ctx context.Context, tx *sql.Tx) ([]dependencyEdge, error) {
+	rows, err := tx.QueryContext(ctx, `SELECT parent_issue_id, dependency_issue_id FROM issue_dependencies`)
+	if err != nil {
+		return nil, fmt.Errorf("list dependency edges: %w", err)
+	}
+	defer rows.Close()
+	edges := []dependencyEdge{}
+	for rows.Next() {
+		var edge dependencyEdge
+		if err := rows.Scan(&edge.ParentID, &edge.DependencyID); err != nil {
+			return nil, fmt.Errorf("scan dependency edge: %w", err)
+		}
+		edges = append(edges, edge)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate dependency edges: %w", err)
+	}
+	return edges, nil
+}
+
+func replaceDependencyEdges(edges []dependencyEdge, parentID int64, dependencyIDs []int64) []dependencyEdge {
+	replaced := make([]dependencyEdge, 0, len(edges)+len(dependencyIDs))
+	for _, edge := range edges {
+		if edge.ParentID != parentID {
+			replaced = append(replaced, edge)
+		}
+	}
+	for _, dependencyID := range dependencyIDs {
+		replaced = append(replaced, dependencyEdge{ParentID: parentID, DependencyID: dependencyID})
+	}
+	return replaced
+}
+
+func dependencyCycle(edges []dependencyEdge, startID int64) []int64 {
+	graph := map[int64][]int64{}
+	for _, edge := range edges {
+		graph[edge.ParentID] = append(graph[edge.ParentID], edge.DependencyID)
+	}
+	path := []int64{startID}
+	visiting := map[int64]struct{}{startID: {}}
+	var visit func(id int64) []int64
+	visit = func(id int64) []int64 {
+		for _, next := range graph[id] {
+			if next == startID {
+				return append(append([]int64{}, path...), startID)
+			}
+			if _, ok := visiting[next]; ok {
+				continue
+			}
+			visiting[next] = struct{}{}
+			path = append(path, next)
+			if cycle := visit(next); len(cycle) > 0 {
+				return cycle
+			}
+			path = path[:len(path)-1]
+			delete(visiting, next)
+		}
+		return nil
+	}
+	return visit(startID)
+}
+
+func (s *Store) hydrateIssueDependencyIDs(ctx context.Context, issues []entity.Issue) error {
+	if len(issues) == 0 {
+		return nil
+	}
+	ids := issueIDs(issues)
+	args := make([]any, 0, len(ids))
+	for _, id := range ids {
+		args = append(args, id)
+	}
+	rows, err := s.db.QueryContext(ctx, `SELECT parent_issue_id, dependency_issue_id FROM issue_dependencies WHERE parent_issue_id IN (`+placeholders(len(ids))+`) ORDER BY parent_issue_id ASC, dependency_issue_id ASC`, args...)
+	if err != nil {
+		return fmt.Errorf("list issue dependencies: %w", err)
+	}
+	defer rows.Close()
+	byParent := map[int64][]int64{}
+	for rows.Next() {
+		var parentID int64
+		var dependencyID int64
+		if err := rows.Scan(&parentID, &dependencyID); err != nil {
+			return fmt.Errorf("scan issue dependency: %w", err)
+		}
+		byParent[parentID] = append(byParent[parentID], dependencyID)
+	}
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("iterate issue dependencies: %w", err)
+	}
+	for i := range issues {
+		issues[i].DependencyIDs = append([]int64{}, byParent[issues[i].ID]...)
+		if issues[i].DependencyIDs == nil {
+			issues[i].DependencyIDs = []int64{}
+		}
+	}
+	return nil
+}
+
+func (s *Store) dependencyStatusesForParents(ctx context.Context, parentIDs []int64) (map[int64][]dependencyStatus, error) {
+	statuses := map[int64][]dependencyStatus{}
+	if len(parentIDs) == 0 {
+		return statuses, nil
+	}
+	args := make([]any, 0, len(parentIDs))
+	for _, id := range parentIDs {
+		args = append(args, id)
+	}
+	rows, err := s.db.QueryContext(ctx, `SELECT issue_dependencies.parent_issue_id, issue_dependencies.dependency_issue_id, dependencies.status
+		FROM issue_dependencies
+		JOIN issues AS dependencies ON dependencies.id = issue_dependencies.dependency_issue_id
+		WHERE issue_dependencies.parent_issue_id IN (`+placeholders(len(parentIDs))+`)
+		ORDER BY issue_dependencies.parent_issue_id ASC, issue_dependencies.dependency_issue_id ASC`, args...)
+	if err != nil {
+		return nil, fmt.Errorf("list dependency statuses: %w", err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var parentID int64
+		var status dependencyStatus
+		if err := rows.Scan(&parentID, &status.DependencyID, &status.Status); err != nil {
+			return nil, fmt.Errorf("scan dependency status: %w", err)
+		}
+		statuses[parentID] = append(statuses[parentID], status)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate dependency statuses: %w", err)
+	}
+	return statuses, nil
+}
+
+func issueIDs(issues []entity.Issue) []int64 {
+	ids := make([]int64, 0, len(issues))
+	for _, issue := range issues {
+		ids = append(ids, issue.ID)
+	}
+	return ids
+}
+
+func activeDependencyIDs(dependencies []dependencyStatus) []int64 {
+	ids := []int64{}
+	for _, dependency := range dependencies {
+		if isActiveStatus(dependency.Status) {
+			ids = append(ids, dependency.DependencyID)
+		}
+	}
+	return ids
+}
+
+func isActiveStatus(status entity.Status) bool {
+	switch status {
+	case entity.StatusBacklog, entity.StatusReady, entity.StatusInProgress, entity.StatusReview:
+		return true
+	default:
+		return false
+	}
+}
+
+func queueIssueOrderClause() string {
+	return `CASE issues.priority
+		WHEN 'urgent' THEN 4
+		WHEN 'high' THEN 3
+		WHEN 'normal' THEN 2
+		WHEN 'low' THEN 1
+		ELSE 0
+	END DESC, issues.id ASC`
 }
 
 func (s *Store) CreateComment(ctx context.Context, input entity.CreateCommentInput) (entity.Comment, error) {

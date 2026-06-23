@@ -41,18 +41,24 @@ func TestNormalizeUpdateIssue(t *testing.T) {
 	invalidStatus := Status("unknown")
 	invalidPriority := Priority("unknown")
 	longAssignee := strings.Repeat("x", 201)
+	validDependencyIDs := []int64{1, 2}
+	invalidDependencyIDs := []int64{1, 0}
+	duplicateDependencyIDs := []int64{1, 1}
 	tests := []struct {
 		name    string
 		input   UpdateIssueInput
 		wantErr bool
 	}{
 		{name: "valid", input: UpdateIssueInput{Title: &validTitle}},
+		{name: "valid dependency ids", input: UpdateIssueInput{DependencyIDs: &validDependencyIDs}},
 		{name: "empty title", input: UpdateIssueInput{Title: &emptyTitle}, wantErr: true},
 		{name: "title too long", input: UpdateIssueInput{Title: &longTitle}, wantErr: true},
 		{name: "description too long", input: UpdateIssueInput{Description: &longDescription}, wantErr: true},
 		{name: "invalid status", input: UpdateIssueInput{Status: &invalidStatus}, wantErr: true},
 		{name: "invalid priority", input: UpdateIssueInput{Priority: &invalidPriority}, wantErr: true},
 		{name: "assignee too long", input: UpdateIssueInput{Assignee: &longAssignee}, wantErr: true},
+		{name: "invalid dependency id", input: UpdateIssueInput{DependencyIDs: &invalidDependencyIDs}, wantErr: true},
+		{name: "duplicate dependency id", input: UpdateIssueInput{DependencyIDs: &duplicateDependencyIDs}, wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

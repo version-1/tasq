@@ -276,6 +276,31 @@ paths:
           $ref: "#/components/responses/Error"
         "500":
           $ref: "#/components/responses/Error"
+  /api/v1/queue:
+    get:
+      tags:
+        - Issues
+      summary: List dispatchable and pending ready issues.
+      description: Returns ready issues split into queued and pending derived states. Queued issues have no active dependencies and are sorted by priority descending, then ID ascending. Pending issues still have at least one active dependency.
+      parameters:
+        - name: project_id
+          in: query
+          required: false
+          description: Project ID used to limit queued and pending issues to a single project. Omit this parameter to list queue state across all projects.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Queue state.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueueResponse"
+        "400":
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
   /api/v1/issues/{id}:
     parameters:
       - $ref: "#/components/parameters/IssueID"
@@ -747,6 +772,7 @@ components:
         - status
         - priority
         - assignee
+        - dependency_ids
         - createdAt
         - updatedAt
       properties:
@@ -768,6 +794,12 @@ components:
           $ref: "#/components/schemas/Priority"
         assignee:
           type: string
+          default: ""
+        dependency_ids:
+          type: array
+          items:
+            type: integer
+            format: int64
         createdAt:
           type: string
           format: date-time
@@ -886,7 +918,31 @@ components:
           $ref: "#/components/schemas/Priority"
         assignee:
           type: string
-          default: ""
+    QueueIssue:
+      allOf:
+        - $ref: "#/components/schemas/Issue"
+        - type: object
+          properties:
+            blocked_dependency_ids:
+              type: array
+              description: Active dependency issue IDs that keep a pending issue out of the queued set.
+              items:
+                type: integer
+                format: int64
+    Queue:
+      type: object
+      required:
+        - queued
+        - pending
+      properties:
+        queued:
+          type: array
+          items:
+            $ref: "#/components/schemas/QueueIssue"
+        pending:
+          type: array
+          items:
+            $ref: "#/components/schemas/QueueIssue"
     UpdateIssueInput:
       type: object
       properties:
@@ -900,6 +956,12 @@ components:
           $ref: "#/components/schemas/Priority"
         assignee:
           type: string
+        dependency_ids:
+          type: array
+          description: Replaces the full dependency set when present. Omit this field to preserve existing dependencies; pass an empty array to clear dependencies.
+          items:
+            type: integer
+            format: int64
     IssueStatesInput:
       type: object
       required:
@@ -1027,6 +1089,16 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Issue"
+        meta:
+          $ref: "#/components/schemas/ApiMeta"
+    QueueResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          $ref: "#/components/schemas/Queue"
         meta:
           $ref: "#/components/schemas/ApiMeta"
     IssueStateListResponse:

@@ -118,6 +118,14 @@ func (c *Client) IssuesByStates(ctx context.Context, states []string) ([]entity.
 	return output, nil
 }
 
+func (c *Client) Queue(ctx context.Context) (entity.Queue, error) {
+	var output entity.Queue
+	if err := c.request(ctx, http.MethodGet, "/api/v1/queue", nil, &output); err != nil {
+		return entity.Queue{}, err
+	}
+	return output, nil
+}
+
 type IssueState struct {
 	ID     int64         `json:"id"`
 	Status entity.Status `json:"status"`

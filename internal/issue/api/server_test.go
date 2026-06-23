@@ -678,6 +678,127 @@ func TestIssueStatesEmptyIDsReturnsEmpty(t *testing.T) {
 	}
 }
 
+func TestQueueReturnsQueuedAndPendingIssues(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer(t)
+	doneDep := createIssue(t, server, "Done dependency", entity.StatusDone)
+	activeDep := createIssue(t, server, "Active dependency", entity.StatusReady)
+	queued := createIssueWithPriority(t, server, "Queued issue", entity.StatusReady, entity.PriorityHigh)
+	pending := createIssueWithPriority(t, server, "Pending issue", entity.StatusReady, entity.PriorityUrgent)
+	if err := server.store.SetDependencyIDs(context.Background(), queued.ID, []int64{doneDep.ID}); err != nil {
+		t.Fatalf("set queued dependencies: %v", err)
+	}
+	if err := server.store.SetDependencyIDs(context.Background(), pending.ID, []int64{activeDep.ID}); err != nil {
+		t.Fatalf("set pending dependencies: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/queue", nil)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d body=%s", rec.Code, rec.Body.String())
+	}
+	queue := decodeData[entity.Queue](t, rec)
+	if len(queue.Queued) != 2 || queue.Queued[0].ID != queued.ID || queue.Queued[1].ID != activeDep.ID {
+		t.Fatalf("queued = %+v", queue.Queued)
+	}
+	if len(queue.Pending) != 1 || queue.Pending[0].ID != pending.ID {
+		t.Fatalf("pending = %+v", queue.Pending)
+	}
+	if len(queue.Pending[0].BlockedDependencyIDs) != 1 || queue.Pending[0].BlockedDependencyIDs[0] != activeDep.ID {
+		t.Fatalf("blocked dependency ids = %+v", queue.Pending[0].BlockedDependencyIDs)
+	}
+}
+
+func TestIssueRoundTripDependencyIDs(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer(t)
+	parent := createIssue(t, server, "Parent issue", entity.StatusReady)
+	dependency := createIssue(t, server, "Dependency issue", entity.StatusDone)
+	body := bytes.NewBufferString(`{"dependency_ids":[` + stringID(dependency.ID) + `]}`)
+	patchReq := httptest.NewRequest(http.MethodPatch, "/api/v1/issues/"+stringID(parent.ID), body)
+	patchRec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(patchRec, patchReq)
+
+	if patchRec.Code != http.StatusOK {
+		t.Fatalf("patch status = %d body=%s", patchRec.Code, patchRec.Body.String())
+	}
+	updated := decodeData[entity.Issue](t, patchRec)
+	if len(updated.DependencyIDs) != 1 || updated.DependencyIDs[0] != dependency.ID {
+		t.Fatalf("updated dependency ids = %+v", updated.DependencyIDs)
+	}
+
+	getReq := httptest.NewRequest(http.MethodGet, "/api/v1/issues/"+stringID(parent.ID), nil)
+	getRec := httptest.NewRecorder()
+	server.Handler().ServeHTTP(getRec, getReq)
+
+	if getRec.Code != http.StatusOK {
+		t.Fatalf("get status = %d body=%s", getRec.Code, getRec.Body.String())
+	}
+	read := decodeData[entity.Issue](t, getRec)
+	if len(read.DependencyIDs) != 1 || read.DependencyIDs[0] != dependency.ID {
+		t.Fatalf("read dependency ids = %+v", read.DependencyIDs)
+	}
+
+	clearReq := httptest.NewRequest(http.MethodPatch, "/api/v1/issues/"+stringID(parent.ID), bytes.NewBufferString(`{"dependency_ids":[]}`))
+	clearRec := httptest.NewRecorder()
+	server.Handler().ServeHTTP(clearRec, clearReq)
+
+	if clearRec.Code != http.StatusOK {
+		t.Fatalf("clear status = %d body=%s", clearRec.Code, clearRec.Body.String())
+	}
+	cleared := decodeData[entity.Issue](t, clearRec)
+	if cleared.DependencyIDs == nil || len(cleared.DependencyIDs) != 0 {
+		t.Fatalf("cleared dependency ids = %+v", cleared.DependencyIDs)
+	}
+}
+
+func TestUpdateIssueRejectsDependencyCycle(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer(t)
+	parent := createIssue(t, server, "Parent issue", entity.StatusReady)
+	dependency := createIssue(t, server, "Dependency issue", entity.StatusReady)
+	if err := server.store.SetDependencyIDs(context.Background(), parent.ID, []int64{dependency.ID}); err != nil {
+		t.Fatalf("set parent dependency: %v", err)
+	}
+	body := bytes.NewBufferString(`{"dependency_ids":[` + stringID(parent.ID) + `]}`)
+	req := httptest.NewRequest(http.MethodPatch, "/api/v1/issues/"+stringID(dependency.ID), body)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d body=%s", rec.Code, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), stringID(dependency.ID)) || !strings.Contains(rec.Body.String(), stringID(parent.ID)) {
+		t.Fatalf("cycle error does not include issue ids: %s", rec.Body.String())
+	}
+	assertErrorCode(t, rec, "issues.update.invalid_input")
+}
+
+func TestUpdateIssueRejectsMissingDependency(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer(t)
+	parent := createIssue(t, server, "Parent issue", entity.StatusReady)
+	body := bytes.NewBufferString(`{"dependency_ids":[999999]}`)
+	req := httptest.NewRequest(http.MethodPatch, "/api/v1/issues/"+stringID(parent.ID), body)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d body=%s", rec.Code, rec.Body.String())
+	}
+	assertErrorCode(t, rec, "issues.update.invalid_input")
+}
+
 func TestIssueStatesRejectsInvalidJSON(t *testing.T) {
 	t.Parallel()
 
@@ -901,10 +1022,27 @@ func createIssue(t *testing.T, server *Server, title string, status entity.Statu
 func createIssueInProject(t *testing.T, server *Server, projectID int64, title string, status entity.Status) entity.Issue {
 	t.Helper()
 
+	return createIssueInProjectWithPriority(t, server, projectID, title, status, "")
+}
+
+func createIssueWithPriority(t *testing.T, server *Server, title string, status entity.Status, priority entity.Priority) entity.Issue {
+	t.Helper()
+
+	project, err := server.store.ProjectByKey(context.Background(), "TEST")
+	if err != nil {
+		project = createProject(t, server, "TEST")
+	}
+	return createIssueInProjectWithPriority(t, server, project.ID, title, status, priority)
+}
+
+func createIssueInProjectWithPriority(t *testing.T, server *Server, projectID int64, title string, status entity.Status, priority entity.Priority) entity.Issue {
+	t.Helper()
+
 	issue, err := server.store.CreateIssue(context.Background(), entity.CreateIssueInput{
 		ProjectID: projectID,
 		Title:     title,
 		Status:    status,
+		Priority:  priority,
 	})
 	if err != nil {
 		t.Fatalf("create issue: %v", err)

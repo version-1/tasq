@@ -19,14 +19,32 @@
 | ProjectKey  | `string`   | response           | —                  | —           | 参照先 project からコピーされること                                |
 | Title       | `string`   | yes                | optional (`*string`) | —          | min 1, max 500 chars                                              |
 | Description | `string`   | no                 | optional (`*string`) | `""`       | max 10,000 chars                                                  |
-| Status      | `Status`   | no                 | optional (`*Status`) | `backlog`  | enum: `backlog`, `ready`, `in_progress`, `review`, `done`, `blocked`, `failed` |
+| Status      | `Status`   | no                 | optional (`*Status`) | `backlog`  | enum: `backlog`, `ready`, `in_progress`, `review`, `done`, `blocked`, `failed`, `cancelled`, `duplicate` |
 | Priority    | `Priority` | no                 | optional (`*Priority`) | `normal` | enum: `low`, `normal`, `high`, `urgent`                           |
 | Assignee    | `string`   | no                 | optional (`*string`) | `""`       | max 200 chars、自由入力                                           |
+| DependencyIDs | `[]int64` | no               | optional (`*[]int64`) | `[]`      | 指定時は全置換。各 ID は issue を参照すること。重複、自己依存、cycle は不可 |
 | CreatedAt   | `time.Time`| auto               | —                  | `now()`     | —                                                                  |
 | UpdatedAt   | `time.Time`| auto               | auto               | `now()`     | —                                                                  |
 
 課題の説明には Markdown を含められます。画像添付ファイルは `![alt](attachment://<attachment-id>)` として参照されます。
 すべての課題は必ず 1 つのプロジェクトに属します。課題が属するプロジェクトは作成時に設定され、update API では変更できません。
+`dependency_ids` は単一 issue response と list response の両方で公開されます。依存がない issue は `null` ではなく `[]` を返します。
+
+### IssueDependency
+
+`issue_dependencies` table は、issue 間の directed dependency edge を保存します。`parent_issue_id` が `dependency_issue_id` に依存します。
+
+| Field             | Go Type  | Required | Default | Constraints |
+|-------------------|----------|----------|---------|-------------|
+| ParentIssueID      | `int64`  | yes      | —       | `issues.id` を参照する。`ON DELETE CASCADE` |
+| DependencyIssueID  | `int64`  | yes      | —       | `issues.id` を参照する。`ON DELETE CASCADE` |
+| CreatedAt          | `string` | auto     | `now()` | RFC3339Nano timestamp text |
+
+primary key は `(parent_issue_id, dependency_issue_id)` で、重複 edge は拒否されます。check constraint は直接の自己依存を拒否します。foreign key cascade により、parent issue または dependency issue が削除されたとき dependency row も削除されます。
+
+dependency update は edge set を置き換える前に store layer で検証されます。graph は DAG でなければなりません。検証は直接の自己依存、存在しない dependency issue、重複した dependency ID、`A -> B -> C -> A` のような multi-hop cycle を拒否します。cycle error には cycle に含まれる issue ID path が含まれます。
+
+queue state はこの table と issue status から導出されます。`queued` は issue が `ready` で、すべての dependency が満たされた status（`done`, `cancelled`, `duplicate`, `failed`, `blocked`）にあることを意味します。`pending` は issue が `ready` だが、少なくとも 1 件の dependency が active status（`backlog`, `ready`, `in_progress`, `review`）に残っていることを意味します。
 
 ### Comment
 
@@ -182,7 +200,7 @@ API は次の項目について directory の存在を確認しません。
 
 | Field            | Valid Values                                                          |
 |------------------|-----------------------------------------------------------------------|
-| Issue.Status     | `backlog`, `ready`, `in_progress`, `review`, `done`, `blocked`, `failed` |
+| Issue.Status     | `backlog`, `ready`, `in_progress`, `review`, `done`, `blocked`, `failed`, `cancelled`, `duplicate` |
 | Issue.Priority   | `low`, `normal`, `high`, `urgent`                                     |
 | Comment.Type     | `progress`, `blocker`, `handoff`, `general`                           |
 | Attachment.EntityType | `issue`, `comment`                                                |

@@ -185,6 +185,36 @@ func TestPollSkipsIssuesWithActiveRuns(t *testing.T) {
 	}
 }
 
+func TestPollIgnoresPendingQueueIssues(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store := openTestStore(t)
+	manager := newTestWorkspaceManager(t)
+	tracker := newFakeTracker([]entity.Issue{
+		{ID: 42, Status: entity.StatusReady, Title: "Pending dependency"},
+		{ID: 43, Status: entity.StatusReady, Title: "Ready dependency"},
+	})
+	tracker.setPendingIssueIDs(42)
+	tracker.setProjectLocation(1, manager.RepoRoot())
+	poller := newTestPollerWithTracker(t, store, manager, tracker)
+
+	if err := poller.Poll(ctx); err != nil {
+		t.Fatalf("poll: %v", err)
+	}
+
+	runs, err := store.ActiveRuns(ctx)
+	if err != nil {
+		t.Fatalf("active runs: %v", err)
+	}
+	if len(runs) != 1 {
+		t.Fatalf("runs = %+v", runs)
+	}
+	if runs[0].IssueID != 43 {
+		t.Fatalf("queued issue id = %d, want 43", runs[0].IssueID)
+	}
+}
+
 func TestPollRespectsMaxActiveRuns(t *testing.T) {
 	t.Parallel()
 
@@ -310,6 +340,7 @@ type fakeTracker struct {
 	issues   map[int64]entity.Issue
 	projects map[int64]entity.Project
 	comments map[int64][]entity.Comment
+	pending  map[int64]struct{}
 }
 
 func newFakeTracker(issues []entity.Issue) *fakeTracker {
@@ -317,6 +348,7 @@ func newFakeTracker(issues []entity.Issue) *fakeTracker {
 		issues:   make(map[int64]entity.Issue, len(issues)),
 		projects: make(map[int64]entity.Project),
 		comments: make(map[int64][]entity.Comment),
+		pending:  make(map[int64]struct{}),
 	}
 	for _, issue := range issues {
 		if issue.ProjectID == 0 {
@@ -374,6 +406,32 @@ func (t *fakeTracker) IssuesByStates(ctx context.Context, states []string) ([]en
 		}
 	}
 	return output, nil
+}
+
+func (t *fakeTracker) Queue(ctx context.Context) (entity.Queue, error) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	queue := entity.Queue{Queued: []entity.QueueIssue{}, Pending: []entity.QueueIssue{}}
+	for _, issue := range t.issues {
+		if issue.Status != entity.StatusReady {
+			continue
+		}
+		queueIssue := entity.QueueIssue{Issue: issue}
+		if _, ok := t.pending[issue.ID]; ok {
+			queue.Pending = append(queue.Pending, queueIssue)
+			continue
+		}
+		queue.Queued = append(queue.Queued, queueIssue)
+	}
+	return queue, nil
+}
+
+func (t *fakeTracker) setPendingIssueIDs(ids ...int64) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	for _, id := range ids {
+		t.pending[id] = struct{}{}
+	}
 }
 
 func (t *fakeTracker) setProject(project entity.Project) {

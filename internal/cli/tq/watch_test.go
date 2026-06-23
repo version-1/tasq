@@ -7,6 +7,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -239,7 +240,7 @@ func TestWatcherEventBodyIsFullIssue(t *testing.T) {
 	if err := json.Unmarshal(envelopes[0].Body, &got); err != nil {
 		t.Fatalf("event body is not a full issue: %v", err)
 	}
-	if got != issue {
+	if !reflect.DeepEqual(got, issue) {
 		t.Fatalf("event body=%+v, want %+v", got, issue)
 	}
 }

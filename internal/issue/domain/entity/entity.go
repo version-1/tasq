@@ -94,16 +94,17 @@ type UpsertProjectWorkflowInput struct {
 }
 
 type Issue struct {
-	ID          int64     `json:"id"`
-	ProjectID   int64     `json:"projectId"`
-	ProjectKey  string    `json:"projectKey"`
-	Title       string    `json:"title"`
-	Description string    `json:"description"`
-	Status      Status    `json:"status"`
-	Priority    Priority  `json:"priority"`
-	Assignee    string    `json:"assignee"`
-	CreatedAt   time.Time `json:"createdAt"`
-	UpdatedAt   time.Time `json:"updatedAt"`
+	ID            int64     `json:"id"`
+	ProjectID     int64     `json:"projectId"`
+	ProjectKey    string    `json:"projectKey"`
+	Title         string    `json:"title"`
+	Description   string    `json:"description"`
+	Status        Status    `json:"status"`
+	Priority      Priority  `json:"priority"`
+	Assignee      string    `json:"assignee"`
+	DependencyIDs []int64   `json:"dependency_ids"`
+	CreatedAt     time.Time `json:"createdAt"`
+	UpdatedAt     time.Time `json:"updatedAt"`
 }
 
 type IssueState struct {
@@ -121,11 +122,22 @@ type CreateIssueInput struct {
 }
 
 type UpdateIssueInput struct {
-	Title       *string   `json:"title"`
-	Description *string   `json:"description"`
-	Status      *Status   `json:"status"`
-	Priority    *Priority `json:"priority"`
-	Assignee    *string   `json:"assignee"`
+	Title         *string   `json:"title"`
+	Description   *string   `json:"description"`
+	Status        *Status   `json:"status"`
+	Priority      *Priority `json:"priority"`
+	Assignee      *string   `json:"assignee"`
+	DependencyIDs *[]int64  `json:"dependency_ids,omitempty"`
+}
+
+type QueueIssue struct {
+	Issue
+	BlockedDependencyIDs []int64 `json:"blocked_dependency_ids,omitempty"`
+}
+
+type Queue struct {
+	Queued  []QueueIssue `json:"queued"`
+	Pending []QueueIssue `json:"pending"`
 }
 
 type Comment struct {
@@ -241,6 +253,18 @@ func NormalizeUpdateIssue(input UpdateIssueInput) (UpdateIssueInput, error) {
 	}
 	if input.Assignee != nil && runeCount(*input.Assignee) > maxAssigneeLength {
 		return input, errors.New("assignee must be 200 characters or fewer")
+	}
+	if input.DependencyIDs != nil {
+		seen := map[int64]struct{}{}
+		for _, id := range *input.DependencyIDs {
+			if id <= 0 {
+				return input, errors.New("dependency_ids contains invalid issue id")
+			}
+			if _, ok := seen[id]; ok {
+				return input, errors.New("dependency_ids contains duplicate issue id")
+			}
+			seen[id] = struct{}{}
+		}
 	}
 	return input, nil
 }

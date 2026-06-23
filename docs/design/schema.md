@@ -17,14 +17,32 @@ Validation is enforced at the **store layer** (Go code) on every create and upda
 | ProjectKey  | `string`   | response           | —                  | —           | copied from referenced project                                     |
 | Title       | `string`   | yes                | optional (`*string`) | —          | min 1, max 500 chars                                              |
 | Description | `string`   | no                 | optional (`*string`) | `""`       | max 10,000 chars                                                  |
-| Status      | `Status`   | no                 | optional (`*Status`) | `backlog`  | enum: `backlog`, `ready`, `in_progress`, `review`, `done`, `blocked`, `failed` |
+| Status      | `Status`   | no                 | optional (`*Status`) | `backlog`  | enum: `backlog`, `ready`, `in_progress`, `review`, `done`, `blocked`, `failed`, `cancelled`, `duplicate` |
 | Priority    | `Priority` | no                 | optional (`*Priority`) | `normal` | enum: `low`, `normal`, `high`, `urgent`                           |
 | Assignee    | `string`   | no                 | optional (`*string`) | `""`       | max 200 chars, free text                                          |
+| DependencyIDs | `[]int64` | no               | optional (`*[]int64`) | `[]`      | full replacement when set; each ID must reference an issue; no duplicates; no self-dependency; no cycles |
 | CreatedAt   | `time.Time`| auto               | —                  | `now()`     | —                                                                  |
 | UpdatedAt   | `time.Time`| auto               | auto               | `now()`     | —                                                                  |
 
 Issue descriptions may contain Markdown. Image attachments are referenced as `![alt](attachment://<attachment-id>)`.
 Every issue belongs to exactly one project. Issue project ownership is set at create time and cannot be changed through update APIs.
+`dependency_ids` is exposed on single-issue and list responses. Issues without dependencies return `[]`, not `null`.
+
+### IssueDependency
+
+The `issue_dependencies` table stores directed issue dependency edges. `parent_issue_id` depends on `dependency_issue_id`.
+
+| Field             | Go Type  | Required | Default | Constraints |
+|-------------------|----------|----------|---------|-------------|
+| ParentIssueID      | `int64`  | yes      | —       | references `issues.id`, `ON DELETE CASCADE` |
+| DependencyIssueID  | `int64`  | yes      | —       | references `issues.id`, `ON DELETE CASCADE` |
+| CreatedAt          | `string` | auto     | `now()` | RFC3339Nano timestamp text |
+
+The primary key is `(parent_issue_id, dependency_issue_id)`, so duplicate edges are rejected. A check constraint rejects direct self-dependency. Foreign key cascades remove dependency rows when either the parent issue or dependency issue is deleted.
+
+Dependency updates are validated in the store layer before replacing the edge set. The graph must remain a DAG. Validation rejects direct self-dependency, missing dependency issues, duplicate dependency IDs, and multi-hop cycles such as `A -> B -> C -> A`. Cycle errors include the issue ID path involved in the cycle.
+
+Queue state is derived from this table and issue status. `queued` means the issue is `ready` and all dependencies are in satisfied statuses: `done`, `cancelled`, `duplicate`, `failed`, or `blocked`. `pending` means the issue is `ready` and at least one dependency remains active: `backlog`, `ready`, `in_progress`, or `review`.
 
 ### Comment
 
@@ -179,7 +197,7 @@ Directory existence is not checked by the API for:
 
 | Field            | Valid Values                                                          |
 |------------------|-----------------------------------------------------------------------|
-| Issue.Status     | `backlog`, `ready`, `in_progress`, `review`, `done`, `blocked`, `failed` |
+| Issue.Status     | `backlog`, `ready`, `in_progress`, `review`, `done`, `blocked`, `failed`, `cancelled`, `duplicate` |
 | Issue.Priority   | `low`, `normal`, `high`, `urgent`                                     |
 | Comment.Type     | `progress`, `blocker`, `handoff`, `general`                           |
 | Attachment.EntityType | `issue`, `comment`                                                |

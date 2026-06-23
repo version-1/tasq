@@ -11,11 +11,14 @@ Tasq does not implement the Linear tracker client described in Section 11 of the
 Instead, Tasq treats its local issue-tracker API as the tracker adapter boundary:
 
 - The issue-tracker owns issue state and project data.
+- The issue-tracker owns issue dependency edges and computes derived queue state.
 - The orchestrator owns workspace records, metadata, and lifecycle behavior.
-- The issue-tracker exposes issue listing and issue-state query endpoints for tracker adapter reads.
+- The issue-tracker exposes issue listing, issue-state query, and queue endpoints for tracker adapter reads.
 - The orchestrator keeps historical run and runner-event data in its own SQLite store.
 
 This keeps external tracker integrations out of the orchestrator and preserves the repository's existing service boundary.
+
+Tasq's dispatch queue differs from Symphony worker scheduling by keeping `queued` and `pending` as derived issue-tracker API response states instead of persisted orchestrator-owned issue states. The orchestrator polls `GET /api/v1/queue`, dispatches only the `queued` array, and ignores `pending` issues until the issue-tracker classifies them as queued after dependency status changes.
 
 ## Workflow Front Matter Contract
 

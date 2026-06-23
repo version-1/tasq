@@ -25,6 +25,8 @@ func TestOpenAppliesIssueTrackerSchema(t *testing.T) {
 		"issues",
 		"issues_project_id_idx",
 		"issues_status_idx",
+		"issue_dependencies",
+		"issue_dependencies_dependency_issue_id_idx",
 		"comments",
 		"comments_issue_id_idx",
 		"projects",
@@ -884,6 +886,130 @@ func TestIssueStatesByIDsWithEmptyIDsDoesNotQuery(t *testing.T) {
 	}
 }
 
+func TestIssueDependenciesCRUDAndCascade(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer store.Close()
+
+	project := createTestProject(t, store, "DEPSCRUD")
+	parent, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Parent"})
+	if err != nil {
+		t.Fatalf("create parent issue: %v", err)
+	}
+	first, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "First dependency"})
+	if err != nil {
+		t.Fatalf("create first dependency issue: %v", err)
+	}
+	second, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Second dependency"})
+	if err != nil {
+		t.Fatalf("create second dependency issue: %v", err)
+	}
+
+	if err := store.SetDependencyIDs(ctx, parent.ID, []int64{second.ID, first.ID}); err != nil {
+		t.Fatalf("set dependencies: %v", err)
+	}
+	dependencyIDs, err := store.DependencyIDs(ctx, parent.ID)
+	if err != nil {
+		t.Fatalf("read dependency ids: %v", err)
+	}
+	assertInt64s(t, dependencyIDs, []int64{first.ID, second.ID})
+
+	if err := store.SetDependencyIDs(ctx, parent.ID, []int64{first.ID}); err != nil {
+		t.Fatalf("replace dependencies: %v", err)
+	}
+	read, err := store.Issue(ctx, parent.ID)
+	if err != nil {
+		t.Fatalf("read issue: %v", err)
+	}
+	assertInt64s(t, read.DependencyIDs, []int64{first.ID})
+
+	if _, err := store.db.ExecContext(ctx, `DELETE FROM issues WHERE id = ?`, first.ID); err != nil {
+		t.Fatalf("delete dependency issue: %v", err)
+	}
+	dependencyIDs, err = store.DependencyIDs(ctx, parent.ID)
+	if err != nil {
+		t.Fatalf("read dependency ids after cascade: %v", err)
+	}
+	assertInt64s(t, dependencyIDs, []int64{})
+}
+
+func TestIssueDependenciesRejectCycles(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer store.Close()
+
+	project := createTestProject(t, store, "DAG")
+	a := createStoreIssue(t, store, project.ID, "A", entity.StatusBacklog, entity.PriorityNormal)
+	b := createStoreIssue(t, store, project.ID, "B", entity.StatusBacklog, entity.PriorityNormal)
+	c := createStoreIssue(t, store, project.ID, "C", entity.StatusBacklog, entity.PriorityNormal)
+	d := createStoreIssue(t, store, project.ID, "D", entity.StatusBacklog, entity.PriorityNormal)
+
+	if err := store.SetDependencyIDs(ctx, a.ID, []int64{a.ID}); err == nil {
+		t.Fatal("self dependency succeeded, want error")
+	}
+	if err := store.SetDependencyIDs(ctx, a.ID, []int64{b.ID}); err != nil {
+		t.Fatalf("set A -> B: %v", err)
+	}
+	if err := store.SetDependencyIDs(ctx, b.ID, []int64{a.ID}); err == nil {
+		t.Fatal("two-node cycle succeeded, want error")
+	}
+	if err := store.SetDependencyIDs(ctx, b.ID, []int64{c.ID}); err != nil {
+		t.Fatalf("set B -> C: %v", err)
+	}
+	if err := store.SetDependencyIDs(ctx, c.ID, []int64{a.ID}); err == nil {
+		t.Fatal("three-node cycle succeeded, want error")
+	}
+	if err := store.SetDependencyIDs(ctx, d.ID, []int64{b.ID, c.ID}); err != nil {
+		t.Fatalf("legal branching DAG rejected: %v", err)
+	}
+}
+
+func TestQueueClassifiesAndSortsReadyIssues(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer store.Close()
+
+	project := createTestProject(t, store, "QUEUE")
+	doneDep := createStoreIssue(t, store, project.ID, "Done dependency", entity.StatusDone, entity.PriorityNormal)
+	blockedDep := createStoreIssue(t, store, project.ID, "Blocked dependency", entity.StatusBlocked, entity.PriorityNormal)
+	activeDep := createStoreIssue(t, store, project.ID, "Active dependency", entity.StatusInProgress, entity.PriorityNormal)
+	low := createStoreIssue(t, store, project.ID, "Low ready", entity.StatusReady, entity.PriorityLow)
+	high := createStoreIssue(t, store, project.ID, "High ready", entity.StatusReady, entity.PriorityHigh)
+	urgent := createStoreIssue(t, store, project.ID, "Urgent ready", entity.StatusReady, entity.PriorityUrgent)
+	pending := createStoreIssue(t, store, project.ID, "Pending ready", entity.StatusReady, entity.PriorityUrgent)
+	normal := createStoreIssue(t, store, project.ID, "Normal ready", entity.StatusReady, entity.PriorityNormal)
+	_ = createStoreIssue(t, store, project.ID, "Backlog issue", entity.StatusBacklog, entity.PriorityUrgent)
+	if err := store.SetDependencyIDs(ctx, urgent.ID, []int64{doneDep.ID, blockedDep.ID}); err != nil {
+		t.Fatalf("set resolved dependencies: %v", err)
+	}
+	if err := store.SetDependencyIDs(ctx, pending.ID, []int64{activeDep.ID, doneDep.ID}); err != nil {
+		t.Fatalf("set pending dependencies: %v", err)
+	}
+
+	queue, err := store.Queue(ctx, IssueFilter{})
+	if err != nil {
+		t.Fatalf("queue: %v", err)
+	}
+	assertQueueIssueIDs(t, queue.Queued, []int64{urgent.ID, high.ID, normal.ID, low.ID})
+	assertQueueIssueIDs(t, queue.Pending, []int64{pending.ID})
+	assertInt64s(t, queue.Pending[0].BlockedDependencyIDs, []int64{activeDep.ID})
+}
+
 func TestSummaryReturnsColumnsWithIssueStats(t *testing.T) {
 	t.Parallel()
 
@@ -1011,6 +1137,21 @@ func createTestProject(t *testing.T, store *Store, key string) entity.Project {
 	return project
 }
 
+func createStoreIssue(t *testing.T, store *Store, projectID int64, title string, status entity.Status, priority entity.Priority) entity.Issue {
+	t.Helper()
+
+	issue, err := store.CreateIssue(context.Background(), entity.CreateIssueInput{
+		ProjectID: projectID,
+		Title:     title,
+		Status:    status,
+		Priority:  priority,
+	})
+	if err != nil {
+		t.Fatalf("create issue %q: %v", title, err)
+	}
+	return issue
+}
+
 func createComment(t *testing.T, store *Store, issueID int64, body string) entity.Comment {
 	t.Helper()
 
@@ -1024,6 +1165,38 @@ func createComment(t *testing.T, store *Store, issueID int64, body string) entit
 		t.Fatalf("create comment: %v", err)
 	}
 	return comment
+}
+
+func assertInt64s(t *testing.T, got []int64, want []int64) {
+	t.Helper()
+	if len(got) != len(want) {
+		t.Fatalf("ids = %+v, want %+v", got, want)
+	}
+	for i, id := range want {
+		if got[i] != id {
+			t.Fatalf("ids = %+v, want %+v", got, want)
+		}
+	}
+}
+
+func assertQueueIssueIDs(t *testing.T, issues []entity.QueueIssue, want []int64) {
+	t.Helper()
+	if len(issues) != len(want) {
+		t.Fatalf("queue ids length = %d, want %d; issues = %+v", len(issues), len(want), issues)
+	}
+	for i, id := range want {
+		if issues[i].ID != id {
+			t.Fatalf("queue issue ids = %+v, want %+v", queueIssueIDs(issues), want)
+		}
+	}
+}
+
+func queueIssueIDs(issues []entity.QueueIssue) []int64 {
+	ids := make([]int64, 0, len(issues))
+	for _, issue := range issues {
+		ids = append(ids, issue.ID)
+	}
+	return ids
 }
 
 func assertCommentIDs(t *testing.T, comments []entity.Comment, want []int64) {
