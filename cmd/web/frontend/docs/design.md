@@ -1,67 +1,178 @@
 # Web Frontend Design
 
-This document defines local structure rules for the React/Vite frontend under `cmd/web/frontend`.
+This document defines the frontend ownership and placement rules for the
+React/Vite application under `cmd/web/frontend`.
+
+The goal is to keep routing, feature UI, app shell UI, and generic UI primitives
+separate. New code should be placed by ownership first, then by reuse scope.
 
 ## Routing
 
 Routes are declared manually in `src/App.tsx` with `react-router-dom`.
 
-Use path parameters for scoped resource pages and detail pages. Issue lists use `/issues` for all projects and `/projects/:projectKey/issues` for a single project. Project detail pages use `/projects/:projectKey` and redirect to `/projects/:projectKey/issues`; their fixed tabs are `/projects/:projectKey/issues` and `/projects/:projectKey/settings`. Issue details use `/issues/:id` and the source files live under `src/app/issues/[id]/`.
+The `src/app/` tree is for route entry files. A route file may read route
+parameters, use layout hooks, perform route-level data loading, and render a
+feature component. Do not create `_components` directories under `src/app/`.
 
-## Component Placement
+Use path parameters for scoped resources and detail pages:
 
-Use one component per file. Components that own styles must be placed in a directory with this shape:
+- `/issues` lists issues across all projects.
+- `/projects/:projectKey/issues` lists issues for one project.
+- `/projects/:projectKey` redirects to `/projects/:projectKey/issues`.
+- `/projects/:projectKey/settings` renders project workflow settings.
+- `/issues/:id` renders an issue detail page.
+
+## Top-Level Directories
+
+Use these ownership boundaries when adding or moving frontend code:
+
+```text
+src/
+  app/          route entry files only
+  components/   app-shell components and domain-independent UI primitives
+  features/     page-level and domain-aware feature components
+  lib/          API clients, generated types, i18n, stores, and shared runtime helpers
+  mocks/        MSW handlers and fixture data for local/mock execution
+  stories/      Storybook-only fixture builders and helpers
+```
+
+The dependency direction should stay simple:
+
+- `src/app` may import from `components`, `features`, and `lib`.
+- `src/features` may import from `components` and `lib`.
+- `src/components/ui` must stay domain-independent.
+- `src/components/layout` may coordinate the app shell, navigation, modal slots,
+  and layout-level context.
+
+## Component Shape
+
+Use one React component per file. Components that own styles must live in a
+directory with this shape:
 
 ```text
 component-name/
   index.tsx
   index.module.css
+  index.stories.tsx
 ```
 
-Keep component-specific styles in that component's `index.module.css`. Shared non-component helpers may live next to the component directories, such as `types.ts`, but avoid putting multiple React components in the same file.
+Keep component-specific styles in `index.module.css`. Keep component-specific
+tests, stories, helper types, and small helper functions next to the component
+that owns them.
 
-Keep `src/app/` for route entry files only. Route files may load data from
-layout hooks or route parameters, then render feature components, but do not
-create `_components` directories under `src/app/`.
+Shared non-component helpers may live next to the component directories, such
+as `types.ts`, `format.ts`, or `rows.ts`, when they are owned by that feature or
+component group.
 
-Page-level and domain-aware components live under the matching feature:
+## Route Entries
+
+Route entries live under `src/app/**/page.tsx`.
+
+They should stay thin. A route entry can:
+
+- read route parameters;
+- use layout-level data hooks;
+- perform route-specific data loading;
+- select the feature component to render;
+- provide `Suspense` or route-level fallback behavior.
+
+Route entries should not contain reusable UI sections, cards, tables, panels,
+or domain presentation components. Put those in the matching feature directory.
+
+## Feature Components
+
+Feature components live under `src/features/<feature>/components/`.
+
+Use feature directories for page-level views, domain-aware UI, and components
+whose props or behavior are coupled to a product domain.
+
+Current feature component groups include:
 
 ```text
 features/
   dashboard/components/dashboard-view/
-  issues/components/issues-view/
-  issues/components/issue-detail-page/
-  issues/components/conversation-page/
+  issues/components/
+    board/
+    card/
+    conversation-page/
+    issue-detail-page/
+    issues-view/
+    pane/
   projects/components/workflow-settings-view/
   settings/components/settings-view/
 ```
 
-Feature page components should compose smaller components and keep their helper
-types, tests, and component-specific styles next to the component directory.
+Feature page components may compose smaller feature components. Keep their
+view-model helpers, tests, and stories in the same feature area.
 
-Issue-domain UI components shared across routes live under
-`src/features/issues/components/`:
+## Shared UI Components
+
+Domain-independent UI primitives live under `src/components/ui/`.
+
+Use this directory for reusable UI that does not know about issue, project, or
+dashboard domain concepts. Examples include:
 
 ```text
-features/issues/components/
-  board/
-    index.tsx
-    index.module.css
-  card/
-    index.tsx
-    index.module.css
-  pane/
-    index.tsx
-    index.module.css
+components/ui/
+  badge/
+  button/
+  context-menu/
+  icon-proxy/
+  markdown/
+  modal/
+  pannel-message/
+  switch/
+  toast/
 ```
 
-Keep `src/components/ui/` for domain-independent design-system primitives,
-including shared modal and Markdown components, and `src/components/layout/` for
-application shell and global layout components.
+Shared Markdown rendering belongs in `components/ui/markdown/` because it is
+used by multiple domains. Shared modal rendering belongs in
+`components/ui/modal/` because it provides a generic portal slot.
 
-Project detail tab routes live under `src/app/projects/[projectKey]/`. Keep
-tab-specific UI in the matching feature directory, such as
-`src/features/projects/components/workflow-settings-view/`. The settings tab is
-read-only and renders the synchronized `ProjectWorkflow` from
-`GET /api/v1/projects/{id}/workflow`; do not add local `WORKFLOW.md` file reads
-in frontend code.
+Do not place domain-specific labels, issue status transitions, project workflow
+tables, or page-specific layout in `components/ui`.
+
+## Layout Components
+
+Application shell and global navigation components live under
+`src/components/layout/`.
+
+This directory owns:
+
+- the sidebar and header;
+- layout shell composition;
+- layout-level context and hooks;
+- modal entry points for shell-level dialogs;
+- route layout wrappers such as default, issue detail, and project layouts.
+
+Feature views may be rendered inside the layout shell, but layout components
+should not own feature-specific presentation.
+
+## Project Workflow Settings
+
+Project workflow settings are rendered by feature components under
+`src/features/projects/components/workflow-settings-view/`.
+
+The settings route is read-only and renders the synchronized `ProjectWorkflow`
+from `GET /api/v1/projects/{id}/workflow`. Frontend code must not read local
+`WORKFLOW.md` files.
+
+Workflow frontmatter should be shown as a tree-friendly table. Workflow body
+content should use the shared Markdown renderer from `src/components/ui/markdown`.
+
+## Storybook
+
+Every React component under `src/components/**/index.tsx` and
+`src/features/**/index.tsx` must have a matching `index.stories.tsx`.
+
+Use Storybook titles that match ownership:
+
+- `UI/...` for `src/components/ui`.
+- `Layout/...` for `src/components/layout`.
+- `Features/<Feature>/...` for `src/features/<feature>`.
+
+Use `src/stories/` for Storybook-only fixtures and builders. Do not import
+Storybook helpers from production code.
+
+Storybook static build output is generated under `storybook-static/` and must
+not be committed.
