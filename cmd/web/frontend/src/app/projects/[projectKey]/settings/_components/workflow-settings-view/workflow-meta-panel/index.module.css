@@ -1,0 +1,21 @@
+.metaPanel {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 8%);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  padding: 12px 16px;
+}
+
+.metaLabel {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.metaValue {
+  color: var(--primary-black);
+  font-weight: 700;
+}

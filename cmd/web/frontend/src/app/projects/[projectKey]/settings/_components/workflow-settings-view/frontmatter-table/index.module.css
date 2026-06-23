@@ -1,0 +1,58 @@
+.tableWrap {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: auto;
+}
+
+.frontmatterTable {
+  border-collapse: collapse;
+  inline-size: 100%;
+  min-inline-size: 560px;
+}
+
+.tableHeadCell,
+.keyCell,
+.valueCell {
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  padding: 10px 12px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.tableHeadCell {
+  background: var(--extra-light-gray);
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.keyCell,
+.valueCell {
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-weight: 400;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.keyCell {
+  inline-size: 42%;
+}
+
+.keyContent {
+  align-items: center;
+  display: inline-flex;
+  gap: 6px;
+  min-inline-size: 0;
+  padding-inline-start: calc(var(--frontmatter-depth, 0) * 20px);
+}
+
+.branchKey {
+  color: var(--primary-black);
+  font-weight: 700;
+}
+
+.keyText {
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}

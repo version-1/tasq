@@ -5,10 +5,14 @@
 }
 
 .shell {
-  min-height: 100vh;
-  padding: 24px;
+  max-height: 100vh;
+  overflow-y: auto;
   background: #fbfbfb;
   min-width: 0;
+}
+
+.content {
+  padding: 24px;
 }
 
 .shell h2,
