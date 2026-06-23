@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { ModalOutlet } from "@/components/modal";
+import { ModalOutlet } from "@/components/ui/modal";
 
 describe("ModalOutlet", () => {
   it("renders children through a portal slot", () => {

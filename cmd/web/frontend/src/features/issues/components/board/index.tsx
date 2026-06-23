@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { IssueCard } from "@/components/issue/card";
+import { IssueCard } from "@/features/issues/components/card";
 import { IconProxy, type IconProxyName } from "@/components/ui/icon-proxy";
 import type { IssueStatus, Summary } from "@/lib/types";
 import { boardColumns } from "./board-columns";

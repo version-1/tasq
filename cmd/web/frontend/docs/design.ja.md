@@ -20,35 +20,36 @@ component-name/
 
 component-specific style はその component の `index.module.css` に置きます。`types.ts` のような shared non-component helper は component directory の近くに置いて構いませんが、複数の React component を同じ file に入れることは避けます。
 
-issue list UI component は `src/app/issues/_components/issues-view/` 配下で次の pattern に従います。
+route-local component は各 route の `_components` directory に置きます。page state、hook、feature component を compose する場所であり、再利用する domain UI の共有場所にはしません。
+
+issue list route では、route composition だけを `src/app/issues/_components/issues-view/` 配下に置きます。
 
 ```text
 issues-view/
   index.tsx
   index.module.css
-  issue-board/
-    index.tsx
-    index.module.css
-  issue-card/
-    index.tsx
-    index.module.css
-  panel-message/
-    index.tsx
-    index.module.css
 ```
 
-top-level の `issues-view/index.tsx` は child component を compose し、`IssuesView` component だけを持つようにします。
+top-level の `issues-view/index.tsx` は `IssuesView` component だけを持ち、再利用する issue-domain UI は `src/features/issues/` から import します。
 
-issue list view の外でも共有される issue UI component は `src/components/issue/` 配下に置きます。
+route をまたいで共有する issue-domain UI component は `src/features/issues/components/` 配下に置きます。
 
 ```text
-issue/
+features/issues/components/
+  board/
+    index.tsx
+    index.module.css
   card/
+    index.tsx
+    index.module.css
+  markdown/
     index.tsx
     index.module.css
   pane/
     index.tsx
     index.module.css
 ```
+
+`src/components/ui/` は shared modal component を含む domain-independent な design-system primitive 用に保ち、`src/components/layout/` は application shell と global layout component 用に保ちます。
 
 project detail tab page は `src/app/projects/[projectKey]/` 配下に置きます。tab-specific UI は各 route の `_components` directory に置きます。settings tab は read-only で、`GET /api/v1/projects/{id}/workflow` から取得した同期済み `ProjectWorkflow` を表示します。frontend code で local `WORKFLOW.md` file を読んではいけません。

@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import type { Comment } from "@/lib/types";
-import { Markdown } from "@/components/issue/markdown";
+import { Markdown } from "@/features/issues/components/markdown";
 import { formatDateTime } from "../format";
 import styles from "./index.module.css";
 

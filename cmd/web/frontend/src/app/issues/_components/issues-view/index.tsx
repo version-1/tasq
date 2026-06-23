@@ -1,7 +1,7 @@
 "use client";
 
 import type { IssueStatus, Summary } from "@/lib/types";
-import { IssueBoard } from "@/components/issue/board";
+import { IssueBoard } from "@/features/issues/components/board";
 import type { StatusChangeHandler } from "./types";
 import styles from "./index.module.css";
 

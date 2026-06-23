@@ -20,35 +20,43 @@ component-name/
 
 Keep component-specific styles in that component's `index.module.css`. Shared non-component helpers may live next to the component directories, such as `types.ts`, but avoid putting multiple React components in the same file.
 
-For issue list UI components, follow this pattern under `src/app/issues/_components/issues-view/`:
+Route-local components live under each route's `_components` directory. They
+compose page state, hooks, and feature components, but they should not become
+the shared home for reusable domain UI.
+
+For the issue list route, keep only the route composition under
+`src/app/issues/_components/issues-view/`:
 
 ```text
 issues-view/
   index.tsx
   index.module.css
-  issue-board/
-    index.tsx
-    index.module.css
-  issue-card/
-    index.tsx
-    index.module.css
-  panel-message/
-    index.tsx
-    index.module.css
 ```
 
-The top-level `issues-view/index.tsx` should compose child components and hold only the `IssuesView` component.
+The top-level `issues-view/index.tsx` should hold only the `IssuesView`
+component and import reusable issue-domain UI from `src/features/issues/`.
 
-Issue UI components shared outside the issue list view live under `src/components/issue/`:
+Issue-domain UI components shared across routes live under
+`src/features/issues/components/`:
 
 ```text
-issue/
+features/issues/components/
+  board/
+    index.tsx
+    index.module.css
   card/
+    index.tsx
+    index.module.css
+  markdown/
     index.tsx
     index.module.css
   pane/
     index.tsx
     index.module.css
 ```
+
+Keep `src/components/ui/` for domain-independent design-system primitives,
+including shared modal components, and `src/components/layout/` for application
+shell and global layout components.
 
 Project detail tab pages live under `src/app/projects/[projectKey]/`. Keep tab-specific UI in each route's `_components` directory. The settings tab is read-only and renders the synchronized `ProjectWorkflow` from `GET /api/v1/projects/{id}/workflow`; do not add local `WORKFLOW.md` file reads in frontend code.

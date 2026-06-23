@@ -3,7 +3,7 @@
 import { useParams, useSearchParams } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Markdown } from "@/components/issue/markdown";
+import { Markdown } from "@/features/issues/components/markdown";
 import { fetchOrchestratorConversation, fetchOrchestratorIssueRuntime } from "@/lib/api";
 import type { OrchestratorConversation, OrchestratorConversationEvent } from "@/lib/types";
 import styles from "./index.module.css";
