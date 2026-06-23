@@ -40,6 +40,40 @@ dependency direction は単純に保ちます。
 - `src/components/ui` は domain-independent に保ちます。
 - `src/components/layout` は app shell、navigation、modal slot、layout-level context を扱えます。
 
+## Architecture Layers
+
+frontend code の置き場所は次の layer として判断します。
+
+```text
+src/app
+src/components
+src/features/<name>/components
+  Presentation layer
+
+src/features/<name>/hooks
+  Application-oriented layer
+  UI state、use-case orchestration、view-model creation を担当する。
+
+src/features/<name>/context
+  Application-oriented layer
+  feature-scoped state と provider を担当する。
+
+src/features/<name>/api
+  Repository / adapter layer
+  feature から見た data access interface を提供する。
+  実体は src/lib/api を wrap する。
+
+src/lib/api
+  Infrastructure layer
+  Orval-generated client、HTTP、error handling、transport boundary を集約する。
+
+src/lib/generated
+  Generated infrastructure detail
+  feature code から直接 import してはいけない。
+```
+
+React hooks は React に依存するため、それ自体を pure domain layer とは扱いません。hook 内の pure domain rule が大きくなる場合は、test しやすい framework-independent function、または feature-owned domain/model module へ切り出します。
+
 ## Component Shape
 
 React component は 1 component につき 1 file にします。style を所有する component は次の形の directory に置きます。

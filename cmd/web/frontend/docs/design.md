@@ -44,6 +44,43 @@ The dependency direction should stay simple:
 - `src/components/layout` may coordinate the app shell, navigation, modal slots,
   and layout-level context.
 
+## Architecture Layers
+
+Use these layers when deciding where frontend code belongs:
+
+```text
+src/app
+src/components
+src/features/<name>/components
+  Presentation layer
+
+src/features/<name>/hooks
+  Application-oriented layer
+  Owns UI state, use-case orchestration, and view-model creation.
+
+src/features/<name>/context
+  Application-oriented layer
+  Owns feature-scoped state and providers.
+
+src/features/<name>/api
+  Repository / adapter layer
+  Provides the feature-facing data access interface.
+  Wraps src/lib/api.
+
+src/lib/api
+  Infrastructure layer
+  Centralizes Orval-generated clients, HTTP, error handling, and the transport boundary.
+
+src/lib/generated
+  Generated infrastructure detail
+  Feature code must not import this directly.
+```
+
+React hooks are React-dependent, so they are not a pure domain layer by
+themselves. If pure domain rules grow inside a hook, extract those rules into
+framework-independent functions or a feature-owned domain/model module before
+they become hard to test.
+
 ## Component Shape
 
 Use one React component per file. Components that own styles must live in a
