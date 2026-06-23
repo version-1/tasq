@@ -1,9 +1,18 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 import { Markdown } from "@/components/issue/markdown";
 import type { ProjectWorkflow, ProjectWorkflowFrontmatter } from "@/lib/types";
 import styles from "./index.module.css";
+
+type FrontmatterRow = {
+  depth: number;
+  id: string;
+  kind: "branch" | "leaf";
+  key: string;
+  value: string;
+};
 
 export function WorkflowSettingsView({ workflow }: { workflow: ProjectWorkflow }) {
   const { t } = useTranslation();
@@ -23,7 +32,7 @@ export function WorkflowSettingsView({ workflow }: { workflow: ProjectWorkflow }
           {t("projectSettings.frontmatter")}
         </h2>
         {hasFrontmatter ? (
-          <FrontmatterTree value={workflow.frontmatter} />
+          <FrontmatterTable rows={toFrontmatterRows(workflow.frontmatter)} />
         ) : (
           <p className={styles.emptyText}>{t("projectSettings.emptyFrontmatter")}</p>
         )}
@@ -43,68 +52,115 @@ export function WorkflowSettingsView({ workflow }: { workflow: ProjectWorkflow }
   );
 }
 
-function FrontmatterTree({ value }: { value: ProjectWorkflowFrontmatter }) {
+function FrontmatterTable({ rows }: { rows: FrontmatterRow[] }) {
+  const { t } = useTranslation();
+
   return (
-    <dl className={styles.tree}>
-      {Object.entries(value).map(([key, nestedValue]) => (
-        <FrontmatterEntry key={key} name={key} value={nestedValue} />
-      ))}
-    </dl>
+    <div className={styles.tableWrap}>
+      <table className={styles.frontmatterTable}>
+        <thead>
+          <tr>
+            <th className={styles.tableHeadCell} scope="col">
+              {t("projectSettings.frontmatterKey")}
+            </th>
+            <th className={styles.tableHeadCell} scope="col">
+              {t("projectSettings.frontmatterValue")}
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.id}>
+              <th className={styles.keyCell} scope="row">
+                <span
+                  className={`${styles.keyContent} ${row.kind === "branch" ? styles.branchKey : ""}`}
+                  style={{ "--frontmatter-depth": row.depth } as CSSProperties}
+                >
+                  {row.kind === "branch" ? <span className={styles.branchMarker}>{">"}</span> : null}
+                  <span className={styles.keyText}>{row.key}</span>
+                </span>
+              </th>
+              <td className={styles.valueCell}>{row.value}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
-function FrontmatterEntry({ name, value }: { name: string; value: unknown }) {
+function toFrontmatterRows(value: ProjectWorkflowFrontmatter): FrontmatterRow[] {
+  return Object.entries(value).flatMap(([key, nestedValue]) =>
+    flattenFrontmatterValue({
+      depth: 0,
+      key,
+      path: key,
+      value: nestedValue,
+    }),
+  );
+}
+
+function flattenFrontmatterValue({
+  depth,
+  key,
+  path,
+  value,
+}: {
+  depth: number;
+  key: string;
+  path: string;
+  value: unknown;
+}): FrontmatterRow[] {
   if (isRecord(value)) {
     const entries = Object.entries(value);
-    return (
-      <div className={styles.branch}>
-        <dt className={styles.key}>{name}</dt>
-        <dd className={styles.value}>
-          {entries.length > 0 ? (
-            <dl className={styles.tree}>
-              {entries.map(([nestedKey, nestedValue]) => (
-                <FrontmatterEntry key={nestedKey} name={nestedKey} value={nestedValue} />
-              ))}
-            </dl>
-          ) : (
-            <span className={styles.scalar}>{"{}"}</span>
-          )}
-        </dd>
-      </div>
-    );
+    const row: FrontmatterRow = {
+      depth,
+      id: path,
+      key,
+      kind: entries.length > 0 ? "branch" : "leaf",
+      value: entries.length > 0 ? "{...}" : "{}",
+    };
+    return [
+      row,
+      ...entries.flatMap(([nestedKey, nestedValue]) =>
+        flattenFrontmatterValue({
+          depth: depth + 1,
+          key: nestedKey,
+          path: `${path}.${nestedKey}`,
+          value: nestedValue,
+        }),
+      ),
+    ];
   }
 
   if (Array.isArray(value)) {
-    return (
-      <div className={styles.branch}>
-        <dt className={styles.key}>{name}</dt>
-        <dd className={styles.value}>
-          {value.length > 0 ? (
-            <ol className={styles.array}>
-              {value.map((item, index) => (
-                <li className={styles.arrayItem} key={index}>
-                  {isRecord(item) ? (
-                    <FrontmatterTree value={item} />
-                  ) : (
-                    formatScalar(item)
-                  )}
-                </li>
-              ))}
-            </ol>
-          ) : (
-            <span className={styles.scalar}>[]</span>
-          )}
-        </dd>
-      </div>
-    );
+    const row: FrontmatterRow = {
+      depth,
+      id: path,
+      key,
+      kind: value.length > 0 ? "branch" : "leaf",
+      value: value.length > 0 ? "[...]" : "[]",
+    };
+    return [
+      row,
+      ...value.flatMap((item, index) =>
+        flattenFrontmatterValue({
+          depth: depth + 1,
+          key: `[${index}]`,
+          path: `${path}[${index}]`,
+          value: item,
+        }),
+      ),
+    ];
   }
 
-  return (
-    <div className={styles.leaf}>
-      <dt className={styles.key}>{name}</dt>
-      <dd className={styles.scalar}>{formatScalar(value)}</dd>
-    </div>
-  );
+  return [{
+    depth,
+    id: path,
+    key,
+    kind: "leaf",
+    value: formatScalar(value),
+  }];
 }
 
 function isRecord(value: unknown): value is ProjectWorkflowFrontmatter {

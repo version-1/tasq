@@ -1,0 +1,71 @@
+import type { ProjectWorkflow } from "@/lib/generated/issue-tracker";
+
+export const workflowFixtures: ProjectWorkflow[] = [
+  {
+    projectId: 1,
+    frontmatter: {
+      tasq: {
+        tracker: {
+          default_status: "ready",
+          active_states: ["ready", "in_progress", "review"],
+        },
+        agent: {
+          max_concurrent_agents_by_state: {
+            ready: 2,
+            review: 1,
+          },
+        },
+      },
+      codex: {
+        sandbox: "workspace-write",
+      },
+      hooks: {
+        before_start: ["git fetch origin"],
+      },
+    },
+    body: [
+      "# Task",
+      "",
+      "Issue ID: {{ issue.id }}",
+      "Title: {{ issue.title }}",
+      "Status: {{ issue.status }}",
+      "Priority: {{ issue.priority }}",
+      "Assignee: {{ issue.assignee }}",
+      "Attempt: {{ attempt }}",
+      "",
+      "## Description",
+      "",
+      "{{ issue.description }}",
+      "",
+      "## Repository Guidance",
+      "",
+      "Follow the development workflow in [docs/development.md](docs/development.md).",
+      "Read the component workflow document for the area you change before editing.",
+      "Write agent plan files, pull request summary drafts, and other temporary",
+      "scratch files under the repository `.tmp/` directory. Do not place these",
+      "temporary artifacts under `~/codex`, `$CODEX_HOME`, or other external home",
+      "directories.",
+      "",
+      "## Required Flow",
+      "",
+      "1. Confirm the task scope from the issue title and description above.",
+      "2. Before branch creation, run `git fetch origin`, then create the task branch from `origin/main` or the repository's default branch.",
+      "3. Create or switch to an isolated task branch/worktree before editing.",
+      "4. Make focused changes that satisfy the issue.",
+      "5. Run the narrowest useful verification first, then broaden checks when shared behavior is affected.",
+      "6. Commit the change and create or update a pull request.",
+      "7. Leave a progress or handoff comment on the issue.",
+      "8. Move the issue to `review` when the pull request is ready for human review.",
+      "",
+      "## Complete the issue",
+      "",
+      "1. Run a review and resolve every High or higher severity finding.",
+      "2. Leave an issue comment that summarizes the review result, including whether any High or higher severity findings were found and how they were handled.",
+      "3. Create a pull request.",
+      "4. After steps 1 through 3 are complete, run `tq issue update {{ issue.id }} --status review`",
+    ].join("\n"),
+    checksum: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    createdAt: "2026-06-01T00:00:00.000Z",
+    updatedAt: "2026-06-22T00:00:00.000Z",
+  },
+];
