@@ -30,7 +30,7 @@ const emptySummary: Summary = {
 };
 
 const meta = {
-  title: "Issue/Board",
+  title: "Features/Issues/Board",
   component: IssueBoard,
   args: {
     summary,

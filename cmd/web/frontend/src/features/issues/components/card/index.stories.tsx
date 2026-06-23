@@ -13,7 +13,7 @@ function summaryIssue(index: number, commentCount = 0): IssueSummary {
 }
 
 const meta = {
-  title: "Issue/Card",
+  title: "Features/Issues/Card",
   component: IssueCard,
   decorators: [
     (Story) => (
