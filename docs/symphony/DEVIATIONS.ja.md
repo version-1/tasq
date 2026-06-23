@@ -14,12 +14,18 @@ Tasq は Symphony 仕様の Section 11 で説明されている Linear トラッ
 代わりに、Tasq はローカルの issue-tracker API をトラッカーアダプター境界として扱います。
 
 - issue-tracker は課題状態とプロジェクトデータを所有します。
+- issue-tracker は課題の依存エッジを所有し、派生的な queue 状態を計算します。
 - orchestrator はワークスペースレコード、メタデータ、ライフサイクルの振る舞いを所有します。
-- issue-tracker はトラッカーアダプターからの読み取り用に、課題一覧と課題状態問い合わせのエンドポイントを公開します。
+- issue-tracker はトラッカーアダプターからの読み取り用に、課題一覧、課題状態問い合わせ、queue エンドポイントを公開します。
 - orchestrator は過去の実行と runner event のデータを自身の SQLite ストアに保持します。
 
 これにより、外部トラッカー連携を orchestrator から外し、リポジトリの既存サービス境界
 を維持します。
+
+Tasq の dispatch queue は、`queued` と `pending` を永続化された orchestrator 所有の課題状態ではなく、
+issue-tracker API レスポンス上の派生状態として扱う点で Symphony の worker scheduling と異なります。
+orchestrator は `GET /api/v1/queue` をポーリングし、`queued` 配列だけを dispatch します。`pending` の課題は
+依存先の状態変更後に issue-tracker が queued と分類するまで無視します。
 
 ## Workflow Front Matter Contract
 
