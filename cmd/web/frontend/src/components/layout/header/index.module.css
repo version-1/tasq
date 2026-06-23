@@ -1,8 +1,10 @@
 .header {
   border-bottom: 1px solid var(--light-gray);
   background: var(--white);
-  margin: -24px -24px 24px;
   padding: 28px 32px 0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .utilityRow,
