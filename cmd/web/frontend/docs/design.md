@@ -126,18 +126,19 @@ Each feature domain owns these subdirectories when the responsibility exists:
 - `components/` for page-level and domain-aware React components;
 - `hooks/` for feature-specific state, effects, and derived view-model hooks;
 - `context/` for feature-scoped providers and context values;
-- `api/` for feature-facing request wrappers or adapters around shared clients.
+- `api/` for feature-facing request wrappers around `src/lib/api`.
 
 Do not create empty subdirectories only to match the template. Add `api`,
 `hooks`, or `context` when the feature has code with that responsibility.
 Feature page components may compose smaller feature components. Keep their
 view-model helpers, tests, and stories in the same feature area.
 
-API clients must come from the Orval-generated clients under `src/lib/generated`.
-Do not hand-write endpoint clients inside a feature. Feature `api/` modules may
-wrap generated clients to provide feature-specific names, request composition,
-error mapping, or view-model conversion, but the HTTP contract itself must stay
-generated.
+API clients must come from `src/lib/api`, which owns the Orval-generated clients
+under `src/lib/generated`. Do not hand-write endpoint clients inside a feature,
+and do not import generated clients directly from feature code. Feature `api/`
+modules may wrap `src/lib/api` functions to provide feature-specific names,
+request composition, error mapping, or view-model conversion, but the HTTP
+contract itself must stay generated and centralized in `src/lib/api`.
 
 ### Feature Placement Policy
 
@@ -163,7 +164,7 @@ Keep feature state and rendering responsibilities separate:
   next to the owning component when they are component-local;
 - feature-scoped providers stay in the feature's `context/`;
 - feature-facing API adapters stay in the feature's `api/` and delegate to
-  Orval-generated clients or runtime helpers in `src/lib`;
+  `src/lib/api`;
 - reusable display-only UI with no domain vocabulary stays in
   `src/components/ui`;
 - API clients, generated types, i18n, stores, and runtime helpers stay in
