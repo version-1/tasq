@@ -119,6 +119,8 @@ features/
 
 template に合わせるためだけに空の subdirectory は作りません。`api`、`hooks`、`context` は、その feature に該当責務の code ができた時点で追加します。Feature page component はより小さな feature component を compose して構いません。view-model helper、test、story は同じ feature area に置きます。
 
+API client は `src/lib/generated` 配下の Orval-generated client を使います。feature 内で endpoint client を手書きしてはいけません。Feature の `api/` module は generated client を wrap し、feature-specific な名前、request composition、error mapping、view-model conversion を提供して構いませんが、HTTP contract 自体は generated のまま保ちます。
+
 ### Feature Placement Policy
 
 feature directory の判断基準は `code-react` の方針を基準にします。Atomic Design は補助観点であり、directory taxonomy にはしません。`atoms` と `molecules` は、domain language を持たず、visual style、variant、layout、interaction state、accessibility だけを表現できる場合に限り design-system layer に置きます。
@@ -136,7 +138,7 @@ feature の state と rendering responsibility は分けます。
 - route-level URL と loading concern は `src/app/**/page.tsx` に置く。
 - feature view state と derived view model は feature の `hooks/`、または component-local な場合は owning component の近くに置く。
 - feature-scoped provider は feature の `context/` に置く。
-- feature-facing API adapter は feature の `api/` に置き、`src/lib` の shared generated client または runtime helper に委譲する。
+- feature-facing API adapter は feature の `api/` に置き、`src/lib` の Orval-generated client または runtime helper に委譲する。
 - domain vocabulary を持たない reusable display-only UI は `src/components/ui` に置く。
 - API client、generated type、i18n、store、runtime helper は `src/lib` に置く。
 

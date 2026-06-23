@@ -133,6 +133,12 @@ Do not create empty subdirectories only to match the template. Add `api`,
 Feature page components may compose smaller feature components. Keep their
 view-model helpers, tests, and stories in the same feature area.
 
+API clients must come from the Orval-generated clients under `src/lib/generated`.
+Do not hand-write endpoint clients inside a feature. Feature `api/` modules may
+wrap generated clients to provide feature-specific names, request composition,
+error mapping, or view-model conversion, but the HTTP contract itself must stay
+generated.
+
 ### Feature Placement Policy
 
 Use the `code-react` guidance as the baseline for feature directories. Atomic
@@ -157,7 +163,7 @@ Keep feature state and rendering responsibilities separate:
   next to the owning component when they are component-local;
 - feature-scoped providers stay in the feature's `context/`;
 - feature-facing API adapters stay in the feature's `api/` and delegate to
-  shared generated clients or runtime helpers in `src/lib`;
+  Orval-generated clients or runtime helpers in `src/lib`;
 - reusable display-only UI with no domain vocabulary stays in
   `src/components/ui`;
 - API clients, generated types, i18n, stores, and runtime helpers stay in
