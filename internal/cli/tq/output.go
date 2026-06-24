@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 	"text/tabwriter"
 	"time"
@@ -44,6 +45,7 @@ func writeIssue(w io.Writer, format string, issue entity.Issue) error {
 	fmt.Fprintf(w, "Status: %s\n", colorValue(string(issue.Status), statusColor(issue.Status)))
 	fmt.Fprintf(w, "Priority: %s\n", colorValue(string(issue.Priority), priorityColor(issue.Priority)))
 	fmt.Fprintf(w, "Assignee: %s\n", valueOrDefault(issue.Assignee, "unassigned"))
+	fmt.Fprintf(w, "Dependencies: %s\n", formatDependencyIDs(issue.DependencyIDs))
 	fmt.Fprintf(w, "Created: %s\n", formatTime(issue.CreatedAt))
 	fmt.Fprintf(w, "Updated: %s\n", formatTime(issue.UpdatedAt))
 	return nil
@@ -207,6 +209,17 @@ func valueOrDefault(value, fallback string) string {
 		return fallback
 	}
 	return value
+}
+
+func formatDependencyIDs(ids []int64) string {
+	if len(ids) == 0 {
+		return "none"
+	}
+	values := make([]string, 0, len(ids))
+	for _, id := range ids {
+		values = append(values, strconv.FormatInt(id, 10))
+	}
+	return strings.Join(values, ",")
 }
 
 func formatTime(value time.Time) string {
