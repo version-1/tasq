@@ -41,6 +41,15 @@ type attachmentUploadInput struct {
 	Path       string
 }
 
+type updateIssueInput struct {
+	Title         *string          `json:"title,omitempty"`
+	Description   *string          `json:"description,omitempty"`
+	Status        *entity.Status   `json:"status,omitempty"`
+	Priority      *entity.Priority `json:"priority,omitempty"`
+	Assignee      *string          `json:"assignee,omitempty"`
+	DependencyIDs *[]int64         `json:"dependency_ids,omitempty"`
+}
+
 type upsertProjectWorkflowInput struct {
 	Frontmatter map[string]any `json:"frontmatter"`
 	Body        string         `json:"body"`
@@ -199,9 +208,9 @@ func (c *apiClient) createIssue(ctx context.Context, input entity.CreateIssueInp
 	return issue, nil
 }
 
-func (c *apiClient) updateIssue(ctx context.Context, id int64, patch map[string]string) (entity.Issue, error) {
+func (c *apiClient) updateIssue(ctx context.Context, id int64, input updateIssueInput) (entity.Issue, error) {
 	var issue entity.Issue
-	if err := c.do(ctx, http.MethodPatch, fmt.Sprintf("/api/v1/issues/%d", id), patch, &issue); err != nil {
+	if err := c.do(ctx, http.MethodPatch, fmt.Sprintf("/api/v1/issues/%d", id), input, &issue); err != nil {
 		return entity.Issue{}, err
 	}
 	return issue, nil

@@ -124,6 +124,8 @@ Flags:
 | `--status STATUS` | Replace the issue status. |
 | `--priority PRIORITY` | Replace the issue priority. |
 | `--assignee NAME` | Replace the issue assignee. |
+| `--dependency IDS` | Replace the full dependency set with a comma-separated list of issue IDs. Empty values are rejected; use `--clear-dependencies` to remove all dependencies. |
+| `--clear-dependencies` | Remove all dependencies. Cannot be combined with `--dependency`. |
 | `--attach PATH` | Upload a PNG, JPEG, GIF, or WebP image and append a Markdown image reference to the description. |
 
 Attachment references use `![filename](attachment://<id>)`. The issue-tracker serves those images through the attachment content API, and the Web UI renders them from Markdown.

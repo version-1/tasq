@@ -36,7 +36,7 @@ API URL resolution order is `--api-url`, `TQ_API_URL`, `$TQ_HOME/system/state.js
 | `tq issue rename <id> <title>` | Update the title. |
 | `tq issue edit <id> <description>` | Update the description. |
 
-Create and update accept `--title`, `--description`, `--status`, `--priority`, `--assignee`, and `--attach` where applicable.
+Create and update accept `--title`, `--description`, `--status`, `--priority`, `--assignee`, and `--attach` where applicable. Update also accepts `--dependency <comma-separated-ids>` to replace dependencies and `--clear-dependencies` to remove them.
 
 ## Comment Commands
 

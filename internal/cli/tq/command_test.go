@@ -192,6 +192,182 @@ func TestIssueUpdateSendsSpecifiedFieldsOnly(t *testing.T) {
 	}
 }
 
+func TestIssueUpdateReplacesDependencies(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPatch || r.URL.Path != "/api/v1/issues/12" {
+			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
+		var input updateIssueInput
+		if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+			t.Fatal(err)
+		}
+		if input.DependencyIDs == nil {
+			t.Fatal("dependency_ids was not sent")
+		}
+		assertInt64s(t, *input.DependencyIDs, []int64{4, 7})
+		writeTestJSON(t, w, apiResponse[entity.Issue]{
+			Data: entity.Issue{ID: 12, Title: "Dependent issue", DependencyIDs: *input.DependencyIDs},
+		})
+	}))
+	defer server.Close()
+
+	stdout, stderr, code := runCLI(t, []string{
+		"--api-url=" + server.URL,
+		"issue", "update", "12",
+		"--dependency", "4,7",
+	})
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr)
+	}
+	if !strings.Contains(stdout, "ID: 12") {
+		t.Fatalf("unexpected stdout: %s", stdout)
+	}
+}
+
+func TestIssueUpdateAllowsExplicitFalseClearDependencies(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPatch || r.URL.Path != "/api/v1/issues/12" {
+			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
+		var input updateIssueInput
+		if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+			t.Fatal(err)
+		}
+		if input.DependencyIDs == nil {
+			t.Fatal("dependency_ids was not sent")
+		}
+		assertInt64s(t, *input.DependencyIDs, []int64{4})
+		writeTestJSON(t, w, apiResponse[entity.Issue]{
+			Data: entity.Issue{ID: 12, Title: "Dependent issue", DependencyIDs: *input.DependencyIDs},
+		})
+	}))
+	defer server.Close()
+
+	stdout, stderr, code := runCLI(t, []string{
+		"--api-url=" + server.URL,
+		"issue", "update", "12",
+		"--dependency", "4",
+		"--clear-dependencies=false",
+	})
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr)
+	}
+	if !strings.Contains(stdout, "ID: 12") {
+		t.Fatalf("unexpected stdout: %s", stdout)
+	}
+}
+
+func TestIssueUpdateClearsDependencies(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPatch || r.URL.Path != "/api/v1/issues/12" {
+			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
+		var input updateIssueInput
+		if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+			t.Fatal(err)
+		}
+		if input.DependencyIDs == nil {
+			t.Fatal("dependency_ids was not sent")
+		}
+		assertInt64s(t, *input.DependencyIDs, []int64{})
+		writeTestJSON(t, w, apiResponse[entity.Issue]{
+			Data: entity.Issue{ID: 12, Title: "Independent issue", DependencyIDs: *input.DependencyIDs},
+		})
+	}))
+	defer server.Close()
+
+	stdout, stderr, code := runCLI(t, []string{
+		"--api-url=" + server.URL,
+		"issue", "update", "12",
+		"--clear-dependencies",
+	})
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr)
+	}
+	if strings.Contains(stdout, "Dependencies:") {
+		t.Fatalf("unexpected stdout: %s", stdout)
+	}
+}
+
+func TestIssueUpdateDependencyUsageErrors(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+		want string
+	}{
+		{
+			name: "dependency and clear",
+			args: []string{"issue", "update", "12", "--dependency", "4", "--clear-dependencies"},
+			want: "dependency and clear-dependencies cannot be used together",
+		},
+		{
+			name: "empty dependency",
+			args: []string{"issue", "update", "12", "--dependency", ""},
+			want: "dependency must not be empty; use --clear-dependencies to clear dependencies",
+		},
+		{
+			name: "non integer dependency",
+			args: []string{"issue", "update", "12", "--dependency", "abc"},
+			want: "dependency must be a comma-separated list of positive integers",
+		},
+		{
+			name: "zero dependency",
+			args: []string{"issue", "update", "12", "--dependency", "4,0"},
+			want: "dependency must be a comma-separated list of positive integers",
+		},
+		{
+			name: "duplicate dependency",
+			args: []string{"issue", "update", "12", "--dependency", "4,4"},
+			want: "dependency contains duplicate issue id",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			stdout, stderr, code := runCLI(t, append([]string{"--api-url", defaultAPIURL}, test.args...))
+			if code != 2 {
+				t.Fatalf("code=%d stderr=%s", code, stderr)
+			}
+			if stdout != "" {
+				t.Fatalf("expected empty stdout: %s", stdout)
+			}
+			if got := decodeCLIError(t, stderr); got != test.want {
+				t.Fatalf("error=%q, want %q", got, test.want)
+			}
+		})
+	}
+}
+
+func TestIssueUpdateDependencyValidationError(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPatch || r.URL.Path != "/api/v1/issues/12" {
+			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
+		w.WriteHeader(http.StatusBadRequest)
+		writeTestJSON(t, w, apiErrorResponse{
+			Error: struct {
+				Code    string `json:"code"`
+				Message string `json:"message"`
+			}{Code: "issues.update.invalid_dependency_cycle", Message: "dependency cycle detected: 12 -> 4 -> 12"},
+		})
+	}))
+	defer server.Close()
+
+	stdout, stderr, code := runCLI(t, []string{
+		"--api-url=" + server.URL,
+		"issue", "update", "12",
+		"--dependency", "4",
+	})
+	if code != 1 {
+		t.Fatalf("code=%d stderr=%s", code, stderr)
+	}
+	if stdout != "" {
+		t.Fatalf("expected empty stdout: %s", stdout)
+	}
+	if got := decodeCLIError(t, stderr); got != "dependency cycle detected: 12 -> 4 -> 12" {
+		t.Fatalf("error=%q", got)
+	}
+}
+
 func TestIssueClose(t *testing.T) {
 	stdout := assertIssueShortcut(t, issueShortcutTest{
 		args:        []string{"issue", "close", "5"},
@@ -1307,6 +1483,18 @@ func stringMapEqual(left map[string]string, right map[string]string) bool {
 		}
 	}
 	return true
+}
+
+func assertInt64s(t *testing.T, got []int64, want []int64) {
+	t.Helper()
+	if len(got) != len(want) {
+		t.Fatalf("ids=%v, want %v", got, want)
+	}
+	for i := range got {
+		if got[i] != want[i] {
+			t.Fatalf("ids=%v, want %v", got, want)
+		}
+	}
 }
 
 func decodeCLIError(t *testing.T, stderr string) string {
