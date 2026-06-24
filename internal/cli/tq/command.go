@@ -330,6 +330,7 @@ func (a app) issueCreate(ctx context.Context, args []string, cfg config) error {
 	priority := fs.String("priority", "", "issue priority")
 	assignee := fs.String("assignee", "", "issue assignee")
 	attach := fs.String("attach", "", "image attachment path")
+	dependency := fs.String("dependency", "", "comma-separated dependency issue IDs")
 	projectKey := fs.String("project", "", "project key")
 	if err := fs.Parse(args); err != nil {
 		return usageError(err.Error())
@@ -343,6 +344,20 @@ func (a app) issueCreate(ctx context.Context, args []string, cfg config) error {
 	if *projectKey == "" {
 		return usageError("project is required")
 	}
+	dependencySet := false
+	fs.Visit(func(f *flag.Flag) {
+		if f.Name == "dependency" {
+			dependencySet = true
+		}
+	})
+	var dependencyIDs []int64
+	if dependencySet {
+		var err error
+		dependencyIDs, err = parseDependencyIDs(*dependency)
+		if err != nil {
+			return err
+		}
+	}
 	project, err := a.client.projectByKey(ctx, *projectKey)
 	if err != nil {
 		return err
@@ -355,6 +370,9 @@ func (a app) issueCreate(ctx context.Context, args []string, cfg config) error {
 		Status:      entity.Status(*status),
 		Priority:    entity.Priority(*priority),
 		Assignee:    *assignee,
+	}
+	if dependencySet {
+		input.DependencyIDs = dependencyIDs
 	}
 	issue, err := a.client.createIssue(ctx, input)
 	if err != nil {
@@ -438,6 +456,9 @@ func (a app) issueUpdate(ctx context.Context, args []string, cfg config) error {
 		return usageError("dependency and clear-dependencies cannot be used together")
 	}
 	if dependencySet {
+		if *dependency == "" {
+			return usageError("dependency must not be empty; use --clear-dependencies to clear dependencies")
+		}
 		dependencyIDs, err := parseDependencyIDs(*dependency)
 		if err != nil {
 			return err
@@ -604,7 +625,7 @@ func parseID(value string) (int64, error) {
 
 func parseDependencyIDs(value string) ([]int64, error) {
 	if value == "" {
-		return nil, usageError("dependency must not be empty; use --clear-dependencies to clear dependencies")
+		return nil, usageError("dependency must not be empty")
 	}
 	parts := strings.Split(value, ",")
 	ids := make([]int64, 0, len(parts))
