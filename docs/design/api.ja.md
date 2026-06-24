@@ -37,6 +37,45 @@ issue-tracker はユーザー向け API です。
 
 課題は必ず 1 つのプロジェクトに属します。`POST /api/v1/issues` は `projectId` を必須とし、初期の依存関係として `dependency_ids` を受け取ります。課題のレスポンスは `projectId` と `projectKey` の両方を返します。課題レスポンスには `dependency_ids` が含まれます。依存がない場合は空配列を返します。`GET /api/v1/issues` は任意の query parameter として `states` と `project_id` を受け取ります。`project_id` を省略した場合は、すべてのプロジェクトの課題を一覧表示します。
 
+### `POST /api/v1/issues`
+
+プロジェクト内に課題を作成します。`dependency_ids` は任意で、同じ create 操作の中で初期 dependency issue IDs を設定します。`dependency_ids` を省略するか空配列を渡すと、依存関係のない課題を作成します。API は存在しない dependency issue、自己依存、重複した dependency ID、dependency cycle を拒否します。
+
+Request:
+
+```json
+{
+  "projectId": 1,
+  "title": "Document create dependencies",
+  "description": "Update API and schema docs.",
+  "status": "ready",
+  "priority": "normal",
+  "assignee": "docs",
+  "dependency_ids": [12, 18]
+}
+```
+
+Response:
+
+```json
+{
+  "data": {
+    "id": 42,
+    "projectId": 1,
+    "projectKey": "tasq",
+    "title": "Document create dependencies",
+    "description": "Update API and schema docs.",
+    "status": "ready",
+    "priority": "normal",
+    "assignee": "docs",
+    "dependency_ids": [12, 18],
+    "createdAt": "2026-06-24T10:00:00Z",
+    "updatedAt": "2026-06-24T10:00:00Z"
+  },
+  "meta": {}
+}
+```
+
 `PATCH /api/v1/issues/{id}` は、任意の full replacement field として `dependency_ids` を受け取ります。省略した場合、既存の依存関係は維持されます。空配列を渡すと、すべての依存関係を削除します。API は存在しない dependency issue、自己依存、重複した dependency ID、dependency cycle を作る更新を拒否します。
 
 `GET /api/v1/queue` は ready issue を `queued` と `pending` の配列に分けて返します。`queued` issue は ready かつ active dependency がない課題です。`pending` issue は ready だが active dependency が 1 件以上残っている課題です。active dependency status は `backlog`、`ready`、`in_progress`、`review` です。満たされた dependency status は `done`、`cancelled`、`duplicate`、`failed`、`blocked` です。各配列は priority desc（`urgent`, `high`, `normal`, `low`）と ID asc で並びます。この endpoint は issue listing と同じ `project_id` filter semantics を受け取ります。pending item には、pending の原因になっている active dependency の `blocked_dependency_ids` が含まれます。

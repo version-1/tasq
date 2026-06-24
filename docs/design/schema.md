@@ -28,6 +28,22 @@ Issue descriptions may contain Markdown. Image attachments are referenced as `![
 Every issue belongs to exactly one project. Issue project ownership is set at create time and cannot be changed through update APIs.
 `dependency_ids` is exposed on single-issue and list responses. Issues without dependencies return `[]`, not `null`.
 
+### CreateIssueInput
+
+`CreateIssueInput` is the request body for `POST /api/v1/issues`.
+
+| Field         | Go Type    | Required | Default   | Constraints |
+|---------------|------------|----------|-----------|-------------|
+| ProjectID     | `int64`    | yes      | —         | `> 0`, referenced project must exist |
+| Title         | `string`   | yes      | —         | min 1, max 500 chars |
+| Description   | `string`   | no       | `""`      | max 10,000 chars |
+| Status        | `Status`   | no       | `backlog` | enum: `backlog`, `ready`, `in_progress`, `review`, `done`, `blocked`, `failed`, `cancelled`, `duplicate` |
+| Priority      | `Priority` | no       | `normal`  | enum: `low`, `normal`, `high`, `urgent` |
+| Assignee      | `string`   | no       | `""`      | max 200 chars, free text |
+| DependencyIDs | `[]int64`  | no       | `[]`      | initial dependency set; each ID must reference an issue; no duplicates; no self-dependency; no cycles |
+
+`dependency_ids` is applied in the same transaction as issue creation. If dependency validation fails, the issue is not created.
+
 ### IssueDependency
 
 The `issue_dependencies` table stores directed issue dependency edges. `parent_issue_id` depends on `dependency_issue_id`.

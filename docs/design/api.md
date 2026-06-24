@@ -37,6 +37,45 @@ Attachment uploads accept multipart form data with `entity_type`, `entity_id`, a
 
 Issues belong to exactly one project. `POST /api/v1/issues` requires `projectId` and accepts `dependency_ids` as the initial dependency set. Issue responses include both `projectId` and `projectKey`. Issue responses include `dependency_ids`; issues without dependencies return an empty array. `GET /api/v1/issues` accepts optional `states` and `project_id` query parameters. Omitting `project_id` lists issues across all projects.
 
+### `POST /api/v1/issues`
+
+Creates an issue in a project. `dependency_ids` is optional and sets the initial dependency issue IDs during the same create operation. Omit `dependency_ids` or pass an empty array to create an issue without dependencies. The API rejects missing dependency issues, self-dependencies, duplicate dependency IDs, and dependency cycles.
+
+Request:
+
+```json
+{
+  "projectId": 1,
+  "title": "Document create dependencies",
+  "description": "Update API and schema docs.",
+  "status": "ready",
+  "priority": "normal",
+  "assignee": "docs",
+  "dependency_ids": [12, 18]
+}
+```
+
+Response:
+
+```json
+{
+  "data": {
+    "id": 42,
+    "projectId": 1,
+    "projectKey": "tasq",
+    "title": "Document create dependencies",
+    "description": "Update API and schema docs.",
+    "status": "ready",
+    "priority": "normal",
+    "assignee": "docs",
+    "dependency_ids": [12, 18],
+    "createdAt": "2026-06-24T10:00:00Z",
+    "updatedAt": "2026-06-24T10:00:00Z"
+  },
+  "meta": {}
+}
+```
+
 `PATCH /api/v1/issues/{id}` accepts `dependency_ids` as an optional full replacement field. When omitted, existing dependencies are preserved. Passing an empty array removes all dependencies. The API rejects missing dependency issues, self-dependencies, duplicate dependency IDs, and updates that would create a dependency cycle.
 
 `GET /api/v1/queue` returns ready issues split into `queued` and `pending` arrays. `queued` issues are ready and have no active dependencies; `pending` issues are ready but still have at least one active dependency. Active dependency statuses are `backlog`, `ready`, `in_progress`, and `review`; satisfied dependency statuses are `done`, `cancelled`, `duplicate`, `failed`, and `blocked`. Each array is sorted by priority descending (`urgent`, `high`, `normal`, `low`) and then ID ascending. The endpoint accepts the same `project_id` filter semantics as issue listing. Pending items include `blocked_dependency_ids` for active dependencies that keep the issue pending.
