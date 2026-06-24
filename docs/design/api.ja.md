@@ -48,7 +48,7 @@ JSON の成功レスポンスは `{ "data": ..., "meta": {} }` を使います�
 - `tq issue list [--project <project-key>]`
 - `tq issue get <id>`
 - `tq issue create --project <project-key> --title <title> [--description ...] [--status ...] [--priority ...] [--assignee ...]`
-- `tq issue update <id> [--title ...] [--description ...] [--status ...] [--priority ...] [--assignee ...]`
+- `tq issue update <id> [--title ...] [--description ...] [--status ...] [--priority ...] [--assignee ...] [--dependency <ids>] [--clear-dependencies]`
 - `tq issue create ... --attach <image-path>`
 - `tq issue update <id> ... --attach <image-path>`
 - `tq issue close <id>`

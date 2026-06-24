@@ -370,7 +370,7 @@ func (a app) issueCreate(ctx context.Context, args []string, cfg config) error {
 			return err
 		}
 		description := appendAttachmentMarkdown(issue.Description, attachment)
-		issue, err = a.client.updateIssue(ctx, issue.ID, map[string]string{"description": description})
+		issue, err = a.client.updateIssue(ctx, issue.ID, updateIssueDescriptionInput(description))
 		if err != nil {
 			_ = a.client.deleteAttachment(ctx, attachment.ID)
 			return err
@@ -394,6 +394,8 @@ func (a app) issueUpdate(ctx context.Context, args []string, cfg config) error {
 	status := fs.String("status", "", "issue status")
 	priority := fs.String("priority", "", "issue priority")
 	assignee := fs.String("assignee", "", "issue assignee")
+	dependency := fs.String("dependency", "", "comma-separated dependency issue IDs; fully replaces dependencies")
+	clearDependencies := fs.Bool("clear-dependencies", false, "clear all dependency issue IDs")
 	attach := fs.String("attach", "", "image attachment path")
 	if err := fs.Parse(args[1:]); err != nil {
 		return usageError(err.Error())
@@ -402,23 +404,53 @@ func (a app) issueUpdate(ctx context.Context, args []string, cfg config) error {
 		return usageError("issue update does not accept extra positional arguments")
 	}
 
-	patch := make(map[string]string)
+	var patch updateIssueInput
+	updated := false
+	dependencySet := false
+	clearDependenciesSet := false
 	fs.Visit(func(f *flag.Flag) {
 		switch f.Name {
 		case "title":
-			patch["title"] = *title
+			patch.Title = title
+			updated = true
 		case "description":
-			patch["description"] = *description
+			patch.Description = description
+			updated = true
 		case "status":
-			patch["status"] = *status
+			statusValue := entity.Status(*status)
+			patch.Status = &statusValue
+			updated = true
 		case "priority":
-			patch["priority"] = *priority
+			priorityValue := entity.Priority(*priority)
+			patch.Priority = &priorityValue
+			updated = true
 		case "assignee":
-			patch["assignee"] = *assignee
+			patch.Assignee = assignee
+			updated = true
+		case "dependency":
+			dependencySet = true
+		case "clear-dependencies":
+			clearDependenciesSet = *clearDependencies
 		case "attach":
 		}
 	})
-	if len(patch) == 0 && *attach == "" {
+	if dependencySet && clearDependenciesSet {
+		return usageError("dependency and clear-dependencies cannot be used together")
+	}
+	if dependencySet {
+		dependencyIDs, err := parseDependencyIDs(*dependency)
+		if err != nil {
+			return err
+		}
+		patch.DependencyIDs = &dependencyIDs
+		updated = true
+	}
+	if clearDependenciesSet {
+		dependencyIDs := []int64{}
+		patch.DependencyIDs = &dependencyIDs
+		updated = true
+	}
+	if !updated && *attach == "" {
 		return usageError("at least one update field is required")
 	}
 	var uploadedAttachmentID string
@@ -432,16 +464,19 @@ func (a app) issueUpdate(ctx context.Context, args []string, cfg config) error {
 			return err
 		}
 		uploadedAttachmentID = attachment.ID
-		description, ok := patch["description"]
-		if !ok {
+		var descriptionText string
+		if patch.Description != nil {
+			descriptionText = *patch.Description
+		} else {
 			current, err := a.client.getIssue(ctx, id)
 			if err != nil {
 				_ = a.client.deleteAttachment(ctx, uploadedAttachmentID)
 				return err
 			}
-			description = current.Description
+			descriptionText = current.Description
 		}
-		patch["description"] = appendAttachmentMarkdown(description, attachment)
+		updatedDescription := appendAttachmentMarkdown(descriptionText, attachment)
+		patch.Description = &updatedDescription
 	}
 
 	issue, err := a.client.updateIssue(ctx, id, patch)
@@ -464,7 +499,8 @@ func (a app) issueSetStatus(ctx context.Context, args []string, cfg config, stat
 	if err != nil {
 		return err
 	}
-	issue, err := a.client.updateIssue(ctx, id, map[string]string{"status": string(status)})
+	statusValue := status
+	issue, err := a.client.updateIssue(ctx, id, updateIssueInput{Status: &statusValue})
 	if err != nil {
 		return err
 	}
@@ -479,7 +515,7 @@ func (a app) issueRename(ctx context.Context, args []string, cfg config) error {
 	if err != nil {
 		return err
 	}
-	issue, err := a.client.updateIssue(ctx, id, map[string]string{"title": args[1]})
+	issue, err := a.client.updateIssue(ctx, id, updateIssueTitleInput(args[1]))
 	if err != nil {
 		return err
 	}
@@ -494,7 +530,7 @@ func (a app) issueEdit(ctx context.Context, args []string, cfg config) error {
 	if err != nil {
 		return err
 	}
-	issue, err := a.client.updateIssue(ctx, id, map[string]string{"description": args[1]})
+	issue, err := a.client.updateIssue(ctx, id, updateIssueDescriptionInput(args[1]))
 	if err != nil {
 		return err
 	}
@@ -564,6 +600,35 @@ func parseID(value string) (int64, error) {
 		return 0, usageError("id must be a positive integer")
 	}
 	return id, nil
+}
+
+func parseDependencyIDs(value string) ([]int64, error) {
+	if value == "" {
+		return nil, usageError("dependency must not be empty; use --clear-dependencies to clear dependencies")
+	}
+	parts := strings.Split(value, ",")
+	ids := make([]int64, 0, len(parts))
+	seen := map[int64]struct{}{}
+	for _, part := range parts {
+		id, err := strconv.ParseInt(strings.TrimSpace(part), 10, 64)
+		if err != nil || id <= 0 {
+			return nil, usageError("dependency must be a comma-separated list of positive integers")
+		}
+		if _, ok := seen[id]; ok {
+			return nil, usageError("dependency contains duplicate issue id")
+		}
+		seen[id] = struct{}{}
+		ids = append(ids, id)
+	}
+	return ids, nil
+}
+
+func updateIssueTitleInput(title string) updateIssueInput {
+	return updateIssueInput{Title: &title}
+}
+
+func updateIssueDescriptionInput(description string) updateIssueInput {
+	return updateIssueInput{Description: &description}
 }
 
 func newFlagSet(name string) *flag.FlagSet {

@@ -36,7 +36,7 @@ API URL resolution order は `--api-url`、`TQ_API_URL`、`$TQ_HOME/system/state
 | `tq issue rename <id> <title>` | title を更新します。 |
 | `tq issue edit <id> <description>` | description を更新します。 |
 
-create と update は、該当する場合に `--title`、`--description`、`--status`、`--priority`、`--assignee`、`--attach` を受け付けます。
+create と update は、該当する場合に `--title`、`--description`、`--status`、`--priority`、`--assignee`、`--attach` を受け付けます。update では、依存関係を置き換える `--dependency <comma-separated-ids>` と、依存関係を削除する `--clear-dependencies` も指定できます。
 
 ## Comment Commands
 
