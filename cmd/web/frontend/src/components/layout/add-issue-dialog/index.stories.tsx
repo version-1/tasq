@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { asyncNoop, noop } from "@/stories/fixtures";
+import { issueFixtures } from "@/mocks/fixtures/issues";
 import { projectFixtures } from "@/mocks/fixtures/projects";
 import { AddIssueDialog } from "./index";
 
@@ -7,6 +8,12 @@ const meta = {
   title: "Layout/AddIssueDialog",
   component: AddIssueDialog,
   args: {
+    dependencyOptions: issueFixtures
+      .filter((issue) => issue.projectId === projectFixtures[0].id)
+      .map((issue) => ({
+        ...issue,
+        stats: { commentCount: 0 },
+      })),
     error: "",
     initialStatus: "ready",
     project: projectFixtures[0],

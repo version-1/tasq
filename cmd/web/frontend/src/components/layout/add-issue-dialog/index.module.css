@@ -69,6 +69,56 @@
   resize: vertical;
 }
 
+.dependencyField {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 12px;
+}
+
+.dependencyField legend {
+  color: var(--dark-gray);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 0 4px;
+}
+
+.dependencyOptions {
+  display: grid;
+  gap: 8px;
+  max-height: 164px;
+  overflow: auto;
+}
+
+.dependencyOption {
+  align-items: flex-start;
+  color: var(--primary-black);
+  display: grid;
+  font-size: 13px;
+  font-weight: 400;
+  gap: 8px;
+  grid-template-columns: auto minmax(0, 1fr);
+  line-height: 1.4;
+}
+
+.dependencyOption input {
+  margin-top: 2px;
+}
+
+.dependencyOption span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.dependencyEmpty {
+  color: var(--dark-gray);
+  font-size: 13px;
+  font-weight: 400;
+  margin: 0;
+}
+
 .formGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

@@ -19,11 +19,13 @@ const resources = {
         },
         fields: {
           assignee: "担当者",
+          dependencies: "依存先",
           description: "説明",
           priority: "優先度",
           status: "ステータス",
           title: "タイトル",
         },
+        emptyDependencies: "依存先に指定できる issue はありません",
         placeholders: {
           assignee: "未割り当て",
           description: "タスクの背景や完了条件",
@@ -422,11 +424,13 @@ const resources = {
         },
         fields: {
           assignee: "Assignee",
+          dependencies: "Dependencies",
           description: "Description",
           priority: "Priority",
           status: "Status",
           title: "Title",
         },
+        emptyDependencies: "No issues are available as dependencies.",
         placeholders: {
           assignee: "Unassigned",
           description: "Background or completion criteria",

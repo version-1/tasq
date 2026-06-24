@@ -72,7 +72,7 @@ The behavior should match production semantics: the UI asks the API to update th
     status: "in_progress",
     priority: "normal",
     assignee: "qa",
-    dependency_ids: [],
+    dependency_ids: [2],
     createdAt: "2026-06-01T03:00:00.000Z",
     updatedAt: "2026-06-01T03:00:00.000Z",
   },

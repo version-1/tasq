@@ -284,7 +284,7 @@ func TestIssueUpdateClearsDependencies(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("code=%d stderr=%s", code, stderr)
 	}
-	if strings.Contains(stdout, "Dependencies:") {
+	if !strings.Contains(stdout, "Dependencies: none") {
 		t.Fatalf("unexpected stdout: %s", stdout)
 	}
 }
