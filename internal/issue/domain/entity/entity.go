@@ -113,12 +113,13 @@ type IssueState struct {
 }
 
 type CreateIssueInput struct {
-	ProjectID   int64    `json:"projectId"`
-	Title       string   `json:"title"`
-	Description string   `json:"description"`
-	Status      Status   `json:"status"`
-	Priority    Priority `json:"priority"`
-	Assignee    string   `json:"assignee"`
+	ProjectID     int64    `json:"projectId"`
+	Title         string   `json:"title"`
+	Description   string   `json:"description"`
+	Status        Status   `json:"status"`
+	Priority      Priority `json:"priority"`
+	Assignee      string   `json:"assignee"`
+	DependencyIDs []int64  `json:"dependency_ids"`
 }
 
 type UpdateIssueInput struct {
@@ -208,6 +209,9 @@ func NormalizeCreate(input CreateIssueInput) (CreateIssueInput, error) {
 	if !IsValidPriority(input.Priority) {
 		return input, errors.New("priority is invalid")
 	}
+	if err := validateDependencyIDs(input.DependencyIDs); err != nil {
+		return input, err
+	}
 	return input, nil
 }
 
@@ -255,18 +259,25 @@ func NormalizeUpdateIssue(input UpdateIssueInput) (UpdateIssueInput, error) {
 		return input, errors.New("assignee must be 200 characters or fewer")
 	}
 	if input.DependencyIDs != nil {
-		seen := map[int64]struct{}{}
-		for _, id := range *input.DependencyIDs {
-			if id <= 0 {
-				return input, errors.New("dependency_ids contains invalid issue id")
-			}
-			if _, ok := seen[id]; ok {
-				return input, errors.New("dependency_ids contains duplicate issue id")
-			}
-			seen[id] = struct{}{}
+		if err := validateDependencyIDs(*input.DependencyIDs); err != nil {
+			return input, err
 		}
 	}
 	return input, nil
+}
+
+func validateDependencyIDs(ids []int64) error {
+	seen := map[int64]struct{}{}
+	for _, id := range ids {
+		if id <= 0 {
+			return errors.New("dependency_ids contains invalid issue id")
+		}
+		if _, ok := seen[id]; ok {
+			return errors.New("dependency_ids contains duplicate issue id")
+		}
+		seen[id] = struct{}{}
+	}
+	return nil
 }
 
 func NormalizeUpdateProject(input UpdateProjectInput) (UpdateProjectInput, error) {

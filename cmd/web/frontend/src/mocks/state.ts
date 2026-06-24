@@ -99,6 +99,15 @@ export function createIssue(input: CreateIssueInput): Issue | null {
   if (!project || input.title.trim() === "") {
     return null;
   }
+  const dependencyIDs = input.dependency_ids ?? [];
+  const uniqueDependencyIDs = new Set(dependencyIDs);
+  if (
+    uniqueDependencyIDs.size !== dependencyIDs.length ||
+    dependencyIDs.includes(nextIssueID) ||
+    dependencyIDs.some((id) => !issues.some((issue) => issue.id === id))
+  ) {
+    return null;
+  }
 
   const now = new Date().toISOString();
   const issue: Issue = {
@@ -110,7 +119,7 @@ export function createIssue(input: CreateIssueInput): Issue | null {
     status: input.status ?? "backlog",
     priority: input.priority ?? "normal",
     assignee: input.assignee ?? "",
-    dependency_ids: [],
+    dependency_ids: [...dependencyIDs].sort((left, right) => left - right),
     createdAt: now,
     updatedAt: now,
   };

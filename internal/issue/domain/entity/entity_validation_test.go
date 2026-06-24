@@ -22,6 +22,9 @@ func TestNormalizeCreate(t *testing.T) {
 		{name: "assignee too long", input: CreateIssueInput{ProjectID: 1, Title: "Issue", Assignee: strings.Repeat("x", 201)}, wantErr: true},
 		{name: "invalid status", input: CreateIssueInput{ProjectID: 1, Title: "Issue", Status: Status("unknown")}, wantErr: true},
 		{name: "invalid priority", input: CreateIssueInput{ProjectID: 1, Title: "Issue", Priority: Priority("unknown")}, wantErr: true},
+		{name: "valid dependency ids", input: CreateIssueInput{ProjectID: 1, Title: "Issue", DependencyIDs: []int64{1, 2}}},
+		{name: "invalid dependency id", input: CreateIssueInput{ProjectID: 1, Title: "Issue", DependencyIDs: []int64{1, 0}}, wantErr: true},
+		{name: "duplicate dependency id", input: CreateIssueInput{ProjectID: 1, Title: "Issue", DependencyIDs: []int64{1, 1}}, wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -938,6 +938,129 @@ func TestIssueDependenciesCRUDAndCascade(t *testing.T) {
 	assertInt64s(t, dependencyIDs, []int64{})
 }
 
+func TestCreateIssueWithDependencyIDs(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer store.Close()
+
+	project := createTestProject(t, store, "CREATEDEPS")
+	first := createStoreIssue(t, store, project.ID, "First dependency", entity.StatusBacklog, entity.PriorityNormal)
+	second := createStoreIssue(t, store, project.ID, "Second dependency", entity.StatusBacklog, entity.PriorityNormal)
+
+	created, err := store.CreateIssue(ctx, entity.CreateIssueInput{
+		ProjectID:     project.ID,
+		Title:         "Parent issue",
+		DependencyIDs: []int64{second.ID, first.ID},
+	})
+	if err != nil {
+		t.Fatalf("create issue with dependencies: %v", err)
+	}
+	assertInt64s(t, created.DependencyIDs, []int64{first.ID, second.ID})
+
+	read, err := store.Issue(ctx, created.ID)
+	if err != nil {
+		t.Fatalf("read issue: %v", err)
+	}
+	assertInt64s(t, read.DependencyIDs, []int64{first.ID, second.ID})
+}
+
+func TestCreateIssueWithoutDependencyIDsReturnsEmptyDependencies(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer store.Close()
+
+	project := createTestProject(t, store, "NODEPS")
+	created, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Independent issue"})
+	if err != nil {
+		t.Fatalf("create issue: %v", err)
+	}
+	if created.DependencyIDs == nil || len(created.DependencyIDs) != 0 {
+		t.Fatalf("dependency ids = %+v, want empty slice", created.DependencyIDs)
+	}
+}
+
+func TestCreateIssueRejectsSelfDependency(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer store.Close()
+
+	project := createTestProject(t, store, "SELFDEP")
+	existing := createStoreIssue(t, store, project.ID, "Existing issue", entity.StatusBacklog, entity.PriorityNormal)
+
+	if _, err := store.CreateIssue(ctx, entity.CreateIssueInput{
+		ProjectID:     project.ID,
+		Title:         "Self dependency",
+		DependencyIDs: []int64{existing.ID + 1},
+	}); err == nil {
+		t.Fatal("create issue with self dependency succeeded, want error")
+	}
+}
+
+func TestCreateIssueRejectsMissingDependencyAndRollsBackIssue(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer store.Close()
+
+	project := createTestProject(t, store, "MISSINGDEP")
+	if _, err := store.CreateIssue(ctx, entity.CreateIssueInput{
+		ProjectID:     project.ID,
+		Title:         "Missing dependency",
+		DependencyIDs: []int64{999999},
+	}); err == nil {
+		t.Fatal("create issue with missing dependency succeeded, want error")
+	}
+
+	issues, err := store.Issues(ctx)
+	if err != nil {
+		t.Fatalf("list issues: %v", err)
+	}
+	if len(issues) != 0 {
+		t.Fatalf("issues after failed create = %+v, want none", issues)
+	}
+}
+
+func TestCreateIssueRejectsDuplicateDependencyIDs(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer store.Close()
+
+	project := createTestProject(t, store, "DUPDEP")
+	dependency := createStoreIssue(t, store, project.ID, "Dependency", entity.StatusBacklog, entity.PriorityNormal)
+
+	if _, err := store.CreateIssue(ctx, entity.CreateIssueInput{
+		ProjectID:     project.ID,
+		Title:         "Duplicate dependency",
+		DependencyIDs: []int64{dependency.ID, dependency.ID},
+	}); err == nil {
+		t.Fatal("create issue with duplicate dependency succeeded, want error")
+	}
+}
+
 func TestIssueDependenciesRejectCycles(t *testing.T) {
 	t.Parallel()
 
