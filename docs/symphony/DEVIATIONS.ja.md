@@ -27,6 +27,12 @@ issue-tracker API レスポンス上の派生状態として扱う点で Symphon
 orchestrator は `GET /api/v1/queue` をポーリングし、`queued` 配列だけを dispatch します。`pending` の課題は
 依存先の状態変更後に issue-tracker が queued と分類するまで無視します。
 
+Tasq は、ローカル issue-tracker の作成境界でも初期依存関係を受け付けます。
+`POST /api/v1/issues` は課題作成時に `dependency_ids` を含めることができます。Symphony は依存関係を、
+トラッカーのリレーションから導出される正規化済みトラッカーデータ（`blocked_by`）としてモデル化しており、
+ローカルの課題作成 write contract は定義していません。Tasq はこの書き込み側の依存関係 contract を
+issue-tracker サービスに置くことで、依存関係の検証、cycle 防止、派生 queue 分類を同じ境界で所有します。
+
 ## Workflow Front Matter Contract
 
 Tasq の `WORKFLOW.md` front matter は、Symphony の front matter スキーマの上に重ねた、
