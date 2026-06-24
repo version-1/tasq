@@ -20,6 +20,13 @@ This keeps external tracker integrations out of the orchestrator and preserves t
 
 Tasq's dispatch queue differs from Symphony worker scheduling by keeping `queued` and `pending` as derived issue-tracker API response states instead of persisted orchestrator-owned issue states. The orchestrator polls `GET /api/v1/queue`, dispatches only the `queued` array, and ignores `pending` issues until the issue-tracker classifies them as queued after dependency status changes.
 
+Tasq also accepts initial issue dependencies at the local issue-tracker creation boundary:
+`POST /api/v1/issues` may include `dependency_ids` when creating an issue. Symphony models
+dependencies as normalized tracker data (`blocked_by`) derived from tracker relations and does not
+define a local issue creation write contract. Tasq keeps this write-side dependency contract in the
+issue-tracker service so dependency validation, cycle prevention, and derived queue classification
+remain owned by the same boundary.
+
 ## Workflow Front Matter Contract
 
 Tasq's `WORKFLOW.md` front matter is intentionally a smaller, Tasq-specific contract layered on top
