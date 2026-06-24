@@ -30,6 +30,22 @@
 すべての課題は必ず 1 つのプロジェクトに属します。課題が属するプロジェクトは作成時に設定され、update API では変更できません。
 `dependency_ids` は単一 issue response と list response の両方で公開されます。依存がない issue は `null` ではなく `[]` を返します。
 
+### CreateIssueInput
+
+`CreateIssueInput` は `POST /api/v1/issues` の request body です。
+
+| Field         | Go Type    | Required | Default   | Constraints |
+|---------------|------------|----------|-----------|-------------|
+| ProjectID     | `int64`    | yes      | —         | `> 0`、参照先 project が存在すること |
+| Title         | `string`   | yes      | —         | min 1, max 500 chars |
+| Description   | `string`   | no       | `""`      | max 10,000 chars |
+| Status        | `Status`   | no       | `backlog` | enum: `backlog`, `ready`, `in_progress`, `review`, `done`, `blocked`, `failed`, `cancelled`, `duplicate` |
+| Priority      | `Priority` | no       | `normal`  | enum: `low`, `normal`, `high`, `urgent` |
+| Assignee      | `string`   | no       | `""`      | max 200 chars、自由入力 |
+| DependencyIDs | `[]int64`  | no       | `[]`      | 初期 dependency set。各 ID は issue を参照すること。重複、自己依存、cycle は不可 |
+
+`dependency_ids` は issue creation と同じ transaction で適用されます。dependency validation が失敗した場合、issue は作成されません。
+
 ### IssueDependency
 
 `issue_dependencies` table は、issue 間の directed dependency edge を保存します。`parent_issue_id` が `dependency_issue_id` に依存します。
