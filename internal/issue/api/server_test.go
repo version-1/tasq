@@ -713,6 +713,100 @@ func TestQueueReturnsQueuedAndPendingIssues(t *testing.T) {
 	}
 }
 
+func TestCreateIssueReturnsDependencyIDs(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer(t)
+	project := createProject(t, server, "CREATEAPI")
+	dependency := createIssueInProject(t, server, project.ID, "Dependency issue", entity.StatusDone)
+	body := bytes.NewBufferString(`{"projectId":` + stringID(project.ID) + `,"title":"Parent issue","dependency_ids":[` + stringID(dependency.ID) + `]}`)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/issues", body)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d body=%s", rec.Code, rec.Body.String())
+	}
+	assertResponseDataHasKey(t, rec.Body.Bytes(), "dependency_ids")
+	created := decodeData[entity.Issue](t, rec)
+	assertInt64s(t, created.DependencyIDs, []int64{dependency.ID})
+}
+
+func TestCreateIssueWithoutDependencyIDsReturnsEmptyDependencyIDs(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer(t)
+	project := createProject(t, server, "CREATENODEPS")
+	body := bytes.NewBufferString(`{"projectId":` + stringID(project.ID) + `,"title":"Independent issue"}`)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/issues", body)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d body=%s", rec.Code, rec.Body.String())
+	}
+	assertResponseDataHasKey(t, rec.Body.Bytes(), "dependency_ids")
+	created := decodeData[entity.Issue](t, rec)
+	if created.DependencyIDs == nil || len(created.DependencyIDs) != 0 {
+		t.Fatalf("dependency ids = %+v, want empty slice", created.DependencyIDs)
+	}
+}
+
+func TestCreateIssueRejectsSelfDependency(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer(t)
+	project := createProject(t, server, "CREATESELF")
+	existing := createIssueInProject(t, server, project.ID, "Existing issue", entity.StatusBacklog)
+	body := bytes.NewBufferString(`{"projectId":` + stringID(project.ID) + `,"title":"Self dependency","dependency_ids":[` + stringID(existing.ID+1) + `]}`)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/issues", body)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d body=%s", rec.Code, rec.Body.String())
+	}
+	assertErrorCode(t, rec, "issues.create.invalid_input")
+}
+
+func TestCreateIssueRejectsMissingDependency(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer(t)
+	project := createProject(t, server, "CREATEMISSING")
+	body := bytes.NewBufferString(`{"projectId":` + stringID(project.ID) + `,"title":"Missing dependency","dependency_ids":[999999]}`)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/issues", body)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d body=%s", rec.Code, rec.Body.String())
+	}
+	assertErrorCode(t, rec, "issues.create.invalid_input")
+}
+
+func TestCreateIssueRejectsDuplicateDependencyIDs(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer(t)
+	project := createProject(t, server, "CREATEDUP")
+	dependency := createIssueInProject(t, server, project.ID, "Dependency issue", entity.StatusBacklog)
+	body := bytes.NewBufferString(`{"projectId":` + stringID(project.ID) + `,"title":"Duplicate dependency","dependency_ids":[` + stringID(dependency.ID) + `,` + stringID(dependency.ID) + `]}`)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/issues", body)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d body=%s", rec.Code, rec.Body.String())
+	}
+	assertErrorCode(t, rec, "issues.create.invalid_input")
+}
+
 func TestIssueRoundTripDependencyIDs(t *testing.T) {
 	t.Parallel()
 
@@ -1089,6 +1183,32 @@ func decodeData[T any](t *testing.T, rec *httptest.ResponseRecorder) T {
 		t.Fatalf("decode response: %v", err)
 	}
 	return payload.Data
+}
+
+func assertResponseDataHasKey(t *testing.T, body []byte, key string) {
+	t.Helper()
+
+	var payload struct {
+		Data map[string]json.RawMessage `json:"data"`
+	}
+	if err := json.Unmarshal(body, &payload); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if _, ok := payload.Data[key]; !ok {
+		t.Fatalf("response data missing key %q: %s", key, string(body))
+	}
+}
+
+func assertInt64s(t *testing.T, got []int64, want []int64) {
+	t.Helper()
+	if len(got) != len(want) {
+		t.Fatalf("ids = %+v, want %+v", got, want)
+	}
+	for i, id := range want {
+		if got[i] != id {
+			t.Fatalf("ids = %+v, want %+v", got, want)
+		}
+	}
 }
 
 func newAttachmentUploadRequest(t *testing.T, entityType string, entityID string, filename string, contentType string, content []byte) *http.Request {

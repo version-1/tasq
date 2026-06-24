@@ -142,6 +142,17 @@ func (s *Store) ProjectByKey(ctx context.Context, key string) (entity.Project, e
 	return item, nil
 }
 
+func projectExistsTx(ctx context.Context, tx *sql.Tx, id int64) error {
+	var exists int
+	if err := tx.QueryRowContext(ctx, `SELECT 1 FROM projects WHERE id = ?`, id).Scan(&exists); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return sql.ErrNoRows
+		}
+		return fmt.Errorf("read project: %w", err)
+	}
+	return nil
+}
+
 func (s *Store) UpdateProject(ctx context.Context, id int64, input entity.UpdateProjectInput) (entity.Project, error) {
 	normalized, err := entity.NormalizeUpdateProject(input)
 	if err != nil {
@@ -287,11 +298,20 @@ func (s *Store) CreateIssue(ctx context.Context, input entity.CreateIssueInput) 
 	if err != nil {
 		return entity.Issue{}, err
 	}
-	if _, err := s.Project(ctx, normalized.ProjectID); err != nil {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return entity.Issue{}, err
+	}
+	defer func() {
+		if tx != nil {
+			_ = tx.Rollback()
+		}
+	}()
+	if err := projectExistsTx(ctx, tx, normalized.ProjectID); err != nil {
 		return entity.Issue{}, err
 	}
 	now := nowString()
-	result, err := s.db.ExecContext(ctx, `INSERT INTO issues (
+	result, err := tx.ExecContext(ctx, `INSERT INTO issues (
 		project_id, title, description, status, priority, assignee, created_at, updated_at
 	) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
 		normalized.ProjectID,
@@ -310,6 +330,13 @@ func (s *Store) CreateIssue(ctx context.Context, input entity.CreateIssueInput) 
 	if err != nil {
 		return entity.Issue{}, fmt.Errorf("read created issue id: %w", err)
 	}
+	if err := setDependencyIDsTx(ctx, tx, id, normalized.DependencyIDs); err != nil {
+		return entity.Issue{}, err
+	}
+	if err := tx.Commit(); err != nil {
+		return entity.Issue{}, err
+	}
+	tx = nil
 	return s.Issue(ctx, id)
 }
 

@@ -212,6 +212,8 @@ export interface CreateIssueInput {
   status?: IssueStatus;
   priority?: Priority;
   assignee?: string;
+  /** Initial dependency issue IDs. Omit or pass an empty array to create the issue without dependencies. */
+  dependency_ids?: number[];
 }
 
 export type QueueIssueAllOf = {
