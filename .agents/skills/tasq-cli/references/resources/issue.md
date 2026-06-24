@@ -6,7 +6,7 @@ Manage issues. Enum values live in [enums.md](enums.md). Global flags / env in [
 
 | Action | Usage |
 | --- | --- |
-| `create` | `tq issue create --project KEY --title TITLE [--description TEXT] [--status STATUS] [--priority PRIORITY] [--assignee NAME] [--attach PATH]` |
+| `create` | `tq issue create --project KEY --title TITLE [--description TEXT] [--status STATUS] [--priority PRIORITY] [--assignee NAME] [--dependency IDS] [--attach PATH]` |
 | `get` | `tq issue get <id>` |
 | `list` | `tq issue list [--project KEY]` |
 | `update` | `tq issue update <id> [--title …] [--description …] [--status …] [--priority …] [--assignee …] [--attach PATH]` |

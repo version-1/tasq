@@ -1,7 +1,13 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { issueStatuses, priorities } from "@/lib/types";
-import type { CreateIssueInput, IssueStatus, Priority, Project } from "@/lib/types";
+import type {
+  CreateIssueInput,
+  IssueStatus,
+  IssueSummary,
+  Priority,
+  Project,
+} from "@/lib/types";
 import styles from "./index.module.css";
 
 const defaultAddIssuePriority: Priority = "normal";
@@ -12,15 +18,18 @@ type AddIssueFormValues = {
   status: IssueStatus;
   priority: Priority;
   assignee: string;
+  dependencyIDs: number[];
 };
 
 export function AddIssueDialog({
+  dependencyOptions,
   error,
   initialStatus,
   project,
   onCancel,
   onSubmit,
 }: {
+  dependencyOptions: IssueSummary[];
   error: string;
   initialStatus: IssueStatus;
   project: Project | null;
@@ -137,6 +146,33 @@ export function AddIssueDialog({
             />
           </label>
 
+          <fieldset className={styles.dependencyField}>
+            <legend>{t("addIssue.fields.dependencies")}</legend>
+            {dependencyOptions.length > 0 ? (
+              <div className={styles.dependencyOptions}>
+                {dependencyOptions.map((issue) => (
+                  <label key={issue.id} className={styles.dependencyOption}>
+                    <input
+                      type="checkbox"
+                      checked={values.dependencyIDs.includes(issue.id)}
+                      onChange={() =>
+                        setValues({
+                          ...values,
+                          dependencyIDs: toggleDependencyID(values.dependencyIDs, issue.id),
+                        })
+                      }
+                    />
+                    <span>
+                      <strong>#{issue.id}</strong> {issue.title}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            ) : (
+              <p className={styles.dependencyEmpty}>{t("addIssue.emptyDependencies")}</p>
+            )}
+          </fieldset>
+
           {errorMessage ? <p className={styles.formError}>{errorMessage}</p> : null}
 
           <div className={styles.dialogActions}>
@@ -160,11 +196,12 @@ function initialAddIssueValues(status: IssueStatus): AddIssueFormValues {
     status,
     priority: defaultAddIssuePriority,
     assignee: "",
+    dependencyIDs: [],
   };
 }
 
 function toCreateIssueInput(values: AddIssueFormValues, title: string, projectID: number): CreateIssueInput {
-  return {
+  const input: CreateIssueInput = {
     projectId: projectID,
     title,
     description: values.description.trim() || undefined,
@@ -172,4 +209,15 @@ function toCreateIssueInput(values: AddIssueFormValues, title: string, projectID
     priority: values.priority,
     assignee: values.assignee.trim() || undefined,
   };
+  if (values.dependencyIDs.length > 0) {
+    input.dependency_ids = values.dependencyIDs;
+  }
+  return input;
+}
+
+function toggleDependencyID(currentIDs: number[], issueID: number): number[] {
+  if (currentIDs.includes(issueID)) {
+    return currentIDs.filter((currentID) => currentID !== issueID);
+  }
+  return [...currentIDs, issueID].sort((left, right) => left - right);
 }

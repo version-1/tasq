@@ -143,6 +143,51 @@ func TestIssueCreate(t *testing.T) {
 	}
 }
 
+func TestIssueCreateSendsDependencyIDs(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet && r.URL.Path == "/api/v1/projects" {
+			writeTestJSON(t, w, apiResponse[[]entity.Project]{
+				Data: []entity.Project{{ID: 2, Key: "CLI", Name: "CLI"}},
+			})
+			return
+		}
+		if r.Method != http.MethodPost || r.URL.Path != "/api/v1/issues" {
+			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
+		var input entity.CreateIssueInput
+		if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+			t.Fatal(err)
+		}
+		if input.ProjectID != 2 || input.Title != "Dependent issue" {
+			t.Fatalf("unexpected input: %+v", input)
+		}
+		assertInt64s(t, input.DependencyIDs, []int64{4, 7})
+		w.WriteHeader(http.StatusCreated)
+		writeTestJSON(t, w, apiResponse[entity.Issue]{Data: entity.Issue{
+			ID:            12,
+			ProjectID:     2,
+			ProjectKey:    "CLI",
+			Title:         input.Title,
+			DependencyIDs: input.DependencyIDs,
+		}})
+	}))
+	defer server.Close()
+
+	stdout, stderr, code := runCLI(t, []string{
+		"--api-url", server.URL,
+		"issue", "create",
+		"--title", "Dependent issue",
+		"--project", "CLI",
+		"--dependency", "4,7",
+	})
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr)
+	}
+	if !strings.Contains(stdout, "ID: 12") || !strings.Contains(stdout, "Dependencies: 4,7") {
+		t.Fatalf("unexpected stdout: %s", stdout)
+	}
+}
+
 func TestIssueCreateRequiresProject(t *testing.T) {
 	stdout, stderr, code := runCLI(t, []string{
 		"--api-url", defaultAPIURL,
@@ -157,6 +202,49 @@ func TestIssueCreateRequiresProject(t *testing.T) {
 	}
 	if got := decodeCLIError(t, stderr); got != "project is required" {
 		t.Fatalf("error=%q", got)
+	}
+}
+
+func TestIssueCreateDependencyUsageErrors(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+		want string
+	}{
+		{
+			name: "empty dependency",
+			args: []string{"issue", "create", "--title", "Invalid dependency", "--project", "CLI", "--dependency", ""},
+			want: "dependency must not be empty",
+		},
+		{
+			name: "invalid dependency",
+			args: []string{"issue", "create", "--title", "Invalid dependency", "--project", "CLI", "--dependency", "4,0"},
+			want: "dependency must be a comma-separated list of positive integers",
+		},
+		{
+			name: "negative dependency",
+			args: []string{"issue", "create", "--title", "Invalid dependency", "--project", "CLI", "--dependency", "-1"},
+			want: "dependency must be a comma-separated list of positive integers",
+		},
+		{
+			name: "non integer dependency",
+			args: []string{"issue", "create", "--title", "Invalid dependency", "--project", "CLI", "--dependency", "abc"},
+			want: "dependency must be a comma-separated list of positive integers",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			stdout, stderr, code := runCLI(t, append([]string{"--api-url", defaultAPIURL}, test.args...))
+			if code != 2 {
+				t.Fatalf("code=%d stderr=%s", code, stderr)
+			}
+			if stdout != "" {
+				t.Fatalf("expected empty stdout: %s", stdout)
+			}
+			if got := decodeCLIError(t, stderr); got != test.want {
+				t.Fatalf("error=%q, want %q", got, test.want)
+			}
+		})
 	}
 }
 
@@ -284,7 +372,7 @@ func TestIssueUpdateClearsDependencies(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("code=%d stderr=%s", code, stderr)
 	}
-	if strings.Contains(stdout, "Dependencies:") {
+	if !strings.Contains(stdout, "Dependencies: none") {
 		t.Fatalf("unexpected stdout: %s", stdout)
 	}
 }
@@ -863,6 +951,60 @@ func TestIssueCreateWithAttachmentAgainstIssueTrackerAPI(t *testing.T) {
 	if len(issues) != 1 || !strings.Contains(issues[0].Description, "![screenshot.png](attachment://att_") {
 		t.Fatalf("issues = %+v", issues)
 	}
+}
+
+func TestIssueCreateWithDependenciesAgainstIssueTrackerAPI(t *testing.T) {
+	ctx := context.Background()
+	issueStore, err := store.OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer issueStore.Close()
+	project, err := issueStore.CreateProject(ctx, entity.CreateProjectInput{Key: "DEPS", Name: "Deps", Location: t.TempDir()})
+	if err != nil {
+		t.Fatalf("create project: %v", err)
+	}
+	first, err := issueStore.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "First dependency", Status: entity.StatusDone})
+	if err != nil {
+		t.Fatalf("create first dependency: %v", err)
+	}
+	second, err := issueStore.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Second dependency", Status: entity.StatusDone})
+	if err != nil {
+		t.Fatalf("create second dependency: %v", err)
+	}
+	server := httptest.NewServer(api.NewServer(issueStore).Handler())
+	defer server.Close()
+
+	stdout, stderr, code := runCLI(t, []string{
+		"--api-url", server.URL,
+		"issue", "create",
+		"--project", "DEPS",
+		"--title", "Issue with dependencies",
+		"--dependency", fmt.Sprintf("%d,%d", first.ID, second.ID),
+	})
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr)
+	}
+	wantDependencyText := fmt.Sprintf("Dependencies: %d,%d", first.ID, second.ID)
+	if !strings.Contains(stdout, "Issue with dependencies") || !strings.Contains(stdout, wantDependencyText) {
+		t.Fatalf("unexpected stdout: %s", stdout)
+	}
+
+	issues, err := issueStore.Issues(ctx)
+	if err != nil {
+		t.Fatalf("list issues: %v", err)
+	}
+	var created entity.Issue
+	for _, issue := range issues {
+		if issue.Title == "Issue with dependencies" {
+			created = issue
+			break
+		}
+	}
+	if created.ID == 0 {
+		t.Fatalf("created issue not found: %+v", issues)
+	}
+	assertInt64s(t, created.DependencyIDs, []int64{first.ID, second.ID})
 }
 
 func TestCommentAddWithAttachmentAgainstIssueTrackerAPI(t *testing.T) {
