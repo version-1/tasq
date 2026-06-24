@@ -398,6 +398,7 @@ function LayoutModalContent({ shellData }: { shellData: LayoutShellData }) {
   if (modal.activeModalID === modalIDs.addIssue) {
     return (
       <AddIssueDialog
+        dependencyOptions={shellData.issues}
         error={shellData.addIssueError}
         initialStatus={shellData.addIssueInitialStatus}
         project={shellData.activeProject}
