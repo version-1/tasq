@@ -9,6 +9,7 @@ describe("RunsSection", () => {
   afterEach(() => {
     toastStore.clear();
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
   });
 
   it("shows thread IDs when present and a placeholder when absent", () => {
