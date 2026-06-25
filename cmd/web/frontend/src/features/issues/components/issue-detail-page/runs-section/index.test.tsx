@@ -1,10 +1,16 @@
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { RunsSection } from ".";
 import type { OrchestratorIssueRun } from "@/lib/types";
+import { toastStore } from "@/lib/toast";
 
 describe("RunsSection", () => {
+  afterEach(() => {
+    toastStore.clear();
+    vi.restoreAllMocks();
+  });
+
   it("shows thread IDs when present and a placeholder when absent", () => {
     render(
       <MemoryRouter>
@@ -15,6 +21,38 @@ describe("RunsSection", () => {
     const links = screen.getAllByRole("link");
     expect(within(links[0]).getByText("thread-latest")).toBeInTheDocument();
     expect(within(links[1]).getByText("not set")).toBeInTheDocument();
+  });
+
+  it("copies a present thread ID to the clipboard", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });
+
+    render(
+      <MemoryRouter>
+        <RunsSection issueID={12} error="" isLoading={false} runs={runs} />
+      </MemoryRouter>,
+    );
+
+    const copyButtons = screen.getAllByRole("button", { name: "Copy thread ID" });
+    expect(copyButtons[0]).toBeEnabled();
+    fireEvent.click(copyButtons[0]);
+
+    expect(writeText).toHaveBeenCalledWith("thread-latest");
+    await waitFor(() => {
+      expect(toastStore.getSnapshot()).toMatchObject([
+        { type: "success", message: "Thread ID copied" },
+      ]);
+    });
+  });
+
+  it("does not allow copying when the thread ID is absent", () => {
+    render(
+      <MemoryRouter>
+        <RunsSection issueID={12} error="" isLoading={false} runs={runs} />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getAllByRole("button", { name: "Copy thread ID" })[1]).toBeDisabled();
   });
 });
 

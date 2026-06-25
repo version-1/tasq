@@ -29,6 +29,7 @@ const knownErrorCodes = [
   "comments.update.invalid_input",
   "comments.update.invalid_request",
   "comments.update.not_found",
+  "clipboardUnavailable",
   "conversation_query_failed",
   "invalid_issue_identifier",
   "invalid_run_id",
@@ -73,7 +74,7 @@ const knownErrorCodes = [
   "summary.get.internal_error",
 ] as const;
 
-const genericSuccessActions = ["created", "deleted", "saved", "updated"] as const;
+const genericSuccessActions = ["created", "deleted", "saved", "threadIDCopied", "updated"] as const;
 
 describe("i18n toast resources", () => {
   it("has translations for known server error codes in every supported language", () => {

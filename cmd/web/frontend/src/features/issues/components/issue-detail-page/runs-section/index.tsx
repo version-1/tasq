@@ -1,9 +1,9 @@
 "use client";
 
-import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import type { OrchestratorIssueRun } from "@/lib/types";
 import styles from "./index.module.css";
+import { RunRow } from "./run-row";
 
 type RunsSectionProps = {
   issueID: number;
@@ -28,37 +28,10 @@ export function RunsSection({ issueID, error, isLoading, runs }: RunsSectionProp
       {runs.length > 0 ? (
         <div className={styles.runList}>
           {runs.map((run) => (
-            <Link
-              key={run.run_id}
-              className={styles.runRow}
-              to={`/issues/${issueID}/conversations?runId=${encodeURIComponent(run.run_id)}`}
-            >
-              <span className={styles.runIdentity}>
-                <span className={styles.runID}>{run.run_id}</span>
-                <span className={styles.threadID}>
-                  <span className={styles.threadLabel}>{t("issues.detailPage.threadID")}</span>{" "}
-                  {run.thread_id?.trim() ? run.thread_id : t("issues.detailPage.noThreadID")}
-                </span>
-              </span>
-              <span className={styles.runMeta}>
-                {t(`runStatuses.${run.status}`)} · {t("issues.attempt")} {run.attempt}
-              </span>
-              <span className={styles.runTime}>{formatDateTime(run.updated_at)}</span>
-            </Link>
+            <RunRow key={run.run_id} issueID={issueID} run={run} />
           ))}
         </div>
       ) : null}
     </section>
   );
-}
-
-function formatDateTime(value: string): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(date);
 }
