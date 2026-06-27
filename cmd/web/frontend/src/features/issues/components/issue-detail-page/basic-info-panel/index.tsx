@@ -22,7 +22,7 @@ export function BasicInfoPanel({
   const { t } = useTranslation();
 
   return (
-    <header className={styles.header}>
+    <section className={styles.panel}>
       <dl className={styles.metaGrid}>
         <MetaItem label={t("issues.table.id")} value={`#${issue.id}`} />
         <MetaItem label={t("issues.detail.project")} value={<ProjectBadge projectKey={issue.projectKey} />} />
@@ -41,7 +41,7 @@ export function BasicInfoPanel({
         <MetaItem label={t("issues.detailPage.createdAt")} value={formatDateTime(issue.createdAt)} />
         <MetaItem label={t("issues.detailPage.updatedAt")} value={formatDateTime(issue.updatedAt)} />
       </dl>
-    </header>
+    </section>
   );
 }
 

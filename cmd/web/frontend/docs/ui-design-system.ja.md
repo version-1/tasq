@@ -560,10 +560,12 @@ gap: 14px;
 `features/issues/components/issue-detail-page`:
 
 - gap `16px` のページ grid。各セクションは標準の card surface。
-- ヘッダーセクションは `28px` タイトル、issue ID 行、badge 行、4 カラム
-  meta grid を使い、`900px` 未満で 2 カラム、`640px` 未満で 1 カラムに
-  崩れます。
-- `meta-item` は各エントリを top rule、`12px` muted `dt`、`700` weight
+- 詳細タブでは main content の幅を制約したまま、wide screen では
+  `basic-info-panel` を右側カラムに配置し、`900px` 未満では main content
+  の上に積みます。
+- `basic-info-panel` は issue ID、project、priority、status、assignee、
+  作成日、更新日を 1 カラム meta grid で表示します。
+- `meta-item` は各エントリを top rule、`12px` muted `dt`、通常 weight の
   `dd`、ID のための `overflow-wrap: anywhere` で描画します。
 - `runs-section` は run 行を `8px` border のグループで囲みます。
 - `run-row` は 2 カラム grid (`1fr` リンク領域 + `40px` コピーボタン)。
