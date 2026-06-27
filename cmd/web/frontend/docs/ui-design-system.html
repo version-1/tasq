@@ -705,6 +705,7 @@
         </p>
         <nav class="nav" aria-label="Design system sections">
           <a href="#overview">Overview</a>
+          <a href="#foundations">Foundations</a>
           <a href="#architecture">Architecture</a>
           <a href="#tokens">Tokens</a>
           <a href="#components">Components</a>
@@ -768,6 +769,50 @@
             </article>
           </div>
         </header>
+
+        <section class="section" id="foundations">
+          <div class="sectionHeader">
+            <div>
+              <p class="eyebrow">Foundations</p>
+              <h2>Principles Before Tokens</h2>
+            </div>
+            <p>
+              Tasq is a quiet, dense, operational UI. The design system should
+              optimize scanning, comparison, repeated action, and handoff
+              clarity before decoration.
+            </p>
+          </div>
+
+          <div class="grid three">
+            <article class="componentCard">
+              <h3>Product personality</h3>
+              <ul>
+                <li>Quiet and utilitarian product screens.</li>
+                <li>Dense but organized information layout.</li>
+                <li>Systematic reuse before expressive one-offs.</li>
+                <li>State-forward status and priority presentation.</li>
+              </ul>
+            </article>
+            <article class="componentCard">
+              <h3>Interaction principles</h3>
+              <ul>
+                <li>Controls must look interactive before hover.</li>
+                <li>Repeated workflows should avoid layout shift.</li>
+                <li>State uses text plus icon, dot, border, or position.</li>
+                <li>Keyboard and screen-reader behavior is contractual.</li>
+              </ul>
+            </article>
+            <article class="componentCard">
+              <h3>Anti-patterns</h3>
+              <ul>
+                <li>Ad hoc hex values when a token exists.</li>
+                <li>Feature-local primitives that duplicate shared UI.</li>
+                <li>One-off spacing values for local tuning.</li>
+                <li>Decorative cards, gradients, and oversized heroes in tools.</li>
+              </ul>
+            </article>
+          </div>
+        </section>
 
         <section class="section" id="architecture">
           <div class="sectionHeader">
