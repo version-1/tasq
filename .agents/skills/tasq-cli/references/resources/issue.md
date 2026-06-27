@@ -9,7 +9,7 @@ Manage issues. Enum values live in [enums.md](enums.md). Global flags / env in [
 | `create` | `tq issue create --project KEY --title TITLE [--description TEXT] [--status STATUS] [--priority PRIORITY] [--assignee NAME] [--dependency IDS] [--attach PATH]` |
 | `get` | `tq issue get <id>` |
 | `list` | `tq issue list [--project KEY]` |
-| `update` | `tq issue update <id> [--title …] [--description …] [--status …] [--priority …] [--assignee …] [--attach PATH]` |
+| `update` | `tq issue update <id> [--title …] [--description …] [--status …] [--priority …] [--assignee …] [--dependency IDS] [--clear-dependencies] [--attach PATH]` |
 | `close` | `tq issue close <id>` — sets status to `done` |
 | `cancel` | `tq issue cancel <id>` — sets status to `cancelled` |
 | `ready` | `tq issue ready <id>` — sets status to `ready` |
@@ -23,7 +23,7 @@ Manage issues. Enum values live in [enums.md](enums.md). Global flags / env in [
 | Action | Required |
 | --- | --- |
 | `create` | `--title` and `--project` (the project *key*, not the id). |
-| `update` | At least one of `--title` / `--description` / `--status` / `--priority` / `--assignee` / `--attach`. |
+| `update` | At least one of `--title` / `--description` / `--status` / `--priority` / `--assignee` / `--dependency` / `--clear-dependencies` / `--attach`. |
 | `get` / `close` / `cancel` / `ready` / `draft` | A single positive integer `<id>` positional. |
 | `rename` | `<id> <title>` — title is a single positional after the id. |
 | `edit` | `<id> <description>` — description is a single positional after the id. |
@@ -35,6 +35,12 @@ Manage issues. Enum values live in [enums.md](enums.md). Global flags / env in [
 | `--status` | `backlog` |
 | `--priority` | `normal` |
 | `--description`, `--assignee` | empty string |
+
+## Dependencies
+
+`--dependency IDS` sets or replaces the full dependency set with a comma-separated list of issue IDs. Empty values are rejected.
+
+Use `--clear-dependencies` with `tq issue update <id>` to remove all dependencies. It cannot be combined with `--dependency`.
 
 ## `--attach`
 
