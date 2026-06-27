@@ -24,7 +24,7 @@ export function Sidebar({
     <aside className={styles.sidebar}>
       <Link
         className={styles.brand}
-        to="/issues"
+        to="/dashboard"
         aria-label={t("sidebar.home")}
       >
         tasq
@@ -44,17 +44,6 @@ export function Sidebar({
         >
           <IconProxy name="layout-dashboard" className={styles.navIcon} />
           {t("header.dashboard")}
-        </Link>
-        <Link
-          className={
-            activePage === "issues" && activeProjectID === null
-              ? `${styles.navItem} ${styles.active}`
-              : styles.navItem
-          }
-          to="/issues"
-        >
-          <IconProxy name="square-kanban" className={styles.navIcon} />
-          {t("sidebar.board")}
         </Link>
       </nav>
 

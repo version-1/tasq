@@ -11,6 +11,7 @@ type HeaderProps = {
   activePage: HeaderPage;
   projectName: string | null;
   issueCount: number | null;
+  isIssueDetailPage?: boolean;
   onAddTask: () => void;
   showViewNavigation?: boolean;
   showAddTaskButton?: boolean;
@@ -18,6 +19,7 @@ type HeaderProps = {
 
 export function Header({
   activePage,
+  isIssueDetailPage = false,
   onAddTask,
   projectName,
   showViewNavigation = true,
@@ -25,6 +27,11 @@ export function Header({
 }: HeaderProps) {
   const { t } = useTranslation();
   const tabs = useTabs();
+  const title = isIssueDetailPage
+    ? (projectName ?? t("issues.detailPage.detailTab"))
+    : activePage === "issues"
+      ? (projectName ?? t("header.issueList"))
+      : t(pageHeadingKey(activePage));
 
   return (
     <header className={styles.header}>
@@ -49,11 +56,7 @@ export function Header({
 
       <div className={styles.titleRow}>
         <div className={styles.titleGroup}>
-          <h1>
-            {activePage === "issues"
-              ? (projectName ?? t("header.issueList"))
-              : t(pageHeadingKey(activePage))}
-          </h1>
+          <h1>{title}</h1>
           {activePage === "issues" ? (
             <button
               type="button"

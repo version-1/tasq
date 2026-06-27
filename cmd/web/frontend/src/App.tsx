@@ -1,20 +1,24 @@
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import DashboardPage from "./app/dashboard/page";
-import { IssueDetailLayout } from "./components/layout/issue";
+import DashboardStatsPage from "./app/dashboard/stats/page";
+import DashboardTablePage from "./app/dashboard/table/page";
+import { NotFoundRoute } from "./app/not-found/page";
 import ConversationRoute from "./app/issues/[id]/conversations/page";
 import IssueDetailRoute from "./app/issues/[id]/page";
 import IssuesPage from "./app/issues/page";
 import IssuesTablePage from "./app/issues/table/page";
 import ProjectSettingsPage from "./app/projects/[projectKey]/settings/page";
 import SettingsPage from "./app/settings/page";
+import { IssueDetailLayout } from "./components/layout/issue";
 import { DefaultLayout } from "./components/layout/default";
 import { Layout } from "./components/layout";
 import { ProjectLayout } from "./components/layout/project";
 import { TabsProvider, type TabPageLink } from "./context/tabs";
 
-const projectHeaderPages = [
-  { key: "issues", href: "/issues", titleKey: "header.board" },
-  { key: "table", href: "/issues/table", titleKey: "issues.table.tableTab" },
+const dashboardHeaderPages = [
+  { key: "board", href: "/dashboard", titleKey: "header.board" },
+  { key: "table", href: "/dashboard/table", titleKey: "issues.table.tableTab" },
+  { key: "stats", href: "/dashboard/stats", titleKey: "dashboard.statsTab" },
 ] satisfies readonly TabPageLink[];
 
 const projectDetailHeaderPages = [
@@ -42,21 +46,21 @@ export function App() {
       <Routes>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route
-          path="/issues"
+          path="/dashboard"
           element={
-            <TabsProvider activeKey="issues" pages={projectHeaderPages}>
+            <TabsProvider activeKey="board" pages={dashboardHeaderPages}>
               <ProjectLayout>
-                <IssuesPage />
+                <DashboardPage />
               </ProjectLayout>
             </TabsProvider>
           }
         />
         <Route
-          path="/issues/table"
+          path="/dashboard/table"
           element={
-            <TabsProvider activeKey="table" pages={projectHeaderPages}>
+            <TabsProvider activeKey="table" pages={dashboardHeaderPages}>
               <ProjectLayout>
-                <IssuesTablePage />
+                <DashboardTablePage />
               </ProjectLayout>
             </TabsProvider>
           }
@@ -95,6 +99,8 @@ export function App() {
             </TabsProvider>
           }
         />
+        <Route path="/issues" element={<NotFoundRoute />} />
+        <Route path="/issues/table" element={<NotFoundRoute />} />
         <Route
           path="/issues/:id"
           element={
@@ -126,12 +132,12 @@ export function App() {
           }
         />
         <Route
-          path="/dashboard"
+          path="/dashboard/stats"
           element={
-            <TabsProvider>
-              <DefaultLayout>
-                <DashboardPage />
-              </DefaultLayout>
+            <TabsProvider activeKey="stats" pages={dashboardHeaderPages}>
+              <ProjectLayout showAddTaskButton={false}>
+                <DashboardStatsPage />
+              </ProjectLayout>
             </TabsProvider>
           }
         />
@@ -145,7 +151,7 @@ export function App() {
             </TabsProvider>
           }
         />
-        <Route path="*" element={<Navigate to="/issues" replace />} />
+        <Route path="*" element={<NotFoundRoute />} />
       </Routes>
     </Layout>
   );

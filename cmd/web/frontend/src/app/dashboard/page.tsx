@@ -1,10 +1,16 @@
 "use client";
 
 import { useLayoutData } from "@/components/layout";
-import { DashboardView } from "@/features/dashboard/components/dashboard-view";
+import { IssuesView } from "@/features/issues/components/issues-view";
 
 export default function DashboardPage() {
-  const { summary, issues, refreshIntervalMs } = useLayoutData();
+  const { summary, onAddIssue, onStatusChange } = useLayoutData();
 
-  return <DashboardView summary={summary} issues={issues} refreshIntervalMs={refreshIntervalMs} />;
+  return (
+    <IssuesView
+      summary={summary}
+      onAddIssue={onAddIssue}
+      onStatusChange={onStatusChange}
+    />
+  );
 }

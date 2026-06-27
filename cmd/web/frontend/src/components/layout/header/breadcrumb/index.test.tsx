@@ -16,7 +16,7 @@ describe("Breadcrumb", () => {
     renderBreadcrumb("/issues/24/conversations");
 
     const breadcrumb = screen.getByRole("navigation", { name: "Breadcrumb" });
-    expect(within(breadcrumb).getByRole("link", { name: "Issues" })).toHaveAttribute("href", "/issues");
+    expect(within(breadcrumb).getByRole("link", { name: "Dashboard" })).toHaveAttribute("href", "/dashboard");
     expect(within(breadcrumb).getByRole("link", { name: "#24" })).toHaveAttribute("href", "/issues/24");
     expect(within(breadcrumb).getByText("Conversation")).toHaveAttribute("aria-current", "page");
   });
@@ -41,7 +41,8 @@ describe("Breadcrumb", () => {
 
   it.each([
     { pathname: "/dashboard", current: "Dashboard" },
-    { pathname: "/issues", current: "Issues" },
+    { pathname: "/dashboard/table", current: "Table" },
+    { pathname: "/dashboard/stats", current: "Stats" },
     { pathname: "/issues/24", current: "#24" },
     { pathname: "/issues/24/conversations", current: "Conversation" },
     { pathname: "/issues/24/runs/7/conversations", current: "Conversation" },

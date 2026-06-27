@@ -10,7 +10,7 @@ const meta = {
       <TabsProvider
         activeKey="issues"
         pages={[
-          { key: "issues", href: "/issues", titleKey: "header.board" },
+          { key: "issues", href: "/dashboard", titleKey: "header.board" },
           { key: "settings", href: "/settings", titleKey: "header.settings" },
         ]}
       >

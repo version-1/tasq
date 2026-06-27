@@ -9,14 +9,17 @@ describe("breadcrumbSegmentsFromPathname", () => {
       segments: [{ label: "Dashboard" }],
     },
     {
-      pathname: "/issues",
-      segments: [{ label: "Issues" }],
+      pathname: "/dashboard/table",
+      segments: [
+        { label: "Dashboard", href: "/dashboard" },
+        { label: "Table" },
+      ],
     },
     {
-      pathname: "/issues/table",
+      pathname: "/dashboard/stats",
       segments: [
-        { label: "Issues", href: "/issues" },
-        { label: "Table" },
+        { label: "Dashboard", href: "/dashboard" },
+        { label: "Stats" },
       ],
     },
     {
@@ -43,14 +46,14 @@ describe("breadcrumbSegmentsFromPathname", () => {
     {
       pathname: "/issues/25",
       segments: [
-        { label: "Issues", href: "/issues" },
+        { label: "Dashboard", href: "/dashboard" },
         { label: "#25" },
       ],
     },
     {
       pathname: "/issues/25/conversations",
       segments: [
-        { label: "Issues", href: "/issues" },
+        { label: "Dashboard", href: "/dashboard" },
         { label: "#25", href: "/issues/25" },
         { label: "Conversation" },
       ],
@@ -58,7 +61,7 @@ describe("breadcrumbSegmentsFromPathname", () => {
     {
       pathname: "/issues/25/runs/7/conversations",
       segments: [
-        { label: "Issues", href: "/issues" },
+        { label: "Dashboard", href: "/dashboard" },
         { label: "#25", href: "/issues/25" },
         { label: "Conversation" },
       ],
@@ -80,7 +83,7 @@ describe("breadcrumbSegmentsFromPathname", () => {
 
   it("ignores trailing slashes, query strings, and hashes", () => {
     expect(breadcrumbSegmentsFromPathname("/issues/25/conversations/?tab=notes#latest")).toEqual([
-      { label: "Issues", href: "/issues" },
+      { label: "Dashboard", href: "/dashboard" },
       { label: "#25", href: "/issues/25" },
       { label: "Conversation" },
     ]);
@@ -88,5 +91,7 @@ describe("breadcrumbSegmentsFromPathname", () => {
 
   it("returns no segments for unmapped paths", () => {
     expect(breadcrumbSegmentsFromPathname("/unknown")).toEqual([]);
+    expect(breadcrumbSegmentsFromPathname("/issues")).toEqual([]);
+    expect(breadcrumbSegmentsFromPathname("/issues/table")).toEqual([]);
   });
 });

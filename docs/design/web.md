@@ -6,18 +6,24 @@ The Web UI is a Vite + React + TypeScript single-page app served by `cmd/web`. T
 
 User-facing views are split by React Router routes:
 
-- `/issues`
-- `/issues/table`
+- `/dashboard`
+- `/dashboard/table`
+- `/dashboard/stats`
 - `/projects/:projectKey`
 - `/projects/:projectKey/issues`
 - `/projects/:projectKey/table`
 - `/projects/:projectKey/settings`
 - `/issues/:id`
-- `/dashboard`
 - `/settings`
 
-The root `/` route redirects to `/issues`.
+The root `/` route redirects to `/dashboard`.
 The project detail root `/projects/:projectKey` redirects to `/projects/:projectKey/issues`.
+Dashboard pages have exactly three fixed tabs:
+
+- `board`: shows the issue board across all projects.
+- `table`: shows a paginated issue table across all projects.
+- `stats`: shows dashboard metrics and running agent summaries.
+
 Project detail pages have exactly three fixed tabs:
 
 - `issues`: shows the existing issue board scoped to the selected project.
