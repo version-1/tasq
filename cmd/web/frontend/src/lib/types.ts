@@ -15,6 +15,7 @@ import {
   type Project,
   type ProjectWorkflow,
   type ProjectWorkflowFrontmatter,
+  type QueueStatus,
   type Summary,
 } from "@/lib/generated/issue-tracker";
 import type {
@@ -55,5 +56,6 @@ export type {
   Project,
   ProjectWorkflow,
   ProjectWorkflowFrontmatter,
+  QueueStatus,
   Summary,
 };

@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { IssueStatus, Summary } from "@/lib/types";
 import { issueStatuses } from "@/lib/types";
 import { issueFixtures } from "@/mocks/fixtures/issues";
+import { storyQueueStatusForIssue } from "@/stories/fixtures";
 import { IssueBoard } from "./index";
 
 const summary: Summary = {
@@ -13,6 +14,7 @@ const summary: Summary = {
       .filter((issue) => issue.status === status)
       .map((issue) => ({
         ...issue,
+        queueStatus: storyQueueStatusForIssue(issue),
         stats: {
           commentCount: issue.id % 3,
         },
