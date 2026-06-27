@@ -81,10 +81,13 @@
   border: 0;
   border-bottom: 1px solid var(--border);
   border-radius: var(--radius-sm);
+  color: var(--text);
   cursor: pointer;
   display: flex;
+  font-size: 14px;
   min-height: 52px;
   padding: 9px var(--space-4-5);
+  text-align: left;
 }
 
 .statusOption:hover,

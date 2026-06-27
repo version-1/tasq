@@ -125,7 +125,7 @@ function StatusDropdown({
               disabled={disabled}
               onClick={() => setDraftStatus(status)}
             >
-              <StatusBadge status={status} />
+              {t(`statuses.${status}`)}
             </button>
           ))}
           <div className={styles.statusActions}>
