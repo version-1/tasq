@@ -97,7 +97,7 @@ async function resolveConversation(
   return fetchOrchestratorConversation(issueID, latestRun.run_id, { silent: true });
 }
 
-function ConversationEvents({ events }: { events: OrchestratorConversationEvent[] }) {
+export function ConversationEvents({ events }: { events: OrchestratorConversationEvent[] }) {
   const { t } = useTranslation();
 
   if (events.length === 0) {

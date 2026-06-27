@@ -1,4 +1,46 @@
 .page {
   display: grid;
-  gap: 16px;
+  gap: var(--space-4);
+}
+
+.tabList {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-panel);
+  display: flex;
+  gap: var(--space-6);
+  overflow-x: auto;
+  padding: var(--space-0) var(--space-4-5);
+}
+
+.tab,
+.activeTab {
+  background: transparent;
+  border: 0;
+  color: var(--muted);
+  cursor: pointer;
+  flex: 0 0 auto;
+  font: inherit;
+  font-size: 14px;
+  min-block-size: 44px;
+  padding: var(--space-0);
+}
+
+.activeTab {
+  box-shadow: inset 0 -2px 0 var(--primary-black);
+  color: var(--primary-black);
+}
+
+.tab:focus-visible,
+.activeTab:focus-visible {
+  border-radius: var(--radius-sm);
+  box-shadow: inset 0 -2px 0 var(--primary-black), var(--shadow-filter-active);
+  outline: 0;
+}
+
+.tabPanel {
+  display: grid;
+  gap: var(--space-4);
 }

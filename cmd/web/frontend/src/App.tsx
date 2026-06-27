@@ -23,15 +23,6 @@ const projectDetailHeaderPages = [
   { key: "settings", href: "/projects/:projectKey/settings", titleKey: "header.settings" },
 ] satisfies readonly TabPageLink[];
 
-const issueHeaderPages = [
-  { key: "detail", href: "/issues/:id", titleKey: "issues.detailPage.detailTab" },
-  {
-    key: "conversations",
-    href: "/issues/:id/conversations",
-    titleKey: "issues.detailPage.conversationTab",
-  },
-] satisfies readonly TabPageLink[];
-
 export function App() {
   return (
     <Layout>
@@ -94,7 +85,7 @@ export function App() {
         <Route
           path="/issues/:id"
           element={
-            <TabsProvider activeKey="detail" pages={issueHeaderPages}>
+            <TabsProvider>
               <IssueDetailLayout>
                 <IssueDetailRoute />
               </IssueDetailLayout>
@@ -104,7 +95,7 @@ export function App() {
         <Route
           path="/issues/:id/conversations"
           element={
-            <TabsProvider activeKey="conversations" pages={issueHeaderPages}>
+            <TabsProvider>
               <IssueDetailLayout>
                 <ConversationRoute />
               </IssueDetailLayout>
@@ -114,7 +105,7 @@ export function App() {
         <Route
           path="/issues/:id/runs/:runId/conversations"
           element={
-            <TabsProvider activeKey="conversations" pages={issueHeaderPages}>
+            <TabsProvider>
               <IssueDetailLayout>
                 <ConversationRoute />
               </IssueDetailLayout>
