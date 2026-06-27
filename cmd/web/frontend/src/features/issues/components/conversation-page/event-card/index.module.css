@@ -1,0 +1,139 @@
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-panel);
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+.approval {
+  border-color: var(--warning);
+  box-shadow: inset 3px 0 0 var(--warning), var(--shadow-panel);
+}
+
+.header {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.type {
+  align-items: center;
+  color: var(--primary-black);
+  display: inline-flex;
+  flex-wrap: wrap;
+  font-size: 14px;
+  font-weight: 700;
+  gap: 8px;
+}
+
+.approvalBadge {
+  background: color-mix(in srgb, var(--warning) 14%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--warning) 48%, var(--border));
+  border-radius: var(--radius-pill);
+  color: var(--primary-black);
+  padding: 3px 10px;
+}
+
+.time {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.command {
+  background: var(--extra-light-gray);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  max-width: min(100%, 72ch);
+  overflow-wrap: anywhere;
+  padding: 3px 6px;
+}
+
+.statusMessage {
+  color: var(--text);
+  font-size: 14px;
+  margin: 0;
+}
+
+.itemBody {
+  display: grid;
+  gap: 10px;
+}
+
+.exitCode {
+  background: rgb(220 38 38 / 10%);
+  border: 1px solid rgb(220 38 38 / 22%);
+  border-radius: var(--radius-sm);
+  color: var(--danger);
+  font-size: 13px;
+  font-weight: 700;
+  margin: 0;
+  padding: 8px 10px;
+}
+
+.markdown {
+  color: var(--text);
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+
+.markdown p {
+  margin: 0 0 12px;
+}
+
+.markdown p:last-child {
+  margin-bottom: 0;
+}
+
+.markdown pre {
+  background: var(--extra-light-gray);
+  border-radius: var(--radius-sm);
+  overflow: auto;
+  padding: 12px;
+}
+
+.markdown a {
+  color: var(--primary-black);
+  overflow-wrap: anywhere;
+}
+
+.approvalRequest {
+  display: grid;
+  gap: 10px;
+}
+
+.approvalReason {
+  color: var(--primary-black);
+  font-size: 15px;
+  line-height: 1.45;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.approvalCommand {
+  background: var(--extra-light-gray);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 0;
+  overflow: auto;
+  padding: 12px;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 720px) {
+  .header {
+    align-items: start;
+    flex-direction: column;
+    gap: 4px;
+  }
+}
