@@ -34,6 +34,16 @@ const (
 	StatusDuplicate  Status = "duplicate"
 )
 
+type QueueStatus string
+
+const (
+	QueueStatusBacklog    QueueStatus = "backlog"
+	QueueStatusPending    QueueStatus = "pending"
+	QueueStatusQueued     QueueStatus = "queued"
+	QueueStatusProcessing QueueStatus = "processing"
+	QueueStatusDone       QueueStatus = "done"
+)
+
 type Priority string
 
 const (
@@ -167,7 +177,8 @@ type IssueStats struct {
 
 type IssueSummary struct {
 	Issue
-	Stats IssueStats `json:"stats"`
+	QueueStatus QueueStatus `json:"queueStatus"`
+	Stats       IssueStats  `json:"stats"`
 }
 
 type Column struct {
@@ -385,6 +396,22 @@ func IsSatisfiedDependencyStatus(status Status) bool {
 		return true
 	default:
 		return false
+	}
+}
+
+func IssueQueueStatus(status Status, hasActiveDependency bool) QueueStatus {
+	switch status {
+	case StatusBacklog:
+		return QueueStatusBacklog
+	case StatusReady:
+		if hasActiveDependency {
+			return QueueStatusPending
+		}
+		return QueueStatusQueued
+	case StatusInProgress:
+		return QueueStatusProcessing
+	default:
+		return QueueStatusDone
 	}
 }
 

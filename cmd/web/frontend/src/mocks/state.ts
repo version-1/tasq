@@ -8,6 +8,7 @@ import type {
   IssueStatus,
   Project,
   ProjectWorkflow,
+  QueueStatus,
   Summary,
   UpdateIssueInput,
 } from "@/lib/generated/issue-tracker";
@@ -200,6 +201,7 @@ export function buildSummary(): Summary {
       ...column,
       issues: listIssues({ states: [column.status] }).map((issue) => ({
         ...issue,
+        queueStatus: queueStatusForIssue(issue),
         stats: {
           commentCount: comments.filter((comment) => comment.issueId === issue.id).length,
         },
@@ -207,6 +209,36 @@ export function buildSummary(): Summary {
     })),
     generatedAt: new Date().toISOString(),
   };
+}
+
+function queueStatusForIssue(issue: Issue): QueueStatus {
+  if (issue.status === "backlog") {
+    return "backlog";
+  }
+  if (issue.status === "ready") {
+    return hasActiveDependency(issue) ? "pending" : "queued";
+  }
+  if (issue.status === "in_progress") {
+    return "processing";
+  }
+  return "done";
+}
+
+function hasActiveDependency(issue: Issue): boolean {
+  return issue.dependency_ids.some((dependencyID) => {
+    const dependency = issues.find((candidate) => candidate.id === dependencyID);
+    return dependency !== undefined && !isSatisfiedDependencyStatus(dependency.status);
+  });
+}
+
+function isSatisfiedDependencyStatus(status: IssueStatus): boolean {
+  return (
+    status === "done" ||
+    status === "cancelled" ||
+    status === "duplicate" ||
+    status === "failed" ||
+    status === "blocked"
+  );
 }
 
 export function buildOrchestratorIssueRuntime(issueID: number): IssueRuntimeResponse | null {

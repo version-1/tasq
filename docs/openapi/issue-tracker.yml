@@ -629,6 +629,15 @@ components:
         - failed
         - cancelled
         - duplicate
+    QueueStatus:
+      type: string
+      description: Derived queue status for an issue in the summary response.
+      enum:
+        - backlog
+        - pending
+        - queued
+        - processing
+        - done
     Priority:
       type: string
       enum:
@@ -991,8 +1000,11 @@ components:
         - $ref: "#/components/schemas/Issue"
         - type: object
           required:
+            - queueStatus
             - stats
           properties:
+            queueStatus:
+              $ref: "#/components/schemas/QueueStatus"
             stats:
               $ref: "#/components/schemas/IssueStats"
     Column:

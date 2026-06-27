@@ -1,8 +1,10 @@
 import type {
   Comment,
+  Issue,
   IssueStatus,
   IssueSummary,
   OrchestratorIssueRun,
+  QueueStatus,
   Summary,
 } from "@/lib/types";
 import type { LayoutShellData } from "@/components/layout";
@@ -15,12 +17,42 @@ export const noop = () => undefined;
 export const asyncNoop = async () => undefined;
 
 export function storyIssue(index = 0): IssueSummary {
+  const issue = issueFixtures[index];
   return {
-    ...issueFixtures[index],
+    ...issue,
+    queueStatus: storyQueueStatusForIssue(issue),
     stats: {
       commentCount: index + 1,
     },
   };
+}
+
+export function storyQueueStatusForIssue(issue: Issue): QueueStatus {
+  if (issue.status === "backlog") {
+    return "backlog";
+  }
+  if (issue.status === "ready") {
+    return issue.dependency_ids.some(hasActiveDependency) ? "pending" : "queued";
+  }
+  if (issue.status === "in_progress") {
+    return "processing";
+  }
+  return "done";
+}
+
+function hasActiveDependency(dependencyID: number): boolean {
+  const dependency = issueFixtures.find((issue) => issue.id === dependencyID);
+  return dependency !== undefined && !isSatisfiedDependencyStatus(dependency.status);
+}
+
+function isSatisfiedDependencyStatus(status: IssueStatus): boolean {
+  return (
+    status === "done" ||
+    status === "cancelled" ||
+    status === "duplicate" ||
+    status === "failed" ||
+    status === "blocked"
+  );
 }
 
 export const storySummary: Summary = {
@@ -32,6 +64,7 @@ export const storySummary: Summary = {
       .filter((issue) => issue.status === status)
       .map((issue, index) => ({
         ...issue,
+        queueStatus: storyQueueStatusForIssue(issue),
         stats: {
           commentCount: index + 1,
         },

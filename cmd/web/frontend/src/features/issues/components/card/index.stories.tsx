@@ -1,11 +1,14 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { issueFixtures } from "@/mocks/fixtures/issues";
 import type { IssueSummary } from "@/lib/types";
+import { storyQueueStatusForIssue } from "@/stories/fixtures";
 import { IssueCard } from "./index";
 
 function summaryIssue(index: number, commentCount = 0): IssueSummary {
+  const issue = issueFixtures[index];
   return {
-    ...issueFixtures[index],
+    ...issue,
+    queueStatus: storyQueueStatusForIssue(issue),
     stats: {
       commentCount,
     },
@@ -46,6 +49,7 @@ export const InProgressLocked: Story = {
     issue: {
       ...summaryIssue(2),
       status: "in_progress",
+      queueStatus: "processing",
     },
   },
 };
@@ -55,6 +59,7 @@ export const ReviewTransitions: Story = {
     issue: {
       ...summaryIssue(3),
       status: "review",
+      queueStatus: "done",
     },
   },
 };

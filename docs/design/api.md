@@ -37,6 +37,8 @@ Attachment uploads accept multipart form data with `entity_type`, `entity_id`, a
 
 Issues belong to exactly one project. `POST /api/v1/issues` requires `projectId` and accepts `dependency_ids` as the initial dependency set. Issue responses include both `projectId` and `projectKey`. Issue responses include `dependency_ids`; issues without dependencies return an empty array. `GET /api/v1/issues` accepts optional `states` and `project_id` query parameters. Omitting `project_id` lists issues across all projects.
 
+`GET /api/v1/summary` returns issue board columns. Each issue summary includes a derived `queueStatus` for UI and TUI queue state display. `queueStatus=backlog` means the issue status is `backlog`. `queueStatus=pending` means the issue is `ready` but still has at least one active dependency. `queueStatus=queued` means the issue is `ready` and has no active dependencies. `queueStatus=processing` means the issue status is `in_progress`. `queueStatus=done` means the issue is outside the queue flow, including `review`, `done`, `blocked`, `failed`, `cancelled`, and `duplicate`.
+
 ### `POST /api/v1/issues`
 
 Creates an issue in a project. `dependency_ids` is optional and sets the initial dependency issue IDs during the same create operation. Omit `dependency_ids` or pass an empty array to create an issue without dependencies. The API rejects missing dependency issues, self-dependencies, duplicate dependency IDs, and dependency cycles.

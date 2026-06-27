@@ -51,6 +51,21 @@ export const IssueStatus = {
   duplicate: 'duplicate',
 } as const;
 
+/**
+ * Derived queue status for an issue in the summary response.
+ */
+export type QueueStatus = typeof QueueStatus[keyof typeof QueueStatus];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const QueueStatus = {
+  backlog: 'backlog',
+  pending: 'pending',
+  queued: 'queued',
+  processing: 'processing',
+  done: 'done',
+} as const;
+
 export type Priority = typeof Priority[keyof typeof Priority];
 
 
@@ -248,6 +263,7 @@ export interface IssueStats {
 }
 
 export type IssueSummaryAllOf = {
+  queueStatus: QueueStatus;
   stats: IssueStats;
 };
 
