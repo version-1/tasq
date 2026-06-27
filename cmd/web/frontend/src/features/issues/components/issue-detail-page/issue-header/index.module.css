@@ -8,39 +8,6 @@
   padding: 18px;
 }
 
-.badges {
-  align-items: center;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.statusBadge,
-.priorityBadge {
-  background: var(--extra-light-gray);
-  border-radius: var(--radius-pill);
-  color: var(--dark-gray);
-  display: inline-flex;
-  font-size: 13px;
-  font-weight: 700;
-  padding: 5px 10px;
-}
-
-.statusBadge {
-  background: var(--project-bg);
-  color: var(--project-text);
-}
-
-.warningPriority {
-  background: var(--approval-bg);
-  color: var(--warning);
-}
-
-.neutralStatus {
-  background: var(--extra-light-gray);
-  color: var(--dark-gray);
-}
-
 .metaGrid {
   display: grid;
   gap: 12px;
@@ -48,9 +15,74 @@
   margin: 0;
 }
 
-.actionsSlot {
-  border-top: 1px solid var(--border);
-  padding-top: var(--space-4);
+.statusDropdown {
+  position: relative;
+}
+
+.statusTrigger {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  gap: var(--space-2);
+  min-height: 32px;
+  padding: var(--space-1) var(--space-2);
+}
+
+.statusTrigger:focus-visible {
+  box-shadow: var(--shadow-filter-active);
+  outline: 0;
+}
+
+.statusTrigger:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.statusTriggerIcon {
+  color: var(--muted);
+  transition: transform 120ms ease;
+}
+
+.statusTrigger[aria-expanded="true"] .statusTriggerIcon {
+  transform: rotate(180deg);
+}
+
+.statusPopover {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-filter-popover);
+  display: grid;
+  gap: var(--space-1);
+  left: var(--space-0);
+  min-inline-size: 190px;
+  padding: var(--space-2);
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  z-index: var(--z-popover);
+}
+
+.statusOption,
+.statusOptionActive {
+  align-items: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: flex;
+  min-height: 36px;
+  padding: var(--space-1-5) var(--space-2);
+}
+
+.statusOption:hover,
+.statusOptionActive {
+  background: var(--surface-hover);
+  border-color: var(--border);
 }
 
 @media (max-width: 900px) {

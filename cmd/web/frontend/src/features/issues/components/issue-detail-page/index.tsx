@@ -28,7 +28,6 @@ import { ConversationTab } from "./conversation-tab";
 import { IssueDescription } from "./issue-description";
 import { IssueHeader } from "./issue-header";
 import { RunsSection } from "./runs-section";
-import { StatusActions } from "./status-actions";
 import styles from "./index.module.css";
 
 const commentPageSize = 20;
@@ -288,14 +287,11 @@ export function IssueDetailPage() {
         <>
           {activeTab === "details" ? (
             <div className={styles.tabPanel}>
-              <IssueHeader issue={issueState.issue}>
-                <StatusActions
-                  currentStatus={issueState.issue.status}
-                  disabled={isUpdatingStatus}
-                  embedded
-                  onStatusChange={handleStatusChange}
-                />
-              </IssueHeader>
+              <IssueHeader
+                disabled={isUpdatingStatus}
+                issue={issueState.issue}
+                onStatusChange={handleStatusChange}
+              />
               <IssueDescription issue={issueState.issue} />
               <AttachmentsSection
                 attachments={attachments}

@@ -6,7 +6,9 @@ const meta = {
   title: "Features/Issues/IssueDetail/IssueHeader",
   component: IssueHeader,
   args: {
+    disabled: false,
     issue: issueFixtures[1],
+    onStatusChange: async () => undefined,
   },
 } satisfies Meta<typeof IssueHeader>;
 

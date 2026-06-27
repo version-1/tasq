@@ -74,6 +74,19 @@ describe("IssueDetailPage", () => {
     expect(await screen.findByText("No attachments")).toBeInTheDocument();
   });
 
+  it("updates status from the basic info grid", async () => {
+    const user = userEvent.setup();
+    api.updateIssueStatus.mockResolvedValueOnce({ ...issue, status: "in_progress" });
+
+    renderIssueDetail();
+
+    await user.click(await screen.findByRole("button", { name: "Change status" }));
+    await user.click(screen.getByRole("button", { name: "in_progress" }));
+
+    expect(api.updateIssueStatus).toHaveBeenCalledWith(42, "in_progress");
+    expect(screen.getByRole("button", { name: "Change status" })).toHaveTextContent("in_progress");
+  });
+
   it("loads comments when the comments tab is selected", async () => {
     renderIssueDetail("/issues/42?tab=comments");
 
