@@ -631,13 +631,14 @@ components:
         - duplicate
     QueueStatus:
       type: string
-      description: Derived queue status for an issue in the summary response.
+      description: System-wide queue state for an issue. The summary response includes this value for each issue.
       enum:
         - backlog
         - pending
         - queued
         - processing
-        - done
+        - completed
+        - inactive
     Priority:
       type: string
       enum:

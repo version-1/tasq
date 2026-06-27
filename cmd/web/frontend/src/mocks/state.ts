@@ -221,7 +221,10 @@ function queueStatusForIssue(issue: Issue): QueueStatus {
   if (issue.status === "in_progress") {
     return "processing";
   }
-  return "done";
+  if (issue.status === "done") {
+    return "completed";
+  }
+  return "inactive";
 }
 
 function hasActiveDependency(issue: Issue): boolean {

@@ -1228,21 +1228,24 @@ func TestSummaryReturnsIssueQueueStatus(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create processing issue: %v", err)
 	}
-	doneStatuses := []entity.Status{
+	inactiveStatuses := []entity.Status{
 		entity.StatusReview,
-		entity.StatusDone,
 		entity.StatusBlocked,
 		entity.StatusFailed,
 		entity.StatusCancelled,
 		entity.StatusDuplicate,
 	}
-	doneIssueIDs := []int64{}
-	for _, status := range doneStatuses {
-		issue, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Done status " + string(status), Status: status})
+	inactiveIssueIDs := []int64{}
+	for _, status := range inactiveStatuses {
+		issue, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Inactive status " + string(status), Status: status})
 		if err != nil {
 			t.Fatalf("create %s issue: %v", status, err)
 		}
-		doneIssueIDs = append(doneIssueIDs, issue.ID)
+		inactiveIssueIDs = append(inactiveIssueIDs, issue.ID)
+	}
+	completed, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Completed", Status: entity.StatusDone})
+	if err != nil {
+		t.Fatalf("create completed issue: %v", err)
 	}
 	if err := store.SetDependencyIDs(ctx, pending.ID, []int64{activeDependency.ID}); err != nil {
 		t.Fatalf("set pending dependencies: %v", err)
@@ -1261,9 +1264,10 @@ func TestSummaryReturnsIssueQueueStatus(t *testing.T) {
 		pending.ID:    entity.QueueStatusPending,
 		queued.ID:     entity.QueueStatusQueued,
 		processing.ID: entity.QueueStatusProcessing,
+		completed.ID:  entity.QueueStatusCompleted,
 	}
-	for _, id := range doneIssueIDs {
-		want[id] = entity.QueueStatusDone
+	for _, id := range inactiveIssueIDs {
+		want[id] = entity.QueueStatusInactive
 	}
 	for id, status := range want {
 		if queueStatusByIssueID[id] != status {

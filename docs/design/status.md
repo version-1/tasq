@@ -1,10 +1,10 @@
 # Issue and Queue Status
 
-This document defines `issue.status`, derived `queueStatus`, and the expected issue workflow. For field-level schema details, see [schema.md](schema.md). For API response shapes, see [api.md](api.md).
+This document defines `issue.status`, system-wide `queueStatus`, and the expected issue workflow. For field-level schema details, see [schema.md](schema.md). For API response shapes, see [api.md](api.md).
 
 ## Ownership
 
-The issue-tracker owns `issue.status`, dependency edges, and derived queue eligibility. `queueStatus` is not stored in the database; it is derived for each issue summary in `GET /api/v1/summary`.
+The issue-tracker owns `issue.status`, dependency edges, and system-wide queue eligibility. `queueStatus` describes an issue from that queue perspective. It is not stored in the database; `GET /api/v1/summary` returns the current queue status for each issue.
 
 The API validates that `issue.status` is one of the allowed enum values. It does not enforce a strict state machine for every update. CLI shortcuts and orchestrator flows follow the standard transitions below, but `PATCH /api/v1/issues/{id}` can set any valid status.
 
@@ -12,15 +12,15 @@ The API validates that `issue.status` is one of the allowed enum values. It does
 
 | Status | Meaning | Queue/dependency role |
 | --- | --- | --- |
-| `backlog` | Draft or planned work that is not ready to dispatch. | Active dependency status. Summary `queueStatus` is `backlog`. |
-| `ready` | Work is ready to be considered for dispatch. | Active dependency status. Summary `queueStatus` is `pending` or `queued` depending on dependencies. |
-| `in_progress` | Work has been picked up and is being processed. | Active dependency status. Summary `queueStatus` is `processing`. |
-| `review` | Work is waiting for human review or final validation. | Active dependency status, because downstream work should wait for review to finish. Summary `queueStatus` is `done`. |
-| `blocked` | Work cannot proceed without external input or a resolved blocker. | Satisfied dependency status. Summary `queueStatus` is `done`. |
-| `failed` | Work ended unsuccessfully. | Satisfied dependency status. Summary `queueStatus` is `done`. |
-| `cancelled` | Work was intentionally stopped and should not continue. | Satisfied dependency status. Summary `queueStatus` is `done`. |
-| `duplicate` | Work is represented by another issue. | Satisfied dependency status. Summary `queueStatus` is `done`. |
-| `done` | Work is complete. | Satisfied dependency status. Summary `queueStatus` is `done`. |
+| `backlog` | Draft or planned work that is not ready to dispatch. | Active dependency status. Queue status is `backlog`. |
+| `ready` | Work is ready to be considered for dispatch. | Active dependency status. Queue status is `pending` or `queued` depending on dependencies. |
+| `in_progress` | Work has been picked up and is being processed. | Active dependency status. Queue status is `processing`. |
+| `review` | Work is waiting for human review or final validation. | Active dependency status, because downstream work should wait for review to finish. Queue status is `inactive`. |
+| `blocked` | Work cannot proceed without external input or a resolved blocker. | Satisfied dependency status. Queue status is `inactive`. |
+| `failed` | Work ended unsuccessfully. | Satisfied dependency status. Queue status is `inactive`. |
+| `cancelled` | Work was intentionally stopped and should not continue. | Satisfied dependency status. Queue status is `inactive`. |
+| `duplicate` | Work is represented by another issue. | Satisfied dependency status. Queue status is `inactive`. |
+| `done` | Work is complete. | Satisfied dependency status. Queue status is `completed`. |
 
 Active dependency statuses are `backlog`, `ready`, `in_progress`, and `review`.
 
@@ -28,7 +28,7 @@ Satisfied dependency statuses are `done`, `cancelled`, `duplicate`, `failed`, an
 
 ## `queueStatus`
 
-`queueStatus` is an issue-level derived status returned on `IssueSummary` objects in `GET /api/v1/summary`. It exists for UI and TUI display and should not be used as the persisted source of truth.
+`queueStatus` is an issue-level status from the system-wide queue perspective. `GET /api/v1/summary` includes the current value on each `IssueSummary`, but summary does not own the queue model.
 
 | `queueStatus` | Derivation |
 | --- | --- |
@@ -36,9 +36,10 @@ Satisfied dependency statuses are `done`, `cancelled`, `duplicate`, `failed`, an
 | `pending` | `issue.status` is `ready` and at least one dependency is still active. |
 | `queued` | `issue.status` is `ready` and no dependency is active. |
 | `processing` | `issue.status` is `in_progress`. |
-| `done` | `issue.status` is outside the queue flow: `review`, `done`, `blocked`, `failed`, `cancelled`, or `duplicate`. |
+| `completed` | `issue.status` is `done`. |
+| `inactive` | `issue.status` is outside the queue flow: `review`, `blocked`, `failed`, `cancelled`, or `duplicate`. |
 
-`GET /api/v1/queue` keeps its narrower meaning: it only returns `ready` issues split into `queued` and `pending` arrays. In contrast, summary `queueStatus` covers every issue in the board.
+`GET /api/v1/queue` is the dispatch-facing queue view: it only returns `ready` issues split into `queued` and `pending` arrays. `queueStatus` uses the same queue model but classifies every issue so summary consumers can display the board without reimplementing queue rules.
 
 ## Standard Transitions
 

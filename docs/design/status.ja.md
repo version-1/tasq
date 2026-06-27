@@ -1,10 +1,10 @@
 # 課題状態とキュー状態
 
-このドキュメントでは、`issue.status`、派生値の `queueStatus`、想定される課題ワークフローを定義します。フィールド単位のスキーマ詳細は [schema.ja.md](schema.ja.md) を参照してください。API レスポンスの形は [api.ja.md](api.ja.md) を参照してください。
+このドキュメントでは、`issue.status`、システム全体のキューから見た `queueStatus`、想定される課題ワークフローを定義します。フィールド単位のスキーマ詳細は [schema.ja.md](schema.ja.md) を参照してください。API レスポンスの形は [api.ja.md](api.ja.md) を参照してください。
 
 ## 所有者
 
-issue-tracker は `issue.status`、依存関係の辺、派生的なキュー投入可否を所有します。`queueStatus` はデータベースに保存しません。`GET /api/v1/summary` で各課題サマリーを返すときに導出します。
+issue-tracker は `issue.status`、依存関係の辺、システム全体のキュー投入可否を所有します。`queueStatus` は、そのキューから見た課題の状態です。データベースには保存せず、`GET /api/v1/summary` は各課題の現在の `queueStatus` を返します。
 
 API は `issue.status` が許可された enum 値のいずれかであることを検証します。一方で、すべての更新に厳密な状態機械を強制するわけではありません。CLI のショートカットや orchestrator のフローは下の標準遷移に従いますが、`PATCH /api/v1/issues/{id}` は任意の有効な status に更新できます。
 
@@ -12,15 +12,15 @@ API は `issue.status` が許可された enum 値のいずれかであること
 
 | Status | 意味 | キュー / 依存関係での役割 |
 | --- | --- | --- |
-| `backlog` | まだ割り当て対象ではない下書きまたは計画中の作業。 | アクティブな依存状態。summary の `queueStatus` は `backlog`。 |
-| `ready` | 割り当て候補にできる作業。 | アクティブな依存状態。summary の `queueStatus` は依存関係に応じて `pending` または `queued`。 |
-| `in_progress` | すでに着手され、処理中の作業。 | アクティブな依存状態。summary の `queueStatus` は `processing`。 |
-| `review` | 人によるレビューまたは最終確認を待っている作業。 | アクティブな依存状態。後続作業はレビュー完了を待つべきです。summary の `queueStatus` は `done`。 |
-| `blocked` | 外部入力またはブロッカーの解消が必要で、進められない作業。 | 満たされた依存状態。summary の `queueStatus` は `done`。 |
-| `failed` | 失敗として終了した作業。 | 満たされた依存状態。summary の `queueStatus` は `done`。 |
-| `cancelled` | 意図的に停止され、続行しない作業。 | 満たされた依存状態。summary の `queueStatus` は `done`。 |
-| `duplicate` | 別の課題で表現されている重複作業。 | 満たされた依存状態。summary の `queueStatus` は `done`。 |
-| `done` | 完了した作業。 | 満たされた依存状態。summary の `queueStatus` は `done`。 |
+| `backlog` | まだ割り当て対象ではない下書きまたは計画中の作業。 | アクティブな依存状態。`queueStatus` は `backlog`。 |
+| `ready` | 割り当て候補にできる作業。 | アクティブな依存状態。`queueStatus` は依存関係に応じて `pending` または `queued`。 |
+| `in_progress` | すでに着手され、処理中の作業。 | アクティブな依存状態。`queueStatus` は `processing`。 |
+| `review` | 人によるレビューまたは最終確認を待っている作業。 | アクティブな依存状態。後続作業はレビュー完了を待つべきです。`queueStatus` は `inactive`。 |
+| `blocked` | 外部入力またはブロッカーの解消が必要で、進められない作業。 | 満たされた依存状態。`queueStatus` は `inactive`。 |
+| `failed` | 失敗として終了した作業。 | 満たされた依存状態。`queueStatus` は `inactive`。 |
+| `cancelled` | 意図的に停止され、続行しない作業。 | 満たされた依存状態。`queueStatus` は `inactive`。 |
+| `duplicate` | 別の課題で表現されている重複作業。 | 満たされた依存状態。`queueStatus` は `inactive`。 |
+| `done` | 完了した作業。 | 満たされた依存状態。`queueStatus` は `completed`。 |
 
 アクティブな依存状態は `backlog`、`ready`、`in_progress`、`review` です。
 
@@ -28,7 +28,7 @@ API は `issue.status` が許可された enum 値のいずれかであること
 
 ## `queueStatus`
 
-`queueStatus` は `GET /api/v1/summary` の `IssueSummary` に含まれる、課題単位の派生状態です。UI と TUI で表示するための値であり、永続化された真実の状態として扱ってはいけません。
+`queueStatus` は、システム全体のキューから見た課題単位の状態です。`GET /api/v1/summary` は各 `IssueSummary` に現在の値を含めますが、summary がキューモデルを所有しているわけではありません。
 
 | `queueStatus` | 導出条件 |
 | --- | --- |
@@ -36,9 +36,10 @@ API は `issue.status` が許可された enum 値のいずれかであること
 | `pending` | `issue.status` が `ready` で、依存先にアクティブな課題が 1 件以上ある。 |
 | `queued` | `issue.status` が `ready` で、アクティブな依存先がない。 |
 | `processing` | `issue.status` が `in_progress`。 |
-| `done` | `issue.status` がキュー処理の対象外。対象は `review`、`done`、`blocked`、`failed`、`cancelled`、`duplicate`。 |
+| `completed` | `issue.status` が `done`。 |
+| `inactive` | `issue.status` がキュー処理の対象外。対象は `review`、`blocked`、`failed`、`cancelled`、`duplicate`。 |
 
-`GET /api/v1/queue` の意味はより狭く、`ready` の課題だけを `queued` と `pending` の配列に分けて返します。一方で、summary の `queueStatus` はボード上のすべての課題を対象にします。
+`GET /api/v1/queue` は割り当て用のキュー view で、`ready` の課題だけを `queued` と `pending` の配列に分けて返します。`queueStatus` は同じキューモデルを使い、summary の利用者がキュールールを再実装せずにボード上のすべての課題を表示できるよう分類します。
 
 ## 標準遷移
 

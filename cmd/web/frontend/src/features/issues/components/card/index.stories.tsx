@@ -59,7 +59,7 @@ export const ReviewTransitions: Story = {
     issue: {
       ...summaryIssue(3),
       status: "review",
-      queueStatus: "done",
+      queueStatus: "inactive",
     },
   },
 };

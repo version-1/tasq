@@ -41,7 +41,8 @@ const (
 	QueueStatusPending    QueueStatus = "pending"
 	QueueStatusQueued     QueueStatus = "queued"
 	QueueStatusProcessing QueueStatus = "processing"
-	QueueStatusDone       QueueStatus = "done"
+	QueueStatusCompleted  QueueStatus = "completed"
+	QueueStatusInactive   QueueStatus = "inactive"
 )
 
 type Priority string
@@ -410,8 +411,10 @@ func IssueQueueStatus(status Status, hasActiveDependency bool) QueueStatus {
 		return QueueStatusQueued
 	case StatusInProgress:
 		return QueueStatusProcessing
+	case StatusDone:
+		return QueueStatusCompleted
 	default:
-		return QueueStatusDone
+		return QueueStatusInactive
 	}
 }
 

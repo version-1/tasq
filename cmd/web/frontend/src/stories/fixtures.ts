@@ -37,7 +37,10 @@ export function storyQueueStatusForIssue(issue: Issue): QueueStatus {
   if (issue.status === "in_progress") {
     return "processing";
   }
-  return "done";
+  if (issue.status === "done") {
+    return "completed";
+  }
+  return "inactive";
 }
 
 function hasActiveDependency(dependencyID: number): boolean {

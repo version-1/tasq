@@ -52,7 +52,7 @@ export const IssueStatus = {
 } as const;
 
 /**
- * Derived queue status for an issue in the summary response.
+ * System-wide queue state for an issue. The summary response includes this value for each issue.
  */
 export type QueueStatus = typeof QueueStatus[keyof typeof QueueStatus];
 
@@ -63,7 +63,8 @@ export const QueueStatus = {
   pending: 'pending',
   queued: 'queued',
   processing: 'processing',
-  done: 'done',
+  completed: 'completed',
+  inactive: 'inactive',
 } as const;
 
 export type Priority = typeof Priority[keyof typeof Priority];

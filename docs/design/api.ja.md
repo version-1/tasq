@@ -37,7 +37,7 @@ issue-tracker はユーザー向け API です。
 
 課題は必ず 1 つのプロジェクトに属します。`POST /api/v1/issues` は `projectId` を必須とし、初期の依存関係として `dependency_ids` を受け取ります。課題のレスポンスは `projectId` と `projectKey` の両方を返します。課題レスポンスには `dependency_ids` が含まれます。依存がない場合は空配列を返します。`GET /api/v1/issues` は任意の query parameter として `states` と `project_id` を受け取ります。`project_id` を省略した場合は、すべてのプロジェクトの課題を一覧表示します。
 
-`GET /api/v1/summary` は課題ボードのカラムを返します。各課題サマリーには、UI と TUI でキュー状態を表示するための派生値 `queueStatus` が含まれます。`queueStatus=backlog` は課題の status が `backlog` の状態です。`queueStatus=pending` は課題が `ready` だが、アクティブな依存関係が 1 件以上残っている状態です。`queueStatus=queued` は課題が `ready` で、アクティブな依存関係がない状態です。`queueStatus=processing` は課題の status が `in_progress` の状態です。`queueStatus=done` はキュー処理の対象外で、`review`、`done`、`blocked`、`failed`、`cancelled`、`duplicate` を含みます。status の定義と想定される遷移は [status.ja.md](status.ja.md) を参照してください。
+`GET /api/v1/summary` は課題ボードのカラムを返します。各課題サマリーには、システム全体のキューから見た課題の状態である `queueStatus` が含まれます。`queueStatus=backlog` は課題の status が `backlog` の状態です。`queueStatus=pending` は課題が `ready` だが、アクティブな依存関係が 1 件以上残っている状態です。`queueStatus=queued` は課題が `ready` で、アクティブな依存関係がない状態です。`queueStatus=processing` は課題の status が `in_progress` の状態です。`queueStatus=completed` は課題の status が `done` の状態です。`queueStatus=inactive` はキュー処理の対象外で、`review`、`blocked`、`failed`、`cancelled`、`duplicate` を含みます。status の定義と想定される遷移は [status.ja.md](status.ja.md) を参照してください。
 
 ### `POST /api/v1/issues`
 

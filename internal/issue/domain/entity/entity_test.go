@@ -93,12 +93,12 @@ func TestIssueQueueStatus(t *testing.T) {
 		{name: "ready without active dependency", status: StatusReady, want: QueueStatusQueued},
 		{name: "ready with active dependency", status: StatusReady, hasActiveDependency: true, want: QueueStatusPending},
 		{name: "in progress", status: StatusInProgress, want: QueueStatusProcessing},
-		{name: "review", status: StatusReview, want: QueueStatusDone},
-		{name: "done", status: StatusDone, want: QueueStatusDone},
-		{name: "blocked", status: StatusBlocked, want: QueueStatusDone},
-		{name: "failed", status: StatusFailed, want: QueueStatusDone},
-		{name: "cancelled", status: StatusCancelled, want: QueueStatusDone},
-		{name: "duplicate", status: StatusDuplicate, want: QueueStatusDone},
+		{name: "review", status: StatusReview, want: QueueStatusInactive},
+		{name: "done", status: StatusDone, want: QueueStatusCompleted},
+		{name: "blocked", status: StatusBlocked, want: QueueStatusInactive},
+		{name: "failed", status: StatusFailed, want: QueueStatusInactive},
+		{name: "cancelled", status: StatusCancelled, want: QueueStatusInactive},
+		{name: "duplicate", status: StatusDuplicate, want: QueueStatusInactive},
 	}
 
 	for _, test := range tests {
