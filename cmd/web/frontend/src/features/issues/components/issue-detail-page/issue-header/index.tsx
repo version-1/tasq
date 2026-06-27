@@ -25,6 +25,8 @@ export function IssueHeader({
     <header className={styles.header}>
       <dl className={styles.metaGrid}>
         <MetaItem label={t("issues.table.id")} value={`#${issue.id}`} />
+        <MetaItem label={t("issues.detail.project")} value={<ProjectBadge projectKey={issue.projectKey} />} />
+        <MetaItem label={t("issues.detail.priority")} value={<PriorityBadge priority={issue.priority} />} />
         <MetaItem
           label={t("issues.table.status")}
           value={
@@ -35,8 +37,6 @@ export function IssueHeader({
             />
           }
         />
-        <MetaItem label={t("issues.detail.priority")} value={<PriorityBadge priority={issue.priority} />} />
-        <MetaItem label={t("issues.detail.project")} value={<ProjectBadge projectKey={issue.projectKey} />} />
         <MetaItem label={t("issues.assignee")} value={issue.assignee || t("issues.unassigned")} />
         <MetaItem label={t("issues.detailPage.createdAt")} value={formatDateTime(issue.createdAt)} />
         <MetaItem label={t("issues.detailPage.updatedAt")} value={formatDateTime(issue.updatedAt)} />
