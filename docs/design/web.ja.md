@@ -6,18 +6,24 @@ Web UI は、`cmd/web` から配信される Vite + React + TypeScript の singl
 
 ユーザー向けビューは React Router のルートで分割します。
 
-- `/issues`
-- `/issues/table`
+- `/dashboard`
+- `/dashboard/table`
+- `/dashboard/stats`
 - `/projects/:projectKey`
 - `/projects/:projectKey/issues`
 - `/projects/:projectKey/table`
 - `/projects/:projectKey/settings`
 - `/issues/:id`
-- `/dashboard`
 - `/settings`
 
-root `/` route は `/issues` にリダイレクトします。
+root `/` route は `/dashboard` にリダイレクトします。
 project detail root `/projects/:projectKey` は `/projects/:projectKey/issues` にリダイレクトします。
+dashboard page は固定で 3 つのタブを持ちます。
+
+- `board`: 全 project の issue board を表示します。
+- `table`: 全 project の issue をページング付き table で表示します。
+- `stats`: dashboard metrics と実行中 agent summary を表示します。
+
 project detail page は固定で 3 つのタブを持ちます。
 
 - `issues`: 選択したプロジェクトに絞り込んだ既存の課題ボードを表示します。

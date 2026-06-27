@@ -63,6 +63,10 @@ const resources = {
       common: {
         pending: "未確定",
       },
+      notFound: {
+        detail: "指定されたページは存在しません",
+        title: "ページが見つかりません",
+      },
       comments: {
         types: {
           blocker: "ブロッカー",
@@ -266,6 +270,7 @@ const resources = {
         startedAt: "Started",
         state: "State",
         statusDistribution: "ステータス分布",
+        statsTab: "Stats",
         title: "ダッシュボード",
         tokenConsumption: "Token consumption",
         tokenSource: "現在の実行から集計",
@@ -517,6 +522,10 @@ const resources = {
       common: {
         pending: "pending",
       },
+      notFound: {
+        detail: "The requested page does not exist.",
+        title: "Page not found",
+      },
       comments: {
         types: {
           blocker: "Blocker",
@@ -720,6 +729,7 @@ const resources = {
         startedAt: "Started",
         state: "State",
         statusDistribution: "Status distribution",
+        statsTab: "Stats",
         title: "Dashboard",
         tokenConsumption: "Token consumption",
         tokenSource: "Summed from current runs",

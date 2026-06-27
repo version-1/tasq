@@ -63,7 +63,7 @@ Use the mock worker as the transport boundary. Route components should call the 
 
 Open the standalone web UI with mock mode enabled, then walk through these routes:
 
-1. \`/issues\` - confirm the board still renders compact issue cards.
+1. \`/dashboard\` - confirm the board still renders compact issue cards.
 2. \`/issues/1\` - inspect this long Markdown body in the detail page.
 3. \`/projects/tasq/issues\` - confirm scoped navigation still uses the same fixture.
 
@@ -235,7 +235,7 @@ Prepare a small but believable backlog for the sample project so the all-project
 
 ### Done when
 
-The /issues route shows this project alongside Tasq and agent-docs work, while /projects/some-project/issues narrows the board to only the sample-project cards.`,
+The /dashboard route shows this project alongside Tasq and agent-docs work, while /projects/some-project/issues narrows the board to only the sample-project cards.`,
     status: "ready",
     priority: "low",
     assignee: "product",
@@ -254,7 +254,7 @@ Validate the project-scoped issue navigation from the sidebar. Selecting a proje
 
 ### Manual checks
 
-- Open /issues and confirm all mock projects are represented.
+- Open /dashboard and confirm all mock projects are represented.
 - Open /projects/tasq/issues and confirm only Tasq issues remain.
 - Open /projects/some-project/issues and confirm this card is visible while Tasq cards are hidden.
 

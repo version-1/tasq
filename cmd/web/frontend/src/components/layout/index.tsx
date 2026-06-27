@@ -103,8 +103,8 @@ function LayoutContent({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const activePage = activePageFromPathname(pathname);
   const issueScope = issueScopeFromPathname(pathname);
-  const isIssueDetailPage = /^\/issues\/\d+$/.test(pathname);
-  const issueDetailID = isIssueDetailPage ? issueIDFromPathname(pathname) : null;
+  const issueDetailID = issueIDFromPathname(pathname);
+  const isIssueDetailPage = issueDetailID !== null;
   const [loadState, setLoadState] = useState<LoadState>({ kind: "loading" });
   const [selectedIssueID, setSelectedIssueID] = useState<number | null>(null);
   const [addIssueInitialStatus, setAddIssueInitialStatus] =
@@ -178,9 +178,9 @@ function LayoutContent({ children }: { children: ReactNode }) {
     : null;
   const activeProject = isProjectIssueScope
     ? scopedProject
-    : activePage === "issues"
-      ? null
-      : (projects[0] ?? null);
+    : activePage === "settings"
+      ? (projects[0] ?? null)
+      : null;
   const summary = useMemo(() => {
     if (!loadedSummary) return null;
     if (!isProjectIssueScope) return loadedSummary;
@@ -378,6 +378,7 @@ export function ShellLayout({
           activePage={shellData.activePage}
           projectName={shellData.title}
           issueCount={shellData.summary ? shellData.issues.length : null}
+          isIssueDetailPage={shellData.isIssueDetailPage}
           onAddTask={() => shellData.onAddIssue("backlog")}
           showAddTaskButton={showAddTaskButton}
           showViewNavigation={showViewNavigation}
@@ -466,6 +467,9 @@ function activePageFromPathname(pathname: string): TasqPage {
   if (segment === "dashboard" || segment === "settings") {
     return segment;
   }
+  if (/^\/issues\/\d+(?:\/|$)/.test(pathname)) {
+    return "dashboard";
+  }
   return "issues";
 }
 
@@ -491,7 +495,10 @@ function issueScopeTitle(
 }
 
 function issueIDFromPathname(pathname: string): number | null {
-  const match = /^\/issues\/(\d+)$/.exec(pathname);
+  const match =
+    /^\/issues\/(\d+)(?:\/(?:conversations|runs\/[^/]+\/conversations))?\/?$/.exec(
+      pathname,
+    );
   if (!match) {
     return null;
   }

@@ -13,7 +13,7 @@ export function IssueDetailLayout({ children }: { children: ReactNode }) {
     <DefaultLayout>
       <div className={styles.layout}>
         {children}
-        <Link className={styles.backLink} to="/issues">
+        <Link className={styles.backLink} to="/dashboard">
           {t("issues.detailPage.backToList")}
         </Link>
       </div>

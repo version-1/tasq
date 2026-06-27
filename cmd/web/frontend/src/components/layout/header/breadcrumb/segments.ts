@@ -10,8 +10,18 @@ export function breadcrumbSegmentsFromPathname(pathname: string): BreadcrumbSegm
     return [{ label: "Dashboard" }];
   }
 
-  if (matchesRoute(segments, ["issues"])) {
-    return [{ label: "Issues" }];
+  if (matchesRoute(segments, ["dashboard", "table"])) {
+    return [
+      { label: "Dashboard", href: "/dashboard" },
+      { label: "Table" },
+    ];
+  }
+
+  if (matchesRoute(segments, ["dashboard", "stats"])) {
+    return [
+      { label: "Dashboard", href: "/dashboard" },
+      { label: "Stats" },
+    ];
   }
 
   if (matchesRoute(segments, ["projects", ":projectKey", "issues"])) {
@@ -38,28 +48,27 @@ export function breadcrumbSegmentsFromPathname(pathname: string): BreadcrumbSegm
     ];
   }
 
-  if (matchesRoute(segments, ["issues", "table"])) {
-    return [
-      { label: "Issues", href: "/issues" },
-      { label: "Table" },
-    ];
-  }
-
-  if (matchesRoute(segments, ["issues", ":issueID"])) {
+  if (
+    matchesRoute(segments, ["issues", ":issueID"]) &&
+    isIssueIDSegment(segments[1])
+  ) {
     const issueID = segments[1];
     return [
-      { label: "Issues", href: "/issues" },
+      { label: "Dashboard", href: "/dashboard" },
       { label: `#${decodePathSegment(issueID)}` },
     ];
   }
 
   if (
-    matchesRoute(segments, ["issues", ":issueID", "conversations"]) ||
-    matchesRoute(segments, ["issues", ":issueID", "runs", ":runID", "conversations"])
+    (
+      matchesRoute(segments, ["issues", ":issueID", "conversations"]) ||
+      matchesRoute(segments, ["issues", ":issueID", "runs", ":runID", "conversations"])
+    ) &&
+    isIssueIDSegment(segments[1])
   ) {
     const issueID = segments[1];
     return [
-      { label: "Issues", href: "/issues" },
+      { label: "Dashboard", href: "/dashboard" },
       { label: `#${decodePathSegment(issueID)}`, href: `/issues/${issueID}` },
       { label: "Conversation" },
     ];
@@ -85,4 +94,8 @@ function decodePathSegment(segment: string): string {
   } catch {
     return segment;
   }
+}
+
+function isIssueIDSegment(segment: string): boolean {
+  return /^\d+$/.test(segment);
 }
