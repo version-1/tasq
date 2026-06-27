@@ -16,7 +16,6 @@
 .metaItem dd {
   align-items: center;
   display: flex;
-  font-weight: 700;
   min-height: 24px;
   margin-top: 4px;
   overflow-wrap: anywhere;
