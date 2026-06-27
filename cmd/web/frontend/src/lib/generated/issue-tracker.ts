@@ -15,6 +15,29 @@ JSON error responses use `{ "error": { "code": "...", "message": "..." }, "meta"
  */
 export interface ApiMeta { [key: string]: unknown }
 
+/**
+ * @minimum 0
+ */
+export type IssueListMetaNextOffset = number | null;
+
+/**
+ * Issue list pagination metadata.
+ */
+export interface IssueListMeta {
+  /**
+   * Applied page size. `0` means the request omitted pagination and returned the legacy unpaginated response.
+   * @minimum 0
+   * @maximum 50
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+  /** @minimum 0 */
+  total: number;
+  /** @minimum 0 */
+  nextOffset: IssueListMetaNextOffset;
+}
+
 export interface ErrorInfo {
   /** Stable error code using the <controller>.<action>.<error_type> format. */
   code: string;
@@ -313,7 +336,7 @@ export interface IssueResponse {
 
 export interface IssueListResponse {
   data: Issue[];
-  meta: ApiMeta;
+  meta: IssueListMeta;
 }
 
 export interface QueueResponse {
@@ -363,7 +386,58 @@ states?: string;
  * Project ID used to limit issues to a single project. Omit this parameter to list issues from all projects.
  */
 project_id?: number;
+/**
+ * Comma-separated project IDs used to limit issues to selected projects.
+ */
+project_ids?: string;
+/**
+ * Comma-separated issue priorities. Omit this parameter or pass an empty value to list all priorities.
+ */
+priorities?: string;
+/**
+ * Assignee name used to limit issues to a single assignee. Omit this parameter to list all assignees.
+ */
+assignee?: string;
+/**
+ * Maximum number of issues to return. Omit this parameter to preserve the legacy unpaginated response.
+ * @minimum 1
+ * @maximum 50
+ */
+limit?: number;
+/**
+ * Zero-based issue offset used for pagination.
+ * @minimum 0
+ */
+offset?: number;
+/**
+ * Issue field used for sorting. Defaults to updated_at.
+ */
+sort_by?: GetApiV1IssuesSortBy;
+/**
+ * Sort direction. Defaults to descending order.
+ */
+sort_direction?: GetApiV1IssuesSortDirection;
 };
+
+export type GetApiV1IssuesSortBy = typeof GetApiV1IssuesSortBy[keyof typeof GetApiV1IssuesSortBy];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GetApiV1IssuesSortBy = {
+  id: 'id',
+  priority: 'priority',
+  created_at: 'created_at',
+  updated_at: 'updated_at',
+} as const;
+
+export type GetApiV1IssuesSortDirection = typeof GetApiV1IssuesSortDirection[keyof typeof GetApiV1IssuesSortDirection];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GetApiV1IssuesSortDirection = {
+  asc: 'asc',
+  desc: 'desc',
+} as const;
 
 export type GetApiV1QueueParams = {
 /**

@@ -1,4 +1,5 @@
 import {
+  getApiV1Issues,
   getApiV1IssuesId,
   getApiV1IssuesIssueIdComments,
   getApiV1Projects,
@@ -11,7 +12,9 @@ import {
   type CreateIssueInput,
   type CreateProjectInput,
   type ErrorResponse,
+  type GetApiV1IssuesParams,
   type Issue,
+  type IssueListResponse,
   type IssueStatus,
   type Project,
   type ProjectWorkflow,
@@ -72,6 +75,13 @@ export function createIssue(input: CreateIssueInput, options?: ApiRequestOptions
 
 export function fetchIssue(id: number, options?: ApiRequestOptions): Promise<Issue> {
   return unwrapResponse(getApiV1IssuesId(id, noStore), options);
+}
+
+export function fetchIssues(
+  params: GetApiV1IssuesParams,
+  options?: ApiRequestOptions,
+): Promise<IssueListResponse> {
+  return unwrapEnvelope<IssueListResponse>(getApiV1Issues(params, noStore), options);
 }
 
 export function fetchComments(

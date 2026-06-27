@@ -15,10 +15,11 @@ type dependencyStatus struct {
 func (s *Store) Queue(ctx context.Context, filter IssueFilter) (entity.Queue, error) {
 	ready := entity.StatusReady
 	filter.States = []entity.Status{ready}
-	issues, err := s.issuesByFilterOrder(ctx, filter, queueIssueOrderClause())
+	list, err := s.issuesByFilterOrder(ctx, filter, queueIssueOrderClause())
 	if err != nil {
 		return entity.Queue{}, err
 	}
+	issues := list.Issues
 	dependencies, err := s.dependencyStatusesForParents(ctx, issueIDs(issues))
 	if err != nil {
 		return entity.Queue{}, err

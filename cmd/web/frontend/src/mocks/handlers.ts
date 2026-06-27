@@ -5,12 +5,14 @@ import type {
   ErrorResponse as IssueTrackerErrorResponse,
   IssueStatesInput,
   IssueStatus,
+  Priority,
   UpdateIssueInput,
 } from "@/lib/generated/issue-tracker";
 import type { ErrorResponse as OrchestratorErrorResponse } from "@/lib/generated/orchestrator";
 import {
   buildOrchestratorIssueRuntime,
   buildSummary,
+  countIssues,
   createComment,
   createIssue,
   createProject,
@@ -65,9 +67,19 @@ export const handlers = [
   http.get(`${apiBase}/issues`, ({ request }) => {
     const url = new URL(request.url);
     const projectID = optionalNumber(url.searchParams.get("project_id"));
+    const projectIDs = parseNumbers(url.searchParams.get("project_ids"));
+    const priorities = parsePriorities(url.searchParams.get("priorities"));
     const states = parseStates(url.searchParams.get("states"));
+    const assignee = optionalString(url.searchParams.get("assignee"));
+    const limit = optionalNumber(url.searchParams.get("limit"));
+    const offset = limit === undefined ? 0 : (optionalNumber(url.searchParams.get("offset")) ?? 0);
+    const sortBy = parseIssueSortBy(url.searchParams.get("sort_by"));
+    const sortDirection = parseSortDirection(url.searchParams.get("sort_direction"));
+    const filters = { assignee, limit, offset, priorities, projectID, projectIDs, sortBy, sortDirection, states };
+    const total = countIssues({ assignee, priorities, projectID, projectIDs, states });
+    const nextOffset = limit && offset + limit < total ? offset + limit : null;
 
-    return jsonOk(listIssues({ projectID, states }));
+    return jsonOk(listIssues(filters), 200, { limit: limit ?? 0, offset, total, nextOffset });
   }),
 
   http.post(`${apiBase}/issues`, async ({ request }) => {
@@ -168,8 +180,8 @@ export const handlers = [
   }),
 ];
 
-function jsonOk<T>(data: T, status = 200) {
-  return HttpResponse.json({ data, meta: {} }, { status });
+function jsonOk<T>(data: T, status = 200, meta: Record<string, unknown> = {}) {
+  return HttpResponse.json({ data, meta }, { status });
 }
 
 function jsonError(code: string, message: string, status: 400 | 404 | 500) {
@@ -197,6 +209,25 @@ function parseStates(value: string | null): IssueStatus[] | undefined {
   return value.split(",").filter(Boolean) as IssueStatus[];
 }
 
+function parsePriorities(value: string | null): Priority[] | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  return value.split(",").filter(Boolean) as Priority[];
+}
+
+function parseNumbers(value: string | null): number[] | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  return value
+    .split(",")
+    .map((item) => optionalNumber(item))
+    .filter((item): item is number => item !== undefined);
+}
+
 function optionalNumber(value: string | null): number | undefined {
   if (!value) {
     return undefined;
@@ -204,6 +235,25 @@ function optionalNumber(value: string | null): number | undefined {
 
   const parsed = Number.parseInt(value, 10);
   return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function optionalString(value: string | null): string | undefined {
+  const trimmed = value?.trim() ?? "";
+  return trimmed === "" ? undefined : trimmed;
+}
+
+function parseIssueSortBy(value: string | null): "id" | "priority" | "created_at" | "updated_at" | undefined {
+  if (value === "id" || value === "priority" || value === "created_at" || value === "updated_at") {
+    return value;
+  }
+  return undefined;
+}
+
+function parseSortDirection(value: string | null): "asc" | "desc" | undefined {
+  if (value === "asc" || value === "desc") {
+    return value;
+  }
+  return undefined;
 }
 
 function numericParam(value: string | readonly string[] | undefined): number {

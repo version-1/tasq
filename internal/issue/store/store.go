@@ -21,9 +21,37 @@ type Store struct {
 }
 
 type IssueFilter struct {
-	States    []entity.Status
-	ProjectID *int64
+	States        []entity.Status
+	ProjectID     *int64
+	ProjectIDs    []int64
+	Priorities    []entity.Priority
+	Assignee      *string
+	Limit         int
+	Offset        int
+	SortBy        IssueSortBy
+	SortDirection SortDirection
 }
+
+type IssueList struct {
+	Issues []entity.Issue
+	Total  int
+}
+
+type IssueSortBy string
+
+const (
+	IssueSortByID        IssueSortBy = "id"
+	IssueSortByPriority  IssueSortBy = "priority"
+	IssueSortByCreatedAt IssueSortBy = "created_at"
+	IssueSortByUpdatedAt IssueSortBy = "updated_at"
+)
+
+type SortDirection string
+
+const (
+	SortDirectionAsc  SortDirection = "asc"
+	SortDirectionDesc SortDirection = "desc"
+)
 
 func Open(ctx context.Context, path string) (*Store, error) {
 	db, err := sql.Open("sqlite", path)
@@ -349,16 +377,78 @@ func (s *Store) IssuesByStates(ctx context.Context, states []entity.Status) ([]e
 }
 
 func (s *Store) IssuesByFilter(ctx context.Context, filter IssueFilter) ([]entity.Issue, error) {
-	return s.issuesByFilterOrder(ctx, filter, `issues.updated_at DESC, issues.id DESC`)
+	list, err := s.IssuesPageByFilter(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	return list.Issues, nil
 }
 
-func (s *Store) issuesByFilterOrder(ctx context.Context, filter IssueFilter, orderClause string) ([]entity.Issue, error) {
+func (s *Store) IssuesPageByFilter(ctx context.Context, filter IssueFilter) (IssueList, error) {
+	orderClause, err := issueOrderClause(filter)
+	if err != nil {
+		return IssueList{}, err
+	}
+	return s.issuesByFilterOrder(ctx, filter, orderClause)
+}
+
+func issueOrderClause(filter IssueFilter) (string, error) {
+	sortBy := filter.SortBy
+	if sortBy == "" {
+		sortBy = IssueSortByUpdatedAt
+	}
+	direction := filter.SortDirection
+	if direction == "" {
+		direction = SortDirectionDesc
+	}
+
+	var column string
+	switch sortBy {
+	case IssueSortByID:
+		column = "issues.id"
+	case IssueSortByPriority:
+		column = issuePriorityOrderExpression()
+	case IssueSortByCreatedAt:
+		column = "issues.created_at"
+	case IssueSortByUpdatedAt:
+		column = "issues.updated_at"
+	default:
+		return "", errors.New("sortBy is invalid")
+	}
+
+	var sqlDirection string
+	switch direction {
+	case SortDirectionAsc:
+		sqlDirection = "ASC"
+	case SortDirectionDesc:
+		sqlDirection = "DESC"
+	default:
+		return "", errors.New("sortDirection is invalid")
+	}
+
+	if sortBy == IssueSortByID {
+		return column + " " + sqlDirection, nil
+	}
+	return column + " " + sqlDirection + ", issues.id " + sqlDirection, nil
+}
+
+func issuePriorityOrderExpression() string {
+	return `CASE issues.priority
+		WHEN 'urgent' THEN 4
+		WHEN 'high' THEN 3
+		WHEN 'normal' THEN 2
+		WHEN 'low' THEN 1
+		ELSE 0
+	END`
+}
+
+func (s *Store) issuesByFilterOrder(ctx context.Context, filter IssueFilter, orderClause string) (IssueList, error) {
 	clauses := []string{}
 	args := []any{}
 	if len(filter.States) > 0 {
 		for _, status := range filter.States {
 			if !entity.IsValidStatus(status) {
-				return nil, errors.New("status is invalid")
+				return IssueList{}, errors.New("status is invalid")
 			}
 			args = append(args, status)
 		}
@@ -366,18 +456,56 @@ func (s *Store) issuesByFilterOrder(ctx context.Context, filter IssueFilter, ord
 	}
 	if filter.ProjectID != nil {
 		if *filter.ProjectID <= 0 {
-			return nil, errors.New("projectId is invalid")
+			return IssueList{}, errors.New("projectId is invalid")
 		}
 		args = append(args, *filter.ProjectID)
 		clauses = append(clauses, `issues.project_id = ?`)
+	}
+	if len(filter.ProjectIDs) > 0 {
+		for _, projectID := range filter.ProjectIDs {
+			if projectID <= 0 {
+				return IssueList{}, errors.New("projectIds is invalid")
+			}
+			args = append(args, projectID)
+		}
+		clauses = append(clauses, `issues.project_id IN (`+placeholders(len(filter.ProjectIDs))+`)`)
+	}
+	if len(filter.Priorities) > 0 {
+		for _, priority := range filter.Priorities {
+			if !entity.IsValidPriority(priority) {
+				return IssueList{}, errors.New("priority is invalid")
+			}
+			args = append(args, priority)
+		}
+		clauses = append(clauses, `issues.priority IN (`+placeholders(len(filter.Priorities))+`)`)
+	}
+	if filter.Assignee != nil {
+		args = append(args, *filter.Assignee)
+		clauses = append(clauses, `issues.assignee = ?`)
+	}
+	if filter.Limit < 0 {
+		return IssueList{}, errors.New("limit is invalid")
+	}
+	if filter.Offset < 0 {
+		return IssueList{}, errors.New("offset is invalid")
 	}
 	where := ""
 	if len(clauses) > 0 {
 		where = " WHERE " + strings.Join(clauses, " AND ")
 	}
-	rows, err := s.db.QueryContext(ctx, `SELECT `+issueColumns()+` FROM issues JOIN projects ON projects.id = issues.project_id`+where+` ORDER BY `+orderClause, args...)
+	var total int
+	if err := s.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM issues JOIN projects ON projects.id = issues.project_id`+where, args...).Scan(&total); err != nil {
+		return IssueList{}, fmt.Errorf("count issues: %w", err)
+	}
+	query := `SELECT ` + issueColumns() + ` FROM issues JOIN projects ON projects.id = issues.project_id` + where + ` ORDER BY ` + orderClause
+	queryArgs := append([]any{}, args...)
+	if filter.Limit > 0 {
+		query += ` LIMIT ? OFFSET ?`
+		queryArgs = append(queryArgs, filter.Limit, filter.Offset)
+	}
+	rows, err := s.db.QueryContext(ctx, query, queryArgs...)
 	if err != nil {
-		return nil, fmt.Errorf("list issues: %w", err)
+		return IssueList{}, fmt.Errorf("list issues: %w", err)
 	}
 	defer rows.Close()
 
@@ -385,17 +513,17 @@ func (s *Store) issuesByFilterOrder(ctx context.Context, filter IssueFilter, ord
 	for rows.Next() {
 		item, err := scanIssue(rows)
 		if err != nil {
-			return nil, err
+			return IssueList{}, err
 		}
 		issues = append(issues, item)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate issues: %w", err)
+		return IssueList{}, fmt.Errorf("iterate issues: %w", err)
 	}
 	if err := s.hydrateIssueDependencyIDs(ctx, issues); err != nil {
-		return nil, err
+		return IssueList{}, err
 	}
-	return issues, nil
+	return IssueList{Issues: issues, Total: total}, nil
 }
 
 func (s *Store) IssueStatesByIDs(ctx context.Context, ids []int64) ([]entity.IssueState, error) {

@@ -643,6 +643,238 @@ func TestIssuesRejectsInvalidProjectID(t *testing.T) {
 	assertErrorCode(t, rec, "issues.list.invalid_project_id")
 }
 
+func TestIssuesFiltersByProjectIDs(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer(t)
+	firstProject := createProject(t, server, "FIRST")
+	secondProject := createProject(t, server, "SECOND")
+	thirdProject := createProject(t, server, "THIRD")
+	first := createIssueInProject(t, server, firstProject.ID, "First project issue", entity.StatusReady)
+	second := createIssueInProject(t, server, secondProject.ID, "Second project issue", entity.StatusReady)
+	_ = createIssueInProject(t, server, thirdProject.ID, "Third project issue", entity.StatusReady)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/issues?project_ids="+stringID(firstProject.ID)+","+stringID(secondProject.ID)+"&sort_by=id&sort_direction=asc", nil)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d body=%s", rec.Code, rec.Body.String())
+	}
+	issues := decodeData[[]entity.Issue](t, rec)
+	assertIssueIDs(t, issues, []int64{first.ID, second.ID})
+}
+
+func TestIssuesRejectsInvalidProjectIDs(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer(t)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/issues?project_ids=1,bad", nil)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d", rec.Code)
+	}
+	assertErrorCode(t, rec, "issues.list.invalid_project_ids")
+}
+
+func TestIssuesFiltersByPriorities(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer(t)
+	urgent := createIssueWithPriority(t, server, "Urgent issue", entity.StatusReady, entity.PriorityUrgent)
+	high := createIssueWithPriority(t, server, "High issue", entity.StatusReady, entity.PriorityHigh)
+	_ = createIssueWithPriority(t, server, "Normal issue", entity.StatusReady, entity.PriorityNormal)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/issues?priorities=urgent,high&sort_by=id&sort_direction=asc", nil)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d body=%s", rec.Code, rec.Body.String())
+	}
+	issues := decodeData[[]entity.Issue](t, rec)
+	assertIssueIDs(t, issues, []int64{urgent.ID, high.ID})
+}
+
+func TestIssuesRejectsInvalidPriorities(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer(t)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/issues?priorities=high,unknown", nil)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d", rec.Code)
+	}
+	assertErrorCode(t, rec, "issues.list.invalid_priorities")
+}
+
+func TestIssuesFiltersByAssignee(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer(t)
+	assigned := createIssue(t, server, "Assigned issue", entity.StatusReady)
+	assignee := "frontend"
+	if _, err := server.store.UpdateIssue(context.Background(), assigned.ID, entity.UpdateIssueInput{
+		Assignee: &assignee,
+	}); err != nil {
+		t.Fatalf("update issue assignee: %v", err)
+	}
+	_ = createIssue(t, server, "Unassigned issue", entity.StatusReady)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/issues?assignee=frontend", nil)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d body=%s", rec.Code, rec.Body.String())
+	}
+	issues := decodeData[[]entity.Issue](t, rec)
+	assertIssueIDs(t, issues, []int64{assigned.ID})
+}
+
+func TestIssuesSortsByIDAscending(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer(t)
+	first := createIssue(t, server, "First issue", entity.StatusReady)
+	second := createIssue(t, server, "Second issue", entity.StatusReady)
+	third := createIssue(t, server, "Third issue", entity.StatusReady)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/issues?sort_by=id&sort_direction=asc", nil)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d body=%s", rec.Code, rec.Body.String())
+	}
+	issues := decodeData[[]entity.Issue](t, rec)
+	assertIssueIDs(t, issues, []int64{first.ID, second.ID, third.ID})
+}
+
+func TestIssuesSortsByPriorityDescending(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer(t)
+	low := createIssueWithPriority(t, server, "Low issue", entity.StatusReady, entity.PriorityLow)
+	urgent := createIssueWithPriority(t, server, "Urgent issue", entity.StatusReady, entity.PriorityUrgent)
+	normal := createIssueWithPriority(t, server, "Normal issue", entity.StatusReady, entity.PriorityNormal)
+	high := createIssueWithPriority(t, server, "High issue", entity.StatusReady, entity.PriorityHigh)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/issues?sort_by=priority&sort_direction=desc", nil)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d body=%s", rec.Code, rec.Body.String())
+	}
+	issues := decodeData[[]entity.Issue](t, rec)
+	assertIssueIDs(t, issues, []int64{urgent.ID, high.ID, normal.ID, low.ID})
+}
+
+func TestIssuesRejectsInvalidSort(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer(t)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/issues?sort_by=title", nil)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d", rec.Code)
+	}
+	assertErrorCode(t, rec, "issues.list.invalid_sort_by")
+}
+
+func TestIssuesPaginatesWithMeta(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer(t)
+	first := createIssue(t, server, "First issue", entity.StatusReady)
+	second := createIssue(t, server, "Second issue", entity.StatusReady)
+	third := createIssue(t, server, "Third issue", entity.StatusReady)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/issues?limit=2&offset=0", nil)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d body=%s", rec.Code, rec.Body.String())
+	}
+	var payload struct {
+		Data []entity.Issue `json:"data"`
+		Meta struct {
+			Limit      int  `json:"limit"`
+			Offset     int  `json:"offset"`
+			Total      int  `json:"total"`
+			NextOffset *int `json:"nextOffset"`
+		} `json:"meta"`
+	}
+	if err := json.NewDecoder(rec.Body).Decode(&payload); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	assertIssueIDs(t, payload.Data, []int64{third.ID, second.ID})
+	if payload.Meta.Limit != 2 || payload.Meta.Offset != 0 || payload.Meta.Total != 3 {
+		t.Fatalf("meta = %+v", payload.Meta)
+	}
+	if payload.Meta.NextOffset == nil || *payload.Meta.NextOffset != 2 {
+		t.Fatalf("nextOffset = %v", payload.Meta.NextOffset)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/api/v1/issues?limit=2&offset=2", nil)
+	rec = httptest.NewRecorder()
+	server.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d body=%s", rec.Code, rec.Body.String())
+	}
+	if err := json.NewDecoder(rec.Body).Decode(&payload); err != nil {
+		t.Fatalf("decode second response: %v", err)
+	}
+	assertIssueIDs(t, payload.Data, []int64{first.ID})
+	if payload.Meta.NextOffset != nil {
+		t.Fatalf("nextOffset = %v, want nil", payload.Meta.NextOffset)
+	}
+}
+
+func TestIssuesRejectsInvalidPagination(t *testing.T) {
+	t.Parallel()
+
+	for _, tc := range []struct {
+		name string
+		path string
+		code string
+	}{
+		{name: "limit", path: "/api/v1/issues?limit=51", code: "issues.list.invalid_limit"},
+		{name: "offset", path: "/api/v1/issues?offset=-1", code: "issues.list.invalid_offset"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			server := newTestServer(t)
+			req := httptest.NewRequest(http.MethodGet, tc.path, nil)
+			rec := httptest.NewRecorder()
+
+			server.Handler().ServeHTTP(rec, req)
+
+			if rec.Code != http.StatusBadRequest {
+				t.Fatalf("status = %d", rec.Code)
+			}
+			assertErrorCode(t, rec, tc.code)
+		})
+	}
+}
+
 func TestIssueStatesReturnsMatchingStates(t *testing.T) {
 	t.Parallel()
 
