@@ -26,7 +26,7 @@ import { AttachmentsSection } from "./attachments-section";
 import { CommentList } from "./comment-list";
 import { ConversationTab } from "./conversation-tab";
 import { IssueDescription } from "./issue-description";
-import { IssueHeader } from "./issue-header";
+import { BasicInfoPanel } from "./basic-info-panel";
 import { RunsSection } from "./runs-section";
 import styles from "./index.module.css";
 
@@ -297,7 +297,7 @@ export function IssueDetailPage() {
                   />
                 </div>
                 <aside className={styles.detailAside} aria-label={t("issues.detailPage.basicInfo")}>
-                  <IssueHeader
+                  <BasicInfoPanel
                     disabled={isUpdatingStatus}
                     issue={issueState.issue}
                     onStatusChange={handleStatusChange}

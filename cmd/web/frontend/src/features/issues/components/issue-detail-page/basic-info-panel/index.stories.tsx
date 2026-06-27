@@ -1,16 +1,16 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { issueFixtures } from "@/mocks/fixtures/issues";
-import { IssueHeader } from "./index";
+import { BasicInfoPanel } from "./index";
 
 const meta = {
-  title: "Features/Issues/IssueDetail/IssueHeader",
-  component: IssueHeader,
+  title: "Features/Issues/IssueDetail/BasicInfoPanel",
+  component: BasicInfoPanel,
   args: {
     disabled: false,
     issue: issueFixtures[1],
     onStatusChange: async () => undefined,
   },
-} satisfies Meta<typeof IssueHeader>;
+} satisfies Meta<typeof BasicInfoPanel>;
 
 export default meta;
 

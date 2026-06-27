@@ -10,7 +10,7 @@ import { formatDateTime } from "../format";
 import { MetaItem } from "./meta-item";
 import styles from "./index.module.css";
 
-export function IssueHeader({
+export function BasicInfoPanel({
   disabled,
   issue,
   onStatusChange,

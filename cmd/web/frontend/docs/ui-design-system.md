@@ -503,7 +503,7 @@ gap: 14px;
 ```
 
 This is the recurring shape for `runs-section`, `comment-list`,
-`issue-description`, `status-actions`, `issue-header`, `workflow-meta-panel`,
+`issue-description`, `status-actions`, `basic-info-panel`, `workflow-meta-panel`,
 `workflow-body-section`, and `frontmatter-section`.
 
 ### Issue Card

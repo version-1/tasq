@@ -505,7 +505,7 @@ gap: 14px;
 ```
 
 これは `runs-section`、`comment-list`、`issue-description`、
-`status-actions`、`issue-header`、`workflow-meta-panel`、
+`status-actions`、`basic-info-panel`、`workflow-meta-panel`、
 `workflow-body-section`、`frontmatter-section` で繰り返し登場する形です。
 
 ### Issue Card
