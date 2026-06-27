@@ -8,45 +8,91 @@
       :root {
         --bg: #ffffff;
         --surface: #ffffff;
-        --surface-wash: #fbfbfb;
-        --surface-hover: #f0f0f0;
-        --surface-row-hover: #fafafa;
+        --surface-strong: #0a0a0a;
         --border: #e5e5e5;
         --text: #0a0a0a;
         --muted: #666666;
+        --accent: #0a0a0a;
+        --accent-color: #7c3aed;
+        --glow-color: #a78bfa;
+        --accent-strong: #1a1a1a;
+        --danger: #b42318;
+        --warning: #a15c07;
+        --ok: #087443;
         --primary-black: #0a0a0a;
         --dark-gray: #1a1a1a;
         --medium-gray: #666666;
         --light-gray: #e5e5e5;
         --extra-light-gray: #f5f5f5;
         --white: #ffffff;
+        --surface-wash: #fbfbfb;
+        --surface-hover: #f0f0f0;
+        --surface-row-hover: #fafafa;
         --control-strong: #111111;
         --control-strong-hover: #252525;
+        --control-divider: #303030;
         --project-bg: #eef6f8;
         --project-text: #14636f;
+        --priority-high-accent: #d97706;
         --priority-high-bg: #fef3c7;
         --priority-high-text: #92400e;
+        --priority-normal-accent: #0284c7;
         --priority-normal-bg: #e0f2fe;
         --priority-normal-text: #075985;
+        --priority-low-accent: #9ca3af;
         --priority-low-bg: #f3f4f6;
         --priority-low-text: #4b5563;
+        --status-backlog-accent: #8a958d;
+        --status-backlog-bg: #f3f4f6;
+        --status-backlog-text: #4b5563;
+        --status-ready-accent: #0e8f70;
         --status-ready-bg: #dff8ef;
         --status-ready-text: #047857;
+        --status-in-progress-accent: #2f6fb3;
         --status-in-progress-bg: #e0f2fe;
         --status-in-progress-text: #075985;
+        --status-review-accent: #b7791f;
+        --status-review-bg: #fef3c7;
+        --status-review-text: #92400e;
+        --status-done-accent: #2f7d4f;
+        --status-done-bg: #dcfce7;
+        --status-done-text: #166534;
+        --status-blocked-accent: #9a4f14;
         --status-blocked-bg: #ffedd5;
         --status-blocked-text: #9a3412;
+        --status-failed-accent: #b42318;
         --status-failed-bg: #fee2e2;
         --status-failed-text: #991b1b;
+        --status-muted-accent: #667085;
+        --status-muted-bg: #f3f4f6;
+        --status-muted-text: #4b5563;
+        --approval-bg: #fff2cc;
+        --toast-error-accent: #dc2626;
+        --toast-error-bg: #fee2e2;
+        --toast-success-accent: #16a34a;
+        --toast-success-bg: #dcfce7;
+        --toast-success-icon: #15803d;
+        --filter-chip-bg: #f3f3f3;
+        --filter-chip-border: #eeeeee;
         --font-sans: Arial, Helvetica, sans-serif;
         --font-mono: ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        --space-0: 0;
         --space-1: 4px;
+        --space-1-5: 6px;
         --space-2: 8px;
+        --space-2-5: 10px;
         --space-3: 12px;
+        --space-3-5: 14px;
         --space-4: 16px;
+        --space-4-5: 18px;
         --space-5: 20px;
+        --space-5-5: 22px;
         --space-6: 24px;
+        --space-7: 28px;
         --space-8: 32px;
+        --space-10: 40px;
+        --space-20: 80px;
+        --radius-xs: 5px;
         --radius-sm: 6px;
         --radius-md: 8px;
         --radius-lg: 10px;
@@ -54,10 +100,26 @@
         --shadow-panel: 0 1px 2px rgb(0 0 0 / 8%);
         --shadow-card: 0 12px 32px rgb(0 0 0 / 8%);
         --shadow-dropdown: 0 8px 24px rgb(0 0 0 / 14%);
+        --shadow-dialog: 0 20px 50px rgb(0 0 0 / 18%);
+        --shadow-toast: 0 10px 24px rgb(0 0 0 / 12%);
+        --shadow-switch-thumb: 0 1px 2px rgb(0 0 0 / 18%);
+        --shadow-header-action: 0 12px 24px rgba(10, 10, 10, 0.12);
+        --shadow-filter-trigger: 0 1px 0 rgba(10, 10, 10, 0.04), 0 4px 10px rgba(10, 10, 10, 0.03);
+        --shadow-filter-active: 0 0 0 3px rgba(10, 10, 10, 0.05), 0 10px 22px rgba(10, 10, 10, 0.06);
+        --shadow-filter-popover: 0 22px 46px rgba(10, 10, 10, 0.13);
+        --z-menu: 10;
+        --z-sticky: 10;
+        --z-popover: 20;
+        --z-dialog: 30;
+        --z-toast: 1000;
       }
 
       * {
         box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
       }
 
       body {
@@ -71,57 +133,94 @@
         color: inherit;
       }
 
-      .page {
+      code,
+      .mono {
+        font-family: var(--font-mono);
+      }
+
+      .shell {
         display: grid;
-        grid-template-columns: 280px minmax(0, 1fr);
+        grid-template-columns: 292px minmax(0, 1fr);
         min-height: 100vh;
       }
 
       .sidebar {
         background: var(--surface-wash);
         border-right: 1px solid var(--border);
+        height: 100vh;
+        overflow-y: auto;
         padding: var(--space-8) var(--space-6);
         position: sticky;
         top: 0;
-        height: 100vh;
       }
 
       .brand {
+        color: var(--primary-black);
         font-size: 34px;
         font-weight: 800;
+        letter-spacing: 0;
         line-height: 1;
+        margin: 0 0 var(--space-2);
+      }
+
+      .docMeta {
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.45;
         margin: 0 0 var(--space-8);
       }
 
       .nav {
+        border-top: 1px solid var(--border);
         display: grid;
         gap: var(--space-1);
+        padding-top: var(--space-4);
       }
 
       .nav a {
         border-radius: var(--radius-sm);
         color: var(--medium-gray);
+        display: block;
+        font-size: 14px;
         padding: var(--space-3);
         text-decoration: none;
       }
 
-      .nav a:hover {
+      .nav a:hover,
+      .nav a:focus-visible {
         background: var(--surface-hover);
         color: var(--primary-black);
+        outline: 0;
       }
 
       .main {
         display: grid;
         gap: var(--space-8);
+        min-width: 0;
         padding: var(--space-8);
       }
 
-      .hero {
+      .hero,
+      .section,
+      .panel,
+      .callout {
         background: var(--surface);
         border: 1px solid var(--border);
         border-radius: var(--radius-md);
         box-shadow: var(--shadow-panel);
+      }
+
+      .hero {
+        display: grid;
+        gap: var(--space-6);
         padding: var(--space-8);
+      }
+
+      .heroTop {
+        align-items: start;
+        display: grid;
+        gap: var(--space-6);
+        grid-template-columns: minmax(0, 1fr) 320px;
       }
 
       .eyebrow {
@@ -141,14 +240,16 @@
       }
 
       h1 {
+        color: var(--primary-black);
         font-size: 30px;
+        font-weight: 800;
         line-height: 1.1;
         margin-bottom: var(--space-3);
       }
 
       h2 {
         font-size: 22px;
-        margin-bottom: var(--space-4);
+        margin: 0;
       }
 
       h3 {
@@ -161,59 +262,186 @@
         line-height: 1.65;
       }
 
-      code {
-        font-family: var(--font-mono);
+      .lede {
+        font-size: 15px;
+        max-width: 760px;
+      }
+
+      .quickFacts {
+        background: var(--surface-wash);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        display: grid;
+        gap: var(--space-3);
+        padding: var(--space-4);
+      }
+
+      .fact {
+        display: grid;
+        gap: var(--space-1);
+      }
+
+      .fact strong {
+        font-size: 13px;
+      }
+
+      .fact span {
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.45;
       }
 
       .section {
         display: grid;
+        gap: var(--space-5);
+        padding: var(--space-6);
+      }
+
+      .sectionHeader {
+        align-items: end;
+        border-bottom: 1px solid var(--border);
+        display: flex;
         gap: var(--space-4);
+        justify-content: space-between;
+        padding-bottom: var(--space-4);
+      }
+
+      .sectionHeader p {
+        font-size: 13px;
+        margin: 0;
+        max-width: 720px;
       }
 
       .grid {
         display: grid;
         gap: var(--space-4);
-        grid-template-columns: repeat(3, minmax(0, 1fr));
       }
 
       .grid.two {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
 
-      .card {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-md);
-        box-shadow: var(--shadow-panel);
+      .grid.three {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .grid.four {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .panel {
+        display: grid;
+        gap: var(--space-3);
         padding: var(--space-4);
       }
 
-      .token {
+      .panel p {
+        font-size: 13px;
+        margin-bottom: 0;
+      }
+
+      .metric {
+        color: var(--primary-black);
+        font-size: 28px;
+        font-weight: 800;
+        line-height: 1;
+      }
+
+      .tokenToolbar {
+        align-items: center;
         display: grid;
         gap: var(--space-3);
+        grid-template-columns: minmax(220px, 1fr) auto;
+      }
+
+      .searchBox {
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        color: var(--primary-black);
+        font: inherit;
+        min-height: 40px;
+        padding: 0 var(--space-3);
+        width: 100%;
+      }
+
+      .segmented {
+        background: var(--surface-wash);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        display: inline-flex;
+        gap: var(--space-1);
+        padding: var(--space-1);
+      }
+
+      .segment {
+        background: transparent;
+        border: 0;
+        border-radius: var(--radius-xs);
+        color: var(--muted);
+        cursor: pointer;
+        font: inherit;
+        min-height: 32px;
+        padding: 0 var(--space-3);
+      }
+
+      .segment[aria-pressed="true"] {
+        background: var(--primary-black);
+        color: var(--white);
+      }
+
+      .tokenGrid {
+        display: grid;
+        gap: var(--space-3);
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .tokenCard {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        display: grid;
+        gap: var(--space-3);
+        min-height: 136px;
+        padding: var(--space-3);
       }
 
       .swatch {
         border: 1px solid var(--border);
-        border-radius: var(--radius-sm);
-        min-height: 58px;
+        border-radius: var(--radius-xs);
+        min-height: 48px;
       }
 
       .tokenName {
+        color: var(--primary-black);
         font-family: var(--font-mono);
-        font-size: 13px;
+        font-size: 12px;
+        overflow-wrap: anywhere;
       }
 
-      .tokenMeta {
+      .tokenValue {
         color: var(--muted);
-        font-size: 13px;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        line-height: 1.45;
+        overflow-wrap: anywhere;
+      }
+
+      .tokenRole {
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.45;
+      }
+
+      .spacingRows {
+        display: grid;
+        gap: var(--space-2);
       }
 
       .spacingRow {
         align-items: center;
         display: grid;
         gap: var(--space-3);
-        grid-template-columns: 130px 1fr 56px;
+        grid-template-columns: 120px minmax(0, 1fr) 64px minmax(0, 1fr);
       }
 
       .bar {
@@ -229,39 +457,124 @@
       }
 
       .badge {
+        align-items: center;
         border-radius: var(--radius-pill);
         display: inline-flex;
         font-size: 12px;
         font-weight: 600;
-        padding: var(--space-1) 10px;
+        gap: var(--space-1);
+        padding: var(--space-1) var(--space-2-5);
       }
 
-      .sampleTable {
+      .dot {
+        background: currentcolor;
+        border-radius: var(--radius-pill);
+        height: 6px;
+        width: 6px;
+      }
+
+      .tableWrap {
         border: 1px solid var(--border);
         border-radius: var(--radius-sm);
-        border-spacing: 0;
-        overflow: hidden;
+        overflow: auto;
+      }
+
+      table {
+        border-collapse: collapse;
         width: 100%;
       }
 
-      .sampleTable th,
-      .sampleTable td {
+      th,
+      td {
         border-bottom: 1px solid var(--border);
-        font-size: 14px;
-        padding: 14px 12px;
+        font-size: 13px;
+        padding: var(--space-3);
         text-align: left;
+        vertical-align: top;
       }
 
-      .sampleTable th {
+      th {
+        background: var(--surface-wash);
         color: var(--muted);
         font-size: 12px;
+        font-weight: 700;
       }
 
-      .sampleTable tr:hover td {
+      tr:last-child td {
+        border-bottom: 0;
+      }
+
+      tbody tr:hover td {
         background: var(--surface-row-hover);
       }
 
-      .buttonPreview {
+      .layerSvg,
+      .flowSvg {
+        background: var(--surface-wash);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        inline-size: 100%;
+        min-height: 320px;
+      }
+
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-3);
+      }
+
+      .legendItem {
+        align-items: center;
+        color: var(--muted);
+        display: inline-flex;
+        font-size: 12px;
+        gap: var(--space-2);
+      }
+
+      .legendMark {
+        border-radius: var(--radius-xs);
+        height: 12px;
+        width: 20px;
+      }
+
+      .componentCard {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        display: grid;
+        gap: var(--space-3);
+        padding: var(--space-4);
+      }
+
+      .componentCard ul {
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.55;
+        margin: 0;
+        padding-left: var(--space-4);
+      }
+
+      .previewShell {
+        background: var(--surface-wash);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        display: grid;
+        gap: var(--space-4);
+        padding: var(--space-4);
+      }
+
+      .sampleHeader {
+        align-items: center;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        display: flex;
+        gap: var(--space-4);
+        justify-content: space-between;
+        padding: var(--space-4);
+      }
+
+      .sampleButton {
         align-items: center;
         background: var(--primary-black);
         border: 1px solid var(--primary-black);
@@ -272,141 +585,646 @@
         padding: 0 var(--space-4);
       }
 
-      .shadowPreview {
-        min-height: 80px;
+      .sampleFilter {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        box-shadow: var(--shadow-filter-trigger);
+        color: var(--primary-black);
+        display: inline-flex;
+        min-height: 40px;
+        padding: 0 var(--space-3);
       }
 
-      @media (max-width: 980px) {
-        .page {
+      .sampleCard {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-card);
+        display: grid;
+        gap: var(--space-4);
+        min-height: 160px;
+        padding: var(--space-4);
+      }
+
+      .checklist {
+        display: grid;
+        gap: var(--space-3);
+      }
+
+      .checkItem {
+        align-items: start;
+        background: var(--surface-wash);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        display: grid;
+        gap: var(--space-2);
+        grid-template-columns: 24px minmax(0, 1fr);
+        padding: var(--space-3);
+      }
+
+      .checkItem input {
+        margin-top: 2px;
+      }
+
+      .checkItem strong {
+        display: block;
+        font-size: 13px;
+      }
+
+      .checkItem span {
+        color: var(--muted);
+        display: block;
+        font-size: 12px;
+        line-height: 1.45;
+      }
+
+      .callout {
+        border-left: 6px solid var(--warning);
+        padding: var(--space-4);
+      }
+
+      .callout p {
+        margin-bottom: 0;
+      }
+
+      @media (max-width: 1160px) {
+        .shell {
           grid-template-columns: 1fr;
         }
 
         .sidebar {
+          border-bottom: 1px solid var(--border);
+          border-right: 0;
           height: auto;
           position: static;
         }
 
-        .grid,
-        .grid.two {
+        .nav {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .heroTop,
+        .grid.two,
+        .grid.three,
+        .grid.four,
+        .tokenGrid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 720px) {
+        .main,
+        .hero,
+        .section {
+          padding: var(--space-4);
+        }
+
+        .sectionHeader,
+        .sampleHeader,
+        .tokenToolbar {
+          align-items: stretch;
+          flex-direction: column;
+          grid-template-columns: 1fr;
+        }
+
+        .nav {
           grid-template-columns: 1fr;
         }
       }
     </style>
   </head>
   <body>
-    <div class="page">
+    <div class="shell">
       <aside class="sidebar">
         <p class="brand">Tasq</p>
+        <p class="docMeta">
+          Web frontend UI design system<br />
+          Scope: <span class="mono">cmd/web/frontend</span><br />
+          Updated: 2026-06-27
+        </p>
         <nav class="nav" aria-label="Design system sections">
+          <a href="#overview">Overview</a>
+          <a href="#architecture">Architecture</a>
           <a href="#tokens">Tokens</a>
-          <a href="#spacing">Spacing</a>
-          <a href="#badges">Badges</a>
-          <a href="#surfaces">Surfaces</a>
           <a href="#components">Components</a>
+          <a href="#patterns">Feature patterns</a>
+          <a href="#contracts">Contracts</a>
+          <a href="#checklist">Review checklist</a>
+          <a href="#appendix">Appendix</a>
         </nav>
       </aside>
 
       <main class="main">
-        <section class="hero">
-          <p class="eyebrow">Web frontend</p>
-          <h1>Tasq UI Design System</h1>
-          <p>
-            Browser-friendly companion for <code>ui-design-system.md</code>.
-            The implementation source of truth is
-            <code>src/app/globals.css</code>; component ownership rules live in
-            <code>design.md</code>.
-          </p>
+        <header class="hero" id="overview">
+          <div class="heroTop">
+            <div>
+              <p class="eyebrow">Single-file visual reference</p>
+              <h1>Tasq Web UI Design System</h1>
+              <p class="lede">
+                This page turns the Markdown design system into a browsable map
+                of tokens, component ownership, reusable primitives, feature
+                patterns, accessibility expectations, and review checks. The
+                implementation source of truth remains
+                <code>src/app/globals.css</code> and the component CSS Modules.
+              </p>
+            </div>
+            <aside class="quickFacts" aria-label="Document facts">
+              <div class="fact">
+                <strong>Styling model</strong>
+                <span>CSS Modules only. No Tailwind, styled-components, or runtime CSS-in-JS.</span>
+              </div>
+              <div class="fact">
+                <strong>Token source</strong>
+                <span><code>src/app/globals.css</code> owns global tokens and element defaults.</span>
+              </div>
+              <div class="fact">
+                <strong>Placement rule</strong>
+                <span>Place by ownership first, then by reuse scope.</span>
+              </div>
+            </aside>
+          </div>
+
+          <div class="grid four" aria-label="Design system coverage">
+            <article class="panel">
+              <span class="metric">6</span>
+              <strong>Token families</strong>
+              <p>Color, spacing, radius, shadow, z-index, and font stacks.</p>
+            </article>
+            <article class="panel">
+              <span class="metric">3</span>
+              <strong>Ownership layers</strong>
+              <p>Route entries, shared components, and feature-aware UI.</p>
+            </article>
+            <article class="panel">
+              <span class="metric">8</span>
+              <strong>Primitive groups</strong>
+              <p>Button, badge, switch, table, pagination, menu, toast, markdown.</p>
+            </article>
+            <article class="panel">
+              <span class="metric">5</span>
+              <strong>Review gates</strong>
+              <p>Token use, ownership, responsive behavior, Storybook, accessibility.</p>
+            </article>
+          </div>
+        </header>
+
+        <section class="section" id="architecture">
+          <div class="sectionHeader">
+            <div>
+              <p class="eyebrow">Architecture</p>
+              <h2>Ownership And Token Flow</h2>
+            </div>
+            <p>
+              Read the diagram left to right. Routes stay thin, features own
+              domain-aware composition, shared primitives stay reusable, and
+              all visual constants flow from global tokens or documented scoped
+              variables.
+            </p>
+          </div>
+
+          <svg class="layerSvg" viewBox="0 0 1160 430" role="img" aria-labelledby="layerTitle layerDesc">
+            <title id="layerTitle">Tasq frontend ownership layers</title>
+            <desc id="layerDesc">A layered diagram showing route entries, layout, UI primitives, feature components, and global design tokens.</desc>
+            <defs>
+              <marker id="arrow" markerHeight="8" markerWidth="8" orient="auto" refX="7" refY="4">
+                <path d="M0,0 L8,4 L0,8 Z" fill="#666" />
+              </marker>
+            </defs>
+            <rect x="24" y="28" width="1112" height="374" rx="10" fill="#fff" stroke="#e5e5e5" />
+            <rect x="62" y="70" width="180" height="290" rx="8" fill="#fbfbfb" stroke="#e5e5e5" />
+            <text x="82" y="104" font-size="16" font-weight="700">src/app</text>
+            <text x="82" y="132" font-size="12" fill="#666">Route entry files</text>
+            <text x="82" y="154" font-size="12" fill="#666">Params, suspense, page</text>
+            <text x="82" y="176" font-size="12" fill="#666">selection only</text>
+
+            <rect x="308" y="70" width="220" height="290" rx="8" fill="#eef6f8" stroke="#d7edf1" />
+            <text x="328" y="104" font-size="16" font-weight="700">src/components</text>
+            <text x="328" y="132" font-size="12" fill="#14636f">Layout shell</text>
+            <text x="328" y="154" font-size="12" fill="#14636f">UI primitives</text>
+            <text x="328" y="176" font-size="12" fill="#14636f">Domain-independent</text>
+
+            <rect x="594" y="70" width="230" height="290" rx="8" fill="#fef3c7" stroke="#f5d783" />
+            <text x="614" y="104" font-size="16" font-weight="700">src/features</text>
+            <text x="614" y="132" font-size="12" fill="#92400e">Issue board/table/detail</text>
+            <text x="614" y="154" font-size="12" fill="#92400e">Dashboard</text>
+            <text x="614" y="176" font-size="12" fill="#92400e">Workflow settings</text>
+
+            <rect x="884" y="70" width="210" height="290" rx="8" fill="#f3f4f6" stroke="#e1e3e6" />
+            <text x="904" y="104" font-size="16" font-weight="700">src/lib</text>
+            <text x="904" y="132" font-size="12" fill="#4b5563">API clients</text>
+            <text x="904" y="154" font-size="12" fill="#4b5563">i18n</text>
+            <text x="904" y="176" font-size="12" fill="#4b5563">Generated types</text>
+
+            <path d="M242 215 H300" stroke="#666" stroke-width="2" marker-end="url(#arrow)" />
+            <path d="M528 215 H586" stroke="#666" stroke-width="2" marker-end="url(#arrow)" />
+            <path d="M824 215 H876" stroke="#666" stroke-width="2" marker-end="url(#arrow)" />
+
+            <rect x="230" y="306" width="728" height="56" rx="8" fill="#0a0a0a" />
+            <text x="254" y="338" fill="#fff" font-size="14" font-weight="700">globals.css tokens</text>
+            <text x="420" y="338" fill="#fff" font-size="12">color / spacing / radius / shadow / z-index / fonts</text>
+            <path d="M594 306 V252" stroke="#0a0a0a" stroke-width="2" marker-end="url(#arrow)" />
+            <path d="M418 306 V252" stroke="#0a0a0a" stroke-width="2" marker-end="url(#arrow)" />
+            <path d="M706 306 V252" stroke="#0a0a0a" stroke-width="2" marker-end="url(#arrow)" />
+          </svg>
+
+          <div class="legend">
+            <span class="legendItem"><span class="legendMark" style="background: var(--surface-wash)"></span>Route boundary</span>
+            <span class="legendItem"><span class="legendMark" style="background: var(--project-bg)"></span>Reusable UI / layout</span>
+            <span class="legendItem"><span class="legendMark" style="background: var(--priority-high-bg)"></span>Feature-aware UI</span>
+            <span class="legendItem"><span class="legendMark" style="background: var(--primary-black)"></span>Global tokens</span>
+          </div>
         </section>
 
         <section class="section" id="tokens">
-          <h2>Color Tokens</h2>
-          <div class="grid">
-            <article class="card token">
-              <div class="swatch" style="background: var(--primary-black)"></div>
-              <div>
-                <div class="tokenName">--primary-black</div>
-                <div class="tokenMeta">Primary actions and headings</div>
-              </div>
-            </article>
-            <article class="card token">
-              <div class="swatch" style="background: var(--surface-wash)"></div>
-              <div>
-                <div class="tokenName">--surface-wash</div>
-                <div class="tokenMeta">Shell and page wash</div>
-              </div>
-            </article>
-            <article class="card token">
-              <div class="swatch" style="background: var(--border)"></div>
-              <div>
-                <div class="tokenName">--border</div>
-                <div class="tokenMeta">Panel, field, and table borders</div>
-              </div>
-            </article>
+          <div class="sectionHeader">
+            <div>
+              <p class="eyebrow">Interactive view</p>
+              <h2>Token Explorer</h2>
+            </div>
+            <p>
+              Filter tokens by family or search by name, value, and role. Values
+              mirror <code>src/app/globals.css</code>.
+            </p>
           </div>
-        </section>
 
-        <section class="section" id="spacing">
-          <h2>Spacing Scale</h2>
-          <div class="card">
-            <div class="spacingRow"><code>--space-1</code><div class="bar" style="width: 4px"></div><span>4px</span></div>
-            <div class="spacingRow"><code>--space-2</code><div class="bar" style="width: 8px"></div><span>8px</span></div>
-            <div class="spacingRow"><code>--space-3</code><div class="bar" style="width: 12px"></div><span>12px</span></div>
-            <div class="spacingRow"><code>--space-4</code><div class="bar" style="width: 16px"></div><span>16px</span></div>
-            <div class="spacingRow"><code>--space-6</code><div class="bar" style="width: 24px"></div><span>24px</span></div>
-            <div class="spacingRow"><code>--space-8</code><div class="bar" style="width: 32px"></div><span>32px</span></div>
+          <div class="tokenToolbar">
+            <label>
+              <span class="eyebrow">Search tokens</span>
+              <input class="searchBox" id="tokenSearch" type="search" placeholder="Try status, shadow, radius, --space-4..." />
+            </label>
+            <div class="segmented" id="tokenSegments" aria-label="Token family filter"></div>
           </div>
-        </section>
+          <div class="tokenGrid" id="tokenGrid" aria-live="polite"></div>
 
-        <section class="section" id="badges">
-          <h2>Badge Tones</h2>
-          <div class="card badgeRow">
-            <span class="badge" style="background: var(--project-bg); color: var(--project-text)">Project</span>
-            <span class="badge" style="background: var(--priority-high-bg); color: var(--priority-high-text)">High</span>
-            <span class="badge" style="background: var(--priority-normal-bg); color: var(--priority-normal-text)">Normal</span>
-            <span class="badge" style="background: var(--priority-low-bg); color: var(--priority-low-text)">Low</span>
-            <span class="badge" style="background: var(--status-ready-bg); color: var(--status-ready-text)">Ready</span>
-            <span class="badge" style="background: var(--status-in-progress-bg); color: var(--status-in-progress-text)">In progress</span>
-            <span class="badge" style="background: var(--status-blocked-bg); color: var(--status-blocked-text)">Blocked</span>
-            <span class="badge" style="background: var(--status-failed-bg); color: var(--status-failed-text)">Failed</span>
-          </div>
-        </section>
-
-        <section class="section" id="surfaces">
-          <h2>Surfaces</h2>
           <div class="grid two">
-            <article class="card shadowPreview">
-              <h3>Panel</h3>
-              <p><code>--surface</code>, <code>--border</code>, <code>--shadow-panel</code>, <code>--radius-md</code>.</p>
+            <article class="panel">
+              <h3>Spacing Scale</h3>
+              <div class="spacingRows" id="spacingRows"></div>
             </article>
-            <article class="card shadowPreview" style="box-shadow: var(--shadow-card)">
-              <h3>Issue card</h3>
-              <p><code>--shadow-card</code> for elevated issue cards.</p>
+            <article class="panel">
+              <h3>Badge Tone Preview</h3>
+              <div class="badgeRow" id="badgePreview"></div>
             </article>
           </div>
         </section>
 
         <section class="section" id="components">
-          <h2>Component Patterns</h2>
+          <div class="sectionHeader">
+            <div>
+              <p class="eyebrow">Reusable UI</p>
+              <h2>Primitive Contracts</h2>
+            </div>
+            <p>
+              Shared primitives stay domain-independent. Feature-specific labels,
+              issue status mapping, and project semantics belong in feature
+              components or helpers.
+            </p>
+          </div>
+
+          <div class="grid three" id="componentCards"></div>
+
+          <div class="previewShell">
+            <div class="sampleHeader">
+              <div>
+                <strong>Header action surface</strong>
+                <p>Primary actions use <code>--primary-black</code>, <code>--radius-sm</code>, and shared spacing tokens.</p>
+              </div>
+              <button class="sampleButton" type="button">Create</button>
+            </div>
+
+            <div class="grid two">
+              <article class="sampleCard">
+                <div class="badgeRow">
+                  <span class="badge" style="background: var(--project-bg); color: var(--project-text)">Tasq</span>
+                  <span class="badge" style="background: var(--priority-high-bg); color: var(--priority-high-text)"><span class="dot"></span>High</span>
+                  <span class="badge" style="background: var(--status-ready-bg); color: var(--status-ready-text)">Ready</span>
+                </div>
+                <strong>Issue card surface</strong>
+                <p>Feature card composition reuses global colors, radius, spacing, and card shadow tokens.</p>
+              </article>
+
+              <article class="panel">
+                <div class="badgeRow">
+                  <button class="sampleFilter" type="button">Status: backlog, ready</button>
+                  <button class="sampleFilter" type="button">Priority: high</button>
+                </div>
+                <div class="tableWrap">
+                  <table>
+                    <thead>
+                      <tr><th>ID</th><th>Title</th><th>Status</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr><td><code>#128</code></td><td>Refine issue table</td><td>Ready</td></tr>
+                      <tr><td><code>#129</code></td><td>Add design tokens</td><td>In progress</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section class="section" id="patterns">
+          <div class="sectionHeader">
+            <div>
+              <p class="eyebrow">Feature patterns</p>
+              <h2>Where Product UI Lives</h2>
+            </div>
+            <p>
+              Feature components compose primitives into domain-aware surfaces.
+              The table below captures current recurring patterns and the
+              styling decisions they should preserve.
+            </p>
+          </div>
+
+          <div class="tableWrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Pattern</th>
+                  <th>Owner</th>
+                  <th>Tokens / primitives</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+              <tbody id="patternRows"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section" id="contracts">
+          <div class="sectionHeader">
+            <div>
+              <p class="eyebrow">Contracts</p>
+              <h2>Implementation Flow</h2>
+            </div>
+            <p>
+              Use this flow when adding or refactoring UI. The point is to
+              choose the ownership layer before choosing CSS, then document any
+              new token or recurring pattern.
+            </p>
+          </div>
+
+          <svg class="flowSvg" viewBox="0 0 1160 360" role="img" aria-labelledby="flowTitle flowDesc">
+            <title id="flowTitle">UI implementation flow</title>
+            <desc id="flowDesc">A flow from identifying ownership through token selection, component implementation, Storybook, and documentation updates.</desc>
+            <defs>
+              <marker id="flowArrow" markerHeight="8" markerWidth="8" orient="auto" refX="7" refY="4">
+                <path d="M0,0 L8,4 L0,8 Z" fill="#0a0a0a" />
+              </marker>
+            </defs>
+            <rect x="32" y="58" width="170" height="90" rx="8" fill="#fff" stroke="#e5e5e5" />
+            <text x="54" y="92" font-size="14" font-weight="700">1. Locate owner</text>
+            <text x="54" y="118" font-size="12" fill="#666">route / layout / ui / feature</text>
+            <path d="M202 103 H252" stroke="#0a0a0a" stroke-width="2" marker-end="url(#flowArrow)" />
+
+            <rect x="252" y="58" width="180" height="90" rx="8" fill="#eef6f8" stroke="#d7edf1" />
+            <text x="274" y="92" font-size="14" font-weight="700">2. Reuse primitive</text>
+            <text x="274" y="118" font-size="12" fill="#14636f">button / badge / table / menu</text>
+            <path d="M432 103 H482" stroke="#0a0a0a" stroke-width="2" marker-end="url(#flowArrow)" />
+
+            <rect x="482" y="58" width="180" height="90" rx="8" fill="#fef3c7" stroke="#f5d783" />
+            <text x="504" y="92" font-size="14" font-weight="700">3. Pick tokens</text>
+            <text x="504" y="118" font-size="12" fill="#92400e">globals.css first</text>
+            <path d="M662 103 H712" stroke="#0a0a0a" stroke-width="2" marker-end="url(#flowArrow)" />
+
+            <rect x="712" y="58" width="180" height="90" rx="8" fill="#f3f4f6" stroke="#e1e3e6" />
+            <text x="734" y="92" font-size="14" font-weight="700">4. Add story</text>
+            <text x="734" y="118" font-size="12" fill="#4b5563">UI / Layout / Features</text>
+            <path d="M892 103 H942" stroke="#0a0a0a" stroke-width="2" marker-end="url(#flowArrow)" />
+
+            <rect x="942" y="58" width="180" height="90" rx="8" fill="#dcfce7" stroke="#b9ebc8" />
+            <text x="964" y="92" font-size="14" font-weight="700">5. Update docs</text>
+            <text x="964" y="118" font-size="12" fill="#166534">new token / primitive / pattern</text>
+
+            <rect x="178" y="210" width="804" height="72" rx="8" fill="#0a0a0a" />
+            <text x="214" y="242" fill="#fff" font-size="14" font-weight="700">Guardrail</text>
+            <text x="308" y="242" fill="#fff" font-size="12">Do not hardcode design-system values when a token exists. Do not move feature semantics into shared UI primitives.</text>
+          </svg>
+
+          <div class="tableWrap">
+            <table>
+              <thead>
+                <tr><th>Contract</th><th>Required behavior</th><th>Source</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>CSS ownership</td><td>Component styles stay co-located in <code>index.module.css</code>.</td><td><code>docs/design.md</code></td></tr>
+                <tr><td>Token use</td><td>Use <code>globals.css</code> tokens before adding local fixed values.</td><td><code>docs/ui-design-system.md</code></td></tr>
+                <tr><td>Storybook</td><td>Components exported from <code>index.tsx</code> should ship an <code>index.stories.tsx</code>.</td><td><code>docs/ui-design-system.md</code></td></tr>
+                <tr><td>A11y</td><td>Preserve labels, roles, expanded state, focus-visible rings, and icon aria-hidden behavior.</td><td>Component implementations</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section" id="checklist">
+          <div class="sectionHeader">
+            <div>
+              <p class="eyebrow">Review checklist</p>
+              <h2>Before Merging UI Work</h2>
+            </div>
+            <p>
+              This checklist is intentionally operational. Use it during PR
+              review to catch drift from the design system.
+            </p>
+          </div>
+
+          <div class="checklist">
+            <label class="checkItem"><input type="checkbox" /><span><strong>Ownership is correct</strong><span>Route entries stay thin; feature-aware UI is not placed in shared primitives.</span></span></label>
+            <label class="checkItem"><input type="checkbox" /><span><strong>Tokens are used</strong><span>Colors, spacing, radius, shadows, z-index, and font stacks reference documented variables where available.</span></span></label>
+            <label class="checkItem"><input type="checkbox" /><span><strong>Responsive behavior matches existing breakpoints</strong><span>Prefer 1060, 900, 860, 720, and 640px before introducing a new breakpoint.</span></span></label>
+            <label class="checkItem"><input type="checkbox" /><span><strong>Storybook is updated</strong><span>New or reshaped UI components have examples under UI, Layout, or Features ownership titles.</span></span></label>
+            <label class="checkItem"><input type="checkbox" /><span><strong>Accessibility contracts remain intact</strong><span>Interactive elements keep labels, keyboard state, and visible focus styles.</span></span></label>
+          </div>
+        </section>
+
+        <section class="section" id="appendix">
+          <div class="sectionHeader">
+            <div>
+              <p class="eyebrow">Appendix</p>
+              <h2>Reference Files And Constraints</h2>
+            </div>
+            <p>
+              This page uses no CDN libraries. It relies on inline SVG and
+              vanilla JavaScript, so it works when opened directly from disk.
+            </p>
+          </div>
+
           <div class="grid two">
-            <article class="card">
-              <h3>Primary action</h3>
-              <button class="buttonPreview" type="button">Create</button>
+            <article class="panel">
+              <h3>Primary references</h3>
+              <ul>
+                <li><code>cmd/web/frontend/src/app/globals.css</code></li>
+                <li><code>cmd/web/frontend/docs/ui-design-system.md</code></li>
+                <li><code>cmd/web/frontend/docs/ui-design-system.ja.md</code></li>
+                <li><code>cmd/web/frontend/docs/design.md</code></li>
+                <li><code>.agents/skills/tasq-frontend-ui-coding/SKILL.md</code></li>
+              </ul>
             </article>
-            <article class="card">
-              <h3>Table</h3>
-              <table class="sampleTable">
-                <thead>
-                  <tr><th>ID</th><th>Title</th><th>Status</th></tr>
-                </thead>
-                <tbody>
-                  <tr><td><code>#128</code></td><td>Refine issue table</td><td>Ready</td></tr>
-                  <tr><td><code>#129</code></td><td>Add design tokens</td><td>In progress</td></tr>
-                </tbody>
-              </table>
+            <article class="callout">
+              <h3>Deliberate limits</h3>
+              <p>
+                Typography sizes, fixed component dimensions, and breakpoints
+                are documented but not all converted into tokens. Add those
+                token families only when repeated usage justifies the contract.
+              </p>
             </article>
           </div>
         </section>
       </main>
     </div>
+
+    <script>
+      const tokens = [
+        ["color", "--bg", "#FFFFFF", "Default page background"],
+        ["color", "--surface", "#FFFFFF", "Panel, card, modal, dropdown background"],
+        ["color", "--surface-wash", "#FBFBFB", "App shell and low-contrast page wash"],
+        ["color", "--surface-hover", "#F0F0F0", "Sidebar active and hover row surface"],
+        ["color", "--surface-row-hover", "#FAFAFA", "Table row hover surface"],
+        ["color", "--border", "#E5E5E5", "Default borders"],
+        ["color", "--text", "#0A0A0A", "Default foreground text"],
+        ["color", "--muted", "#666666", "Secondary text and metadata"],
+        ["color", "--primary-black", "#0A0A0A", "Primary buttons and headings"],
+        ["color", "--control-strong", "#111111", "Strong action hover / filter apply"],
+        ["color", "--project-bg", "#EEF6F8", "Project badge background"],
+        ["color", "--project-text", "#14636F", "Project badge foreground"],
+        ["color", "--priority-high-bg", "#FEF3C7", "High priority badge background"],
+        ["color", "--priority-high-text", "#92400E", "High priority badge text"],
+        ["color", "--status-ready-bg", "#DFF8EF", "Ready status badge background"],
+        ["color", "--status-ready-text", "#047857", "Ready status badge text"],
+        ["color", "--status-in-progress-bg", "#E0F2FE", "In-progress status badge background"],
+        ["color", "--status-in-progress-text", "#075985", "In-progress status badge text"],
+        ["color", "--status-blocked-bg", "#FFEDD5", "Blocked status badge background"],
+        ["color", "--status-blocked-text", "#9A3412", "Blocked status badge text"],
+        ["spacing", "--space-0", "0", "Reset margin, padding, inset"],
+        ["spacing", "--space-1", "4px", "Tight icon gap and chip padding"],
+        ["spacing", "--space-1-5", "6px", "Small field internals"],
+        ["spacing", "--space-2", "8px", "Button/icon gap and compact padding"],
+        ["spacing", "--space-2-5", "10px", "Input padding and compact horizontal padding"],
+        ["spacing", "--space-3", "12px", "Table cells and action clusters"],
+        ["spacing", "--space-3-5", "14px", "Ledger table cells and filter rows"],
+        ["spacing", "--space-4", "16px", "Panel padding and common grid gap"],
+        ["spacing", "--space-4-5", "18px", "Feature panel padding"],
+        ["spacing", "--space-5-5", "22px", "Header / table toolbar separation"],
+        ["spacing", "--space-6", "24px", "Page content padding"],
+        ["spacing", "--space-8", "32px", "Large page and hero padding"],
+        ["radius", "--radius-xs", "5px", "Filter chip outline"],
+        ["radius", "--radius-sm", "6px", "Buttons, fields, small surfaces"],
+        ["radius", "--radius-md", "8px", "Panels, cards, modals, table wrappers"],
+        ["radius", "--radius-lg", "10px", "Toast container"],
+        ["radius", "--radius-pill", "999px", "Pills, switch track, timestamp chips"],
+        ["shadow", "--shadow-panel", "0 1px 2px rgb(0 0 0 / 8%)", "Standard panel surface"],
+        ["shadow", "--shadow-card", "0 12px 32px rgb(0 0 0 / 8%)", "Issue card elevation"],
+        ["shadow", "--shadow-dropdown", "0 8px 24px rgb(0 0 0 / 14%)", "Context menu and dropdown"],
+        ["shadow", "--shadow-dialog", "0 20px 50px rgb(0 0 0 / 18%)", "Modal dialog"],
+        ["shadow", "--shadow-filter-popover", "0 22px 46px rgba(10, 10, 10, 0.13)", "Filter dropdown popover"],
+        ["z-index", "--z-menu", "10", "Context menu layer"],
+        ["z-index", "--z-sticky", "10", "Sticky header layer"],
+        ["z-index", "--z-popover", "20", "Filter popover layer"],
+        ["z-index", "--z-dialog", "30", "Dialog layer"],
+        ["z-index", "--z-toast", "1000", "Toast stack layer"],
+        ["font", "--font-sans", "Arial, Helvetica, sans-serif", "Base UI font stack"],
+        ["font", "--font-mono", "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas", "IDs and code-like values"]
+      ];
+
+      const components = [
+        ["Button", "src/components/ui/button", ["Primary 40px action", "Split button chevron slot", "Uses --primary-black and --radius-sm"]],
+        ["Badge", "src/components/ui/badge", ["Project, priority, and status variants", "Uses global tone tokens", "Icons inherit badge accent"]],
+        ["Table", "src/components/ui/table", ["Ledger-compatible table wrapper", "Sortable header buttons", "Status-colored rows"]],
+        ["Pagination", "src/components/ui/pagination", ["End-aligned page control cluster", "Stacks under 860px", "Uses ledger-muted fallback"]],
+        ["Context menu", "src/components/ui/context-menu", ["Absolute menu layer", "Uses --z-menu", "Menu item hover and disabled states"]],
+        ["Toast", "src/components/ui/toast", ["Fixed top-right stack", "Error and success tone tokens", "role=status and aria-live behavior"]]
+      ];
+
+      const patterns = [
+        ["App shell", "src/components/layout", "surface-wash, content padding, sidebar/header tokens", "Two-column grid; collapses below 900px."],
+        ["Issue table view", "features/issues/components/table-view", "ui/table, ui/pagination, filter-options", "Ledger palette, multi-select filters, 50 item pagination."],
+        ["Filter options", "features/issues/components/filter-options", "radius, shadow, spacing, z-popover", "Popover with header, option list, and action row."],
+        ["Issue card", "features/issues/components/card", "badge, project-badge, priority-badge, shadow-card", "Feature-aware card with quick actions and metric row."],
+        ["Issue detail", "features/issues/components/issue-detail-page", "panel surface, markdown, status-actions", "Header, description, comments, runs, and status actions."],
+        ["Dashboard", "features/dashboard/components/dashboard-view", "panel surface, compact metric cards", "Metric grid, detail cards, distribution bars, run table."],
+        ["Workflow settings", "features/projects/components/workflow-settings-view", "panel surface, frontmatter table", "Meta panel plus workflow body/frontmatter sections."]
+      ];
+
+      const badgePreview = [
+        ["Project", "var(--project-bg)", "var(--project-text)"],
+        ["High", "var(--priority-high-bg)", "var(--priority-high-text)"],
+        ["Normal", "var(--priority-normal-bg)", "var(--priority-normal-text)"],
+        ["Low", "var(--priority-low-bg)", "var(--priority-low-text)"],
+        ["Ready", "var(--status-ready-bg)", "var(--status-ready-text)"],
+        ["In progress", "var(--status-in-progress-bg)", "var(--status-in-progress-text)"],
+        ["Blocked", "var(--status-blocked-bg)", "var(--status-blocked-text)"],
+        ["Failed", "var(--status-failed-bg)", "var(--status-failed-text)"]
+      ];
+
+      const families = ["all", ...Array.from(new Set(tokens.map(([family]) => family)))];
+      let activeFamily = "all";
+
+      const tokenGrid = document.querySelector("#tokenGrid");
+      const tokenSearch = document.querySelector("#tokenSearch");
+      const tokenSegments = document.querySelector("#tokenSegments");
+
+      function isPaintable(value) {
+        return value.startsWith("#") || value.startsWith("rgb") || value.startsWith("var(");
+      }
+
+      function renderSegments() {
+        tokenSegments.innerHTML = families
+          .map((family) => `<button class="segment" type="button" aria-pressed="${family === activeFamily}" data-family="${family}">${family}</button>`)
+          .join("");
+      }
+
+      function renderTokens() {
+        const query = tokenSearch.value.trim().toLowerCase();
+        const filtered = tokens.filter(([family, name, value, role]) => {
+          const familyMatch = activeFamily === "all" || activeFamily === family;
+          const textMatch = `${family} ${name} ${value} ${role}`.toLowerCase().includes(query);
+          return familyMatch && textMatch;
+        });
+
+        tokenGrid.innerHTML = filtered
+          .map(([family, name, value, role]) => {
+            const swatch = family === "color" && isPaintable(value)
+              ? `<div class="swatch" style="background: ${value}"></div>`
+              : `<div class="swatch" style="display:grid;place-items:center;background:var(--surface-wash)"><span class="mono">${family}</span></div>`;
+            return `<article class="tokenCard">${swatch}<div class="tokenName">${name}</div><div class="tokenValue">${value}</div><div class="tokenRole">${role}</div></article>`;
+          })
+          .join("");
+      }
+
+      tokenSegments.addEventListener("click", (event) => {
+        const button = event.target.closest("button[data-family]");
+        if (!button) return;
+        activeFamily = button.dataset.family;
+        renderSegments();
+        renderTokens();
+      });
+
+      tokenSearch.addEventListener("input", renderTokens);
+
+      document.querySelector("#spacingRows").innerHTML = tokens
+        .filter(([family]) => family === "spacing")
+        .map(([, name, value, role]) => {
+          const width = value === "0" ? "2px" : value;
+          return `<div class="spacingRow"><code>${name}</code><div class="bar" style="width:${width}"></div><span class="mono">${value}</span><span class="tokenRole">${role}</span></div>`;
+        })
+        .join("");
+
+      document.querySelector("#badgePreview").innerHTML = badgePreview
+        .map(([label, bg, color]) => `<span class="badge" style="background:${bg};color:${color}"><span class="dot"></span>${label}</span>`)
+        .join("");
+
+      document.querySelector("#componentCards").innerHTML = components
+        .map(([name, owner, bullets]) => `<article class="componentCard"><h3>${name}</h3><code>${owner}</code><ul>${bullets.map((item) => `<li>${item}</li>`).join("")}</ul></article>`)
+        .join("");
+
+      document.querySelector("#patternRows").innerHTML = patterns
+        .map(([pattern, owner, tokens, notes]) => `<tr><td><strong>${pattern}</strong></td><td><code>${owner}</code></td><td>${tokens}</td><td>${notes}</td></tr>`)
+        .join("");
+
+      renderSegments();
+      renderTokens();
+    </script>
   </body>
 </html>
