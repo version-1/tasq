@@ -288,12 +288,14 @@ export function IssueDetailPage() {
         <>
           {activeTab === "details" ? (
             <div className={styles.tabPanel}>
-              <IssueHeader issue={issueState.issue} />
-              <StatusActions
-                currentStatus={issueState.issue.status}
-                disabled={isUpdatingStatus}
-                onStatusChange={handleStatusChange}
-              />
+              <IssueHeader issue={issueState.issue}>
+                <StatusActions
+                  currentStatus={issueState.issue.status}
+                  disabled={isUpdatingStatus}
+                  embedded
+                  onStatusChange={handleStatusChange}
+                />
+              </IssueHeader>
               <IssueDescription issue={issueState.issue} />
               <AttachmentsSection
                 attachments={attachments}

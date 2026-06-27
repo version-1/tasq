@@ -53,8 +53,8 @@ describe("IssueDetailPage", () => {
   it("shows the details tab by default without loading comments", async () => {
     renderIssueDetail();
 
-    expect(await screen.findByRole("heading", { name: "Refine issue detail" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Attachments" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Attachments" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Refine issue detail" })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "screenshot.png" })).toHaveAttribute(
       "href",
       "/tracker/api/v1/attachments/attachment-1/content",
@@ -69,7 +69,8 @@ describe("IssueDetailPage", () => {
 
     renderIssueDetail();
 
-    expect(await screen.findByRole("heading", { name: "Refine issue detail" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Attachments" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Refine issue detail" })).not.toBeInTheDocument();
     expect(await screen.findByText("No attachments")).toBeInTheDocument();
   });
 
