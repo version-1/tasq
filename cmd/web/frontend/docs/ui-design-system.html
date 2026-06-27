@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Tasq Web UI Design System</title>
+    <style>
+      :root {
+        --bg: #ffffff;
+        --surface: #ffffff;
+        --surface-wash: #fbfbfb;
+        --surface-hover: #f0f0f0;
+        --surface-row-hover: #fafafa;
+        --border: #e5e5e5;
+        --text: #0a0a0a;
+        --muted: #666666;
+        --primary-black: #0a0a0a;
+        --dark-gray: #1a1a1a;
+        --medium-gray: #666666;
+        --light-gray: #e5e5e5;
+        --extra-light-gray: #f5f5f5;
+        --white: #ffffff;
+        --control-strong: #111111;
+        --control-strong-hover: #252525;
+        --project-bg: #eef6f8;
+        --project-text: #14636f;
+        --priority-high-bg: #fef3c7;
+        --priority-high-text: #92400e;
+        --priority-normal-bg: #e0f2fe;
+        --priority-normal-text: #075985;
+        --priority-low-bg: #f3f4f6;
+        --priority-low-text: #4b5563;
+        --status-ready-bg: #dff8ef;
+        --status-ready-text: #047857;
+        --status-in-progress-bg: #e0f2fe;
+        --status-in-progress-text: #075985;
+        --status-blocked-bg: #ffedd5;
+        --status-blocked-text: #9a3412;
+        --status-failed-bg: #fee2e2;
+        --status-failed-text: #991b1b;
+        --font-sans: Arial, Helvetica, sans-serif;
+        --font-mono: ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        --space-1: 4px;
+        --space-2: 8px;
+        --space-3: 12px;
+        --space-4: 16px;
+        --space-5: 20px;
+        --space-6: 24px;
+        --space-8: 32px;
+        --radius-sm: 6px;
+        --radius-md: 8px;
+        --radius-lg: 10px;
+        --radius-pill: 999px;
+        --shadow-panel: 0 1px 2px rgb(0 0 0 / 8%);
+        --shadow-card: 0 12px 32px rgb(0 0 0 / 8%);
+        --shadow-dropdown: 0 8px 24px rgb(0 0 0 / 14%);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--surface-wash);
+        color: var(--text);
+        font-family: var(--font-sans);
+      }
+
+      a {
+        color: inherit;
+      }
+
+      .page {
+        display: grid;
+        grid-template-columns: 280px minmax(0, 1fr);
+        min-height: 100vh;
+      }
+
+      .sidebar {
+        background: var(--surface-wash);
+        border-right: 1px solid var(--border);
+        padding: var(--space-8) var(--space-6);
+        position: sticky;
+        top: 0;
+        height: 100vh;
+      }
+
+      .brand {
+        font-size: 34px;
+        font-weight: 800;
+        line-height: 1;
+        margin: 0 0 var(--space-8);
+      }
+
+      .nav {
+        display: grid;
+        gap: var(--space-1);
+      }
+
+      .nav a {
+        border-radius: var(--radius-sm);
+        color: var(--medium-gray);
+        padding: var(--space-3);
+        text-decoration: none;
+      }
+
+      .nav a:hover {
+        background: var(--surface-hover);
+        color: var(--primary-black);
+      }
+
+      .main {
+        display: grid;
+        gap: var(--space-8);
+        padding: var(--space-8);
+      }
+
+      .hero {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-panel);
+        padding: var(--space-8);
+      }
+
+      .eyebrow {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0;
+        margin: 0 0 var(--space-2);
+        text-transform: uppercase;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin-top: 0;
+      }
+
+      h1 {
+        font-size: 30px;
+        line-height: 1.1;
+        margin-bottom: var(--space-3);
+      }
+
+      h2 {
+        font-size: 22px;
+        margin-bottom: var(--space-4);
+      }
+
+      h3 {
+        font-size: 16px;
+        margin-bottom: var(--space-3);
+      }
+
+      p {
+        color: var(--muted);
+        line-height: 1.65;
+      }
+
+      code {
+        font-family: var(--font-mono);
+      }
+
+      .section {
+        display: grid;
+        gap: var(--space-4);
+      }
+
+      .grid {
+        display: grid;
+        gap: var(--space-4);
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .grid.two {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-panel);
+        padding: var(--space-4);
+      }
+
+      .token {
+        display: grid;
+        gap: var(--space-3);
+      }
+
+      .swatch {
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        min-height: 58px;
+      }
+
+      .tokenName {
+        font-family: var(--font-mono);
+        font-size: 13px;
+      }
+
+      .tokenMeta {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .spacingRow {
+        align-items: center;
+        display: grid;
+        gap: var(--space-3);
+        grid-template-columns: 130px 1fr 56px;
+      }
+
+      .bar {
+        background: var(--primary-black);
+        border-radius: var(--radius-pill);
+        height: 10px;
+      }
+
+      .badgeRow {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-2);
+      }
+
+      .badge {
+        border-radius: var(--radius-pill);
+        display: inline-flex;
+        font-size: 12px;
+        font-weight: 600;
+        padding: var(--space-1) 10px;
+      }
+
+      .sampleTable {
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        border-spacing: 0;
+        overflow: hidden;
+        width: 100%;
+      }
+
+      .sampleTable th,
+      .sampleTable td {
+        border-bottom: 1px solid var(--border);
+        font-size: 14px;
+        padding: 14px 12px;
+        text-align: left;
+      }
+
+      .sampleTable th {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .sampleTable tr:hover td {
+        background: var(--surface-row-hover);
+      }
+
+      .buttonPreview {
+        align-items: center;
+        background: var(--primary-black);
+        border: 1px solid var(--primary-black);
+        border-radius: var(--radius-sm);
+        color: var(--white);
+        display: inline-flex;
+        min-height: 40px;
+        padding: 0 var(--space-4);
+      }
+
+      .shadowPreview {
+        min-height: 80px;
+      }
+
+      @media (max-width: 980px) {
+        .page {
+          grid-template-columns: 1fr;
+        }
+
+        .sidebar {
+          height: auto;
+          position: static;
+        }
+
+        .grid,
+        .grid.two {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <aside class="sidebar">
+        <p class="brand">Tasq</p>
+        <nav class="nav" aria-label="Design system sections">
+          <a href="#tokens">Tokens</a>
+          <a href="#spacing">Spacing</a>
+          <a href="#badges">Badges</a>
+          <a href="#surfaces">Surfaces</a>
+          <a href="#components">Components</a>
+        </nav>
+      </aside>
+
+      <main class="main">
+        <section class="hero">
+          <p class="eyebrow">Web frontend</p>
+          <h1>Tasq UI Design System</h1>
+          <p>
+            Browser-friendly companion for <code>ui-design-system.md</code>.
+            The implementation source of truth is
+            <code>src/app/globals.css</code>; component ownership rules live in
+            <code>design.md</code>.
+          </p>
+        </section>
+
+        <section class="section" id="tokens">
+          <h2>Color Tokens</h2>
+          <div class="grid">
+            <article class="card token">
+              <div class="swatch" style="background: var(--primary-black)"></div>
+              <div>
+                <div class="tokenName">--primary-black</div>
+                <div class="tokenMeta">Primary actions and headings</div>
+              </div>
+            </article>
+            <article class="card token">
+              <div class="swatch" style="background: var(--surface-wash)"></div>
+              <div>
+                <div class="tokenName">--surface-wash</div>
+                <div class="tokenMeta">Shell and page wash</div>
+              </div>
+            </article>
+            <article class="card token">
+              <div class="swatch" style="background: var(--border)"></div>
+              <div>
+                <div class="tokenName">--border</div>
+                <div class="tokenMeta">Panel, field, and table borders</div>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="section" id="spacing">
+          <h2>Spacing Scale</h2>
+          <div class="card">
+            <div class="spacingRow"><code>--space-1</code><div class="bar" style="width: 4px"></div><span>4px</span></div>
+            <div class="spacingRow"><code>--space-2</code><div class="bar" style="width: 8px"></div><span>8px</span></div>
+            <div class="spacingRow"><code>--space-3</code><div class="bar" style="width: 12px"></div><span>12px</span></div>
+            <div class="spacingRow"><code>--space-4</code><div class="bar" style="width: 16px"></div><span>16px</span></div>
+            <div class="spacingRow"><code>--space-6</code><div class="bar" style="width: 24px"></div><span>24px</span></div>
+            <div class="spacingRow"><code>--space-8</code><div class="bar" style="width: 32px"></div><span>32px</span></div>
+          </div>
+        </section>
+
+        <section class="section" id="badges">
+          <h2>Badge Tones</h2>
+          <div class="card badgeRow">
+            <span class="badge" style="background: var(--project-bg); color: var(--project-text)">Project</span>
+            <span class="badge" style="background: var(--priority-high-bg); color: var(--priority-high-text)">High</span>
+            <span class="badge" style="background: var(--priority-normal-bg); color: var(--priority-normal-text)">Normal</span>
+            <span class="badge" style="background: var(--priority-low-bg); color: var(--priority-low-text)">Low</span>
+            <span class="badge" style="background: var(--status-ready-bg); color: var(--status-ready-text)">Ready</span>
+            <span class="badge" style="background: var(--status-in-progress-bg); color: var(--status-in-progress-text)">In progress</span>
+            <span class="badge" style="background: var(--status-blocked-bg); color: var(--status-blocked-text)">Blocked</span>
+            <span class="badge" style="background: var(--status-failed-bg); color: var(--status-failed-text)">Failed</span>
+          </div>
+        </section>
+
+        <section class="section" id="surfaces">
+          <h2>Surfaces</h2>
+          <div class="grid two">
+            <article class="card shadowPreview">
+              <h3>Panel</h3>
+              <p><code>--surface</code>, <code>--border</code>, <code>--shadow-panel</code>, <code>--radius-md</code>.</p>
+            </article>
+            <article class="card shadowPreview" style="box-shadow: var(--shadow-card)">
+              <h3>Issue card</h3>
+              <p><code>--shadow-card</code> for elevated issue cards.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="section" id="components">
+          <h2>Component Patterns</h2>
+          <div class="grid two">
+            <article class="card">
+              <h3>Primary action</h3>
+              <button class="buttonPreview" type="button">Create</button>
+            </article>
+            <article class="card">
+              <h3>Table</h3>
+              <table class="sampleTable">
+                <thead>
+                  <tr><th>ID</th><th>Title</th><th>Status</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td><code>#128</code></td><td>Refine issue table</td><td>Ready</td></tr>
+                  <tr><td><code>#129</code></td><td>Add design tokens</td><td>In progress</td></tr>
+                </tbody>
+              </table>
+            </article>
+          </div>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

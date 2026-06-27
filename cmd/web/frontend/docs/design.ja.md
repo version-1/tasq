@@ -5,6 +5,11 @@ frontend の責務境界と配置ルールを定義します。
 
 目的は、routing、feature UI、app shell UI、汎用 UI primitive を分離することです。新しい code は、まず所有責務で置き場所を決め、その後に再利用範囲で粒度を決めます。
 
+visual token と component styling convention は
+[ui-design-system.ja.md](ui-design-system.ja.md) を参照してください。
+ブラウザで確認しやすい visual reference は
+[ui-design-system.html](ui-design-system.html) です。
+
 ## Routing
 
 Route は `src/App.tsx` で `react-router-dom` を使って手動定義します。

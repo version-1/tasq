@@ -12,12 +12,12 @@
   align-items: center;
   background: var(--ledger-surface, var(--white));
   border: 1px solid var(--ledger-rule, var(--border));
-  border-radius: 6px;
-  box-shadow: 0 1px 0 rgba(10, 10, 10, 0.04), 0 4px 10px rgba(10, 10, 10, 0.03);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-filter-trigger);
   color: var(--ledger-ink, var(--foreground));
   cursor: pointer;
   display: flex;
-  gap: 6px;
+  gap: var(--space-1-5);
   min-block-size: 40px;
   min-inline-size: min(100vw - 48px, 280px);
   padding: 7px 36px 7px 11px;
@@ -28,18 +28,18 @@
 
 .summary[aria-expanded="true"] {
   border-color: var(--ledger-rule, var(--border));
-  box-shadow: 0 0 0 3px rgba(10, 10, 10, 0.05), 0 10px 22px rgba(10, 10, 10, 0.06);
+  box-shadow: var(--shadow-filter-active);
 }
 
 .summary:focus-visible {
-  box-shadow: 0 0 0 3px rgba(10, 10, 10, 0.05), 0 10px 22px rgba(10, 10, 10, 0.06);
+  box-shadow: var(--shadow-filter-active);
   outline: 0;
 }
 
 .summaryIcon {
   color: var(--ledger-ink, var(--foreground));
   position: absolute;
-  right: 10px;
+  right: var(--space-2-5);
   top: 11px;
   transition: transform 120ms ease;
 }
@@ -71,30 +71,30 @@
 
 .valueChip {
   align-items: center;
-  background: #f3f3f3;
-  border: 1px solid #eeeeee;
-  border-radius: 5px;
+  background: var(--filter-chip-bg);
+  border: 1px solid var(--filter-chip-border);
+  border-radius: var(--radius-xs);
   color: var(--ledger-ink, var(--foreground));
   display: inline-flex;
   font-size: 12px;
   line-height: 1;
   min-block-size: 24px;
-  padding: 0 8px;
+  padding: var(--space-0) var(--space-2);
 }
 
 .popover {
   background: var(--ledger-surface, var(--white));
   border: 1px solid var(--ledger-rule, var(--border));
-  border-radius: 8px;
-  box-shadow: 0 22px 46px rgba(10, 10, 10, 0.13);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-filter-popover);
   display: grid;
-  left: 0;
-  margin-top: 10px;
+  left: var(--space-0);
+  margin-top: var(--space-2-5);
   min-inline-size: min(100vw - 48px, 420px);
   overflow: hidden;
   position: absolute;
   top: 100%;
-  z-index: 20;
+  z-index: var(--z-popover);
 }
 
 .optionHeader {
@@ -104,7 +104,7 @@
   display: flex;
   justify-content: space-between;
   min-block-size: 58px;
-  padding: 0 18px;
+  padding: var(--space-0) var(--space-4-5);
 }
 
 .clearButton,
@@ -130,26 +130,26 @@
   display: grid;
   max-block-size: 420px;
   overflow-y: auto;
-  padding: 16px 18px 18px;
+  padding: var(--space-4) var(--space-4-5) var(--space-4-5);
 }
 
 .optionRow {
   align-items: center;
   background: transparent;
   border-bottom: 1px solid var(--ledger-rule, var(--border));
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   color: var(--ledger-ink, var(--foreground));
   display: inline-flex;
   font-size: 14px;
-  gap: 14px;
+  gap: var(--space-3-5);
   min-block-size: 52px;
-  padding: 9px 0;
+  padding: 9px var(--space-0);
 }
 
 .optionRow input {
-  accent-color: #111111;
+  accent-color: var(--control-strong);
   block-size: 18px;
-  margin: 0;
+  margin: var(--space-0);
   inline-size: 18px;
 }
 
@@ -157,28 +157,28 @@
   align-items: center;
   border-top: 1px solid var(--ledger-rule, var(--border));
   display: flex;
-  gap: 18px;
+  gap: var(--space-4-5);
   justify-content: flex-end;
   min-block-size: 74px;
-  padding: 14px 18px;
+  padding: var(--space-3-5) var(--space-4-5);
 }
 
 .cancelButton {
   min-block-size: 42px;
-  padding: 0 14px;
+  padding: var(--space-0) var(--space-3-5);
 }
 
 .applyButton {
-  background: #111111;
-  border-radius: 6px;
-  color: #ffffff;
+  background: var(--control-strong);
+  border-radius: var(--radius-sm);
+  color: var(--white);
   min-block-size: 42px;
   min-inline-size: 126px;
-  padding: 0 18px;
+  padding: var(--space-0) var(--space-4-5);
 }
 
 .applyButton:hover {
-  background: #252525;
+  background: var(--control-strong-hover);
 }
 
 @media (max-width: 860px) {

@@ -7,17 +7,17 @@
 .shell {
   max-height: 100vh;
   overflow-y: auto;
-  background: #fbfbfb;
+  background: var(--surface-wash);
   min-width: 0;
 }
 
 .content {
-  padding: 24px;
+  padding: var(--space-6);
 }
 
 .shell h2,
 .shell p {
-  margin-top: 0;
+  margin-top: var(--space-0);
 }
 
 .shell h2 {
@@ -31,7 +31,6 @@
   }
 
   .shell {
-    padding: 16px;
+    padding: var(--space-4);
   }
 }
-

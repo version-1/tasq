@@ -1,8 +1,8 @@
 .section {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  box-shadow: 0 1px 2px rgb(0 0 0 / 8%);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-panel);
   display: grid;
   gap: 14px;
   padding: 18px;
@@ -42,7 +42,7 @@
 
 .markdown img {
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   display: block;
   height: auto;
   margin-top: 8px;
@@ -82,7 +82,7 @@
 
 .commentHeader span {
   background: var(--extra-light-gray);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   color: var(--muted);
   font-size: 12px;
   padding: 3px 8px;

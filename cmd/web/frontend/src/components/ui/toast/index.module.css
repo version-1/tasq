@@ -6,7 +6,7 @@
   right: 24px;
   top: 24px;
   width: min(400px, calc(100vw - 48px));
-  z-index: 1000;
+  z-index: var(--z-toast);
 }
 
 .toast {
@@ -14,8 +14,8 @@
   background: var(--surface);
   border: 1px solid var(--border);
   border-left: 6px solid var(--toast-accent);
-  border-radius: 10px;
-  box-shadow: 0 10px 24px rgb(0 0 0 / 12%);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-toast);
   color: var(--text);
   display: grid;
   gap: 12px;
@@ -27,21 +27,21 @@
 }
 
 .error {
-  --toast-accent: #dc2626;
-  --toast-icon-bg: #fee2e2;
-  --toast-icon-color: #dc2626;
+  --toast-accent: var(--toast-error-accent);
+  --toast-icon-bg: var(--toast-error-bg);
+  --toast-icon-color: var(--toast-error-accent);
 }
 
 .success {
-  --toast-accent: #16a34a;
-  --toast-icon-bg: #dcfce7;
-  --toast-icon-color: #15803d;
+  --toast-accent: var(--toast-success-accent);
+  --toast-icon-bg: var(--toast-success-bg);
+  --toast-icon-color: var(--toast-success-icon);
 }
 
 .iconBubble {
   align-items: center;
   background: var(--toast-icon-bg);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   color: var(--toast-icon-color);
   display: inline-flex;
   height: 40px;
@@ -81,7 +81,7 @@
   align-items: center;
   background: transparent;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   color: var(--muted);
   display: inline-flex;
   flex: 0 0 auto;

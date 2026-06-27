@@ -1,9 +1,9 @@
 .pagination {
   align-items: center;
   display: flex;
-  gap: 12px;
+  gap: var(--space-3);
   justify-content: flex-end;
-  padding-block-start: 4px;
+  padding-block-start: var(--space-1);
 }
 
 .pagination span {

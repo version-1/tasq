@@ -8,8 +8,8 @@
 .widePanel {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  box-shadow: 0 1px 2px rgb(0 0 0 / 8%);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-panel);
   max-width: 960px;
   padding: 12px;
 }
@@ -25,7 +25,7 @@
 
 .description img {
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   display: block;
   height: auto;
   margin-top: 8px;

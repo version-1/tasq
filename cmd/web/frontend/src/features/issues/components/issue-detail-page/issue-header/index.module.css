@@ -1,8 +1,8 @@
 .header {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  box-shadow: 0 1px 2px rgb(0 0 0 / 8%);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-panel);
   display: grid;
   gap: 16px;
   padding: 18px;
@@ -38,7 +38,7 @@
 .statusBadge,
 .priorityBadge {
   background: var(--extra-light-gray);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   color: var(--dark-gray);
   display: inline-flex;
   font-size: 13px;
@@ -47,12 +47,12 @@
 }
 
 .statusBadge {
-  background: #eef6f8;
-  color: #14636f;
+  background: var(--project-bg);
+  color: var(--project-text);
 }
 
 .warningPriority {
-  background: #fff2cc;
+  background: var(--approval-bg);
   color: var(--warning);
 }
 

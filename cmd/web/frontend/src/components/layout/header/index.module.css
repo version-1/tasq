@@ -1,10 +1,10 @@
 .header {
   border-bottom: 1px solid var(--light-gray);
   background: var(--white);
-  padding: 30px 40px 0;
+  padding: 30px var(--space-10) var(--space-0);
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: var(--z-sticky);
 }
 
 .utilityRow,
@@ -20,7 +20,7 @@
 
 .utilityRow {
   justify-content: space-between;
-  gap: 24px;
+  gap: var(--space-6);
   margin-bottom: 34px;
 }
 
@@ -28,9 +28,9 @@
 .notificationButton {
   border: 0;
   background: transparent;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   color: var(--primary-black);
-  padding: 6px 8px;
+  padding: var(--space-1-5) var(--space-2);
 }
 
 .moreButton {
@@ -41,24 +41,24 @@
 
 .moreButton:hover,
 .notificationButton:hover {
-  background: #f5f5f5;
+  background: var(--extra-light-gray);
 }
 
 .globalActions {
-  gap: 22px;
+  gap: var(--space-5-5);
   margin-left: auto;
 }
 
 .search {
   align-items: center;
   border: 1px solid var(--light-gray);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   color: var(--medium-gray);
   display: flex;
-  gap: 8px;
+  gap: var(--space-2);
   height: 42px;
   min-width: 360px;
-  padding: 0 12px;
+  padding: var(--space-0) var(--space-3);
 }
 
 .search input {
@@ -71,12 +71,12 @@
 
 .search kbd {
   border: 1px solid var(--light-gray);
-  border-radius: 5px;
+  border-radius: var(--radius-xs);
   color: var(--medium-gray);
   font-family: inherit;
   font-size: 12px;
   line-height: 1;
-  padding: 2px 6px;
+  padding: 2px var(--space-1-5);
 }
 
 .notificationButton {
@@ -84,19 +84,19 @@
   display: inline-flex;
   height: 42px;
   justify-content: center;
-  padding: 0;
+  padding: var(--space-0);
   width: 42px;
   color: var(--primary-black);
 }
 
 .titleRow {
   justify-content: space-between;
-  gap: 24px;
+  gap: var(--space-6);
   margin-bottom: 30px;
 }
 
 .titleGroup {
-  gap: 16px;
+  gap: var(--space-4);
 }
 
 .titleGroup h1 {
@@ -108,7 +108,7 @@
 }
 
 .createActions {
-  box-shadow: 0 12px 24px rgba(10, 10, 10, 0.12);
+  box-shadow: var(--shadow-header-action);
   gap: 0;
 }
 
@@ -124,26 +124,26 @@
 }
 
 .createButton {
-  border-radius: 6px 0 0 6px;
-  gap: 8px;
-  padding: 0 16px;
+  border-radius: var(--radius-sm) var(--space-0) var(--space-0) var(--radius-sm);
+  gap: var(--space-2);
+  padding: var(--space-0) var(--space-4);
 }
 
 .createSplitButton {
-  border-left-color: #303030;
-  border-radius: 0 6px 6px 0;
-  padding: 0;
+  border-left-color: var(--control-divider);
+  border-radius: var(--space-0) var(--radius-sm) var(--radius-sm) var(--space-0);
+  padding: var(--space-0);
   width: 44px;
 }
 
 .createButton:hover,
 .createSplitButton:hover {
-  background: #111111;
+  background: var(--control-strong);
 }
 
 .viewRow {
   justify-content: space-between;
-  gap: 24px;
+  gap: var(--space-6);
 }
 
 .tabs {
@@ -153,7 +153,7 @@
 .tab {
   border: 0;
   color: var(--medium-gray);
-  padding: 0 0 20px;
+  padding: var(--space-0) var(--space-0) var(--space-5);
   text-decoration: none;
 }
 
@@ -164,8 +164,8 @@
 
 @media (max-width: 900px) {
   .header {
-    margin: -16px -16px 18px;
-    padding: 20px 16px 0;
+    margin: calc(var(--space-4) * -1) calc(var(--space-4) * -1) var(--space-4-5);
+    padding: var(--space-5) var(--space-4) var(--space-0);
   }
 
   .utilityRow,
