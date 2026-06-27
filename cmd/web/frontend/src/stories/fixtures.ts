@@ -117,6 +117,7 @@ export const storyShellData: LayoutShellData = {
   projects: projectFixtures,
   summary: storySummary,
   title: "Tasq",
+  onIssueDetailTitleChange: noop,
   onAddIssue: noop,
   onAddProject: noop,
   onCloseModal: noop,

@@ -4,6 +4,7 @@ import { useParams, useSearchParams } from "react-router-dom";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "@/lib/toast";
+import { useOptionalLayoutShellData } from "@/components/layout";
 import { PanelMessage } from "@/components/ui/pannel-message";
 import {
   fetchComments,
@@ -41,6 +42,8 @@ type IssueLoadState =
 
 export function IssueDetailPage() {
   const { t } = useTranslation();
+  const layoutShellData = useOptionalLayoutShellData();
+  const onIssueDetailTitleChange = layoutShellData?.onIssueDetailTitleChange;
   const { id } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const issueID = parseIssueID(id);
@@ -160,6 +163,15 @@ export function IssueDetailPage() {
   useEffect(() => {
     void loadIssue();
   }, [loadIssue]);
+
+  useEffect(() => {
+    if (issueState.kind === "ready") {
+      onIssueDetailTitleChange?.(issueState.issue.title);
+      return () => onIssueDetailTitleChange?.(null);
+    }
+    onIssueDetailTitleChange?.(null);
+    return undefined;
+  }, [issueState, onIssueDetailTitleChange]);
 
   useEffect(() => {
     setComments([]);
