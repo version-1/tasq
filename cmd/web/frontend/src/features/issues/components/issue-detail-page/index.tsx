@@ -288,22 +288,24 @@ export function IssueDetailPage() {
                 error={attachmentsError}
                 isLoading={isLoadingAttachments}
               />
+            </div>
+          ) : null}
+          {activeTab === "comments" ? (
+            <div className={styles.tabPanel}>
               <RunsSection
                 issueID={issueState.issue.id}
                 error={runsError}
                 isLoading={isLoadingRuns}
                 runs={runs}
               />
+              <CommentList
+                comments={sortedComments}
+                error={commentsError}
+                hasMore={nextCursor !== null}
+                isLoading={isLoadingComments}
+                onLoadMore={() => void loadComments(nextCursor ?? undefined)}
+              />
             </div>
-          ) : null}
-          {activeTab === "comments" ? (
-            <CommentList
-              comments={sortedComments}
-              error={commentsError}
-              hasMore={nextCursor !== null}
-              isLoading={isLoadingComments}
-              onLoadMore={() => void loadComments(nextCursor ?? undefined)}
-            />
           ) : null}
           {activeTab === "conversation" ? (
             <ConversationTab

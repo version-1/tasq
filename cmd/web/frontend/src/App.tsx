@@ -25,7 +25,7 @@ const projectDetailHeaderPages = [
 
 const issueHeaderPages = [
   { key: "details", href: "/issues/:id", titleKey: "issues.detailPage.detailTab" },
-  { key: "comments", href: "/issues/:id?tab=comments", titleKey: "issues.detailPage.commentsTab" },
+  { key: "comments", href: "/issues/:id?tab=comments", titleKey: "issues.detailPage.activityTab" },
   {
     key: "conversation",
     href: "/issues/:id?tab=conversation",

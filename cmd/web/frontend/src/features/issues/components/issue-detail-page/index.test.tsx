@@ -59,7 +59,7 @@ describe("IssueDetailPage", () => {
       "href",
       "/tracker/api/v1/attachments/attachment-1/content",
     );
-    expect(screen.getByRole("heading", { name: "Runs" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Runs" })).not.toBeInTheDocument();
     expect(api.fetchIssueAttachments).toHaveBeenCalledWith(42, { silent: true });
     expect(api.fetchComments).not.toHaveBeenCalled();
   });
@@ -77,6 +77,7 @@ describe("IssueDetailPage", () => {
     renderIssueDetail("/issues/42?tab=comments");
 
     expect(await screen.findByText("Looks good from design review.")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Runs" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Refine issue detail" })).not.toBeInTheDocument();
     expect(api.fetchComments).toHaveBeenCalledWith(42, undefined, 20, { silent: true });
   });
