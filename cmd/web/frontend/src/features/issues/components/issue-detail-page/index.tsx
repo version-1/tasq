@@ -287,17 +287,23 @@ export function IssueDetailPage() {
         <>
           {activeTab === "details" ? (
             <div className={styles.tabPanel}>
-              <IssueHeader
-                disabled={isUpdatingStatus}
-                issue={issueState.issue}
-                onStatusChange={handleStatusChange}
-              />
-              <IssueDescription issue={issueState.issue} />
-              <AttachmentsSection
-                attachments={attachments}
-                error={attachmentsError}
-                isLoading={isLoadingAttachments}
-              />
+              <div className={styles.detailLayout}>
+                <div className={styles.detailMain}>
+                  <IssueDescription issue={issueState.issue} />
+                  <AttachmentsSection
+                    attachments={attachments}
+                    error={attachmentsError}
+                    isLoading={isLoadingAttachments}
+                  />
+                </div>
+                <aside className={styles.detailAside} aria-label={t("issues.detailPage.basicInfo")}>
+                  <IssueHeader
+                    disabled={isUpdatingStatus}
+                    issue={issueState.issue}
+                    onStatusChange={handleStatusChange}
+                  />
+                </aside>
+              </div>
             </div>
           ) : null}
           {activeTab === "comments" ? (

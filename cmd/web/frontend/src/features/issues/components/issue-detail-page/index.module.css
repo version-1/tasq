@@ -7,3 +7,30 @@
   display: grid;
   gap: var(--space-4);
 }
+
+.detailLayout {
+  align-items: start;
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+}
+
+.detailMain {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.detailAside {
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  .detailLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .detailAside {
+    order: -1;
+  }
+}

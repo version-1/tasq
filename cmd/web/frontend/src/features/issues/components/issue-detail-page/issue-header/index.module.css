@@ -11,11 +11,12 @@
 .metaGrid {
   display: grid;
   gap: 12px;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
   margin: 0;
 }
 
 .statusDropdown {
+  inline-size: 100%;
   position: relative;
 }
 
@@ -30,8 +31,10 @@
   display: inline-flex;
   font: inherit;
   gap: var(--space-1-5);
+  inline-size: 100%;
   min-height: 40px;
-  min-inline-size: min(100vw - 48px, 240px);
+  max-inline-size: 100%;
+  min-inline-size: min(100%, 240px);
   padding: 7px 36px 7px 11px;
   position: relative;
 }
@@ -65,11 +68,11 @@
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-filter-popover);
   display: grid;
-  left: var(--space-0);
   margin-top: var(--space-2-5);
   min-inline-size: min(100vw - 48px, 420px);
   overflow: hidden;
   position: absolute;
+  right: var(--space-0);
   top: 100%;
   z-index: var(--z-popover);
 }
@@ -133,12 +136,6 @@
 
 .statusApplyButton:hover {
   background: var(--control-strong-hover);
-}
-
-@media (max-width: 900px) {
-  .metaGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 @media (max-width: 640px) {
