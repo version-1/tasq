@@ -106,7 +106,7 @@ export function IssueDetailPage() {
     setAttachmentsError("");
     try {
       const response = await fetchIssueAttachments(issueID, { silent: true });
-      setAttachments(response.data);
+      setAttachments(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       setAttachmentsError(
         error instanceof Error ? error.message : t("issues.detailPage.failedToLoadAttachments"),

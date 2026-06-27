@@ -65,6 +65,15 @@ describe("IssueDetailPage", () => {
     expect(api.fetchComments).not.toHaveBeenCalled();
   });
 
+  it("treats a null attachment list as empty", async () => {
+    api.fetchIssueAttachments.mockResolvedValueOnce({ data: null, meta: {} });
+
+    renderIssueDetail();
+
+    expect(await screen.findByRole("heading", { name: "Refine issue detail" })).toBeInTheDocument();
+    expect(await screen.findByText("No attachments")).toBeInTheDocument();
+  });
+
   it("loads comments when the comments tab is selected", async () => {
     const user = userEvent.setup();
     renderIssueDetail();

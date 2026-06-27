@@ -5,7 +5,7 @@ import { formatDateTime } from "../format";
 import styles from "./index.module.css";
 
 type AttachmentsSectionProps = {
-  attachments: Attachment[];
+  attachments: Attachment[] | null | undefined;
   error: string;
   isLoading: boolean;
 };
@@ -16,21 +16,22 @@ export function AttachmentsSection({
   isLoading,
 }: AttachmentsSectionProps) {
   const { t } = useTranslation();
+  const visibleAttachments = attachments ?? [];
 
   return (
     <section className={styles.section} aria-labelledby="issue-attachments">
       <div className={styles.sectionHeader}>
         <h3 id="issue-attachments">{t("issues.detailPage.attachments")}</h3>
-        <span>{t("issues.detailPage.attachmentCount", { count: attachments.length })}</span>
+        <span>{t("issues.detailPage.attachmentCount", { count: visibleAttachments.length })}</span>
       </div>
       {isLoading ? <p className={styles.muted}>{t("layout.loading")}</p> : null}
       {error ? <p className={styles.error}>{error}</p> : null}
-      {!isLoading && !error && attachments.length === 0 ? (
+      {!isLoading && !error && visibleAttachments.length === 0 ? (
         <p className={styles.muted}>{t("issues.detailPage.noAttachments")}</p>
       ) : null}
-      {attachments.length > 0 ? (
+      {visibleAttachments.length > 0 ? (
         <ul className={styles.attachmentList}>
-          {attachments.map((attachment) => (
+          {visibleAttachments.map((attachment) => (
             <li key={attachment.id} className={styles.attachmentItem}>
               <div className={styles.attachmentMain}>
                 <a href={attachmentContentURL(attachment.id)} target="_blank" rel="noreferrer">
