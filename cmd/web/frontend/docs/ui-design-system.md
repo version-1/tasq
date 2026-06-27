@@ -174,6 +174,15 @@ the value is part of the shared system.
 | `--control-strong`   | `#111111` | Strong action hover / filter apply |
 | `--control-strong-hover` | `#252525` | Strong action hover variant |
 | `--control-divider`  | `#303030` | Split-button internal divider |
+| `--markdown-link`    | `#0075FF` | Markdown links and task-list checkbox accent |
+| `--markdown-link-hover` | `#005FCC` | Markdown link hover and focus tone |
+| `--markdown-link-visited` | `#0075FF` | Visited Markdown links aligned with the link accent |
+| `--markdown-checkbox` | `#0075FF` | Task-list checkbox accent aligned with Markdown links |
+| `--markdown-inline-code-bg` | `#EAF4FF` | Inline code background in Markdown text |
+| `--markdown-inline-code-text` | `#005FCC` | Inline code text in Markdown text |
+| `--markdown-quote-bg` | `#F0F7FF` | Blockquote background in Markdown text |
+| `--markdown-quote-border` | `#0075FF` | Blockquote left accent in Markdown text |
+| `--markdown-quote-text` | `#174A7C` | Blockquote text in Markdown text |
 
 Status, priority, project, approval, toast, and filter-chip tones are global
 tokens. Components may assign them to local variables such as `--badge-bg`, but
@@ -450,10 +459,24 @@ calling layout component. Recurring rules (see `add-issue-dialog` and
 
 ### Markdown (`ui/markdown`)
 
-- Reusable Markdown renderer powered by `react-markdown`, `remark-gfm`, and
-  `rehype-sanitize`.
+- Reusable Markdown renderer powered by `react-markdown`, `remark-gfm`,
+  `rehype-sanitize`, and `shiki`.
+- Headings render with compact type, `40px` top / `24px` bottom spacing, and a
+  `1px` underline using `--border` so long issue descriptions are easier to
+  scan.
+- Links use the blue `--markdown-link` / `--markdown-link-hover` tokens, with
+  underline and focus outline preserved.
+- GFM task list checkboxes use the same blue accent as Markdown links through
+  the `--markdown-checkbox` token.
+- Paragraphs, lists, blockquotes, inline code, and fenced code blocks get
+  component-owned spacing and token-based colors. Blockquotes use the
+  `--markdown-quote-*` tokens, and inline code uses the
+  `--markdown-inline-code-*` tokens so both remain visible inside prose.
+- Fenced code blocks use Shiki token highlighting with the `github-light`
+  theme. Unsupported language names fall back to plain text.
 - Tables get a `1px` border on every cell, `--extra-light-gray` headers,
-  `8px 10px` padding.
+  `8px 10px` padding, and horizontal scrolling when content is wider than the
+  container.
 - Body wraps with `overflow-wrap: anywhere` for long URLs and IDs.
 - `attachment://<id>` references are rewritten to
   `/tracker/api/v1/attachments/<id>/content`.

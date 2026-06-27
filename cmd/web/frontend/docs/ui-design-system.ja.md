@@ -174,6 +174,15 @@ component / feature token は、重複を減らす場合や feature palette を�
 | `--control-strong`   | `#111111` | 強い action hover / filter apply |
 | `--control-strong-hover` | `#252525` | 強い action の hover variant |
 | `--control-divider`  | `#303030` | split button 内部 divider |
+| `--markdown-link`    | `#0075FF` | Markdown リンクと task list checkbox の accent |
+| `--markdown-link-hover` | `#005FCC` | Markdown リンクの hover と focus tone |
+| `--markdown-link-visited` | `#0075FF` | link accent と揃えた visited Markdown リンク |
+| `--markdown-checkbox` | `#0075FF` | Markdown リンクと揃えた task list checkbox accent |
+| `--markdown-inline-code-bg` | `#EAF4FF` | Markdown 本文内の inline code 背景 |
+| `--markdown-inline-code-text` | `#005FCC` | Markdown 本文内の inline code 文字色 |
+| `--markdown-quote-bg` | `#F0F7FF` | Markdown 本文内の blockquote 背景 |
+| `--markdown-quote-border` | `#0075FF` | Markdown 本文内の blockquote 左 accent |
+| `--markdown-quote-text` | `#174A7C` | Markdown 本文内の blockquote 文字色 |
 
 status、priority、project、approval、toast、filter-chip の tone は global
 token です。component は `--badge-bg` のような local variable へ代入できますが、
@@ -452,10 +461,22 @@ layout コンポーネントが所有します。
 
 ### Markdown (`ui/markdown`)
 
-- `react-markdown`、`remark-gfm`、`rehype-sanitize` を利用した再利用可能な
-  Markdown レンダラー。
+- `react-markdown`、`remark-gfm`、`rehype-sanitize`、`shiki` を利用した
+  再利用可能な Markdown レンダラー。
+- 見出しは compact な文字サイズ、上 `40px` / 下 `24px` の余白、
+  `--border` を使った `1px` の下線で表示し、長い課題説明を走査しやすくします。
+- リンクは青系トークン `--markdown-link` / `--markdown-link-hover` を使い、
+  下線と focus outline を維持します。
+- GFM task list の checkbox は `--markdown-checkbox` token を通じて
+  Markdown リンクと同じ青系 accent を使います。
+- 段落、list、blockquote、inline code、fenced code block は、component が
+  所有する余白と token-based color を持ちます。blockquote は
+  `--markdown-quote-*` token、inline code は `--markdown-inline-code-*`
+  token を使い、本文中で埋もれないようにします。
+- fenced code block は Shiki token highlighting を `github-light` theme で
+  適用します。未対応の language name は plain text として表示します。
 - table は各セルに `1px` border、ヘッダーは `--extra-light-gray`、padding
-  `8px 10px`。
+  `8px 10px`。内容が container より広い場合は横スクロールします。
 - 本文は長い URL や ID 用に `overflow-wrap: anywhere` で折り返し。
 - `attachment://<id>` 参照は
   `/tracker/api/v1/attachments/<id>/content` に書き換えられます。

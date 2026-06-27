@@ -26,6 +26,15 @@
   --control-divider: #303030;
   --project-bg: #EEF6F8;
   --project-text: #14636F;
+  --markdown-link: #0075FF;
+  --markdown-link-hover: #005FCC;
+  --markdown-link-visited: #0075FF;
+  --markdown-checkbox: #0075FF;
+  --markdown-inline-code-bg: #EAF4FF;
+  --markdown-inline-code-text: #005FCC;
+  --markdown-quote-bg: #F0F7FF;
+  --markdown-quote-border: #0075FF;
+  --markdown-quote-text: #174A7C;
   --priority-high-accent: #D97706;
   --priority-high-bg: #FEF3C7;
   --priority-high-text: #92400E;
