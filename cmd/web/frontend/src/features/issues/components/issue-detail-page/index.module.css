@@ -3,51 +3,6 @@
   gap: var(--space-4);
 }
 
-.tabList {
-  align-items: center;
-  border-bottom: 1px solid var(--light-gray);
-  display: flex;
-  gap: 34px;
-  overflow-x: auto;
-  padding: var(--space-0);
-}
-
-.tab,
-.activeTab {
-  background: transparent;
-  border: 0;
-  color: var(--medium-gray);
-  cursor: pointer;
-  flex: 0 0 auto;
-  font: inherit;
-  font-size: 14px;
-  font-weight: 700;
-  padding: var(--space-0) var(--space-0) var(--space-4-5);
-}
-
-.activeTab {
-  box-shadow: inset 0 -2px 0 var(--primary-black);
-  color: var(--primary-black);
-}
-
-.tab:hover {
-  color: var(--primary-black);
-}
-
-.tab:focus-visible,
-.activeTab:focus-visible {
-  border-radius: var(--radius-sm);
-  box-shadow: inset 0 -2px 0 var(--primary-black), var(--shadow-filter-active);
-  outline: 0;
-}
-
-@media (max-width: 720px) {
-  .tab,
-  .activeTab {
-    white-space: nowrap;
-  }
-}
-
 .tabPanel {
   display: grid;
   gap: var(--space-4);

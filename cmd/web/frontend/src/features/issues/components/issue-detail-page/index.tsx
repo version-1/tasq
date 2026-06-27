@@ -254,10 +254,6 @@ export function IssueDetailPage() {
     return [...comments].sort((left, right) => left.id - right.id);
   }, [comments]);
 
-  function handleTabChange(tab: IssueDetailTab) {
-    updateSearchParams({ tab: tab === "details" ? null : tab });
-  }
-
   function handleRunChange(runID: string) {
     updateSearchParams({ runId: runID });
   }
@@ -278,22 +274,9 @@ export function IssueDetailPage() {
 
       {issueState.kind === "ready" ? (
         <>
-          <IssueHeader issue={issueState.issue} />
-          <nav className={styles.tabList} aria-label={t("issues.detailPage.navigation")}>
-            {validTabs.map((tab) => (
-              <button
-                key={tab}
-                type="button"
-                className={tab === activeTab ? styles.activeTab : styles.tab}
-                aria-current={tab === activeTab ? "page" : undefined}
-                onClick={() => handleTabChange(tab)}
-              >
-                {t(tabLabelKey(tab))}
-              </button>
-            ))}
-          </nav>
           {activeTab === "details" ? (
             <div className={styles.tabPanel}>
+              <IssueHeader issue={issueState.issue} />
               <StatusActions
                 currentStatus={issueState.issue.status}
                 disabled={isUpdatingStatus}
@@ -356,14 +339,4 @@ function parseMessageTypes(value: string | null): string[] {
     return [];
   }
   return value.split(",").map((item) => item.trim()).filter(Boolean);
-}
-
-function tabLabelKey(tab: IssueDetailTab): string {
-  if (tab === "comments") {
-    return "issues.detailPage.commentsTab";
-  }
-  if (tab === "conversation") {
-    return "issues.detailPage.conversationTab";
-  }
-  return "issues.detailPage.detailTab";
 }

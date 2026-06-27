@@ -103,6 +103,7 @@ function LayoutContent({ children }: { children: ReactNode }) {
   const activePage = activePageFromPathname(pathname);
   const issueScope = issueScopeFromPathname(pathname);
   const isIssueDetailPage = /^\/issues\/\d+$/.test(pathname);
+  const issueDetailID = isIssueDetailPage ? issueIDFromPathname(pathname) : null;
   const [loadState, setLoadState] = useState<LoadState>({ kind: "loading" });
   const [selectedIssueID, setSelectedIssueID] = useState<number | null>(null);
   const [addIssueInitialStatus, setAddIssueInitialStatus] =
@@ -191,6 +192,10 @@ function LayoutContent({ children }: { children: ReactNode }) {
   }, [summary]);
   const selectedIssue =
     issues.find((issue) => issue.id === selectedIssueID) ?? issues[0] ?? null;
+  const issueDetailTitle =
+    issueDetailID === null
+      ? null
+      : (issues.find((issue) => issue.id === issueDetailID)?.title ?? null);
 
   async function handleStatusChange(id: number, status: IssueStatus) {
     try {
@@ -296,7 +301,7 @@ function LayoutContent({ children }: { children: ReactNode }) {
     loadState,
     projects,
     summary,
-    title: issueScopeTitle(
+    title: issueDetailTitle ?? issueScopeTitle(
       issueScope,
       activeProject?.name ?? null,
       t("sidebar.allProjects"),
@@ -472,4 +477,13 @@ function issueScopeTitle(
     return activeProjectName ?? issueScope.projectKey;
   }
   return activeProjectName ?? allProjectsTitle;
+}
+
+function issueIDFromPathname(pathname: string): number | null {
+  const match = /^\/issues\/(\d+)$/.exec(pathname);
+  if (!match) {
+    return null;
+  }
+  const id = Number.parseInt(match[1], 10);
+  return Number.isSafeInteger(id) && id > 0 ? id : null;
 }

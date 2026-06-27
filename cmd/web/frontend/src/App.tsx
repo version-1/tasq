@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import DashboardPage from "./app/dashboard/page";
 import { IssueDetailLayout } from "./components/layout/issue";
 import ConversationRoute from "./app/issues/[id]/conversations/page";
@@ -23,7 +23,20 @@ const projectDetailHeaderPages = [
   { key: "settings", href: "/projects/:projectKey/settings", titleKey: "header.settings" },
 ] satisfies readonly TabPageLink[];
 
+const issueHeaderPages = [
+  { key: "details", href: "/issues/:id", titleKey: "issues.detailPage.detailTab" },
+  { key: "comments", href: "/issues/:id?tab=comments", titleKey: "issues.detailPage.commentsTab" },
+  {
+    key: "conversation",
+    href: "/issues/:id?tab=conversation",
+    titleKey: "issues.detailPage.conversationTab",
+  },
+] satisfies readonly TabPageLink[];
+
 export function App() {
+  const { search } = useLocation();
+  const issueActiveTab = issueDetailActiveTab(search);
+
   return (
     <Layout>
       <Routes>
@@ -85,7 +98,7 @@ export function App() {
         <Route
           path="/issues/:id"
           element={
-            <TabsProvider>
+            <TabsProvider activeKey={issueActiveTab} pages={issueHeaderPages}>
               <IssueDetailLayout>
                 <IssueDetailRoute />
               </IssueDetailLayout>
@@ -95,7 +108,7 @@ export function App() {
         <Route
           path="/issues/:id/conversations"
           element={
-            <TabsProvider>
+            <TabsProvider activeKey="conversation" pages={issueHeaderPages}>
               <IssueDetailLayout>
                 <ConversationRoute />
               </IssueDetailLayout>
@@ -105,7 +118,7 @@ export function App() {
         <Route
           path="/issues/:id/runs/:runId/conversations"
           element={
-            <TabsProvider>
+            <TabsProvider activeKey="conversation" pages={issueHeaderPages}>
               <IssueDetailLayout>
                 <ConversationRoute />
               </IssueDetailLayout>
@@ -136,4 +149,12 @@ export function App() {
       </Routes>
     </Layout>
   );
+}
+
+function issueDetailActiveTab(search: string): string {
+  const tab = new URLSearchParams(search).get("tab");
+  if (tab === "comments" || tab === "conversation") {
+    return tab;
+  }
+  return "details";
 }

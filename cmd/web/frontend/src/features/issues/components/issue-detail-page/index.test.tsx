@@ -54,7 +54,6 @@ describe("IssueDetailPage", () => {
     renderIssueDetail();
 
     expect(await screen.findByRole("heading", { name: "Refine issue detail" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Details" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("heading", { name: "Attachments" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "screenshot.png" })).toHaveAttribute(
       "href",
@@ -75,28 +74,23 @@ describe("IssueDetailPage", () => {
   });
 
   it("loads comments when the comments tab is selected", async () => {
-    const user = userEvent.setup();
-    renderIssueDetail();
-    await screen.findByRole("heading", { name: "Refine issue detail" });
-
-    await user.click(screen.getByRole("button", { name: "Comments" }));
+    renderIssueDetail("/issues/42?tab=comments");
 
     expect(await screen.findByText("Looks good from design review.")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Refine issue detail" })).not.toBeInTheDocument();
     expect(api.fetchComments).toHaveBeenCalledWith(42, undefined, 20, { silent: true });
   });
 
   it("loads the latest run conversation and filters message types", async () => {
     const user = userEvent.setup();
-    renderIssueDetail();
-    await screen.findByRole("heading", { name: "Refine issue detail" });
-
-    await user.click(screen.getByRole("button", { name: "Conversation" }));
+    renderIssueDetail("/issues/42?tab=conversation");
 
     await waitFor(() => {
       expect(api.fetchOrchestratorConversation).toHaveBeenCalledWith(42, "run-latest", {
         silent: true,
       });
     });
+    expect(screen.queryByRole("heading", { name: "Refine issue detail" })).not.toBeInTheDocument();
     expect(await screen.findByText("runner started")).toBeInTheDocument();
     expect(screen.getByText("run failed")).toBeInTheDocument();
 
