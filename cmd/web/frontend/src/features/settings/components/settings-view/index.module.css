@@ -8,7 +8,7 @@
   max-width: 960px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   padding: 12px;
 }
 
@@ -27,7 +27,7 @@
 .settingsForm input,
 .settingsForm select {
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   color: var(--text);
   padding: 10px;
 }

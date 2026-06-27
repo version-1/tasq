@@ -1,5 +1,5 @@
 .board {
-  background: #fbfbfb;
+  background: var(--surface-wash);
   display: grid;
   gap: 16px;
   min-height: 100%;
@@ -22,7 +22,7 @@
   align-items: center;
   background: transparent;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   color: var(--dark-gray);
   display: flex;
   gap: 6px;
@@ -73,7 +73,7 @@
 .columnTitle span:not(.reviewIcon) {
   align-items: center;
   background: var(--extra-light-gray);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   color: var(--muted);
   display: inline-flex;
   font-size: 12px;
@@ -86,7 +86,7 @@
 .reviewIcon {
   align-items: center;
   border: 1px solid var(--primary-black);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   display: inline-flex;
   height: 18px;
   justify-content: center;

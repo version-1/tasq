@@ -1,11 +1,11 @@
 .sidebar {
-  background: #fbfbfb;
+  background: var(--surface-wash);
   border-right: 1px solid var(--light-gray);
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: var(--space-5-5);
   min-height: 100vh;
-  padding: 28px 18px 18px;
+  padding: var(--space-7) var(--space-4-5) var(--space-4-5);
 }
 
 .brand {
@@ -13,43 +13,43 @@
   font-size: 34px;
   font-weight: 800;
   line-height: 1;
-  margin: 0 14px;
+  margin: var(--space-0) var(--space-3-5);
   text-decoration: none;
 }
 
 .projectList {
   display: grid;
-  gap: 4px;
+  gap: var(--space-1);
 }
 
 .primaryNavigation {
   border-bottom: 1px solid var(--light-gray);
   display: grid;
-  gap: 4px;
-  padding-bottom: 18px;
+  gap: var(--space-1);
+  padding-bottom: var(--space-4-5);
 }
 
 .settingsLink,
 .navItem,
 .projectItem {
   align-items: center;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   color: var(--primary-black);
   display: flex;
-  gap: 12px;
+  gap: var(--space-3);
   min-height: 44px;
-  padding: 0 14px;
+  padding: var(--space-0) var(--space-3-5);
   text-decoration: none;
 }
 
 .navItem.active,
 .projectItem.active {
-  background: #f0f0f0;
+  background: var(--surface-hover);
 }
 
 .projects {
   display: grid;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .sectionHeader {
@@ -60,7 +60,7 @@
   font-weight: 700;
   justify-content: space-between;
   letter-spacing: 0;
-  padding: 0 8px 0 14px;
+  padding: var(--space-0) var(--space-2) var(--space-0) var(--space-3-5);
   text-transform: uppercase;
 }
 
@@ -68,19 +68,19 @@
   align-items: center;
   background: transparent;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   color: var(--dark-gray);
   display: inline-flex;
   height: 28px;
   justify-content: center;
   line-height: 1;
-  padding: 0;
+  padding: var(--space-0);
   width: 28px;
 }
 
 .addProjectButton:hover,
 .addProjectButton:focus-visible {
-  background: #f0f0f0;
+  background: var(--surface-hover);
   color: var(--primary-black);
 }
 
@@ -99,16 +99,16 @@
 .settingsLink {
   border-top: 1px solid var(--light-gray);
   margin-top: auto;
-  padding-top: 28px;
+  padding-top: var(--space-7);
 }
 
 .themeSwitch {
   align-items: center;
   border-top: 1px solid var(--light-gray);
   display: flex;
-  gap: 12px;
+  gap: var(--space-3);
   justify-content: space-between;
-  padding: 18px 6px 0;
+  padding: var(--space-4-5) var(--space-1-5) var(--space-0);
 }
 
 .themeSwitch > span:first-child {

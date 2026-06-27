@@ -14,7 +14,7 @@
 .track {
   align-items: center;
   background: var(--light-gray);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   display: inline-flex;
   height: 24px;
   padding: 2px;
@@ -24,8 +24,8 @@
 
 .thumb {
   background: var(--white);
-  border-radius: 999px;
-  box-shadow: 0 1px 2px rgb(0 0 0 / 18%);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-switch-thumb);
   display: block;
   height: 20px;
   transition: transform 160ms ease;

@@ -1,6 +1,6 @@
 .priorityDot {
   background: currentcolor;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   display: inline-block;
   height: 6px;
   width: 6px;

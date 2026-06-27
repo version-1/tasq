@@ -6,6 +6,10 @@ React/Vite application under `cmd/web/frontend`.
 The goal is to keep routing, feature UI, app shell UI, and generic UI primitives
 separate. New code should be placed by ownership first, then by reuse scope.
 
+For visual tokens and component styling conventions, see
+[ui-design-system.md](ui-design-system.md). For a browser-friendly visual
+reference, open [ui-design-system.html](ui-design-system.html).
+
 ## Routing
 
 Routes are declared manually in `src/App.tsx` with `react-router-dom`.

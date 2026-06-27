@@ -2,86 +2,86 @@
   align-items: center;
   display: inline-flex;
   font-size: 14px;
-  gap: 4px;
+  gap: var(--space-1);
   min-width: 0;
 }
 
 .project {
-  background: #eef6f8;
-  border-radius: 8px;
-  color: #14636f;
+  background: var(--project-bg);
+  border-radius: var(--radius-md);
+  color: var(--project-text);
   font-weight: 400;
   max-width: min(64%, 340px);
   overflow: hidden;
-  padding: 4px 12px;
+  padding: var(--space-1) var(--space-3);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .priority-high {
-  --badge-accent: #d97706;
-  --badge-bg: #fef3c7;
-  --badge-text: #92400e;
+  --badge-accent: var(--priority-high-accent);
+  --badge-bg: var(--priority-high-bg);
+  --badge-text: var(--priority-high-text);
 }
 
 .priority-normal {
-  --badge-accent: #0284c7;
-  --badge-bg: #e0f2fe;
-  --badge-text: #075985;
+  --badge-accent: var(--priority-normal-accent);
+  --badge-bg: var(--priority-normal-bg);
+  --badge-text: var(--priority-normal-text);
 }
 
 .priority-low {
-  --badge-accent: #9ca3af;
-  --badge-bg: #f3f4f6;
-  --badge-text: #4b5563;
+  --badge-accent: var(--priority-low-accent);
+  --badge-bg: var(--priority-low-bg);
+  --badge-text: var(--priority-low-text);
 }
 
 .status-backlog {
-  --badge-accent: #8a958d;
-  --badge-bg: #f3f4f6;
-  --badge-text: #4b5563;
+  --badge-accent: var(--status-backlog-accent);
+  --badge-bg: var(--status-backlog-bg);
+  --badge-text: var(--status-backlog-text);
 }
 
 .status-ready {
-  --badge-accent: #0e8f70;
-  --badge-bg: #dff8ef;
-  --badge-text: #047857;
+  --badge-accent: var(--status-ready-accent);
+  --badge-bg: var(--status-ready-bg);
+  --badge-text: var(--status-ready-text);
 }
 
 .status-in-progress {
-  --badge-accent: #2f6fb3;
-  --badge-bg: #e0f2fe;
-  --badge-text: #075985;
+  --badge-accent: var(--status-in-progress-accent);
+  --badge-bg: var(--status-in-progress-bg);
+  --badge-text: var(--status-in-progress-text);
 }
 
 .status-review {
-  --badge-accent: #d97706;
-  --badge-bg: #fef3c7;
-  --badge-text: #92400e;
+  --badge-accent: var(--status-review-accent);
+  --badge-bg: var(--status-review-bg);
+  --badge-text: var(--status-review-text);
 }
 
 .status-done {
-  --badge-accent: #2f7d4f;
-  --badge-bg: #dcfce7;
-  --badge-text: #166534;
+  --badge-accent: var(--status-done-accent);
+  --badge-bg: var(--status-done-bg);
+  --badge-text: var(--status-done-text);
 }
 
 .status-blocked {
-  --badge-accent: #9a4f14;
-  --badge-bg: #ffedd5;
-  --badge-text: #9a3412;
+  --badge-accent: var(--status-blocked-accent);
+  --badge-bg: var(--status-blocked-bg);
+  --badge-text: var(--status-blocked-text);
 }
 
 .status-failed {
-  --badge-accent: #b42318;
-  --badge-bg: #fee2e2;
-  --badge-text: #991b1b;
+  --badge-accent: var(--status-failed-accent);
+  --badge-bg: var(--status-failed-bg);
+  --badge-text: var(--status-failed-text);
 }
 
 .status-muted {
-  --badge-accent: #667085;
-  --badge-bg: #f3f4f6;
-  --badge-text: #4b5563;
+  --badge-accent: var(--status-muted-accent);
+  --badge-bg: var(--status-muted-bg);
+  --badge-text: var(--status-muted-text);
 }
 
 .priority-high,
@@ -96,12 +96,12 @@
 .status-failed,
 .status-muted {
   background: var(--badge-bg);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   color: var(--badge-text);
   flex-shrink: 0;
   font-size: 12px;
   font-weight: 600;
-  padding: 4px 10px;
+  padding: var(--space-1) var(--space-2-5);
 }
 
 .priority-high svg,

@@ -18,6 +18,93 @@
   --light-gray: #E5E5E5;
   --extra-light-gray: #F5F5F5;
   --white: #FFFFFF;
+  --surface-wash: #FBFBFB;
+  --surface-hover: #F0F0F0;
+  --surface-row-hover: #FAFAFA;
+  --control-strong: #111111;
+  --control-strong-hover: #252525;
+  --control-divider: #303030;
+  --project-bg: #EEF6F8;
+  --project-text: #14636F;
+  --priority-high-accent: #D97706;
+  --priority-high-bg: #FEF3C7;
+  --priority-high-text: #92400E;
+  --priority-normal-accent: #0284C7;
+  --priority-normal-bg: #E0F2FE;
+  --priority-normal-text: #075985;
+  --priority-low-accent: #9CA3AF;
+  --priority-low-bg: #F3F4F6;
+  --priority-low-text: #4B5563;
+  --status-backlog-accent: #8A958D;
+  --status-backlog-bg: #F3F4F6;
+  --status-backlog-text: #4B5563;
+  --status-ready-accent: #0E8F70;
+  --status-ready-bg: #DFF8EF;
+  --status-ready-text: #047857;
+  --status-in-progress-accent: #2F6FB3;
+  --status-in-progress-bg: #E0F2FE;
+  --status-in-progress-text: #075985;
+  --status-review-accent: #B7791F;
+  --status-review-bg: #FEF3C7;
+  --status-review-text: #92400E;
+  --status-done-accent: #2F7D4F;
+  --status-done-bg: #DCFCE7;
+  --status-done-text: #166534;
+  --status-blocked-accent: #9A4F14;
+  --status-blocked-bg: #FFEDD5;
+  --status-blocked-text: #9A3412;
+  --status-failed-accent: #B42318;
+  --status-failed-bg: #FEE2E2;
+  --status-failed-text: #991B1B;
+  --status-muted-accent: #667085;
+  --status-muted-bg: #F3F4F6;
+  --status-muted-text: #4B5563;
+  --approval-bg: #FFF2CC;
+  --toast-error-accent: #DC2626;
+  --toast-error-bg: #FEE2E2;
+  --toast-success-accent: #16A34A;
+  --toast-success-bg: #DCFCE7;
+  --toast-success-icon: #15803D;
+  --filter-chip-bg: #F3F3F3;
+  --filter-chip-border: #EEEEEE;
+  --font-sans: Arial, Helvetica, sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  --space-0: 0;
+  --space-1: 4px;
+  --space-1-5: 6px;
+  --space-2: 8px;
+  --space-2-5: 10px;
+  --space-3: 12px;
+  --space-3-5: 14px;
+  --space-4: 16px;
+  --space-4-5: 18px;
+  --space-5: 20px;
+  --space-5-5: 22px;
+  --space-6: 24px;
+  --space-7: 28px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-20: 80px;
+  --radius-xs: 5px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-pill: 999px;
+  --shadow-panel: 0 1px 2px rgb(0 0 0 / 8%);
+  --shadow-card: 0 12px 32px rgb(0 0 0 / 8%);
+  --shadow-dropdown: 0 8px 24px rgb(0 0 0 / 14%);
+  --shadow-dialog: 0 20px 50px rgb(0 0 0 / 18%);
+  --shadow-toast: 0 10px 24px rgb(0 0 0 / 12%);
+  --shadow-switch-thumb: 0 1px 2px rgb(0 0 0 / 18%);
+  --shadow-header-action: 0 12px 24px rgba(10, 10, 10, 0.12);
+  --shadow-filter-trigger: 0 1px 0 rgba(10, 10, 10, 0.04), 0 4px 10px rgba(10, 10, 10, 0.03);
+  --shadow-filter-active: 0 0 0 3px rgba(10, 10, 10, 0.05), 0 10px 22px rgba(10, 10, 10, 0.06);
+  --shadow-filter-popover: 0 22px 46px rgba(10, 10, 10, 0.13);
+  --z-menu: 10;
+  --z-sticky: 10;
+  --z-popover: 20;
+  --z-dialog: 30;
+  --z-toast: 1000;
   accent-color: var(--accent-color);
 }
 
@@ -26,10 +113,10 @@
 }
 
 body {
-  margin: 0;
+  margin: var(--space-0);
   background: var(--bg);
   color: var(--text);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
 }
 
 button,
@@ -42,8 +129,8 @@ button {
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text);
-  border-radius: 6px;
-  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-2-5);
   cursor: pointer;
 }
 

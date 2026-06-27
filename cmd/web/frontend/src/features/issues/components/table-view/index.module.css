@@ -6,10 +6,10 @@
   --ledger-wash: #fbfbfb;
   background: var(--ledger-wash);
   display: grid;
-  gap: 18px;
-  margin: -24px;
+  gap: var(--space-4-5);
+  margin: calc(var(--space-6) * -1);
   min-height: 100%;
-  padding: 24px 32px 32px;
+  padding: var(--space-6) var(--space-8) var(--space-8);
 }
 
 .toolbar {
@@ -17,17 +17,17 @@
   border-bottom: 1px solid var(--ledger-rule);
   display: flex;
   justify-content: stretch;
-  padding: 0 0 22px;
+  padding: var(--space-0) var(--space-0) var(--space-5-5);
 }
 
 .filters {
   align-items: end;
   border: 0;
   display: grid;
-  gap: 14px;
+  gap: var(--space-3-5);
   grid-template-columns: minmax(0, 1fr) auto;
-  margin: 0;
-  padding: 0;
+  margin: var(--space-0);
+  padding: var(--space-0);
   width: 100%;
 }
 
@@ -43,7 +43,7 @@
   align-items: end;
   display: flex;
   flex-wrap: wrap;
-  gap: 14px;
+  gap: var(--space-3-5);
   justify-content: flex-start;
 }
 
@@ -53,7 +53,7 @@
   border-color: transparent;
   color: var(--ledger-muted);
   min-block-size: 38px;
-  padding-inline: 12px;
+  padding-inline: var(--space-3);
 }
 
 .resetButton:hover {
@@ -63,7 +63,7 @@
 .message {
   color: var(--ledger-muted);
   font-size: 14px;
-  margin: 0;
+  margin: var(--space-0);
 }
 
 .error {
@@ -72,8 +72,8 @@
 
 @media (max-width: 860px) {
   .tableView {
-    margin: -16px;
-    padding: 18px 16px 24px;
+    margin: calc(var(--space-4) * -1);
+    padding: var(--space-4-5) var(--space-4) var(--space-6);
   }
 
   .toolbar {

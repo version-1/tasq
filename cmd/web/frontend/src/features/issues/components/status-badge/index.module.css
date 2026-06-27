@@ -1,32 +1,32 @@
 .toneBacklog {
-  --status-color: #8a958d;
+  --status-color: var(--status-backlog-accent);
 }
 
 .toneReady {
-  --status-color: #0e8f70;
+  --status-color: var(--status-ready-accent);
 }
 
 .toneInProgress {
-  --status-color: #2f6fb3;
+  --status-color: var(--status-in-progress-accent);
 }
 
 .toneReview {
-  --status-color: #b7791f;
+  --status-color: var(--status-review-accent);
 }
 
 .toneDone {
-  --status-color: #2f7d4f;
+  --status-color: var(--status-done-accent);
 }
 
 .toneBlocked {
-  --status-color: #9a4f14;
+  --status-color: var(--status-blocked-accent);
 }
 
 .toneFailed {
-  --status-color: #b42318;
+  --status-color: var(--status-failed-accent);
 }
 
 .toneCancelled,
 .toneDuplicate {
-  --status-color: #667085;
+  --status-color: var(--status-muted-accent);
 }

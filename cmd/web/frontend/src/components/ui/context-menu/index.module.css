@@ -5,8 +5,8 @@
 .menu {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  box-shadow: 0 8px 24px rgb(0 0 0 / 14%);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-dropdown);
   display: grid;
   gap: 4px;
   min-width: 188px;
@@ -14,7 +14,7 @@
   position: absolute;
   right: 0;
   top: 40px;
-  z-index: 10;
+  z-index: var(--z-menu);
 }
 
 .groupLabel {
@@ -27,7 +27,7 @@
 .item {
   background: transparent;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   color: var(--text);
   padding: 8px;
   text-align: left;
