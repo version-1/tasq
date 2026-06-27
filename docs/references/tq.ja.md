@@ -97,6 +97,7 @@ make run-tq ARGS='issue create --project tasq --title "Write tq reference"'
 | `--status STATUS` | no | 課題のステータス。省略時は `backlog` です。 |
 | `--priority PRIORITY` | no | 課題の優先度。省略時は `normal` です。 |
 | `--assignee NAME` | no | 担当者名。 |
+| `--dependency IDS` | no | カンマ区切りの課題 ID で依存関係を設定します。空の値は拒否されます。 |
 | `--attach PATH` | no | PNG、JPEG、GIF、WebP 画像をアップロードし、説明に Markdown 画像参照を追記します。 |
 
 例:

@@ -97,6 +97,7 @@ Flags:
 | `--status STATUS` | no | Issue status. Defaults to `backlog` when omitted. |
 | `--priority PRIORITY` | no | Issue priority. Defaults to `normal` when omitted. |
 | `--assignee NAME` | no | Assignee name. |
+| `--dependency IDS` | no | Set dependencies from a comma-separated list of issue IDs. Empty values are rejected. |
 | `--attach PATH` | no | Upload a PNG, JPEG, GIF, or WebP image and append a Markdown image reference to the description. |
 
 Example:
