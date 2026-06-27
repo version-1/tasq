@@ -29,12 +29,121 @@ feature レベルのパターンをまとめたものです。ルーティング
 theme provider、ランタイム CSS-in-JS は使用していません。コンポーネント
 スタイルは `index.module.css` にコンポーネントと一緒に置く必要があります。
 
+## Foundations
+
+Tasq は issue と agent orchestration を扱う、業務に集中するための UI です。
+見た目は静かで、密度があり、読みやすく、運用作業に向いているべきです。
+装飾や marketing 的な見せ方よりも、スキャン、比較、反復操作、handoff の
+明確さを優先します。
+
+Foundations は、token や component の上位にある設計判断の層です。個別の
+UI 判断が component rule で明示されていない場合は、この原則を最もよく
+保つ選択をしてください。
+
+### Product Personality
+
+- **静かで実用的**: product screen では、装飾的な gradient、過大な hero、
+  ornamental illustration、一回限りの visual effect を避けます。
+- **高密度だが整理されている**: 反復的な運用作業に必要な情報を出しつつ、
+  予測しやすい grouping、alignment、table / card 構造で読みやすさを保ちます。
+- **表現より system を優先**: 新しい visual treatment を作る前に、既存の
+  token、surface、primitive を再利用します。
+- **状態を前面に出す**: status、priority、project、run state、workflow state
+  は、色だけに依存せず比較しやすくします。
+
+### Information Hierarchy
+
+- page-level の階層は、色よりも layout、spacing、type weight で作ります。
+- table は比較とスキャンのために使います。控えめな row hover、明確な header、
+  安定した column、compact な badge を使います。
+- card は grouped work item、modal、本当に frame が必要な tool のために使います。
+  full-width layout や table の方が直接的な page section を、装飾的な card stack
+  で囲まないでください。
+- primary action は目立たせすぎず、数を絞ります。多くの画面では dominant な
+  action cluster は 1 つにし、それ以外は neutral / tertiary action にします。
+
+### Interaction Principles
+
+- control は hover 前から control として認識できる必要があります。filter chip、
+  menu、button、tab trigger は、境界、affordance、active rule のいずれかを
+  持ちます。
+- 反復操作では layout shift を最小化します。table、badge、control、counter、
+  toolbar などの fixed-format element は安定した寸法を持たせます。
+- status と priority は、必要に応じて label と icon、dot、shape を併用します。
+  色は意味を補強するもので、単独で意味を担わせません。
+- keyboard と screen reader の挙動は component contract の一部であり、後から
+  追加する装飾ではありません。
+
+### Layout And Density
+
+- app shell の rhythm から始めます。page padding は `--space-6`、control は
+  compact にし、surface は `--radius-sm` / `--radius-md` を基本にします。
+- panel、table、sidebar、tool の内部では compact な type を使います。大きな
+  type は実際の page title に限定します。
+- 新しい breakpoint を追加する前に、既存の `1060px`、`900px`、`860px`、
+  `720px`、`640px` を優先します。
+- nested card は避けます。すでに surface が content を frame している場合、
+  内側の group は通常、border、divider、table、または frame しない layout で
+  表現します。
+
+### Accessibility Principles
+
+- icon だけの interactive element には、wrapping control 側に accessible label
+  を付けます。
+- control を custom style する場合でも、focus-visible は見える状態で残します。
+- state を持つ control は、その interaction を所有する component が
+  `aria-expanded`、`aria-controls`、checked state、selected tab state、menu role
+  を公開します。
+- state を色だけで表現しません。text、icon、dot、border、position のいずれかと
+  組み合わせます。
+
+### Anti-Patterns
+
+- 既存 token がある役割に対して、新しい hex 値を追加する。
+- shared primitive を compose できるのに、feature-local な button、badge、menu、
+  table を作る。
+- 1 画面の微調整のために `13px` や `17px` のような spacing 値を導入する。
+- operational product view に、装飾的な card、gradient、大きな hero、
+  illustrative section を持ち込む。
+- issue status label などの feature semantics を domain-independent な UI
+  primitive に移す。
+
 ## デザイントークン
 
-すべてのトークンは `src/app/globals.css` の `:root` で宣言されています。
-コンポーネントは下表の CSS variable 経由でトークンを参照し、その役割に
-対応する variable が存在する限り、surface・text・border に対して 16 進
-リテラルを直接記述してはいけません。
+Design token は、上記 Foundations を実装へ落とすための contract です。
+global token はすべて `src/app/globals.css` の `:root` で宣言されています。
+コンポーネントは CSS variable 経由で token を参照し、対応する token が存在する
+限り、surface、text、border、status tone、spacing、radius、shadow、z-index、
+font stack に固定値を直接記述してはいけません。
+
+### Token Model
+
+Tasq は実務上の token layer を 3 つに分けます。
+
+| Layer | 目的 | 例 |
+| ----- | ---- | -- |
+| Base token | system scale を定義する共有 primitive 値。 | `--space-4`, `--radius-sm`, `--font-mono` |
+| Semantic token | component をまたいで使う product role。 | `--surface`, `--text`, `--danger`, `--surface-hover` |
+| Component / feature token | global role を component や feature に適用する local alias。 | `--badge-bg`, `--status-color`, `--ledger-rule` |
+
+component / feature token は、重複を減らす場合や feature palette を閉じ込める
+場合に使えます。ただし、その値が shared system の一部である場合は、global token
+を参照する形にしてください。
+
+### Token Governance
+
+- token は、値が繰り返し使われる role または意図的な system scale step を
+  表す場合だけ追加します。
+- token 名は見た目ではなく役割で付けます。interaction surface として使うなら
+  `--gray-100` より `--surface-hover` を優先します。
+- feature 固有 palette は、独立した 2 箇所以上で同じ role が必要になるまで local
+  に保ちます。
+- すべての数値を token 化しません。固定 component dimension、typography size、
+  breakpoint は、繰り返し使われる contract になるまで literal のままで構いません。
+- 新しい token を導入するときは、この document、英語版、該当 token family を表示する
+  visual reference を更新します。
+- token を置き換えるときは、既存 call site に migration path が必要な場合だけ古い
+  token を残します。それ以外は同じ変更で call site を更新します。
 
 ### カラー
 

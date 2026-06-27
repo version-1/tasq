@@ -28,12 +28,122 @@ CSS Modules are the only styling mechanism. There is no Tailwind, no
 styled-components, no theme provider, and no runtime CSS-in-JS. Component
 styles must stay co-located with the component in `index.module.css`.
 
+## Foundations
+
+Tasq is a work-focused issue and agent orchestration UI. It should feel quiet,
+dense, legible, and operational. The interface should optimize scanning,
+comparison, repeated action, and handoff clarity over decoration or
+marketing-style presentation.
+
+These foundations are the design decision layer above tokens and components.
+When a local UI decision is not explicitly covered by a component rule, choose
+the option that best preserves these principles.
+
+### Product Personality
+
+- **Quiet and utilitarian**: avoid decorative gradients, oversized hero
+  treatments, ornamental illustrations, and one-off visual effects in product
+  screens.
+- **Dense but organized**: expose enough information for repeated operational
+  work, but use predictable grouping, alignment, and table/card structure so the
+  density remains scannable.
+- **Systematic before expressive**: reuse existing tokens, surfaces, and
+  primitives before introducing a new visual treatment.
+- **State-forward**: status, priority, project, run state, and workflow state
+  must be visually easy to compare without relying on color alone.
+
+### Information Hierarchy
+
+- Page-level hierarchy comes from layout, spacing, and type weight before color.
+- Tables are for comparison and scanning. Use restrained row hover, clear
+  headers, stable columns, and compact badges.
+- Cards are for grouped work items, modals, and genuinely framed tools. Do not
+  wrap page sections in decorative card stacks when a full-width layout or table
+  is more direct.
+- Primary actions should be visually scarce. Most screens should have one
+  dominant action cluster and use neutral or tertiary actions for the rest.
+
+### Interaction Principles
+
+- Controls should look like controls before hover. Filter chips, menus, buttons,
+  and tab triggers need a visible boundary, affordance, or active rule.
+- Repeated workflows should minimize layout shift. Fixed-format elements such as
+  tables, badges, controls, counters, and toolbars need stable dimensions.
+- Status and priority should use labels plus icons, dots, or shape where
+  appropriate. Color should reinforce meaning, not carry it alone.
+- Keyboard and screen-reader behavior is part of the component contract, not a
+  later enhancement.
+
+### Layout And Density
+
+- Start from the app shell rhythm: `--space-6` page padding, compact controls,
+  and `--radius-sm` / `--radius-md` surfaces.
+- Use compact type inside panels, tables, sidebars, and tools. Reserve large
+  type for actual page titles.
+- Prefer existing breakpoints (`1060px`, `900px`, `860px`, `720px`, `640px`)
+  before adding a new one.
+- Avoid nested cards. If a surface already frames content, inner groups should
+  usually be borders, dividers, tables, or unframed layout.
+
+### Accessibility Principles
+
+- Every icon-only interactive element needs an accessible label on the wrapping
+  control.
+- Focus-visible styles must remain visible when customizing controls.
+- State controls must expose their state (`aria-expanded`, `aria-controls`,
+  checked state, selected tab state, menu roles) in the component that owns the
+  interaction.
+- Do not encode state only through color. Pair color with text, icon, dot,
+  border, or position.
+
+### Anti-Patterns
+
+- Adding a new hex value for a role that already has a token.
+- Creating feature-local buttons, badges, menus, or tables when a shared
+  primitive can be composed.
+- Introducing spacing values such as `13px` or `17px` to tune one screen
+  instead of using the spacing scale.
+- Using decorative cards, gradients, large hero treatments, or illustrative
+  sections in operational product views.
+- Moving feature semantics such as issue status labels into domain-independent
+  UI primitives.
+
 ## Design Tokens
 
-All tokens are declared on `:root` in `src/app/globals.css`. Components must
-reference tokens through the listed CSS variables and must not hardcode hex
-values for surfaces, text, or borders unless the variable does not exist for
-that role.
+Design tokens are the implementation contract for the foundations above. All
+global tokens are declared on `:root` in `src/app/globals.css`. Components must
+reference tokens through CSS variables and must not hardcode values for
+surfaces, text, borders, status tones, spacing, radius, shadows, z-index, or
+font stacks when a matching token exists.
+
+### Token Model
+
+Tasq uses three practical token layers:
+
+| Layer | Purpose | Examples |
+| ----- | ------- | -------- |
+| Base tokens | Shared primitive values that define the system scale. | `--space-4`, `--radius-sm`, `--font-mono` |
+| Semantic tokens | Product roles that can be used across components. | `--surface`, `--text`, `--danger`, `--surface-hover` |
+| Component / feature tokens | Local aliases that adapt global roles to a component or feature. | `--badge-bg`, `--status-color`, `--ledger-rule` |
+
+Component and feature tokens are allowed when they reduce duplication or keep a
+feature palette scoped. They should still point back to global tokens whenever
+the value is part of the shared system.
+
+### Token Governance
+
+- Add a token only when a value represents a repeated role or an intentional
+  system scale step.
+- Name tokens by role, not by appearance. Prefer `--surface-hover` over
+  `--gray-100` when the value is used as an interaction surface.
+- Keep feature-specific palettes local until at least two independent areas need
+  the same role.
+- Do not tokenise every number. Fixed component dimensions, typography sizes,
+  and breakpoints can remain literal until they become repeated contracts.
+- When introducing a new token, update this document, the Japanese counterpart,
+  and any visual reference that displays the affected token family.
+- When replacing a token, keep the old token only if existing call sites need a
+  migration path. Otherwise update call sites in the same change.
 
 ### Color
 
