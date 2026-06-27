@@ -24,15 +24,19 @@
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-filter-trigger);
   color: var(--text);
   cursor: pointer;
   display: inline-flex;
   font: inherit;
-  gap: var(--space-2);
-  min-height: 32px;
-  padding: var(--space-1) var(--space-2);
+  gap: var(--space-1-5);
+  min-height: 40px;
+  min-inline-size: min(100vw - 48px, 240px);
+  padding: 7px 36px 7px 11px;
+  position: relative;
 }
 
+.statusTrigger[aria-expanded="true"],
 .statusTrigger:focus-visible {
   box-shadow: var(--shadow-filter-active);
   outline: 0;
@@ -45,6 +49,9 @@
 
 .statusTriggerIcon {
   color: var(--muted);
+  position: absolute;
+  right: var(--space-2-5);
+  top: 11px;
   transition: transform 120ms ease;
 }
 
@@ -58,12 +65,12 @@
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-filter-popover);
   display: grid;
-  gap: var(--space-1);
   left: var(--space-0);
-  min-inline-size: 190px;
-  padding: var(--space-2);
+  margin-top: var(--space-2-5);
+  min-inline-size: min(100vw - 48px, 420px);
+  overflow: hidden;
   position: absolute;
-  top: calc(100% + var(--space-2));
+  top: 100%;
   z-index: var(--z-popover);
 }
 
@@ -71,28 +78,28 @@
 .statusOptionActive {
   align-items: center;
   background: transparent;
-  border: 1px solid transparent;
+  border: 0;
+  border-bottom: 1px solid var(--border);
   border-radius: var(--radius-sm);
   cursor: pointer;
   display: flex;
-  min-height: 36px;
-  padding: var(--space-1-5) var(--space-2);
+  min-height: 52px;
+  padding: 9px var(--space-4-5);
 }
 
 .statusOption:hover,
 .statusOptionActive {
   background: var(--surface-hover);
-  border-color: var(--border);
 }
 
 .statusActions {
   align-items: center;
   border-top: 1px solid var(--border);
   display: flex;
-  gap: var(--space-2);
+  gap: var(--space-4-5);
   justify-content: flex-end;
-  margin: var(--space-1) calc(var(--space-2) * -1) calc(var(--space-2) * -1);
-  padding: var(--space-2) var(--space-2) var(--space-0);
+  min-height: 74px;
+  padding: var(--space-3-5) var(--space-4-5);
 }
 
 .statusCancelButton,
@@ -101,8 +108,8 @@
   border-radius: var(--radius-sm);
   cursor: pointer;
   font: inherit;
-  min-height: 34px;
-  padding: var(--space-0) var(--space-3);
+  min-height: 42px;
+  padding: var(--space-0) var(--space-3-5);
 }
 
 .statusCancelButton {
@@ -117,6 +124,8 @@
 .statusApplyButton {
   background: var(--control-strong);
   color: var(--white);
+  min-inline-size: 126px;
+  padding: var(--space-0) var(--space-4-5);
 }
 
 .statusApplyButton:hover {
