@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
+import { Bell, ChevronDown, MoreHorizontal, Plus, Search } from "lucide-react";
 import { useTabs } from "@/context/tabs";
 import { Breadcrumb } from "./breadcrumb";
 import styles from "./index.module.css";
@@ -18,14 +18,12 @@ type HeaderProps = {
 
 export function Header({
   activePage,
-  projectName,
   onAddTask,
   showViewNavigation = true,
   showAddTaskButton = true,
 }: HeaderProps) {
   const { t } = useTranslation();
   const tabs = useTabs();
-  const displayedProjectName = projectName ?? t("header.projectName");
 
   return (
     <header className={styles.header}>
@@ -34,10 +32,17 @@ export function Header({
 
         <div className={styles.globalActions}>
           <label className={styles.search}>
-            <span aria-hidden="true">⌕</span>
+            <Search aria-hidden="true" size={16} strokeWidth={1.8} />
             <input type="search" placeholder={t("header.searchPlaceholder")} />
             <kbd>{t("header.commandKey")}</kbd>
           </label>
+          <button
+            type="button"
+            className={styles.notificationButton}
+            aria-label={t("header.notifications")}
+          >
+            <Bell aria-hidden="true" size={18} strokeWidth={1.8} />
+          </button>
         </div>
       </div>
 
@@ -45,17 +50,34 @@ export function Header({
         <div className={styles.titleGroup}>
           <h1>
             {activePage === "issues"
-              ? displayedProjectName
+              ? t("header.issueList")
               : t(pageHeadingKey(activePage))}
           </h1>
+          {activePage === "issues" ? (
+            <button
+              type="button"
+              className={styles.moreButton}
+              aria-label={t("header.moreProjectActions")}
+            >
+              <MoreHorizontal aria-hidden="true" size={19} strokeWidth={1.8} />
+            </button>
+          ) : null}
         </div>
 
         {showAddTaskButton ? (
-          <div className={styles.statusStrip}>
-            <Button onClick={onAddTask}>
-              <span aria-hidden="true">＋</span>
+          <div className={styles.createActions}>
+            <button type="button" className={styles.createButton} onClick={onAddTask}>
+              <Plus aria-hidden="true" size={17} strokeWidth={1.8} />
               {t("header.addTask")}
-            </Button>
+            </button>
+            <button
+              type="button"
+              className={styles.createSplitButton}
+              aria-label={t("header.moreProjectActions")}
+              onClick={onAddTask}
+            >
+              <ChevronDown aria-hidden="true" size={16} strokeWidth={1.8} />
+            </button>
           </div>
         ) : null}
       </div>

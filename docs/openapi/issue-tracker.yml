@@ -224,6 +224,64 @@ paths:
           schema:
             type: integer
             format: int64
+        - name: project_ids
+          in: query
+          required: false
+          description: Comma-separated project IDs used to limit issues to selected projects.
+          schema:
+            type: string
+            example: 1,2
+        - name: priorities
+          in: query
+          required: false
+          description: Comma-separated issue priorities. Omit this parameter or pass an empty value to list all priorities.
+          schema:
+            type: string
+            example: urgent,high
+        - name: assignee
+          in: query
+          required: false
+          description: Assignee name used to limit issues to a single assignee. Omit this parameter to list all assignees.
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of issues to return. Omit this parameter to preserve the legacy unpaginated response.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+        - name: offset
+          in: query
+          required: false
+          description: Zero-based issue offset used for pagination.
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: sort_by
+          in: query
+          required: false
+          description: Issue field used for sorting. Defaults to updated_at.
+          schema:
+            type: string
+            enum:
+              - id
+              - priority
+              - created_at
+              - updated_at
+            default: updated_at
+        - name: sort_direction
+          in: query
+          required: false
+          description: Sort direction. Defaults to descending order.
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
+            default: desc
       responses:
         "200":
           description: Issue list.
@@ -576,6 +634,31 @@ components:
       type: object
       additionalProperties: true
       description: Response metadata. Currently empty, reserved for future extensions.
+    IssueListMeta:
+      type: object
+      description: Issue list pagination metadata.
+      required:
+        - limit
+        - offset
+        - total
+        - nextOffset
+      properties:
+        limit:
+          type: integer
+          description: Applied page size. `0` means the request omitted pagination and returned the legacy unpaginated response.
+          minimum: 0
+          maximum: 50
+        offset:
+          type: integer
+          minimum: 0
+        total:
+          type: integer
+          minimum: 0
+        nextOffset:
+          type:
+            - integer
+            - "null"
+          minimum: 0
     ErrorInfo:
       type: object
       required:
@@ -1096,7 +1179,7 @@ components:
           items:
             $ref: "#/components/schemas/Issue"
         meta:
-          $ref: "#/components/schemas/ApiMeta"
+          $ref: "#/components/schemas/IssueListMeta"
     QueueResponse:
       type: object
       required:

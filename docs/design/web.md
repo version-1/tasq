@@ -7,8 +7,10 @@ The Web UI is a Vite + React + TypeScript single-page app served by `cmd/web`. T
 User-facing views are split by React Router routes:
 
 - `/issues`
+- `/issues/table`
 - `/projects/:projectKey`
 - `/projects/:projectKey/issues`
+- `/projects/:projectKey/table`
 - `/projects/:projectKey/settings`
 - `/issues/:id`
 - `/dashboard`
@@ -16,9 +18,10 @@ User-facing views are split by React Router routes:
 
 The root `/` route redirects to `/issues`.
 The project detail root `/projects/:projectKey` redirects to `/projects/:projectKey/issues`.
-Project detail pages have exactly two fixed tabs:
+Project detail pages have exactly three fixed tabs:
 
 - `issues`: shows the existing issue board scoped to the selected project.
+- `table`: shows a paginated issue table scoped to the selected project.
 - `settings`: shows the synchronized `WORKFLOW.md` for the selected project as read-only data.
 
 The project settings tab reads from the existing issue-tracker endpoint `GET /api/v1/projects/{id}/workflow`. It renders `ProjectWorkflow.body` as sanitized Markdown, renders `ProjectWorkflow.frontmatter` as a recursive key-value tree, and displays `ProjectWorkflow.updatedAt` as the synchronization timestamp. It must not read local `WORKFLOW.md` files directly and must not expose editing controls.

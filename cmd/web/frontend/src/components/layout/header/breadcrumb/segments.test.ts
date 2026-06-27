@@ -13,6 +13,13 @@ describe("breadcrumbSegmentsFromPathname", () => {
       segments: [{ label: "Issues" }],
     },
     {
+      pathname: "/issues/table",
+      segments: [
+        { label: "Issues", href: "/issues" },
+        { label: "Table" },
+      ],
+    },
+    {
       pathname: "/projects/TASQ/issues",
       segments: [
         { label: "TASQ", href: "/projects/TASQ/issues" },
@@ -24,6 +31,13 @@ describe("breadcrumbSegmentsFromPathname", () => {
       segments: [
         { label: "TASQ", href: "/projects/TASQ/issues" },
         { label: "Settings" },
+      ],
+    },
+    {
+      pathname: "/projects/TASQ/table",
+      segments: [
+        { label: "TASQ", href: "/projects/TASQ/issues" },
+        { label: "Table" },
       ],
     },
     {

@@ -17,7 +17,9 @@ feature component. Do not create `_components` directories under `src/app/`.
 Use path parameters for scoped resources and detail pages:
 
 - `/issues` lists issues across all projects.
+- `/issues/table` renders a paginated issue table across all projects.
 - `/projects/:projectKey/issues` lists issues for one project.
+- `/projects/:projectKey/table` renders a paginated issue table for one project.
 - `/projects/:projectKey` redirects to `/projects/:projectKey/issues`.
 - `/projects/:projectKey/settings` renders project workflow settings.
 - `/issues/:id` renders an issue detail page.

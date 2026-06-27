@@ -1,0 +1,7 @@
+.priorityDot {
+  background: currentcolor;
+  border-radius: 999px;
+  display: inline-block;
+  height: 6px;
+  width: 6px;
+}

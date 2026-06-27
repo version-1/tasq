@@ -1,7 +1,7 @@
 .header {
   border-bottom: 1px solid var(--light-gray);
   background: var(--white);
-  padding: 28px 32px 0;
+  padding: 30px 40px 0;
   position: sticky;
   top: 0;
   z-index: 10;
@@ -12,7 +12,7 @@
 .viewRow,
 .globalActions,
 .titleGroup,
-.statusStrip,
+.createActions,
 .tabs {
   display: flex;
   align-items: center;
@@ -21,7 +21,7 @@
 .utilityRow {
   justify-content: space-between;
   gap: 24px;
-  margin-bottom: 32px;
+  margin-bottom: 34px;
 }
 
 .moreButton,
@@ -33,8 +33,20 @@
   padding: 6px 8px;
 }
 
+.moreButton {
+  color: var(--medium-gray);
+  height: 34px;
+  width: 34px;
+}
+
+.moreButton:hover,
+.notificationButton:hover {
+  background: #f5f5f5;
+}
+
 .globalActions {
-  gap: 20px;
+  gap: 22px;
+  margin-left: auto;
 }
 
 .search {
@@ -44,9 +56,9 @@
   color: var(--medium-gray);
   display: flex;
   gap: 8px;
-  height: 40px;
+  height: 42px;
   min-width: 360px;
-  padding: 0 10px;
+  padding: 0 12px;
 }
 
 .search input {
@@ -61,45 +73,72 @@
   border: 1px solid var(--light-gray);
   border-radius: 5px;
   color: var(--medium-gray);
-  font-size: 12px;
   font-family: inherit;
+  font-size: 12px;
+  line-height: 1;
   padding: 2px 6px;
 }
 
 .notificationButton {
-  height: 40px;
-  width: 40px;
+  align-items: center;
+  display: inline-flex;
+  height: 42px;
+  justify-content: center;
+  padding: 0;
+  width: 42px;
   color: var(--primary-black);
 }
 
 .titleRow {
   justify-content: space-between;
   gap: 24px;
-  margin-bottom: 28px;
+  margin-bottom: 30px;
 }
 
 .titleGroup {
-  gap: 14px;
+  gap: 16px;
 }
 
 .titleGroup h1 {
   color: var(--primary-black);
-  font-size: 28px;
+  font-size: 30px;
+  font-weight: 800;
   line-height: 1.1;
   margin: 0;
 }
 
-.statusStrip {
-  gap: 8px;
+.createActions {
+  box-shadow: 0 12px 24px rgba(10, 10, 10, 0.12);
+  gap: 0;
 }
 
-.statusStrip > span {
-  border: 1px solid var(--light-gray);
-  border-radius: 999px;
-  background: #fafafa;
-  padding: 7px 10px;
-  color: var(--medium-gray);
-  font-size: 13px;
+.createButton,
+.createSplitButton {
+  align-items: center;
+  background: var(--primary-black);
+  border-color: var(--primary-black);
+  color: var(--white);
+  display: inline-flex;
+  height: 44px;
+  justify-content: center;
+}
+
+.createButton {
+  border-radius: 6px 0 0 6px;
+  gap: 8px;
+  padding: 0 16px;
+}
+
+.createSplitButton {
+  border-left-color: #303030;
+  border-radius: 0 6px 6px 0;
+  padding: 0;
+  width: 44px;
+}
+
+.createButton:hover,
+.createSplitButton:hover {
+  background: #111111;
 }
 
 .viewRow {
@@ -108,13 +147,13 @@
 }
 
 .tabs {
-  gap: 34px;
+  gap: 36px;
 }
 
 .tab {
   border: 0;
   color: var(--medium-gray);
-  padding: 0 0 18px;
+  padding: 0 0 20px;
   text-decoration: none;
 }
 
@@ -137,7 +176,7 @@
   }
 
   .globalActions,
-  .statusStrip {
+  .createActions {
     flex-wrap: wrap;
   }
 

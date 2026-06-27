@@ -282,12 +282,44 @@ func (s *Server) issues(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	items, err := s.store.IssuesByFilter(r.Context(), store.IssueFilter{States: states, ProjectID: projectID})
+	projectIDs, ok := parseIssueProjectIDs(w, r)
+	if !ok {
+		return
+	}
+	priorities, ok := parseIssuePriorities(w, r)
+	if !ok {
+		return
+	}
+	assignee := parseIssueAssignee(r)
+	limit, offset, ok := parseIssuePagination(w, r)
+	if !ok {
+		return
+	}
+	sortBy, sortDirection, ok := parseIssueSort(w, r)
+	if !ok {
+		return
+	}
+	list, err := s.store.IssuesPageByFilter(r.Context(), store.IssueFilter{
+		States:        states,
+		ProjectID:     projectID,
+		ProjectIDs:    projectIDs,
+		Priorities:    priorities,
+		Assignee:      assignee,
+		Limit:         limit,
+		Offset:        offset,
+		SortBy:        sortBy,
+		SortDirection: sortDirection,
+	})
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "issues.list.internal_error", err)
 		return
 	}
-	writeJSON(w, http.StatusOK, items)
+	writeJSONWithMeta(w, http.StatusOK, list.Issues, responseMeta{
+		"limit":      limit,
+		"offset":     offset,
+		"total":      list.Total,
+		"nextOffset": nextIssueOffset(offset, limit, list.Total),
+	})
 }
 
 func parseIssueStates(w http.ResponseWriter, r *http.Request) ([]entity.Status, bool) {
@@ -314,6 +346,135 @@ func parseIssueStates(w http.ResponseWriter, r *http.Request) ([]entity.Status, 
 
 func parseIssueProjectID(w http.ResponseWriter, r *http.Request) (*int64, bool) {
 	return parseProjectIDQuery(w, r, "issues.list")
+}
+
+func parseIssueProjectIDs(w http.ResponseWriter, r *http.Request) ([]int64, bool) {
+	value := r.URL.Query().Get("project_ids")
+	if value == "" {
+		return nil, true
+	}
+	parts := strings.Split(value, ",")
+	projectIDs := make([]int64, 0, len(parts))
+	for _, part := range parts {
+		raw := strings.TrimSpace(part)
+		if raw == "" {
+			continue
+		}
+		projectID, err := strconv.ParseInt(raw, 10, 64)
+		if err != nil || projectID <= 0 {
+			writeError(w, http.StatusBadRequest, "issues.list.invalid_project_ids", errors.New("project_ids is invalid"))
+			return nil, false
+		}
+		projectIDs = append(projectIDs, projectID)
+	}
+	return projectIDs, true
+}
+
+func parseIssuePriorities(w http.ResponseWriter, r *http.Request) ([]entity.Priority, bool) {
+	value := r.URL.Query().Get("priorities")
+	if value == "" {
+		return nil, true
+	}
+	parts := strings.Split(value, ",")
+	priorities := make([]entity.Priority, 0, len(parts))
+	for _, part := range parts {
+		priority := entity.Priority(strings.TrimSpace(part))
+		if priority == "" {
+			continue
+		}
+		if !entity.IsValidPriority(priority) {
+			writeError(w, http.StatusBadRequest, "issues.list.invalid_priorities", errors.New("priorities contains invalid priority"))
+			return nil, false
+		}
+		priorities = append(priorities, priority)
+	}
+	return priorities, true
+}
+
+func parseIssueAssignee(r *http.Request) *string {
+	value := strings.TrimSpace(r.URL.Query().Get("assignee"))
+	if value == "" {
+		return nil
+	}
+	return &value
+}
+
+func parseIssueSort(w http.ResponseWriter, r *http.Request) (store.IssueSortBy, store.SortDirection, bool) {
+	sortBy := store.IssueSortBy(strings.TrimSpace(r.URL.Query().Get("sort_by")))
+	if sortBy == "" {
+		sortBy = store.IssueSortByUpdatedAt
+	}
+	switch sortBy {
+	case store.IssueSortByID, store.IssueSortByPriority, store.IssueSortByCreatedAt, store.IssueSortByUpdatedAt:
+	default:
+		writeError(w, http.StatusBadRequest, "issues.list.invalid_sort_by", errors.New("sort_by is invalid"))
+		return "", "", false
+	}
+
+	direction := store.SortDirection(strings.TrimSpace(r.URL.Query().Get("sort_direction")))
+	if direction == "" {
+		direction = store.SortDirectionDesc
+	}
+	switch direction {
+	case store.SortDirectionAsc, store.SortDirectionDesc:
+	default:
+		writeError(w, http.StatusBadRequest, "issues.list.invalid_sort_direction", errors.New("sort_direction is invalid"))
+		return "", "", false
+	}
+
+	return sortBy, direction, true
+}
+
+func parseIssuePagination(w http.ResponseWriter, r *http.Request) (int, int, bool) {
+	limit, ok := parsePositiveIntQuery(w, r, "limit", 0, 50, "issues.list.invalid_limit")
+	if !ok {
+		return 0, 0, false
+	}
+	offset, ok := parseNonNegativeIntQuery(w, r, "offset", 0, "issues.list.invalid_offset")
+	if !ok {
+		return 0, 0, false
+	}
+	if limit == 0 {
+		return 0, 0, true
+	}
+	return limit, offset, true
+}
+
+func parsePositiveIntQuery(w http.ResponseWriter, r *http.Request, name string, fallback int, max int, code string) (int, bool) {
+	value := r.URL.Query().Get(name)
+	if value == "" {
+		return fallback, true
+	}
+	parsed, err := strconv.Atoi(value)
+	if err != nil || parsed <= 0 || parsed > max {
+		writeError(w, http.StatusBadRequest, code, fmt.Errorf("%s is invalid", name))
+		return 0, false
+	}
+	return parsed, true
+}
+
+func parseNonNegativeIntQuery(w http.ResponseWriter, r *http.Request, name string, fallback int, code string) (int, bool) {
+	value := r.URL.Query().Get(name)
+	if value == "" {
+		return fallback, true
+	}
+	parsed, err := strconv.Atoi(value)
+	if err != nil || parsed < 0 {
+		writeError(w, http.StatusBadRequest, code, fmt.Errorf("%s is invalid", name))
+		return 0, false
+	}
+	return parsed, true
+}
+
+func nextIssueOffset(offset int, limit int, total int) *int {
+	if limit <= 0 {
+		return nil
+	}
+	next := offset + limit
+	if next >= total {
+		return nil
+	}
+	return &next
 }
 
 func parseProjectIDQuery(w http.ResponseWriter, r *http.Request, action string) (*int64, bool) {

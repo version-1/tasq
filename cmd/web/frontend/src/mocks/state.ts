@@ -4,6 +4,7 @@ import type {
   CreateIssueInput,
   CreateProjectInput,
   Issue,
+  Priority,
   IssueState,
   IssueStatus,
   Project,
@@ -23,7 +24,14 @@ import { summaryColumnFixtures } from "./fixtures/summary";
 import { workflowFixtures } from "./fixtures/workflows";
 
 type IssueListFilters = {
+  assignee?: string;
+  limit?: number;
+  offset?: number;
   projectID?: number;
+  projectIDs?: number[];
+  priorities?: Priority[];
+  sortBy?: "id" | "priority" | "created_at" | "updated_at";
+  sortDirection?: "asc" | "desc";
   states?: IssueStatus[];
 };
 
@@ -77,17 +85,93 @@ export function getProjectWorkflow(projectID: number): ProjectWorkflow | null {
 }
 
 export function listIssues(filters: IssueListFilters = {}): Issue[] {
-  return clone(
-    issues.filter((issue) => {
-      const matchesProject = filters.projectID === undefined || issue.projectId === filters.projectID;
+  const filtered = issues.filter((issue) => {
+      const matchesProject = matchesProjectFilter(issue, filters);
       const matchesState =
         filters.states === undefined ||
         filters.states.length === 0 ||
         filters.states.includes(issue.status);
+      const matchesPriority =
+        filters.priorities === undefined ||
+        filters.priorities.length === 0 ||
+        filters.priorities.includes(issue.priority);
+      const matchesAssignee = filters.assignee === undefined || issue.assignee === filters.assignee;
 
-      return matchesProject && matchesState;
-    }),
-  );
+      return matchesProject && matchesState && matchesPriority && matchesAssignee;
+    });
+  const sorted = sortIssues(filtered, filters.sortBy ?? "updated_at", filters.sortDirection ?? "desc");
+  if (filters.limit === undefined) {
+    return clone(sorted);
+  }
+  const offset = filters.offset ?? 0;
+  return clone(sorted.slice(offset, offset + filters.limit));
+}
+
+function sortIssues(
+  items: Issue[],
+  sortBy: "id" | "priority" | "created_at" | "updated_at",
+  direction: "asc" | "desc",
+): Issue[] {
+  const factor = direction === "asc" ? 1 : -1;
+  return [...items].sort((a, b) => {
+    const primary = compareIssueField(a, b, sortBy);
+    if (primary !== 0) {
+      return primary * factor;
+    }
+    return (a.id - b.id) * factor;
+  });
+}
+
+function compareIssueField(a: Issue, b: Issue, sortBy: "id" | "priority" | "created_at" | "updated_at"): number {
+  switch (sortBy) {
+    case "id":
+      return a.id - b.id;
+    case "priority":
+      return priorityRank(a.priority) - priorityRank(b.priority);
+    case "created_at":
+      return a.createdAt.localeCompare(b.createdAt);
+    case "updated_at":
+      return a.updatedAt.localeCompare(b.updatedAt);
+  }
+}
+
+function priorityRank(priority: Priority): number {
+  switch (priority) {
+    case "urgent":
+      return 4;
+    case "high":
+      return 3;
+    case "normal":
+      return 2;
+    case "low":
+      return 1;
+  }
+}
+
+export function countIssues(filters: IssueListFilters = {}): number {
+  return issues.filter((issue) => {
+    const matchesProject = matchesProjectFilter(issue, filters);
+    const matchesState =
+      filters.states === undefined ||
+      filters.states.length === 0 ||
+      filters.states.includes(issue.status);
+    const matchesPriority =
+      filters.priorities === undefined ||
+      filters.priorities.length === 0 ||
+      filters.priorities.includes(issue.priority);
+    const matchesAssignee = filters.assignee === undefined || issue.assignee === filters.assignee;
+
+    return matchesProject && matchesState && matchesPriority && matchesAssignee;
+  }).length;
+}
+
+function matchesProjectFilter(issue: Issue, filters: IssueListFilters): boolean {
+  if (filters.projectID !== undefined) {
+    return issue.projectId === filters.projectID;
+  }
+  return filters.projectIDs === undefined ||
+    filters.projectIDs.length === 0 ||
+    filters.projectIDs.includes(issue.projectId);
 }
 
 export function getIssue(id: number): Issue | null {

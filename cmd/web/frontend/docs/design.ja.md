@@ -14,7 +14,9 @@ Route は `src/App.tsx` で `react-router-dom` を使って手動定義します
 scoped resource と detail page には path parameter を使います。
 
 - `/issues` は全 project の issue を表示します。
+- `/issues/table` は全 project の issue をページング付き table で表示します。
 - `/projects/:projectKey/issues` は単一 project の issue を表示します。
+- `/projects/:projectKey/table` は単一 project の issue をページング付き table で表示します。
 - `/projects/:projectKey` は `/projects/:projectKey/issues` に redirect します。
 - `/projects/:projectKey/settings` は project workflow settings を表示します。
 - `/issues/:id` は issue detail page を表示します。

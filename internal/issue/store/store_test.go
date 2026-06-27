@@ -813,6 +813,150 @@ func TestIssuesByFilterFiltersByProject(t *testing.T) {
 	assertIssueIDs(t, secondaryIssues, []int64{other.ID})
 }
 
+func TestIssuesByFilterFiltersByProjectsAndPriorities(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer store.Close()
+
+	firstProject := createTestProject(t, store, "FIRST")
+	secondProject := createTestProject(t, store, "SECOND")
+	thirdProject := createTestProject(t, store, "THIRD")
+	first := createStoreIssue(t, store, firstProject.ID, "First high", entity.StatusReady, entity.PriorityHigh)
+	second := createStoreIssue(t, store, secondProject.ID, "Second urgent", entity.StatusBacklog, entity.PriorityUrgent)
+	_ = createStoreIssue(t, store, firstProject.ID, "First normal", entity.StatusReady, entity.PriorityNormal)
+	_ = createStoreIssue(t, store, thirdProject.ID, "Third high", entity.StatusReady, entity.PriorityHigh)
+
+	filtered, err := store.IssuesByFilter(ctx, IssueFilter{
+		ProjectIDs: []int64{firstProject.ID, secondProject.ID},
+		Priorities: []entity.Priority{
+			entity.PriorityHigh,
+			entity.PriorityUrgent,
+		},
+		SortBy:        IssueSortByID,
+		SortDirection: SortDirectionAsc,
+	})
+	if err != nil {
+		t.Fatalf("list issues by projects and priorities: %v", err)
+	}
+	assertIssueIDs(t, filtered, []int64{first.ID, second.ID})
+}
+
+func TestIssuesPageByFilterFiltersAssigneeAndPaginates(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer store.Close()
+
+	project := createTestProject(t, store, "PAGE")
+	assignee := "frontend"
+	first, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "First", Status: entity.StatusReady, Assignee: assignee})
+	if err != nil {
+		t.Fatalf("create first issue: %v", err)
+	}
+	second, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Second", Status: entity.StatusReady, Assignee: assignee})
+	if err != nil {
+		t.Fatalf("create second issue: %v", err)
+	}
+	if _, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Third", Status: entity.StatusReady, Assignee: "docs"}); err != nil {
+		t.Fatalf("create third issue: %v", err)
+	}
+
+	page, err := store.IssuesPageByFilter(ctx, IssueFilter{Assignee: &assignee, Limit: 1, Offset: 0})
+	if err != nil {
+		t.Fatalf("list first page: %v", err)
+	}
+	assertIssueIDs(t, page.Issues, []int64{second.ID})
+	if page.Total != 2 {
+		t.Fatalf("total = %d, want 2", page.Total)
+	}
+
+	page, err = store.IssuesPageByFilter(ctx, IssueFilter{Assignee: &assignee, Limit: 1, Offset: 1})
+	if err != nil {
+		t.Fatalf("list second page: %v", err)
+	}
+	assertIssueIDs(t, page.Issues, []int64{first.ID})
+	if page.Total != 2 {
+		t.Fatalf("total = %d, want 2", page.Total)
+	}
+}
+
+func TestIssuesPageByFilterSortsByIDAscending(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer store.Close()
+
+	project := createTestProject(t, store, "SORT")
+	first, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "First", Status: entity.StatusReady})
+	if err != nil {
+		t.Fatalf("create first issue: %v", err)
+	}
+	second, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Second", Status: entity.StatusReady})
+	if err != nil {
+		t.Fatalf("create second issue: %v", err)
+	}
+	third, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Third", Status: entity.StatusReady})
+	if err != nil {
+		t.Fatalf("create third issue: %v", err)
+	}
+
+	page, err := store.IssuesPageByFilter(ctx, IssueFilter{
+		Limit:         2,
+		Offset:        1,
+		SortBy:        IssueSortByID,
+		SortDirection: SortDirectionAsc,
+	})
+	if err != nil {
+		t.Fatalf("list sorted issues: %v", err)
+	}
+	assertIssueIDs(t, page.Issues, []int64{second.ID, third.ID})
+	if page.Total != 3 {
+		t.Fatalf("total = %d, want 3", page.Total)
+	}
+	if first.ID >= second.ID {
+		t.Fatalf("test setup issue IDs are not increasing: first=%d second=%d", first.ID, second.ID)
+	}
+}
+
+func TestIssuesPageByFilterSortsByPriorityDescending(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer store.Close()
+
+	project := createTestProject(t, store, "PRIORITYSORT")
+	low := createStoreIssue(t, store, project.ID, "Low", entity.StatusReady, entity.PriorityLow)
+	urgent := createStoreIssue(t, store, project.ID, "Urgent", entity.StatusReady, entity.PriorityUrgent)
+	normal := createStoreIssue(t, store, project.ID, "Normal", entity.StatusReady, entity.PriorityNormal)
+	high := createStoreIssue(t, store, project.ID, "High", entity.StatusReady, entity.PriorityHigh)
+
+	page, err := store.IssuesPageByFilter(ctx, IssueFilter{
+		SortBy:        IssueSortByPriority,
+		SortDirection: SortDirectionDesc,
+	})
+	if err != nil {
+		t.Fatalf("list priority sorted issues: %v", err)
+	}
+	assertIssueIDs(t, page.Issues, []int64{urgent.ID, high.ID, normal.ID, low.ID})
+}
+
 func TestIssueStatesByIDs(t *testing.T) {
 	t.Parallel()
 

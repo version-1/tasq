@@ -35,7 +35,7 @@ issue-tracker はユーザー向け API です。
 
 添付ファイルのアップロードは、`entity_type`、`entity_id`、`file` を持つ multipart form data を受け取ります。最初の実装では PNG、JPEG、GIF、WebP の画像ファイルを 5 MiB までサポートします。添付ファイルのバイト列は `$TQ_HOME/system/data/attachments` 配下に保存し、SQLite にはメタデータと相対パスを保存します。課題とコメントの本文は、`![screenshot](attachment://att_...)` のような Markdown image link で添付ファイルを参照します。
 
-課題は必ず 1 つのプロジェクトに属します。`POST /api/v1/issues` は `projectId` を必須とし、初期の依存関係として `dependency_ids` を受け取ります。課題のレスポンスは `projectId` と `projectKey` の両方を返します。課題レスポンスには `dependency_ids` が含まれます。依存がない場合は空配列を返します。`GET /api/v1/issues` は任意の query parameter として `states` と `project_id` を受け取ります。`project_id` を省略した場合は、すべてのプロジェクトの課題を一覧表示します。
+課題は必ず 1 つのプロジェクトに属します。`POST /api/v1/issues` は `projectId` を必須とし、初期の依存関係として `dependency_ids` を受け取ります。課題のレスポンスは `projectId` と `projectKey` の両方を返します。課題レスポンスには `dependency_ids` が含まれます。依存がない場合は空配列を返します。`GET /api/v1/issues` は任意の query parameter として `states`、`project_id`、`project_ids`、`priorities`、`limit`、`offset`、`sort_by`、`sort_direction` を受け取ります。project filter を省略した場合は、すべてのプロジェクトの課題を一覧表示します。`project_id` は 1 つのプロジェクトに絞り込み、`project_ids` はテーブルフィルター用にカンマ区切りの複数プロジェクトを受け取ります。`priorities` はカンマ区切りの優先度を受け取ります。`sort_by` は `id`、`priority`、`created_at`、`updated_at` のみ、`sort_direction` は `asc`、`desc` のみ受け付けます。
 
 ### `POST /api/v1/issues`
 

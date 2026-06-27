@@ -36,9 +36,65 @@
   --badge-text: #4b5563;
 }
 
+.status-backlog {
+  --badge-accent: #8a958d;
+  --badge-bg: #f3f4f6;
+  --badge-text: #4b5563;
+}
+
+.status-ready {
+  --badge-accent: #0e8f70;
+  --badge-bg: #dff8ef;
+  --badge-text: #047857;
+}
+
+.status-in-progress {
+  --badge-accent: #2f6fb3;
+  --badge-bg: #e0f2fe;
+  --badge-text: #075985;
+}
+
+.status-review {
+  --badge-accent: #d97706;
+  --badge-bg: #fef3c7;
+  --badge-text: #92400e;
+}
+
+.status-done {
+  --badge-accent: #2f7d4f;
+  --badge-bg: #dcfce7;
+  --badge-text: #166534;
+}
+
+.status-blocked {
+  --badge-accent: #9a4f14;
+  --badge-bg: #ffedd5;
+  --badge-text: #9a3412;
+}
+
+.status-failed {
+  --badge-accent: #b42318;
+  --badge-bg: #fee2e2;
+  --badge-text: #991b1b;
+}
+
+.status-muted {
+  --badge-accent: #667085;
+  --badge-bg: #f3f4f6;
+  --badge-text: #4b5563;
+}
+
 .priority-high,
 .priority-normal,
-.priority-low {
+.priority-low,
+.status-backlog,
+.status-ready,
+.status-in-progress,
+.status-review,
+.status-done,
+.status-blocked,
+.status-failed,
+.status-muted {
   background: var(--badge-bg);
   border-radius: 999px;
   color: var(--badge-text);
@@ -49,11 +105,27 @@
 }
 
 .priority-high svg,
-.priority-low svg {
+.priority-low svg,
+.status-backlog svg,
+.status-ready svg,
+.status-in-progress svg,
+.status-review svg,
+.status-done svg,
+.status-blocked svg,
+.status-failed svg,
+.status-muted svg {
   color: var(--badge-accent);
 }
 
-.priority-normal span {
+.priority-normal span,
+.status-backlog span,
+.status-ready span,
+.status-in-progress span,
+.status-review span,
+.status-done span,
+.status-blocked span,
+.status-failed span,
+.status-muted span {
   background: var(--badge-accent);
 }
 

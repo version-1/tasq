@@ -35,7 +35,7 @@ Current issue-tracker endpoints:
 
 Attachment uploads accept multipart form data with `entity_type`, `entity_id`, and `file`. The first implementation supports PNG, JPEG, GIF, and WebP image files up to 5 MiB. Attachment bytes are stored below `$TQ_HOME/system/data/attachments`, while SQLite stores metadata and relative paths. Issue and comment text references attachments with Markdown image links such as `![screenshot](attachment://att_...)`.
 
-Issues belong to exactly one project. `POST /api/v1/issues` requires `projectId` and accepts `dependency_ids` as the initial dependency set. Issue responses include both `projectId` and `projectKey`. Issue responses include `dependency_ids`; issues without dependencies return an empty array. `GET /api/v1/issues` accepts optional `states` and `project_id` query parameters. Omitting `project_id` lists issues across all projects.
+Issues belong to exactly one project. `POST /api/v1/issues` requires `projectId` and accepts `dependency_ids` as the initial dependency set. Issue responses include both `projectId` and `projectKey`. Issue responses include `dependency_ids`; issues without dependencies return an empty array. `GET /api/v1/issues` accepts optional `states`, `project_id`, `project_ids`, `priorities`, `limit`, `offset`, `sort_by`, and `sort_direction` query parameters. Omitting project filters lists issues across all projects. `project_id` limits the list to one project, while `project_ids` accepts a comma-separated set for table filters. `priorities` accepts comma-separated issue priorities. `sort_by` is limited to `id`, `priority`, `created_at`, and `updated_at`; `sort_direction` is limited to `asc` and `desc`.
 
 ### `POST /api/v1/issues`
 

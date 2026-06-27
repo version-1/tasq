@@ -1,0 +1,90 @@
+.tableWrap {
+  background: #fdfdfd;
+  border: 1px solid var(--ledger-rule, var(--border));
+  border-radius: 6px;
+  box-shadow: none;
+  min-height: 920px;
+  overflow: auto;
+}
+
+.table {
+  border-collapse: collapse;
+  inline-size: 100%;
+}
+
+.headCell,
+.cell {
+  border-bottom: 1px solid var(--ledger-rule, var(--border));
+  font-size: 14px;
+  padding: 14px 12px;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.headCell {
+  background: #ffffff;
+  color: var(--ledger-muted, var(--muted-foreground));
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.cell {
+  color: var(--ledger-ink, var(--foreground));
+}
+
+.issueRow {
+  background: var(--ledger-surface, var(--white));
+}
+
+.issueRow:hover {
+  background: #fafafa;
+}
+
+.idCell {
+  color: var(--ledger-muted, var(--muted-foreground));
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.issueLink {
+  color: var(--ledger-ink, var(--foreground));
+  display: inline-block;
+  font-weight: 400;
+  max-inline-size: 360px;
+  overflow-wrap: anywhere;
+  text-decoration: none;
+}
+
+.issueLink:hover {
+  text-decoration: underline;
+}
+
+.sortButton {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  display: inline-flex;
+  font: inherit;
+  gap: 6px;
+  min-block-size: 0;
+  padding: 0;
+}
+
+.sortButton:hover {
+  color: var(--ledger-ink, var(--foreground));
+}
+
+.sortIcon {
+  flex: 0 0 auto;
+  opacity: 0.48;
+}
+
+.sortIconActive {
+  color: var(--ledger-ink, var(--foreground));
+  flex: 0 0 auto;
+  opacity: 1;
+}

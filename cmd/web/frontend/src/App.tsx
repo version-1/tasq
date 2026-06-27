@@ -4,6 +4,7 @@ import { IssueDetailLayout } from "./components/layout/issue";
 import ConversationRoute from "./app/issues/[id]/conversations/page";
 import IssueDetailRoute from "./app/issues/[id]/page";
 import IssuesPage from "./app/issues/page";
+import IssuesTablePage from "./app/issues/table/page";
 import ProjectSettingsPage from "./app/projects/[projectKey]/settings/page";
 import SettingsPage from "./app/settings/page";
 import { DefaultLayout } from "./components/layout/default";
@@ -13,11 +14,12 @@ import { TabsProvider, type TabPageLink } from "./context/tabs";
 
 const projectHeaderPages = [
   { key: "issues", href: "/issues", titleKey: "header.board" },
-  { key: "settings", href: "/settings", titleKey: "header.settings" },
+  { key: "table", href: "/issues/table", titleKey: "issues.table.tableTab" },
 ] satisfies readonly TabPageLink[];
 
 const projectDetailHeaderPages = [
   { key: "issues", href: "/projects/:projectKey/issues", titleKey: "header.board" },
+  { key: "table", href: "/projects/:projectKey/table", titleKey: "issues.table.tableTab" },
   { key: "settings", href: "/projects/:projectKey/settings", titleKey: "header.settings" },
 ] satisfies readonly TabPageLink[];
 
@@ -46,6 +48,16 @@ export function App() {
           }
         />
         <Route
+          path="/issues/table"
+          element={
+            <TabsProvider activeKey="table" pages={projectHeaderPages}>
+              <ProjectLayout>
+                <IssuesTablePage />
+              </ProjectLayout>
+            </TabsProvider>
+          }
+        />
+        <Route
           path="/projects/:projectKey"
           element={<Navigate to="issues" replace />}
         />
@@ -55,6 +67,16 @@ export function App() {
             <TabsProvider activeKey="issues" pages={projectDetailHeaderPages}>
               <ProjectLayout>
                 <IssuesPage />
+              </ProjectLayout>
+            </TabsProvider>
+          }
+        />
+        <Route
+          path="/projects/:projectKey/table"
+          element={
+            <TabsProvider activeKey="table" pages={projectDetailHeaderPages}>
+              <ProjectLayout>
+                <IssuesTablePage />
               </ProjectLayout>
             </TabsProvider>
           }

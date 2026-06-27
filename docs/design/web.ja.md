@@ -7,8 +7,10 @@ Web UI は、`cmd/web` から配信される Vite + React + TypeScript の singl
 ユーザー向けビューは React Router のルートで分割します。
 
 - `/issues`
+- `/issues/table`
 - `/projects/:projectKey`
 - `/projects/:projectKey/issues`
+- `/projects/:projectKey/table`
 - `/projects/:projectKey/settings`
 - `/issues/:id`
 - `/dashboard`
@@ -16,9 +18,10 @@ Web UI は、`cmd/web` から配信される Vite + React + TypeScript の singl
 
 root `/` route は `/issues` にリダイレクトします。
 project detail root `/projects/:projectKey` は `/projects/:projectKey/issues` にリダイレクトします。
-project detail page は固定で 2 つのタブを持ちます。
+project detail page は固定で 3 つのタブを持ちます。
 
 - `issues`: 選択したプロジェクトに絞り込んだ既存の課題ボードを表示します。
+- `table`: 選択したプロジェクトに絞り込んだページング付き issue table を表示します。
 - `settings`: 選択したプロジェクトの同期済み `WORKFLOW.md` を読み取り専用データとして表示します。
 
 project settings tab は、既存の issue-tracker エンドポイント `GET /api/v1/projects/{id}/workflow` から読み込みます。`ProjectWorkflow.body` はサニタイズ済み Markdown として表示し、`ProjectWorkflow.frontmatter` は再帰的な key-value tree として表示し、`ProjectWorkflow.updatedAt` は同期時刻として表示します。フロントエンドコードからローカルの `WORKFLOW.md` ファイルを直接読んではいけません。編集用コントロールも表示しません。

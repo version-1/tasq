@@ -1,0 +1,32 @@
+.toneBacklog {
+  --status-color: #8a958d;
+}
+
+.toneReady {
+  --status-color: #0e8f70;
+}
+
+.toneInProgress {
+  --status-color: #2f6fb3;
+}
+
+.toneReview {
+  --status-color: #b7791f;
+}
+
+.toneDone {
+  --status-color: #2f7d4f;
+}
+
+.toneBlocked {
+  --status-color: #9a4f14;
+}
+
+.toneFailed {
+  --status-color: #b42318;
+}
+
+.toneCancelled,
+.toneDuplicate {
+  --status-color: #667085;
+}

@@ -1,0 +1,19 @@
+.pagination {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding-block-start: 4px;
+}
+
+.pagination span {
+  color: var(--ledger-muted, var(--muted-foreground));
+  font-family: inherit;
+  font-size: 14px;
+}
+
+@media (max-width: 860px) {
+  .pagination {
+    justify-content: space-between;
+  }
+}

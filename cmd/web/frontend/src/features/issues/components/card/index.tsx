@@ -1,8 +1,7 @@
 import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import type { IssueStatus, IssueSummary, Priority } from "@/lib/types";
-import { Badge } from "@/components/ui/badge";
+import type { IssueStatus, IssueSummary } from "@/lib/types";
 import {
   ContextMenu,
   ContextMenuGroupLabel,
@@ -10,6 +9,8 @@ import {
   ContextMenuItem,
 } from "@/components/ui/context-menu";
 import { IconProxy, type IconProxyName } from "@/components/ui/icon-proxy";
+import { PriorityBadge } from "@/features/issues/components/priority-badge";
+import { ProjectBadge } from "@/features/issues/components/project-badge";
 import styles from "./index.module.css";
 
 type IssueStatusChangeHandler = (id: number, status: IssueStatus) => Promise<void>;
@@ -32,13 +33,6 @@ const quickStatusTargets: Partial<Record<IssueStatus, IssueStatus>> = {
   blocked: "ready",
   review: "done",
 };
-
-const priorityIcons = {
-  high: "arrow-up",
-  low: "arrow-down",
-  normal: null,
-  urgent: "arrow-up",
-} satisfies Record<Priority, IconProxyName | null>;
 
 export function IssueCard({
   issue,
@@ -127,15 +121,8 @@ export function IssueCard({
       </div>
 
       <div className={styles.metaRow}>
-        <Badge
-          variant="project"
-          icon={<IconProxy name="folder" size={17} strokeWidth={2.3} />}
-        >
-          {issue.projectKey}
-        </Badge>
-        <Badge variant={priorityBadgeVariant(issue.priority)} icon={<PriorityIcon priority={issue.priority} />}>
-          {t(`priorities.${issue.priority}`)}
-        </Badge>
+        <ProjectBadge projectKey={issue.projectKey} />
+        <PriorityBadge priority={issue.priority} />
       </div>
 
       <div className={styles.footerRow}>
@@ -173,24 +160,6 @@ export function IssueCard({
 
 function statusOptionsFor(status: IssueStatus): IssueStatus[] {
   return [status, ...(statusTransitionTargets[status] ?? [])];
-}
-
-function PriorityIcon({ priority }: { priority: Priority }) {
-  const icon = priorityIcons[priority];
-  if (icon === null) {
-    return <span aria-hidden="true" className={styles.priorityDot} />;
-  }
-  return <IconProxy name={icon} size={16} strokeWidth={2.4} />;
-}
-
-function priorityBadgeVariant(priority: IssueSummary["priority"]): "priority-high" | "priority-normal" | "priority-low" {
-  if (priority === "high" || priority === "urgent") {
-    return "priority-high";
-  }
-  if (priority === "low") {
-    return "priority-low";
-  }
-  return "priority-normal";
 }
 
 function quickActionClassName(status: IssueStatus): string {
