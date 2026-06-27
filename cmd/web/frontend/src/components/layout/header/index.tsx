@@ -19,6 +19,7 @@ type HeaderProps = {
 export function Header({
   activePage,
   onAddTask,
+  projectName,
   showViewNavigation = true,
   showAddTaskButton = true,
 }: HeaderProps) {
@@ -50,7 +51,7 @@ export function Header({
         <div className={styles.titleGroup}>
           <h1>
             {activePage === "issues"
-              ? t("header.issueList")
+              ? (projectName ?? t("header.issueList"))
               : t(pageHeadingKey(activePage))}
           </h1>
           {activePage === "issues" ? (
