@@ -5,31 +5,32 @@
 
 .tabList {
   align-items: center;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-panel);
+  border-bottom: 1px solid var(--light-gray);
   display: flex;
-  gap: var(--space-6);
+  gap: 34px;
   overflow-x: auto;
-  padding: var(--space-0) var(--space-4-5);
+  padding: var(--space-0);
 }
 
 .tab,
 .activeTab {
   background: transparent;
   border: 0;
-  color: var(--muted);
+  color: var(--medium-gray);
   cursor: pointer;
   flex: 0 0 auto;
   font: inherit;
   font-size: 14px;
-  min-block-size: 44px;
-  padding: var(--space-0);
+  font-weight: 700;
+  padding: var(--space-0) var(--space-0) var(--space-4-5);
 }
 
 .activeTab {
   box-shadow: inset 0 -2px 0 var(--primary-black);
+  color: var(--primary-black);
+}
+
+.tab:hover {
   color: var(--primary-black);
 }
 
@@ -38,6 +39,13 @@
   border-radius: var(--radius-sm);
   box-shadow: inset 0 -2px 0 var(--primary-black), var(--shadow-filter-active);
   outline: 0;
+}
+
+@media (max-width: 720px) {
+  .tab,
+  .activeTab {
+    white-space: nowrap;
+  }
 }
 
 .tabPanel {
