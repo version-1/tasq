@@ -1,6 +1,8 @@
 import {
   IssueStatus as IssueStatusValues,
   Priority as PriorityValues,
+  type Attachment,
+  type AttachmentListResponse,
   type Column,
   type Comment,
   type CommentListMeta,
@@ -44,6 +46,8 @@ export type OrchestratorConversationEvent = ConversationEvent;
 export type OrchestratorConversation = ConversationResponse;
 
 export type {
+  Attachment,
+  AttachmentListResponse,
   Column,
   Comment,
   CommentListMeta,

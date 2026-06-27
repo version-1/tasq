@@ -73,6 +73,7 @@ export type LayoutShellData = {
   projects: Project[];
   summary: Summary | null;
   title: string | null;
+  onIssueDetailTitleChange: (title: string | null) => void;
   onAddIssue: (status?: IssueStatus) => void;
   onAddProject: () => void;
   onCloseModal: () => void;
@@ -103,12 +104,14 @@ function LayoutContent({ children }: { children: ReactNode }) {
   const activePage = activePageFromPathname(pathname);
   const issueScope = issueScopeFromPathname(pathname);
   const isIssueDetailPage = /^\/issues\/\d+$/.test(pathname);
+  const issueDetailID = isIssueDetailPage ? issueIDFromPathname(pathname) : null;
   const [loadState, setLoadState] = useState<LoadState>({ kind: "loading" });
   const [selectedIssueID, setSelectedIssueID] = useState<number | null>(null);
   const [addIssueInitialStatus, setAddIssueInitialStatus] =
     useState<IssueStatus>("backlog");
   const [addIssueError, setAddIssueError] = useState("");
   const [addProjectError, setAddProjectError] = useState("");
+  const [issueDetailTitleOverride, setIssueDetailTitleOverride] = useState<string | null>(null);
   const [refreshIntervalMs, setRefreshIntervalMs] = useState(
     defaultRefreshIntervalMs,
   );
@@ -191,6 +194,10 @@ function LayoutContent({ children }: { children: ReactNode }) {
   }, [summary]);
   const selectedIssue =
     issues.find((issue) => issue.id === selectedIssueID) ?? issues[0] ?? null;
+  const issueDetailTitle =
+    issueDetailID === null
+      ? null
+      : (issues.find((issue) => issue.id === issueDetailID)?.title ?? null);
 
   async function handleStatusChange(id: number, status: IssueStatus) {
     try {
@@ -268,6 +275,10 @@ function LayoutContent({ children }: { children: ReactNode }) {
     document.documentElement.lang = nextLanguage;
   }
 
+  const handleIssueDetailTitleChange = useCallback((title: string | null) => {
+    setIssueDetailTitleOverride((current) => (current === title ? current : title));
+  }, []);
+
   const layoutData: LayoutData | null = summary
     ? {
         summary,
@@ -296,11 +307,12 @@ function LayoutContent({ children }: { children: ReactNode }) {
     loadState,
     projects,
     summary,
-    title: issueScopeTitle(
+    title: issueDetailTitleOverride ?? issueDetailTitle ?? issueScopeTitle(
       issueScope,
       activeProject?.name ?? null,
       t("sidebar.allProjects"),
     ),
+    onIssueDetailTitleChange: handleIssueDetailTitleChange,
     onAddIssue: handleAddIssue,
     onAddProject: handleAddProject,
     onCloseModal: handleCloseModal,
@@ -330,6 +342,10 @@ export function useLayoutShellData(): LayoutShellData {
     throw new Error(i18n.t("layout.useLayoutDataError"));
   }
   return shellData;
+}
+
+export function useOptionalLayoutShellData(): LayoutShellData | null {
+  return useContext(layoutShellContext);
 }
 
 export function ShellLayout({
@@ -472,4 +488,13 @@ function issueScopeTitle(
     return activeProjectName ?? issueScope.projectKey;
   }
   return activeProjectName ?? allProjectsTitle;
+}
+
+function issueIDFromPathname(pathname: string): number | null {
+  const match = /^\/issues\/(\d+)$/.exec(pathname);
+  if (!match) {
+    return null;
+  }
+  const id = Number.parseInt(match[1], 10);
+  return Number.isSafeInteger(id) && id > 0 ? id : null;
 }

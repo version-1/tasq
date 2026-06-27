@@ -1,4 +1,43 @@
 .page {
   display: grid;
-  gap: 16px;
+  gap: var(--space-4);
+}
+
+.tabPanel {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.detailLayout {
+  align-items: start;
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: minmax(0, 1040px) minmax(300px, 360px);
+  justify-content: space-between;
+  width: calc(100vw - 260px - (var(--space-6) * 2));
+}
+
+.detailMain {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.detailAside {
+  align-self: start;
+  min-width: 0;
+  position: sticky;
+  top: var(--space-4);
+}
+
+@media (max-width: 900px) {
+  .detailLayout {
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .detailAside {
+    order: -1;
+    position: static;
+  }
 }

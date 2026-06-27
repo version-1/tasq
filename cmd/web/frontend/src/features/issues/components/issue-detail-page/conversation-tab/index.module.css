@@ -1,0 +1,83 @@
+.section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-panel);
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-4-5);
+}
+
+.sectionHeader {
+  align-items: start;
+  display: flex;
+  gap: var(--space-4);
+  justify-content: space-between;
+}
+
+.sectionHeader h3 {
+  color: var(--primary-black);
+  font-size: 16px;
+  margin: 0;
+}
+
+.sectionHeader p,
+.muted,
+.error {
+  font-size: 14px;
+  margin: 0;
+}
+
+.sectionHeader p,
+.muted {
+  color: var(--muted);
+}
+
+.sectionHeader p {
+  margin-top: var(--space-1);
+}
+
+.error {
+  color: var(--danger);
+}
+
+.toolbar {
+  align-items: end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.runSelectLabel {
+  color: var(--primary-black);
+  display: grid;
+  font-size: 13px;
+  gap: var(--space-1-5);
+  min-inline-size: min(100%, 280px);
+}
+
+.runSelectLabel span {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.runSelectLabel select {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  min-block-size: 40px;
+  padding: var(--space-0) var(--space-3);
+}
+
+.runSelectLabel select:focus-visible {
+  box-shadow: var(--shadow-filter-active);
+  outline: 0;
+}
+
+@media (max-width: 860px) {
+  .toolbar,
+  .runSelectLabel {
+    inline-size: 100%;
+  }
+}

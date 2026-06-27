@@ -503,7 +503,7 @@ gap: 14px;
 ```
 
 This is the recurring shape for `runs-section`, `comment-list`,
-`issue-description`, `status-actions`, `issue-header`, `workflow-meta-panel`,
+`issue-description`, `status-actions`, `basic-info-panel`, `workflow-meta-panel`,
 `workflow-body-section`, and `frontmatter-section`.
 
 ### Issue Card
@@ -557,10 +557,12 @@ palette:
 `features/issues/components/issue-detail-page`:
 
 - Page grid with `16px` gap; each section is the standard card surface.
-- Header section uses a `28px` title, an issue ID line, a badge row, and a
-  4-column meta grid that collapses to 2 columns under `900px` and 1 under
-  `640px`.
-- `meta-item` renders each entry with a top rule, `12px` muted `dt`, `700`
+- Details tab keeps the main content width constrained while `basic-info-panel`
+  sits in the right-side column on wide screens and stacks above the main
+  content under `900px`.
+- `basic-info-panel` uses a one-column meta grid for issue ID, project,
+  priority, status, assignee, created date, and updated date.
+- `meta-item` renders each entry with a top rule, `12px` muted `dt`, normal
   weight `dd`, and `overflow-wrap: anywhere` for IDs.
 - `runs-section` wraps run rows in a single `8px` bordered group.
 - `run-row` is a 2-column grid (`1fr` link area + `40px` copy button). The

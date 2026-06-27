@@ -14,7 +14,9 @@
 }
 
 .metaItem dd {
-  font-weight: 700;
+  align-items: center;
+  display: flex;
+  min-height: 24px;
   margin-top: 4px;
   overflow-wrap: anywhere;
 }

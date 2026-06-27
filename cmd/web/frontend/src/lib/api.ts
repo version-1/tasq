@@ -1,13 +1,16 @@
 import {
+  getApiV1Attachments,
   getApiV1Issues,
   getApiV1IssuesId,
   getApiV1IssuesIssueIdComments,
+  getGetApiV1AttachmentsIdContentUrl,
   getApiV1Projects,
   getApiV1ProjectsIdWorkflow,
   getApiV1Summary,
   patchApiV1IssuesId,
   postApiV1Issues,
   postApiV1Projects,
+  type AttachmentListResponse,
   type CommentListResponse,
   type CreateIssueInput,
   type CreateProjectInput,
@@ -94,6 +97,20 @@ export function fetchComments(
     getApiV1IssuesIssueIdComments(issueID, { cursor, limit }, noStore),
     options,
   );
+}
+
+export function fetchIssueAttachments(
+  issueID: number,
+  options?: ApiRequestOptions,
+): Promise<AttachmentListResponse> {
+  return unwrapEnvelope<AttachmentListResponse>(
+    getApiV1Attachments({ entity_type: "issue", entity_id: String(issueID) }, noStore),
+    options,
+  );
+}
+
+export function attachmentContentURL(id: string): string {
+  return getGetApiV1AttachmentsIdContentUrl(id);
 }
 
 export function fetchProjects(options?: ApiRequestOptions): Promise<Project[]> {

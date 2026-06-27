@@ -6,16 +6,21 @@ import styles from "./index.module.css";
 export function StatusActions({
   currentStatus,
   disabled,
+  embedded = false,
   onStatusChange,
 }: {
   currentStatus: IssueStatus;
   disabled: boolean;
+  embedded?: boolean;
   onStatusChange: (status: IssueStatus) => Promise<void>;
 }) {
   const { t } = useTranslation();
 
   return (
-    <section className={styles.section} aria-labelledby="issue-status-actions">
+    <section
+      className={embedded ? `${styles.section} ${styles.embeddedSection}` : styles.section}
+      aria-labelledby="issue-status-actions"
+    >
       <div className={styles.sectionHeader}>
         <h3 id="issue-status-actions">{t("issues.detailPage.statusActions")}</h3>
       </div>
