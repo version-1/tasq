@@ -85,6 +85,44 @@
   border-color: var(--border);
 }
 
+.statusActions {
+  align-items: center;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: var(--space-2);
+  justify-content: flex-end;
+  margin: var(--space-1) calc(var(--space-2) * -1) calc(var(--space-2) * -1);
+  padding: var(--space-2) var(--space-2) var(--space-0);
+}
+
+.statusCancelButton,
+.statusApplyButton {
+  border: 0;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font: inherit;
+  min-height: 34px;
+  padding: var(--space-0) var(--space-3);
+}
+
+.statusCancelButton {
+  background: transparent;
+  color: var(--muted);
+}
+
+.statusCancelButton:hover {
+  color: var(--text);
+}
+
+.statusApplyButton {
+  background: var(--control-strong);
+  color: var(--white);
+}
+
+.statusApplyButton:hover {
+  background: var(--control-strong-hover);
+}
+
 @media (max-width: 900px) {
   .metaGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));

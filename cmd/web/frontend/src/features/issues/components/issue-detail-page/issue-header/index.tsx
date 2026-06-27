@@ -4,6 +4,7 @@ import { IconProxy } from "@/components/ui/icon-proxy";
 import type { Issue, IssueStatus } from "@/lib/types";
 import { issueStatuses } from "@/lib/types";
 import { PriorityBadge } from "@/features/issues/components/priority-badge";
+import { ProjectBadge } from "@/features/issues/components/project-badge";
 import { StatusBadge } from "@/features/issues/components/status-badge";
 import { formatDateTime } from "../format";
 import { MetaItem } from "./meta-item";
@@ -35,7 +36,7 @@ export function IssueHeader({
           }
         />
         <MetaItem label={t("issues.detail.priority")} value={<PriorityBadge priority={issue.priority} />} />
-        <MetaItem label={t("issues.detail.project")} value={issue.projectKey} />
+        <MetaItem label={t("issues.detail.project")} value={<ProjectBadge projectKey={issue.projectKey} />} />
         <MetaItem label={t("issues.assignee")} value={issue.assignee || t("issues.unassigned")} />
         <MetaItem label={t("issues.detailPage.createdAt")} value={formatDateTime(issue.createdAt)} />
         <MetaItem label={t("issues.detailPage.updatedAt")} value={formatDateTime(issue.updatedAt)} />
@@ -55,7 +56,14 @@ function StatusDropdown({
 }) {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
+  const [draftStatus, setDraftStatus] = useState<IssueStatus>(currentStatus);
   const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setDraftStatus(currentStatus);
+    }
+  }, [currentStatus, isOpen]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -82,11 +90,16 @@ function StatusDropdown({
     };
   }, [isOpen]);
 
-  function handleSelect(status: IssueStatus) {
+  function handleApply() {
     setIsOpen(false);
-    if (status !== currentStatus) {
-      void onStatusChange(status);
+    if (draftStatus !== currentStatus) {
+      void onStatusChange(draftStatus);
     }
+  }
+
+  function handleCancel() {
+    setDraftStatus(currentStatus);
+    setIsOpen(false);
   }
 
   return (
@@ -108,13 +121,21 @@ function StatusDropdown({
             <button
               key={status}
               type="button"
-              className={status === currentStatus ? styles.statusOptionActive : styles.statusOption}
+              className={status === draftStatus ? styles.statusOptionActive : styles.statusOption}
               disabled={disabled}
-              onClick={() => handleSelect(status)}
+              onClick={() => setDraftStatus(status)}
             >
               <StatusBadge status={status} />
             </button>
           ))}
+          <div className={styles.statusActions}>
+            <button type="button" className={styles.statusCancelButton} onClick={handleCancel}>
+              {t("issues.table.cancel")}
+            </button>
+            <button type="button" className={styles.statusApplyButton} disabled={disabled} onClick={handleApply}>
+              {t("issues.table.apply")}
+            </button>
+          </div>
         </div>
       ) : null}
     </div>

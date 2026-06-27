@@ -82,6 +82,8 @@ describe("IssueDetailPage", () => {
 
     await user.click(await screen.findByRole("button", { name: "Change status" }));
     await user.click(screen.getByRole("button", { name: "in_progress" }));
+    expect(api.updateIssueStatus).not.toHaveBeenCalled();
+    await user.click(screen.getByRole("button", { name: "Apply" }));
 
     expect(api.updateIssueStatus).toHaveBeenCalledWith(42, "in_progress");
     expect(screen.getByRole("button", { name: "Change status" })).toHaveTextContent("in_progress");
