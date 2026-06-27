@@ -1,11 +1,14 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { issueFixtures } from "@/mocks/fixtures/issues";
 import type { IssueSummary } from "@/lib/types";
+import { storyQueueStatusForIssue } from "@/stories/fixtures";
 import { IssueDetail } from "./index";
 
 function summaryIssue(index: number, commentCount = 0): IssueSummary {
+  const issue = issueFixtures[index];
   return {
-    ...issueFixtures[index],
+    ...issue,
+    queueStatus: storyQueueStatusForIssue(issue),
     stats: {
       commentCount,
     },

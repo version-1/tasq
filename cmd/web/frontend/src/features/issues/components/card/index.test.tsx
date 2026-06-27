@@ -16,6 +16,7 @@ const issue: IssueSummary = {
   priority: "high",
   assignee: "web",
   dependency_ids: [],
+  queueStatus: "queued",
   createdAt: "2026-06-01T00:00:00.000Z",
   updatedAt: "2026-06-01T00:00:00.000Z",
   stats: {

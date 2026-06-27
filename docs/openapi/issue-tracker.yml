@@ -712,6 +712,16 @@ components:
         - failed
         - cancelled
         - duplicate
+    QueueStatus:
+      type: string
+      description: System-wide queue state for an issue. The summary response includes this value for each issue.
+      enum:
+        - backlog
+        - pending
+        - queued
+        - processing
+        - completed
+        - inactive
     Priority:
       type: string
       enum:
@@ -1074,8 +1084,11 @@ components:
         - $ref: "#/components/schemas/Issue"
         - type: object
           required:
+            - queueStatus
             - stats
           properties:
+            queueStatus:
+              $ref: "#/components/schemas/QueueStatus"
             stats:
               $ref: "#/components/schemas/IssueStats"
     Column:

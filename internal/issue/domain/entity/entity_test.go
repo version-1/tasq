@@ -81,3 +81,31 @@ func TestDependencyStatusClassification(t *testing.T) {
 		t.Fatal("unknown status must not be satisfied")
 	}
 }
+
+func TestIssueQueueStatus(t *testing.T) {
+	tests := []struct {
+		name                string
+		status              Status
+		hasActiveDependency bool
+		want                QueueStatus
+	}{
+		{name: "backlog", status: StatusBacklog, want: QueueStatusBacklog},
+		{name: "ready without active dependency", status: StatusReady, want: QueueStatusQueued},
+		{name: "ready with active dependency", status: StatusReady, hasActiveDependency: true, want: QueueStatusPending},
+		{name: "in progress", status: StatusInProgress, want: QueueStatusProcessing},
+		{name: "review", status: StatusReview, want: QueueStatusInactive},
+		{name: "done", status: StatusDone, want: QueueStatusCompleted},
+		{name: "blocked", status: StatusBlocked, want: QueueStatusInactive},
+		{name: "failed", status: StatusFailed, want: QueueStatusInactive},
+		{name: "cancelled", status: StatusCancelled, want: QueueStatusInactive},
+		{name: "duplicate", status: StatusDuplicate, want: QueueStatusInactive},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := IssueQueueStatus(test.status, test.hasActiveDependency); got != test.want {
+				t.Fatalf("IssueQueueStatus(%q, %t) = %q, want %q", test.status, test.hasActiveDependency, got, test.want)
+			}
+		})
+	}
+}

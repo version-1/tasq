@@ -74,6 +74,22 @@ export const IssueStatus = {
   duplicate: 'duplicate',
 } as const;
 
+/**
+ * System-wide queue state for an issue. The summary response includes this value for each issue.
+ */
+export type QueueStatus = typeof QueueStatus[keyof typeof QueueStatus];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const QueueStatus = {
+  backlog: 'backlog',
+  pending: 'pending',
+  queued: 'queued',
+  processing: 'processing',
+  completed: 'completed',
+  inactive: 'inactive',
+} as const;
+
 export type Priority = typeof Priority[keyof typeof Priority];
 
 
@@ -271,6 +287,7 @@ export interface IssueStats {
 }
 
 export type IssueSummaryAllOf = {
+  queueStatus: QueueStatus;
   stats: IssueStats;
 };
 

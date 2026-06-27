@@ -479,6 +479,15 @@ func TestSummaryIncludesIssueStats(t *testing.T) {
 	if statsByIssueID[withoutComments.ID].CommentCount != 0 {
 		t.Fatalf("comment count for issue without comments = %d, want 0", statsByIssueID[withoutComments.ID].CommentCount)
 	}
+	queueStatusByIssueID := map[int64]entity.QueueStatus{}
+	for _, column := range summary.Columns {
+		for _, issue := range column.Issues {
+			queueStatusByIssueID[issue.ID] = issue.QueueStatus
+		}
+	}
+	if queueStatusByIssueID[withComments.ID] != entity.QueueStatusQueued {
+		t.Fatalf("queue status for issue with comments = %q, want %q", queueStatusByIssueID[withComments.ID], entity.QueueStatusQueued)
+	}
 }
 
 func TestIssuesFiltersByStates(t *testing.T) {

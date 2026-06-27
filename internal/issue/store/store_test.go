@@ -1337,6 +1337,89 @@ func TestSummaryReturnsColumnsWithIssueStats(t *testing.T) {
 	}
 }
 
+func TestSummaryReturnsIssueQueueStatus(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer store.Close()
+
+	project := createTestProject(t, store, "QUEUESTATUS")
+	backlog, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Backlog", Status: entity.StatusBacklog})
+	if err != nil {
+		t.Fatalf("create backlog issue: %v", err)
+	}
+	activeDependency, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Active dependency", Status: entity.StatusReview})
+	if err != nil {
+		t.Fatalf("create active dependency issue: %v", err)
+	}
+	satisfiedDependency, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Satisfied dependency", Status: entity.StatusDone})
+	if err != nil {
+		t.Fatalf("create satisfied dependency issue: %v", err)
+	}
+	pending, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Pending", Status: entity.StatusReady})
+	if err != nil {
+		t.Fatalf("create pending issue: %v", err)
+	}
+	queued, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Queued", Status: entity.StatusReady})
+	if err != nil {
+		t.Fatalf("create queued issue: %v", err)
+	}
+	processing, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Processing", Status: entity.StatusInProgress})
+	if err != nil {
+		t.Fatalf("create processing issue: %v", err)
+	}
+	inactiveStatuses := []entity.Status{
+		entity.StatusReview,
+		entity.StatusBlocked,
+		entity.StatusFailed,
+		entity.StatusCancelled,
+		entity.StatusDuplicate,
+	}
+	inactiveIssueIDs := []int64{}
+	for _, status := range inactiveStatuses {
+		issue, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Inactive status " + string(status), Status: status})
+		if err != nil {
+			t.Fatalf("create %s issue: %v", status, err)
+		}
+		inactiveIssueIDs = append(inactiveIssueIDs, issue.ID)
+	}
+	completed, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Completed", Status: entity.StatusDone})
+	if err != nil {
+		t.Fatalf("create completed issue: %v", err)
+	}
+	if err := store.SetDependencyIDs(ctx, pending.ID, []int64{activeDependency.ID}); err != nil {
+		t.Fatalf("set pending dependencies: %v", err)
+	}
+	if err := store.SetDependencyIDs(ctx, queued.ID, []int64{satisfiedDependency.ID}); err != nil {
+		t.Fatalf("set queued dependencies: %v", err)
+	}
+
+	summary, err := store.Summary(ctx)
+	if err != nil {
+		t.Fatalf("read summary: %v", err)
+	}
+	queueStatusByIssueID := summaryQueueStatuses(summary)
+	want := map[int64]entity.QueueStatus{
+		backlog.ID:    entity.QueueStatusBacklog,
+		pending.ID:    entity.QueueStatusPending,
+		queued.ID:     entity.QueueStatusQueued,
+		processing.ID: entity.QueueStatusProcessing,
+		completed.ID:  entity.QueueStatusCompleted,
+	}
+	for _, id := range inactiveIssueIDs {
+		want[id] = entity.QueueStatusInactive
+	}
+	for id, status := range want {
+		if queueStatusByIssueID[id] != status {
+			t.Fatalf("queue status for issue %d = %q, want %q", id, queueStatusByIssueID[id], status)
+		}
+	}
+}
+
 func summaryColumn(summary entity.Summary, status entity.Status) (entity.Column, bool) {
 	for _, column := range summary.Columns {
 		if column.Status == status {
@@ -1344,6 +1427,16 @@ func summaryColumn(summary entity.Summary, status entity.Status) (entity.Column,
 		}
 	}
 	return entity.Column{}, false
+}
+
+func summaryQueueStatuses(summary entity.Summary) map[int64]entity.QueueStatus {
+	statuses := map[int64]entity.QueueStatus{}
+	for _, column := range summary.Columns {
+		for _, issue := range column.Issues {
+			statuses[issue.ID] = issue.QueueStatus
+		}
+	}
+	return statuses
 }
 
 func schemaObjectExists(t *testing.T, store *Store, name string) bool {

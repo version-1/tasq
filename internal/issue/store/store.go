@@ -732,6 +732,10 @@ func (s *Store) Summary(ctx context.Context) (entity.Summary, error) {
 	if err != nil {
 		return entity.Summary{}, err
 	}
+	dependencies, err := s.dependencyStatusesForParents(ctx, issueIDs(issues))
+	if err != nil {
+		return entity.Summary{}, err
+	}
 	columns := make([]entity.Column, 0, len(entity.OrderedStatuses()))
 	for _, status := range entity.OrderedStatuses() {
 		column := entity.Column{Status: status, Title: entity.StatusTitle(status), Issues: []entity.IssueSummary{}}
@@ -739,8 +743,10 @@ func (s *Store) Summary(ctx context.Context) (entity.Summary, error) {
 			if item.Status != status {
 				continue
 			}
+			activeDependencies := activeDependencyIDs(dependencies[item.ID])
 			column.Issues = append(column.Issues, entity.IssueSummary{
-				Issue: item,
+				Issue:       item,
+				QueueStatus: entity.IssueQueueStatus(item.Status, len(activeDependencies) > 0),
 				Stats: entity.IssueStats{
 					CommentCount: commentCounts[item.ID],
 				},
