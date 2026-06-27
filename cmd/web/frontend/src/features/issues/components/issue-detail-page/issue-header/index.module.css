@@ -11,7 +11,7 @@
 .metaGrid {
   display: grid;
   gap: 12px;
-  grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+  grid-template-columns: 1fr;
   margin: 0;
 }
 
@@ -136,10 +136,4 @@
 
 .statusApplyButton:hover {
   background: var(--control-strong-hover);
-}
-
-@media (max-width: 640px) {
-  .metaGrid {
-    grid-template-columns: 1fr;
-  }
 }

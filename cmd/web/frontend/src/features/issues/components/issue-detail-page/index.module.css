@@ -22,7 +22,10 @@
 }
 
 .detailAside {
+  align-self: start;
   min-width: 0;
+  position: sticky;
+  top: var(--space-4);
 }
 
 @media (max-width: 900px) {
@@ -32,5 +35,6 @@
 
   .detailAside {
     order: -1;
+    position: static;
   }
 }
