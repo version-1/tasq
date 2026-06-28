@@ -1,4 +1,5 @@
 import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { OrchestratorConversation } from "@/lib/types";
@@ -108,6 +109,50 @@ describe("ConversationPage", () => {
     expect(within(item).getByText("hello")).toBeInTheDocument();
     expect(within(item).getByText("world")).toBeInTheDocument();
     expect(within(item).queryByText(/exit code/)).not.toBeInTheDocument();
+  });
+
+  it("folds and expands event body content", async () => {
+    const user = userEvent.setup();
+
+    renderConversationPage({
+      issue_identifier: "issue-48",
+      issue_id: "48",
+      run_id: "run-fold",
+      events: [
+        {
+          at: "2026-06-15T01:00:00Z",
+          event: "item/completed",
+          message: "item completed",
+          payload_json: JSON.stringify({
+            item: {
+              type: "text",
+              text: "foldable body content",
+            },
+          }),
+        },
+      ],
+    });
+
+    const item = await screen.findByRole("listitem");
+    const collapseButton = within(item).getByRole("button", {
+      name: "Collapse conversation event body",
+    });
+
+    expect(within(item).getByText("foldable body content")).toBeInTheDocument();
+
+    await user.click(collapseButton);
+
+    expect(
+      within(item).getByText("foldable body content"),
+    ).not.toBeVisible();
+
+    await user.click(
+      within(item).getByRole("button", {
+        name: "Expand conversation event body",
+      }),
+    );
+
+    expect(within(item).getByText("foldable body content")).toBeVisible();
   });
 
   it("uses a fallback header for unknown completed item types", async () => {

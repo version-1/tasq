@@ -20,6 +20,49 @@
   justify-content: space-between;
 }
 
+.headerMeta {
+  align-items: center;
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+.foldButton {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  cursor: pointer;
+  display: inline-flex;
+  block-size: 28px;
+  inline-size: 28px;
+  justify-content: center;
+  padding: 0;
+}
+
+.foldButton:hover {
+  background: var(--extra-light-gray);
+  color: var(--primary-black);
+}
+
+.foldButton:focus-visible {
+  outline: 2px solid var(--control-strong);
+  outline-offset: 2px;
+}
+
+.foldIcon {
+  transition: transform 120ms ease;
+}
+
+.foldButton[aria-expanded="false"] .foldIcon {
+  transform: rotate(-90deg);
+}
+
+.body {
+  min-width: 0;
+}
+
 .type {
   align-items: center;
   color: var(--primary-black);
@@ -188,5 +231,10 @@
     align-items: start;
     flex-direction: column;
     gap: 4px;
+  }
+
+  .headerMeta {
+    justify-content: space-between;
+    inline-size: 100%;
   }
 }
