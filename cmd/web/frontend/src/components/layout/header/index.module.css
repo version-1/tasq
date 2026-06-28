@@ -35,7 +35,10 @@
   width: 34px;
 }
 
-.moreButton:hover,
+.moreButton:hover {
+  background: var(--extra-light-gray);
+}
+
 .globalActions {
   gap: var(--space-5-5);
   margin-left: auto;
@@ -73,11 +76,9 @@
 
 .languageSelector {
   align-items: center;
-  color: var(--muted);
   display: inline-flex;
   font-size: 13px;
   font-weight: 700;
-  gap: var(--space-2);
 }
 
 .languageSelector select {
@@ -170,10 +171,6 @@
   .globalActions,
   .createActions {
     flex-wrap: wrap;
-  }
-
-  .languageSelector {
-    justify-content: space-between;
   }
 
   .search {

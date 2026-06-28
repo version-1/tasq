@@ -50,7 +50,6 @@ export function Header({
             <kbd>{t("header.commandKey")}</kbd>
           </label>
           <label className={styles.languageSelector}>
-            <span>{t("header.language")}</span>
             <select
               aria-label={t("header.language")}
               value={language}
