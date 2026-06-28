@@ -373,6 +373,10 @@ export function getOrchestratorConversation(
     return null;
   }
 
+  if (issue.id === 1) {
+    return buildIssueOneConversation(issue, runID);
+  }
+
   return {
     issue_identifier: `issue-${issue.id}`,
     issue_id: String(issue.id),
@@ -396,6 +400,293 @@ export function getOrchestratorConversation(
         at: issue.updatedAt,
         event: "succeeded",
         message: "mock runner completed",
+        payload_json: "",
+      },
+    ],
+  };
+}
+
+function buildIssueOneConversation(issue: Issue, runID: string): ConversationResponse {
+  return {
+    issue_identifier: `issue-${issue.id}`,
+    issue_id: String(issue.id),
+    run_id: runID,
+    events: [
+      {
+        at: "2026-06-01T08:00:00.000Z",
+        event: "running",
+        message: "mock runner started with a fresh workspace",
+        payload_json: "",
+      },
+      {
+        at: "2026-06-01T08:00:18.000Z",
+        event: "item/completed",
+        message: "read repository context",
+        payload_json: JSON.stringify({
+          item: {
+            type: "reasoning",
+            text: [
+              "I am checking the mock transport boundary before changing the UI.",
+              "The route should continue to call the generated clients, while MSW returns stable fixtures for issue detail, comments, runtime, and conversation history.",
+              "Important edge cases to preserve: missing issue IDs should still return not_found errors, and non-issue-<id> orchestrator identifiers should stay invalid.",
+            ].join("\n\n"),
+            exitCode: 0,
+          },
+        }),
+      },
+      {
+        at: "2026-06-01T08:01:04.000Z",
+        event: "item/completed",
+        message: "listed relevant files",
+        payload_json: JSON.stringify({
+          item: {
+            type: "commandExecution",
+            command: "rg -n \"getOrchestratorConversation|ConversationEvents|IssueDetailPage\" cmd/web/frontend/src",
+            aggregatedOutput: [
+              "cmd/web/frontend/src/mocks/state.ts:367:export function getOrchestratorConversation(",
+              "cmd/web/frontend/src/features/issues/components/conversation-page/index.tsx:100:export function ConversationEvents",
+              "cmd/web/frontend/src/features/issues/components/issue-detail-page/index.tsx:327:<ConversationTab",
+              "",
+              "The search confirms that the mock conversation payload is centralized and can be expanded without changing route-level components.",
+            ].join("\n"),
+            exitCode: 0,
+          },
+        }),
+      },
+      {
+        at: "2026-06-01T08:02:21.000Z",
+        event: "turn_completed",
+        message: "turn_id=mock-turn-1",
+        payload_json: JSON.stringify({
+          aggregatedOutput: `## Investigation summary
+
+Issue **#${issue.id}** uses the mock state module as the source of truth for conversation history. The current fixture should exercise a dense timeline, mixed event types, long Markdown output, command snippets, and approval request rendering.
+
+### Findings
+
+| Area | Current behavior | Refine target |
+| --- | --- | --- |
+| Runtime lookup | Uses \`issue-${issue.id}\` and \`${runID}\` | Keep identifiers stable |
+| Timeline density | A few events | Many realistic turns |
+| Markdown output | Short paragraph | Headings, lists, tables, code, links |
+| Approval event | Rarely visible | Include one request with a clear reason |
+
+### Proposed approach
+
+1. Keep generic conversations short for other issues.
+2. Make issue 1 a rich manual-review fixture.
+3. Preserve the generated \`ConversationResponse\` contract.
+4. Avoid fixture-only fields that the UI does not understand.
+
+> The mock should read like an actual agent session, not like lorem ipsum. This makes spacing, filtering, and payload parsing problems easier to notice.
+`,
+        }),
+      },
+      {
+        at: "2026-06-01T08:03:09.000Z",
+        event: "item/completed",
+        message: "opened implementation file",
+        payload_json: JSON.stringify({
+          item: {
+            type: "fileRead",
+            text: [
+              "Read cmd/web/frontend/src/mocks/state.ts.",
+              "The function already validates issue existence and run ID before returning a response.",
+              "The safest extension point is after validation and before the generic fixture response.",
+            ].join("\n"),
+            exitCode: 0,
+          },
+        }),
+      },
+      {
+        at: "2026-06-01T08:04:30.000Z",
+        event: "item/commandExecution/requestApproval",
+        message: "approval requested",
+        payload_json: JSON.stringify({
+          reason: "Need to run the frontend typechecker after changing generated-shape mock data.",
+          command: "npm run typecheck",
+          availableDecisions: ["approve", "deny"],
+          proposedExecpolicyAmendment: {
+            sandbox_permissions: "workspace-write",
+          },
+        }),
+      },
+      {
+        at: "2026-06-01T08:05:12.000Z",
+        event: "item/completed",
+        message: "edited mock fixture",
+        payload_json: JSON.stringify({
+          item: {
+            type: "patch",
+            aggregatedOutput: `### Patch notes
+
+- Added an issue-specific conversation builder for issue 1.
+- Covered \`running\`, \`item/completed\`, \`turn_completed\`, approval, failure, and final success events.
+- Kept every event inside the generated payload shape.
+
+\`\`\`ts
+function buildIssueOneConversation(issue: Issue, runID: string): ConversationResponse {
+  return {
+    issue_identifier: \`issue-\${issue.id}\`,
+    issue_id: String(issue.id),
+    run_id: runID,
+    events: []
+  };
+}
+\`\`\`
+`,
+            text: "The mock remains deterministic so visual review screenshots are stable.",
+            exitCode: 0,
+          },
+        }),
+      },
+      {
+        at: "2026-06-01T08:06:37.000Z",
+        event: "item/completed",
+        message: "ran focused verification",
+        payload_json: JSON.stringify({
+          item: {
+            type: "commandExecution",
+            command: "npm run typecheck",
+            aggregatedOutput: [
+              "> tasq-web@0.1.0 typecheck",
+              "> tsc --noEmit",
+              "",
+              "No TypeScript errors were reported.",
+            ].join("\n"),
+            exitCode: 0,
+          },
+        }),
+      },
+      {
+        at: "2026-06-01T08:06:49.000Z",
+        event: "thread/tokenUsage/updated",
+        message: "token usage updated",
+        payload_json: JSON.stringify({
+          threadId: "019ec3e5-376c-7521-a5ee-f2af2cd0f57c",
+          turnId: "019ec3e5-37ca-7632-a978-42e14ed98b66",
+          tokenUsage: {
+            total: {
+              totalTokens: 8712831,
+              inputTokens: 8684367,
+              cachedInputTokens: 8415104,
+              outputTokens: 28464,
+              reasoningOutputTokens: 5186,
+            },
+            last: {
+              totalTokens: 146759,
+              inputTokens: 146356,
+              cachedInputTokens: 145280,
+              outputTokens: 403,
+              reasoningOutputTokens: 203,
+            },
+            modelContextWindow: 258400,
+          },
+        }),
+      },
+      {
+        at: "2026-06-01T08:06:54.000Z",
+        event: "account/rateLimits/updated",
+        message: "rate limits updated",
+        payload_json: JSON.stringify({
+          rateLimits: {
+            limitId: "codex",
+            limitName: null,
+            primary: {
+              usedPercent: 13,
+              windowDurationMins: 300,
+              resetsAt: 1781415835,
+            },
+            secondary: {
+              usedPercent: 13,
+              windowDurationMins: 10080,
+              resetsAt: 1781572462,
+            },
+            credits: null,
+            individualLimit: null,
+            planType: "pro",
+            rateLimitReachedType: null,
+          },
+        }),
+      },
+      {
+        at: "2026-06-01T08:07:18.000Z",
+        event: "item/completed",
+        message: "captured a failing exploratory command",
+        payload_json: JSON.stringify({
+          item: {
+            type: "commandExecution",
+            command: "npm test -- conversation-history-fixture",
+            aggregatedOutput: [
+              "No test files matched pattern conversation-history-fixture.",
+              "",
+              "This is expected because the change is mock data only; the existing conversation component tests cover payload rendering behavior.",
+            ].join("\n"),
+            text: "Kept this failed command in the fixture to verify non-zero exit code rendering.",
+            exitCode: 1,
+          },
+        }),
+      },
+      {
+        at: "2026-06-01T08:08:44.000Z",
+        event: "turn_completed",
+        message: "turn_id=mock-turn-2",
+        payload_json: JSON.stringify({
+          response: {
+            aggregatedOutput: `## Review handoff
+
+The fixture now gives manual reviewers a long conversation with realistic variation:
+
+- status events for start and completion;
+- reasoning and file-read style text events;
+- command execution with success and failure exit codes;
+- nested approval request data;
+- Markdown with tables, quotes, task lists, links, and fenced code blocks;
+- enough vertical length to test scrolling and timeline rhythm.
+
+### Manual route
+
+Open [issue 1 conversation](/issues/1?tab=conversation) while mock mode is enabled. The selected run should be \`${runID}\`.
+
+### Checklist
+
+- [x] Long output wraps inside the timeline.
+- [x] Command labels stay compact.
+- [x] Approval request uses the highlighted approval treatment.
+- [ ] Confirm mobile viewport spacing.
+- [ ] Confirm message-type filter remains usable with many event types.
+`,
+          },
+        }),
+      },
+      {
+        at: "2026-06-01T08:09:33.000Z",
+        event: "failed",
+        message: "mock retry marker: first visual pass found crowded spacing",
+        payload_json: "",
+      },
+      {
+        at: "2026-06-01T08:10:55.000Z",
+        event: "item/completed",
+        message: "documented follow-up",
+        payload_json: JSON.stringify({
+          item: {
+            type: "text",
+            text: [
+              "Follow-up notes:",
+              "",
+              "- If the approval block feels too dominant, adjust the component style instead of shrinking this fixture.",
+              "- If code blocks overflow, inspect the Markdown component's pre/code rules.",
+              "- If filtering becomes noisy, consider sorting message-type options by first appearance.",
+            ].join("\n"),
+            exitCode: 0,
+          },
+        }),
+      },
+      {
+        at: "2026-06-01T08:12:00.000Z",
+        event: "succeeded",
+        message: "mock runner completed after conversation fixture refinement",
         payload_json: "",
       },
     ],

@@ -161,6 +161,10 @@ the value is part of the shared system.
 | `--accent-strong`    | `#1A1A1A` | Hover/pressed variant of accent |
 | `--danger`           | `#B42318` | Errors, destructive feedback |
 | `--warning`          | `#A15C07` | Caution, approval prompts |
+| `--info-accent`      | `#2563EB` | Informational emphasis and request-approval card accent |
+| `--info-bg`          | `#EFF6FF` | Informational callout background |
+| `--info-border`      | `#BFDBFE` | Informational callout border |
+| `--info-text`        | `#1E3A8A` | Informational callout text |
 | `--ok`               | `#087443` | Success, ready state |
 | `--primary-black`    | `#0A0A0A` | Primary button background, headings |
 | `--dark-gray`        | `#1A1A1A` | Strong icon color, split-button divider |
@@ -202,7 +206,7 @@ the source value must come from `:root`.
 | Status failed | `--status-failed-accent`, `--status-failed-bg`, `--status-failed-text` |
 | Status muted | `--status-muted-accent`, `--status-muted-bg`, `--status-muted-text` |
 | Project | `--project-bg`, `--project-text` |
-| Approval | `--approval-bg`, `--warning` |
+| Approval | `--approval-bg`, `--warning`, `--info-*` for request-approval event emphasis |
 | Toast | `--toast-error-*`, `--toast-success-*` |
 | Filter chip | `--filter-chip-bg`, `--filter-chip-border` |
 
@@ -601,8 +605,8 @@ palette:
 `features/issues/components/conversation-page`:
 
 - Page grid with `16px` gap.
-- Timeline list of cards. Approval items add a `var(--warning)` border and an
-  `inset 3px 0 0 var(--warning)` left rule.
+- Timeline list of cards. Request-approval items use the `--info-*` tone,
+  including an `--info-accent` left rule and `--info-bg` top callout.
 - Commands and code blocks use a `6px` radius, `--extra-light-gray`
   background, and the monospace font stack.
 - Exit code callout uses a `rgb(220 38 38 / 10%)` wash with a danger border

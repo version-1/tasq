@@ -259,6 +259,8 @@ func TestStoreRecordsRunnerEventAndWorkspaceMetadata(t *testing.T) {
 		{eventType: "cancelled", message: "runner cancelled"},
 		{eventType: "item/completed", message: "item completed"},
 		{eventType: "item/commandExecution/requestApproval", message: "approval requested"},
+		{eventType: "thread/tokenUsage/updated", message: "token usage updated", payload: `{"tokenUsage":{"total":{"totalTokens":1}}}`},
+		{eventType: "account/rateLimits/updated", message: "rate limits updated", payload: `{"rateLimits":{"limitId":"codex"}}`},
 	} {
 		if err := store.RecordRunnerEvent(ctx, "run-1", event.eventType, event.message, event.payload); err != nil {
 			t.Fatalf("record %s event: %v", event.eventType, err)
@@ -271,7 +273,7 @@ func TestStoreRecordsRunnerEventAndWorkspaceMetadata(t *testing.T) {
 	if err != nil {
 		t.Fatalf("list runner events: %v", err)
 	}
-	if len(events) != 8 || events[0].EventType != "turn_completed" || events[0].PayloadJSON != `{"ok":true}` {
+	if len(events) != 10 || events[0].EventType != "turn_completed" || events[0].PayloadJSON != `{"ok":true}` {
 		t.Fatalf("events = %+v", events)
 	}
 	conversationEvents, err := store.ConversationEvents(ctx, "run-1")
@@ -290,6 +292,8 @@ func TestStoreRecordsRunnerEventAndWorkspaceMetadata(t *testing.T) {
 		"cancelled",
 		"item/completed",
 		"item/commandExecution/requestApproval",
+		"thread/tokenUsage/updated",
+		"account/rateLimits/updated",
 	}
 	if strings.Join(conversationEventTypes, ",") != strings.Join(wantConversationEventTypes, ",") {
 		t.Fatalf("conversation event order = %+v", conversationEvents)

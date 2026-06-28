@@ -87,7 +87,8 @@ paths:
       summary: Get conversation events for one run.
       description: |
         Returns chronological run status transition events, `turn_completed`,
-        `item/completed`, and `item/commandExecution/requestApproval` events for
+        `item/completed`, `item/commandExecution/requestApproval`,
+        `thread/tokenUsage/updated`, and `account/rateLimits/updated` events for
         a run that belongs to the requested issue identifier.
       responses:
         "200":
@@ -415,6 +416,8 @@ components:
             - cancelled
             - item/completed
             - item/commandExecution/requestApproval
+            - thread/tokenUsage/updated
+            - account/rateLimits/updated
         message:
           type: string
           example: turn_id=turn-1

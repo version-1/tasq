@@ -160,6 +160,8 @@ export const ConversationEventEvent = {
   cancelled: 'cancelled',
   'item/completed': 'item/completed',
   'item/commandExecution/requestApproval': 'item/commandExecution/requestApproval',
+  'thread/tokenUsage/updated': 'thread/tokenUsage/updated',
+  'account/rateLimits/updated': 'account/rateLimits/updated',
 } as const;
 
 export interface ConversationEvent {

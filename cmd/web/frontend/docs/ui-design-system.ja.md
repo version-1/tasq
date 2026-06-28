@@ -161,6 +161,10 @@ component / feature token は、重複を減らす場合や feature palette を�
 | `--accent-strong`    | `#1A1A1A` | accent の hover/pressed バリエーション |
 | `--danger`           | `#B42318` | エラー、破壊的フィードバック |
 | `--warning`          | `#A15C07` | 注意、承認待ち |
+| `--info-accent`      | `#2563EB` | 情報の強調と request-approval card の accent |
+| `--info-bg`          | `#EFF6FF` | 情報 callout の背景 |
+| `--info-border`      | `#BFDBFE` | 情報 callout の border |
+| `--info-text`        | `#1E3A8A` | 情報 callout の文字色 |
 | `--ok`               | `#087443` | 成功、ready 状態 |
 | `--primary-black`    | `#0A0A0A` | primary ボタン背景、見出し |
 | `--dark-gray`        | `#1A1A1A` | アイコンの濃色、split ボタンの仕切り |
@@ -202,7 +206,7 @@ token です。component は `--badge-bg` のような local variable へ代入�
 | Status failed | `--status-failed-accent`, `--status-failed-bg`, `--status-failed-text` |
 | Status muted | `--status-muted-accent`, `--status-muted-bg`, `--status-muted-text` |
 | Project | `--project-bg`, `--project-text` |
-| Approval | `--approval-bg`, `--warning` |
+| Approval | `--approval-bg`, `--warning`, request-approval event 強調用の `--info-*` |
 | Toast | `--toast-error-*`, `--toast-success-*` |
 | Filter chip | `--filter-chip-bg`, `--filter-chip-border` |
 
@@ -602,8 +606,8 @@ gap: 14px;
 `features/issues/components/conversation-page`:
 
 - gap `16px` のページ grid。
-- カードの timeline リスト。承認アイテムは `var(--warning)` の border と
-  `inset 3px 0 0 var(--warning)` の左 rule を追加します。
+- カードの timeline リスト。request-approval item は `--info-*` tone を使い、
+  `--info-accent` の左 rule と `--info-bg` の上部 callout で強調します。
 - コマンドとコードブロックは radius `6px`、背景 `--extra-light-gray`、
   等幅フォントスタックを使用。
 - exit code の警告は `rgb(220 38 38 / 10%)` の wash、danger border、

@@ -1,0 +1,280 @@
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-panel);
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+.approval {
+  border-color: var(--info-border);
+  box-shadow: inset 3px 0 0 var(--info-accent), var(--shadow-panel);
+}
+
+.header {
+  align-items: start;
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.headerTop {
+  align-items: start;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.headerMeta {
+  align-items: center;
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+.foldButton {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  cursor: pointer;
+  display: inline-flex;
+  block-size: 28px;
+  inline-size: 28px;
+  justify-content: center;
+  padding: 0;
+}
+
+.foldButton:hover {
+  background: var(--extra-light-gray);
+  color: var(--primary-black);
+}
+
+.foldButton:focus-visible {
+  outline: 2px solid var(--control-strong);
+  outline-offset: 2px;
+}
+
+.foldIcon {
+  transition: transform 120ms ease;
+}
+
+.foldButton[aria-expanded="false"] .foldIcon {
+  transform: rotate(-90deg);
+}
+
+.body {
+  min-width: 0;
+}
+
+.type {
+  align-items: center;
+  color: var(--primary-black);
+  display: inline-flex;
+  flex-wrap: wrap;
+  font-size: 14px;
+  font-weight: 700;
+  gap: 8px;
+}
+
+.approvalBadge {
+  background: var(--info-bg);
+  border: 1px solid var(--info-border);
+  border-radius: var(--radius-pill);
+  color: var(--info-text);
+  padding: 3px 10px;
+}
+
+.time {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.commandMarkdown {
+  --markdown-code-bg: var(--extra-light-gray);
+
+  font-size: 12px;
+  inline-size: 100%;
+  line-height: 1.45;
+  min-width: 0;
+}
+
+.commandMarkdown pre {
+  border-radius: var(--radius-sm);
+  inline-size: 100%;
+  margin: 0;
+  padding: 8px 10px;
+}
+
+.bodyPreview {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.55;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.statusMessage {
+  color: var(--text);
+  font-size: 14px;
+  margin: 0;
+}
+
+.itemBody {
+  display: grid;
+  gap: 10px;
+}
+
+.exitCode {
+  background: rgb(220 38 38 / 10%);
+  border: 1px solid rgb(220 38 38 / 22%);
+  border-radius: var(--radius-sm);
+  color: var(--danger);
+  font-size: 13px;
+  font-weight: 700;
+  margin: 0;
+  padding: 8px 10px;
+}
+
+.markdown {
+  color: var(--text);
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+
+.markdown p {
+  margin: 0 0 12px;
+}
+
+.markdown p:last-child {
+  margin-bottom: 0;
+}
+
+.markdown pre {
+  background: var(--extra-light-gray);
+  border-radius: var(--radius-sm);
+  overflow: auto;
+  padding: 12px;
+}
+
+.markdown a {
+  color: var(--primary-black);
+  overflow-wrap: anywhere;
+}
+
+.approvalRequest {
+  display: grid;
+  gap: 12px;
+}
+
+.approvalTop {
+  background: var(--info-bg);
+  border: 1px solid var(--info-border);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+}
+
+.approvalReasonBlock {
+  background: var(--surface);
+  border: 1px solid var(--info-border);
+  border-radius: var(--radius-sm);
+  display: grid;
+  gap: 5px;
+  padding: 10px;
+}
+
+.approvalLabel {
+  color: var(--info-text);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.approvalReason {
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.approvalCommandMarkdown {
+  --markdown-code-bg: var(--surface);
+
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.approvalCommandMarkdown pre {
+  border-color: var(--info-border);
+  margin: 0;
+}
+
+.metrics {
+  display: grid;
+  gap: 12px;
+}
+
+.metricGroup {
+  display: grid;
+  gap: 8px;
+}
+
+.metricHeading {
+  color: var(--primary-black);
+  font-size: 14px;
+  margin: 0;
+}
+
+.metricGrid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  margin: 0;
+}
+
+.metric {
+  background: var(--extra-light-gray);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 10px;
+}
+
+.metric dt {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.metric dd {
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.metricNote {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 0;
+}
+
+@media (max-width: 720px) {
+  .headerTop {
+    align-items: start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .headerMeta {
+    justify-content: space-between;
+    inline-size: 100%;
+  }
+}
