@@ -1,0 +1,135 @@
+.editor {
+  display: grid;
+  gap: var(--space-4);
+  min-inline-size: 0;
+}
+
+.header,
+.editHeader,
+.actions,
+.tabs {
+  align-items: center;
+  display: flex;
+}
+
+.header {
+  gap: var(--space-3);
+  justify-content: space-between;
+}
+
+.header h3 {
+  color: var(--primary-black);
+  font-size: 16px;
+  margin: 0;
+}
+
+.iconButton {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: var(--primary-black);
+  display: inline-flex;
+  height: 32px;
+  justify-content: center;
+  padding: 0;
+  width: 32px;
+}
+
+.iconButton:hover,
+.iconButton:focus-visible {
+  background: var(--extra-light-gray);
+}
+
+.iconButton:focus-visible,
+.tab:focus-visible,
+.activeTab:focus-visible,
+.textarea:focus-visible {
+  box-shadow: var(--shadow-filter-active);
+  outline: 0;
+}
+
+.editSurface {
+  display: grid;
+  gap: var(--space-3);
+  min-inline-size: 0;
+}
+
+.editHeader {
+  gap: var(--space-4);
+  justify-content: space-between;
+}
+
+.tabs {
+  gap: var(--space-5);
+}
+
+.tab,
+.activeTab {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  color: var(--medium-gray);
+  font-weight: 700;
+  padding: var(--space-0) var(--space-0) var(--space-2);
+}
+
+.activeTab {
+  box-shadow: inset 0 -2px 0 var(--primary-black);
+  color: var(--primary-black);
+}
+
+.actions {
+  gap: var(--space-2);
+}
+
+.actions button {
+  min-block-size: 40px;
+}
+
+.saveButton {
+  background: var(--primary-black);
+  border-color: var(--primary-black);
+  color: var(--white);
+}
+
+.saveButton:hover:not(:disabled) {
+  background: var(--control-strong);
+}
+
+.textarea {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font: inherit;
+  font-weight: 400;
+  line-height: 1.6;
+  padding: var(--space-3-5) var(--space-3);
+  resize: vertical;
+  width: 100%;
+}
+
+.preview {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  min-block-size: 160px;
+  padding: var(--space-4);
+}
+
+.error {
+  color: var(--danger);
+  font-size: 13px;
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .editHeader {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .actions {
+    justify-content: flex-end;
+  }
+}

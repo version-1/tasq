@@ -7,6 +7,7 @@ const meta = {
   component: IssueDescription,
   args: {
     issue: issueFixtures[0],
+    onSave: async () => undefined,
   },
 } satisfies Meta<typeof IssueDescription>;
 

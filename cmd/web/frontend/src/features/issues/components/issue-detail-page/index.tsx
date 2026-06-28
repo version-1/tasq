@@ -12,6 +12,7 @@ import {
   fetchIssue,
   fetchOrchestratorConversation,
   fetchOrchestratorIssueRuntime,
+  updateIssueDescription,
   updateIssueStatus,
 } from "@/lib/api";
 import type {
@@ -65,6 +66,7 @@ export function IssueDetailPage() {
   const [conversationError, setConversationError] = useState("");
   const [isLoadingConversation, setIsLoadingConversation] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [isUpdatingDescription, setIsUpdatingDescription] = useState(false);
 
   const updateSearchParams = useCallback(
     (updates: Record<string, string | null>) => {
@@ -261,6 +263,21 @@ export function IssueDetailPage() {
     }
   }
 
+  async function handleDescriptionSave(description: string) {
+    if (issueState.kind !== "ready") return;
+
+    setIsUpdatingDescription(true);
+    try {
+      const issue = await updateIssueDescription(issueState.issue.id, description);
+      setIssueState({ kind: "ready", issue });
+      toast.success({ message: t("toast.success.issueUpdated") });
+    } catch (error) {
+      throw error;
+    } finally {
+      setIsUpdatingDescription(false);
+    }
+  }
+
   const sortedComments = useMemo(() => {
     return [...comments].sort((left, right) => left.id - right.id);
   }, [comments]);
@@ -289,7 +306,11 @@ export function IssueDetailPage() {
             <div className={styles.tabPanel}>
               <div className={styles.detailLayout}>
                 <div className={styles.detailMain}>
-                  <IssueDescription issue={issueState.issue} />
+                  <IssueDescription
+                    issue={issueState.issue}
+                    isSaving={isUpdatingDescription}
+                    onSave={handleDescriptionSave}
+                  />
                   <AttachmentsSection
                     attachments={attachments}
                     error={attachmentsError}
