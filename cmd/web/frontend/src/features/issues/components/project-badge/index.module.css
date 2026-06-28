@@ -1,0 +1,6 @@
+.small {
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  line-height: 1;
+  padding: var(--space-1) var(--space-2);
+}

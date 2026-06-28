@@ -55,9 +55,32 @@ describe("IssueCard", () => {
     expect(screen.getByRole("link", { name: "#24 Wire issue board to generated client" })).toBeInTheDocument();
     expect(screen.queryByText("Issue body should not render in the card.")).not.toBeInTheDocument();
     expect(screen.getByText("tasq")).toBeInTheDocument();
+    expect(screen.getByText("ready")).toBeInTheDocument();
     expect(screen.getByText("high")).toBeInTheDocument();
     expect(screen.getByLabelText("3 comments")).toHaveTextContent("3");
     expect(screen.getByLabelText("2 runs")).toHaveTextContent("2");
+  });
+
+  it("renders a right-aligned pending badge only for pending queue status", () => {
+    renderCard({
+      issue: {
+        ...issue,
+        queueStatus: "pending",
+      },
+    });
+
+    expect(screen.getByText("pending")).toBeInTheDocument();
+  });
+
+  it("does not render a pending badge for queued issues", () => {
+    renderCard({
+      issue: {
+        ...issue,
+        queueStatus: "queued",
+      },
+    });
+
+    expect(screen.queryByText("pending")).not.toBeInTheDocument();
   });
 
   it("renders zero comment count from issue stats", () => {

@@ -17,15 +17,17 @@ type BadgeVariant =
 
 export function Badge({
   children,
+  className,
   icon,
   variant,
 }: {
   children: ReactNode;
+  className?: string;
   icon?: ReactNode;
   variant: BadgeVariant;
 }) {
   return (
-    <span className={`${styles.badge} ${styles[variant]}`}>
+    <span className={[styles.badge, styles[variant], className].filter(Boolean).join(" ")}>
       {icon}
       {children}
     </span>
