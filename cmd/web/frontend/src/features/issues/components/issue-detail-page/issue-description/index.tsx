@@ -32,6 +32,7 @@ export function IssueDescription({
         titleID="issue-description"
         value={issue.description}
         onSave={onSave}
+        rows={128}
       />
     </section>
   );
