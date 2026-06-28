@@ -18,7 +18,7 @@
   width: min(100%, 520px);
 }
 
-.addProjectForm {
+.dialogContent {
   display: grid;
   gap: 16px;
   padding: 18px;
@@ -31,8 +31,16 @@
   justify-content: space-between;
 }
 
-.dialogHeader h2 {
+.dialogHeader h2,
+.dialogHeader p {
   margin: 0;
+}
+
+.dialogHeader p {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+  margin-top: var(--space-1);
 }
 
 .dialogHeader button {
@@ -45,32 +53,57 @@
   width: 32px;
 }
 
-.field {
-  color: var(--dark-gray);
-  display: grid;
-  font-size: 13px;
-  font-weight: 700;
-  gap: 6px;
-}
-
-.field input,
-.field textarea {
+.commandBlock {
+  background: var(--extra-light-gray);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  color: var(--primary-black);
-  font: inherit;
-  font-weight: 400;
-  padding: 10px;
-  width: 100%;
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
 }
 
-.field textarea {
-  resize: vertical;
+.commandBlock span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
 }
 
-.formError {
-  color: var(--danger);
+.commandBlock pre {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin: 0;
+  overflow-x: auto;
+  padding: var(--space-3);
+}
+
+.commandBlock code {
+  color: var(--text);
+  font-family: var(--font-mono);
   font-size: 13px;
+}
+
+.copyButton {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  display: inline-flex;
+  gap: var(--space-2);
+  justify-content: center;
+  min-height: 38px;
+  width: max-content;
+}
+
+.copyButton:hover {
+  background: var(--surface-hover);
+}
+
+.helpText {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
   margin: 0;
 }
 

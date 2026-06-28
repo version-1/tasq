@@ -1,4 +1,4 @@
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   createContext,
@@ -15,7 +15,6 @@ import { PanelMessage } from "@/components/ui/pannel-message";
 import { ToastStack } from "@/components/ui/toast";
 import {
   createIssue,
-  createProject,
   fetchProjects,
   fetchSummary,
   updateIssueStatus,
@@ -26,7 +25,6 @@ import { ModalProvider, useModal } from "@/lib/modal";
 import { toast } from "@/lib/toast";
 import type {
   CreateIssueInput,
-  CreateProjectInput,
   IssueStatus,
   IssueSummary,
   Project,
@@ -64,7 +62,6 @@ export type LayoutShellData = {
   activeProject: Project | null;
   addIssueError: string;
   addIssueInitialStatus: IssueStatus;
-  addProjectError: string;
   isIssueDetailPage: boolean;
   isProjectIssueScope: boolean;
   issues: IssueSummary[];
@@ -78,7 +75,6 @@ export type LayoutShellData = {
   onAddProject: () => void;
   onCloseModal: () => void;
   onCreateIssue: (input: CreateIssueInput) => Promise<void>;
-  onCreateProject: (input: CreateProjectInput) => Promise<void>;
 };
 
 const layoutDataContext = createContext<LayoutData | null>(null);
@@ -100,7 +96,6 @@ export function Layout({ children }: { children: ReactNode }) {
 function LayoutContent({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
   const { pathname } = useLocation();
-  const navigate = useNavigate();
   const activePage = activePageFromPathname(pathname);
   const issueScope = issueScopeFromPathname(pathname);
   const issueDetailID = issueIDFromPathname(pathname);
@@ -110,7 +105,6 @@ function LayoutContent({ children }: { children: ReactNode }) {
   const [addIssueInitialStatus, setAddIssueInitialStatus] =
     useState<IssueStatus>("backlog");
   const [addIssueError, setAddIssueError] = useState("");
-  const [addProjectError, setAddProjectError] = useState("");
   const [issueDetailTitleOverride, setIssueDetailTitleOverride] = useState<string | null>(null);
   const [refreshIntervalMs, setRefreshIntervalMs] = useState(
     defaultRefreshIntervalMs,
@@ -226,23 +220,6 @@ function LayoutContent({ children }: { children: ReactNode }) {
     }
   }
 
-  async function handleCreateProject(input: CreateProjectInput) {
-    try {
-      const created = await createProject(input, { silent: true });
-      await load({ silent: true });
-      setAddProjectError("");
-      modal.closeModal();
-      void navigate(`/projects/${encodeURIComponent(created.key)}/issues`);
-      toast.success({ message: t("toast.success.projectCreated") });
-    } catch (error) {
-      setAddProjectError(
-        error instanceof Error
-          ? error.message
-          : t("layout.failedToCreateProject"),
-      );
-    }
-  }
-
   function handleAddIssue(status?: IssueStatus) {
     setAddIssueInitialStatus(status ?? "backlog");
     setAddIssueError("");
@@ -250,13 +227,11 @@ function LayoutContent({ children }: { children: ReactNode }) {
   }
 
   function handleAddProject() {
-    setAddProjectError("");
     modal.openModal(modalIDs.addProject);
   }
 
   function handleCloseModal() {
     setAddIssueError("");
-    setAddProjectError("");
     modal.closeModal();
   }
 
@@ -299,7 +274,6 @@ function LayoutContent({ children }: { children: ReactNode }) {
     activeProject,
     addIssueError,
     addIssueInitialStatus,
-    addProjectError,
     isIssueDetailPage,
     isProjectIssueScope,
     issues,
@@ -317,7 +291,6 @@ function LayoutContent({ children }: { children: ReactNode }) {
     onAddProject: handleAddProject,
     onCloseModal: handleCloseModal,
     onCreateIssue: handleCreateIssue,
-    onCreateProject: handleCreateProject,
   };
 
   return (
@@ -379,7 +352,9 @@ export function ShellLayout({
           projectName={shellData.title}
           issueCount={shellData.summary ? shellData.issues.length : null}
           isIssueDetailPage={shellData.isIssueDetailPage}
+          language={shellData.layoutData?.language ?? "ja"}
           onAddTask={() => shellData.onAddIssue("backlog")}
+          onLanguageChange={shellData.layoutData?.onLanguageChange ?? (() => undefined)}
           showAddTaskButton={showAddTaskButton}
           showViewNavigation={showViewNavigation}
         />
@@ -426,13 +401,7 @@ function LayoutModalContent({ shellData }: { shellData: LayoutShellData }) {
   }
 
   if (modal.activeModalID === modalIDs.addProject) {
-    return (
-      <AddProjectDialog
-        error={shellData.addProjectError}
-        onCancel={shellData.onCloseModal}
-        onSubmit={shellData.onCreateProject}
-      />
-    );
+    return <AddProjectDialog onCancel={shellData.onCloseModal} />;
   }
 
   return null;

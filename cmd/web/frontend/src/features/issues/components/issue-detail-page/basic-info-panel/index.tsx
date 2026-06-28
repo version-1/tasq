@@ -1,7 +1,8 @@
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useEffect, useRef, useState } from "react";
 import { IconProxy } from "@/components/ui/icon-proxy";
-import type { Issue, IssueStatus } from "@/lib/types";
+import type { Issue, IssueStatus, IssueSummary } from "@/lib/types";
 import { issueStatuses } from "@/lib/types";
 import { PriorityBadge } from "@/features/issues/components/priority-badge";
 import { ProjectBadge } from "@/features/issues/components/project-badge";
@@ -13,13 +14,16 @@ import styles from "./index.module.css";
 export function BasicInfoPanel({
   disabled,
   issue,
+  issueOptions = [],
   onStatusChange,
 }: {
   disabled: boolean;
   issue: Issue;
+  issueOptions?: IssueSummary[];
   onStatusChange: (status: IssueStatus) => Promise<void>;
 }) {
   const { t } = useTranslation();
+  const dependencyIssues = dependencyIssueLinks(issue.dependency_ids, issueOptions);
 
   return (
     <section className={styles.panel}>
@@ -38,11 +42,39 @@ export function BasicInfoPanel({
           }
         />
         <MetaItem label={t("issues.assignee")} value={issue.assignee || t("issues.unassigned")} />
+        <MetaItem
+          label={t("issues.detailPage.dependencies")}
+          value={
+            dependencyIssues.length > 0 ? (
+              <div className={styles.dependencyList}>
+                {dependencyIssues.map((dependency) => (
+                  <Link key={dependency.id} className={styles.dependencyLink} to={`/issues/${dependency.id}`}>
+                    #{dependency.id} {dependency.title}
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              t("issues.detailPage.noDependencies")
+            )
+          }
+        />
         <MetaItem label={t("issues.detailPage.createdAt")} value={formatDateTime(issue.createdAt)} />
         <MetaItem label={t("issues.detailPage.updatedAt")} value={formatDateTime(issue.updatedAt)} />
       </dl>
     </section>
   );
+}
+
+function dependencyIssueLinks(
+  dependencyIDs: number[],
+  issueOptions: IssueSummary[],
+): Array<{ id: number; title: string }> {
+  return dependencyIDs
+    .map((id) => {
+      const issue = issueOptions.find((candidate) => candidate.id === id);
+      return issue ? { id, title: issue.title } : null;
+    })
+    .filter((item): item is { id: number; title: string } => item !== null);
 }
 
 function StatusDropdown({

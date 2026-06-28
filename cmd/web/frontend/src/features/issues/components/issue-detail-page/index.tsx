@@ -300,6 +300,7 @@ export function IssueDetailPage() {
                   <BasicInfoPanel
                     disabled={isUpdatingStatus}
                     issue={issueState.issue}
+                    issueOptions={layoutShellData?.issues ?? []}
                     onStatusChange={handleStatusChange}
                   />
                 </aside>

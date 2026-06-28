@@ -10,8 +10,8 @@ type StatusChangeHandler = (id: number, status: IssueStatus) => Promise<void>;
 const boardActions = [
   { icon: "filter", titleKey: "issues.board.filter" },
   { icon: "arrow-up-down", titleKey: "issues.board.sort" },
-  { icon: "layout-grid", titleKey: "issues.board.view" },
-] satisfies Array<{ icon: IconProxyName; titleKey: string }>;
+  { icon: "ellipsis", showLabel: false, titleKey: "issues.board.view" },
+] satisfies Array<{ icon: IconProxyName; showLabel?: boolean; titleKey: string }>;
 
 export function IssueBoard({
   summary,
@@ -30,9 +30,9 @@ export function IssueBoard({
       <div className={styles.boardToolbar}>
         <div className={styles.boardActions}>
           {boardActions.map((action) => (
-            <button key={action.titleKey} type="button">
+            <button key={action.titleKey} type="button" aria-label={t(action.titleKey)}>
               <IconProxy name={action.icon} size={15} />
-              {t(action.titleKey)}
+              {action.showLabel === false ? null : t(action.titleKey)}
             </button>
           ))}
         </div>

@@ -22,8 +22,10 @@ const meta = {
     activePage: "issues",
     projectName: "Product Website",
     issueCount: 24,
+    language: "ja",
     showViewNavigation: true,
     onAddTask: () => undefined,
+    onLanguageChange: () => undefined,
   },
 } satisfies Meta<typeof Header>;
 

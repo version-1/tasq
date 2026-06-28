@@ -38,6 +38,10 @@ const resources = {
       addProject: {
         cancel: "キャンセル",
         close: "閉じる",
+        commandLabel: "コマンド例",
+        copied: "コピーしました",
+        copy: "コマンドをコピー",
+        description: "Project の追加は Web UI ではなく、ローカルの tq コマンドから実行します。",
         errors: {
           keyRequired: "キーを入力してください",
           locationAbsolute: "絶対パスの場所を入力してください",
@@ -58,6 +62,7 @@ const resources = {
         },
         saving: "追加中...",
         submit: "追加",
+        helpText: "実際の project key とパスに置き換えて、ターミナルで実行してください。",
         title: "プロジェクトを追加",
       },
       common: {
@@ -83,6 +88,11 @@ const resources = {
         dashboard: "ダッシュボード",
         issueList: "Issue 一覧",
         issueCount: "{{count}} issues",
+        language: "表示言語",
+        languages: {
+          en: "English",
+          ja: "日本語",
+        },
         loading: "loading",
         moreProjectActions: "プロジェクト操作",
         notifications: "通知",
@@ -175,6 +185,7 @@ const resources = {
           collapseConversationEvent: "会話イベントの本文を閉じる",
           createdAt: "作成日時",
           cachedInputTokens: "キャッシュ入力",
+          dependencies: "依存関係",
           detailTab: "詳細",
           description: "説明",
           emptyConversationEvent: "出力なし",
@@ -194,6 +205,7 @@ const resources = {
           noComments: "コメントはありません",
           noAttachments: "添付ファイルはありません",
           noConversationEvents: "会話イベントはありません",
+          noDependencies: "依存関係はありません",
           noMatchingConversationEvents: "条件に一致する会話イベントはありません",
           noRuns: "Run はありません",
           noThreadID: "未設定",
@@ -519,6 +531,10 @@ const resources = {
       addProject: {
         cancel: "Cancel",
         close: "Close",
+        commandLabel: "Command example",
+        copied: "Copied",
+        copy: "Copy command",
+        description: "Add projects from the local tq command instead of the Web UI.",
         errors: {
           keyRequired: "Enter a project key",
           locationAbsolute: "Enter an absolute project location",
@@ -539,6 +555,7 @@ const resources = {
         },
         saving: "Adding...",
         submit: "Add",
+        helpText: "Replace the project key and path, then run the command in your terminal.",
         title: "Add project",
       },
       common: {
@@ -564,6 +581,11 @@ const resources = {
         dashboard: "Dashboard",
         issueList: "Issue list",
         issueCount: "{{count}} issues",
+        language: "Language",
+        languages: {
+          en: "English",
+          ja: "日本語",
+        },
         loading: "loading",
         moreProjectActions: "More project actions",
         notifications: "Notifications",
@@ -656,6 +678,7 @@ const resources = {
           collapseConversationEvent: "Collapse conversation event body",
           createdAt: "Created",
           cachedInputTokens: "Cached input",
+          dependencies: "Dependencies",
           detailTab: "Details",
           description: "Description",
           emptyConversationEvent: "No output",
@@ -675,6 +698,7 @@ const resources = {
           noComments: "No comments",
           noAttachments: "No attachments",
           noConversationEvents: "No conversation events",
+          noDependencies: "No dependencies",
           noMatchingConversationEvents: "No conversation events match these filters",
           noRuns: "No runs",
           noThreadID: "not set",
@@ -974,7 +998,7 @@ const resources = {
 
 function initialLanguage(): SupportedLanguage {
   if (typeof window === "undefined") {
-    return "ja";
+    return "en";
   }
 
   const stored = window.localStorage.getItem("tasq.language");
@@ -982,7 +1006,7 @@ function initialLanguage(): SupportedLanguage {
     return stored;
   }
 
-  return navigator.language.toLowerCase().startsWith("en") ? "en" : "ja";
+  return "en";
 }
 
 export function isSupportedLanguage(
@@ -993,7 +1017,7 @@ export function isSupportedLanguage(
 
 if (!i18n.isInitialized) {
   void i18n.use(initReactI18next).init({
-    fallbackLng: "ja",
+    fallbackLng: "en",
     interpolation: {
       escapeValue: false,
     },
