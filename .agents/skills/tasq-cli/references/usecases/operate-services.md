@@ -57,6 +57,16 @@ After updating, confirm the CLI and services agree:
 tq version
 ```
 
+## Update the installed stack
+
+```bash
+tq update
+tq update -y
+tq update --tag v0.2.0-rc.1
+```
+
+Use `tq update` when the installed binary should be replaced from GitHub Release artifacts. It stops services, installs the release artifacts, verifies the newly installed `tq version`, runs migrations, and starts services. `--tag` accepts both formal release tags and prerelease tags. `-y` skips the confirmation prompt, so use it only when service interruption is acceptable.
+
 ## See also
 
 - [resources/service-and-logs.md](../resources/service-and-logs.md)

@@ -25,10 +25,15 @@ type config struct {
 
 type app struct {
 	stdout io.Writer
+	stdin  io.Reader
 	client *apiClient
 }
 
 func Run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
+	return run(ctx, args, os.Stdin, stdout, stderr)
+}
+
+func run(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	cfg, remaining, err := parseCommon(args)
 	if err != nil {
 		return writeCLIError(stderr, err.Error(), 2)
@@ -41,6 +46,7 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 
 	application := app{
 		stdout: stdout,
+		stdin:  stdin,
 		client: client,
 	}
 	if err := application.route(ctx, remaining, cfg); err != nil {
@@ -63,6 +69,8 @@ func (a app) route(ctx context.Context, args []string, cfg config) error {
 	case "version":
 		printVersion(a.stdout)
 		return nil
+	case "update":
+		return a.update(ctx, args[1:], cfg)
 	case "issue":
 		return a.routeIssue(ctx, args[1:], cfg)
 	case "comment":
@@ -697,6 +705,7 @@ func printRootHelp(w io.Writer) {
 	fmt.Fprintln(w, "  service  start, stop, and inspect local services")
 	fmt.Fprintln(w, "  logs     show and follow service logs")
 	fmt.Fprintln(w, "  version  show version information")
+	fmt.Fprintln(w, "  update   update tq from a GitHub Release and restart services")
 }
 
 func printIssueHelp(w io.Writer) {

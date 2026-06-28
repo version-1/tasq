@@ -5,7 +5,7 @@ description: Index for invoking the tq CLI — points to per-resource references
 
 # Purpose
 
-Drive the `tq` CLI (issue tracker, comments, projects, workflows, migrations, local services). This file is the index: load only the reference(s) that match the task so the agent's working context stays small.
+Drive the `tq` CLI (issue tracker, comments, projects, workflows, migrations, local services, release updates). This file is the index: load only the reference(s) that match the task so the agent's working context stays small.
 
 Pair with [[tq-orchestrator]] when polling and dispatching ready issues — that skill covers *when* to call `tq`; this one covers *how*.
 
@@ -32,7 +32,7 @@ Load the smallest set of references that matches the task. Each file is self-con
 | [project.md](references/resources/project.md) | register, remove, check, list projects |
 | [workflow.md](references/resources/workflow.md) | add, remove, show project workflow overrides |
 | [migrate.md](references/resources/migrate.md) | apply, roll back, inspect local DB migrations |
-| [service-and-logs.md](references/resources/service-and-logs.md) | start / stop / status of services, tail logs, open web UI, version |
+| [service-and-logs.md](references/resources/service-and-logs.md) | start / stop / status of services, tail logs, open web UI, version, update |
 | [enums.md](references/resources/enums.md) | valid status / priority / comment-type values |
 | [globals.md](references/resources/globals.md) | global flags, environment variables, API URL resolution, output / exit codes |
 
@@ -45,7 +45,7 @@ Load the smallest set of references that matches the task. Each file is self-con
 | Record progress, blockers, or handoffs as comments | [comment-flows.md](references/usecases/comment-flows.md) |
 | Upload an image to an issue or comment | [attachments.md](references/usecases/attachments.md) |
 | Stream ready issues for the orchestrator | [watch-and-dispatch.md](references/usecases/watch-and-dispatch.md) |
-| Boot, stop, or inspect local services | [operate-services.md](references/usecases/operate-services.md) |
+| Boot, stop, inspect, or update local services | [operate-services.md](references/usecases/operate-services.md) |
 | Apply or roll back migrations safely | [run-migrations.md](references/usecases/run-migrations.md) |
 | Parse `tq` output from a script | [script-with-json.md](references/usecases/script-with-json.md) |
 

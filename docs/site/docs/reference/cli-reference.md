@@ -72,3 +72,6 @@ Allowed comment types are `progress`, `blocker`, `handoff`, and `general`.
 | `tq migrate status` | Show migration status. |
 | `tq web` | Open the running Web UI. |
 | `tq version` | Print version information. |
+| `tq update [-y] [--tag <tag>]` | Install a release, migrate databases, and restart services. |
+
+`tq update` prints the current and target versions, confirms that local services will stop and restart, installs the latest formal release by default, verifies the newly installed `tq version`, runs migrations, and starts services. `-y` skips the confirmation prompt. `--tag` installs a specific release or prerelease tag.

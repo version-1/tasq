@@ -1,4 +1,4 @@
-# `tq service`, `tq logs`, `tq web`, `tq version`
+# `tq service`, `tq logs`, `tq web`, `tq version`, `tq update`
 
 Operational commands for the local stack: the issue-tracker API, the orchestrator, and the web UI.
 
@@ -41,6 +41,29 @@ tq version
 ```
 
 Prints the embedded version string. Use this after an update to confirm the binary matches the running services.
+
+## `tq update`
+
+```
+tq update [-y] [--tag TAG]
+```
+
+Installs `tq`, `issue-tracker`, `orchestrator`, and `web` from GitHub Release artifacts, applies migrations, and restarts local services. By default it targets the latest formal release. `--tag` installs a specific release or prerelease tag.
+
+The command prints the current version and target version before stopping services. It asks for confirmation because services will stop and restart; pass `-y` only when that disruption is expected.
+
+Flow:
+
+1. Resolve target release.
+2. Print current and target versions.
+3. Confirm unless `-y` is set.
+4. Stop services.
+5. Install release artifacts into the fixed user install location.
+6. Run the newly installed `tq version`.
+7. Apply migrations.
+8. Start services.
+
+If any step fails, later steps are not run. If install fails after services stop, inspect the error, then run `tq service start` after fixing the install problem.
 
 ## See also
 

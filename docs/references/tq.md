@@ -39,6 +39,7 @@ tq [--api-url URL] [--output text|json] <resource|command> <action> [flags]
 | `workflow` | `add`, `remove`, `show` |
 | `migrate` | apply pending migrations, `down`, `status` |
 | `service` | `start`, `stop`, `status` |
+| `update` | install a release and restart services |
 | `version` | show version information |
 
 ## Version
@@ -50,6 +51,28 @@ tq version
 ```
 
 Release builds installed from a versioned module or GitHub Release print the tag version when Go build metadata includes it. Local builds fall back to `dev`.
+
+## Update
+
+Install `tq` and the sibling service executables from a GitHub Release, migrate local databases, and restart local services.
+
+```sh
+tq update
+```
+
+The command prints the current version and the target release before stopping services. It then asks for confirmation because the update stops and restarts local services. Pass `-y` to skip the confirmation prompt.
+
+```sh
+tq update -y
+```
+
+By default, `tq update` installs the latest formal release. Pass `--tag` to install a specific release or prerelease tag.
+
+```sh
+tq update --tag v0.2.0-rc.1
+```
+
+The update flow stops services, installs the release artifacts into the fixed user install location, verifies the newly installed `tq version`, applies migrations, and starts services again. If any step fails, later steps are not run.
 
 ## Issues
 
