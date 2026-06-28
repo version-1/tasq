@@ -32,7 +32,7 @@ describe("BasicInfoPanel", () => {
   });
 
   it("shows an empty dependency state when the issue has no dependencies", () => {
-    renderBasicInfoPanel(issueFixtures[0]);
+    renderBasicInfoPanel(issueFixtures[1]);
 
     expect(screen.getByText("No dependencies")).toBeInTheDocument();
   });

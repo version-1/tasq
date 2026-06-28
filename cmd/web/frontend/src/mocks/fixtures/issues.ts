@@ -100,7 +100,7 @@ export const issueFixtures: Issue[] = [
     status: "backlog",
     priority: "normal",
     assignee: "frontend",
-    dependency_ids: [],
+    dependency_ids: [2],
     createdAt: "2026-06-01T01:00:00.000Z",
     updatedAt: "2026-06-01T01:00:00.000Z",
   },
