@@ -1,7 +1,8 @@
 import { useTranslation } from "react-i18next";
+import { Markdown } from "@/components/ui/markdown";
 import type { OrchestratorConversationEvent } from "@/lib/types";
-import styles from "./index.module.css";
-import { extractApprovalRequestDetails } from "./payload";
+import styles from "../../index.module.css";
+import { extractApprovalRequestDetails } from "../../payload";
 
 export function ApprovalRequestEventBody({ event }: { event: OrchestratorConversationEvent }) {
   const { t } = useTranslation();
@@ -11,10 +12,15 @@ export function ApprovalRequestEventBody({ event }: { event: OrchestratorConvers
 
   return (
     <section className={styles.approvalRequest} aria-label={t("issues.detailPage.approvalRequest")}>
-      <h3 className={styles.approvalReason}>{reason}</h3>
-      <pre className={styles.approvalCommand}>
-        <code>{command}</code>
-      </pre>
+      <div className={styles.approvalReasonBlock}>
+        <span className={styles.approvalLabel}>{t("issues.detailPage.approvalReason")}</span>
+        <p className={styles.approvalReason}>{reason}</p>
+      </div>
+      <Markdown
+        className={styles.approvalCommandMarkdown}
+        content={`\`\`\`shell\n${command}\n\`\`\``}
+        emptyText={t("issues.detailPage.approvalRequestCommandFallback")}
+      />
     </section>
   );
 }

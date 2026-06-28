@@ -1,8 +1,8 @@
 import { useTranslation } from "react-i18next";
 import type { OrchestratorConversationEvent } from "@/lib/types";
-import styles from "./index.module.css";
-import { MetricGrid } from "./metric-grid";
-import { formatRateLimitWindow, rateLimitsView } from "./payload";
+import styles from "../../index.module.css";
+import { MetricGrid } from "../../metric-grid";
+import { formatRateLimitWindow, rateLimitsView } from "../../payload";
 
 export function RateLimitsEventBody({ event }: { event: OrchestratorConversationEvent }) {
   const { t } = useTranslation();

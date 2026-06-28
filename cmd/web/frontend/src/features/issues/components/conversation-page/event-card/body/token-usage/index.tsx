@@ -1,8 +1,8 @@
 import { useTranslation } from "react-i18next";
 import type { OrchestratorConversationEvent } from "@/lib/types";
-import styles from "./index.module.css";
-import { MetricGrid } from "./metric-grid";
-import { formatNumber, tokenUsageView } from "./payload";
+import styles from "../../index.module.css";
+import { MetricGrid } from "../../metric-grid";
+import { formatNumber, tokenUsageView } from "../../payload";
 
 export function TokenUsageEventBody({ event }: { event: OrchestratorConversationEvent }) {
   const { t } = useTranslation();

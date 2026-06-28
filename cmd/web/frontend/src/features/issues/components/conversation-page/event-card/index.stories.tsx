@@ -1,12 +1,14 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { OrchestratorConversationEvent } from "@/lib/types";
-import { ApprovalRequestEventBody } from "./approval-request-event-body";
+import { ApprovalRequestEventBody } from "./body/approval-request";
+import { ItemCompletedEventBody } from "./body/item-completed";
+import { EventBodyPreview } from "./body/preview";
+import { RateLimitsEventBody } from "./body/rate-limits";
+import { StatusEventBody } from "./body/status";
+import { TokenUsageEventBody } from "./body/token-usage";
+import { TurnCompletedEventBody } from "./body/turn-completed";
+import { EventHeader } from "./event-header";
 import { EventCard } from "./index";
-import { ItemCompletedEventBody } from "./item-completed-event-body";
-import { RateLimitsEventBody } from "./rate-limits-event-body";
-import { StatusEventBody } from "./status-event-body";
-import { TokenUsageEventBody } from "./token-usage-event-body";
-import { TurnCompletedEventBody } from "./turn-completed-event-body";
 
 const commandOutputEvent = {
   at: "2026-06-01T08:05:12.000Z",
@@ -130,6 +132,27 @@ export const RateLimits: Story = {
   args: {
     event: rateLimitsEvent,
   },
+};
+
+export const HeaderFolded: Story = {
+  args: {
+    event: commandOutputEvent,
+  },
+  render: ({ event }) => (
+    <EventHeader
+      bodyID="storybook-conversation-event-body"
+      event={event}
+      isBodyOpen={false}
+      onToggleBody={() => undefined}
+    />
+  ),
+};
+
+export const FoldedPreview: Story = {
+  args: {
+    event: turnCompletedEvent,
+  },
+  render: ({ event }) => <EventBodyPreview event={event} />,
 };
 
 export const TurnCompletedBody: Story = {

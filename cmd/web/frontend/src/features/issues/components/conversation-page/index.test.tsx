@@ -27,6 +27,21 @@ function renderConversationPage(conversation: OrchestratorConversation) {
   );
 }
 
+function getCodeByText(container: HTMLElement, text: string) {
+  return within(container).getByText((_, node) => (
+    node?.tagName.toLowerCase() === "code" &&
+    node.textContent?.replace(/\s+/g, " ").trim() === text
+  ));
+}
+
+async function expandEventBody(user: ReturnType<typeof userEvent.setup>, item: HTMLElement) {
+  await user.click(
+    within(item).getByRole("button", {
+      name: "Expand conversation event body",
+    }),
+  );
+}
+
 describe("ConversationPage", () => {
   beforeEach(() => {
     api.fetchOrchestratorConversation.mockReset();
@@ -34,6 +49,8 @@ describe("ConversationPage", () => {
   });
 
   it("renders item completed command execution content in chronological order", async () => {
+    const user = userEvent.setup();
+
     renderConversationPage({
       issue_identifier: "issue-48",
       issue_id: "48",
@@ -74,15 +91,23 @@ describe("ConversationPage", () => {
     expect(within(items[0]).getByText("running")).toBeInTheDocument();
     expect(within(items[1]).getByText("commandExecution")).toBeInTheDocument();
     expect(within(items[1]).getByText("npm test")).toBeInTheDocument();
+
+    await expandEventBody(user, items[1]);
+
     expect(within(items[1]).getByRole("heading", { name: "Command output" })).toBeInTheDocument();
     expect(within(items[1]).getByText("Done")).toBeInTheDocument();
     expect(within(items[1]).getByText("extra text")).toBeInTheDocument();
     expect(within(items[1]).getByText("exit code 2")).toBeInTheDocument();
     expect(within(items[2]).getByText("Turn completed")).toBeInTheDocument();
+
+    await expandEventBody(user, items[2]);
+
     expect(within(items[2]).getByText("turn output")).toBeInTheDocument();
   });
 
   it("renders text items without a zero exit code indicator", async () => {
+    const user = userEvent.setup();
+
     renderConversationPage({
       issue_identifier: "issue-48",
       issue_id: "48",
@@ -106,6 +131,7 @@ describe("ConversationPage", () => {
     const item = await screen.findByRole("listitem");
 
     expect(within(item).getByText("text")).toBeInTheDocument();
+    await expandEventBody(user, item);
     expect(within(item).getByText("hello")).toBeInTheDocument();
     expect(within(item).getByText("world")).toBeInTheDocument();
     expect(within(item).queryByText(/exit code/)).not.toBeInTheDocument();
@@ -126,7 +152,7 @@ describe("ConversationPage", () => {
           payload_json: JSON.stringify({
             item: {
               type: "text",
-              text: "foldable body content",
+              text: "## Folded heading\n\nfoldable body content",
             },
           }),
         },
@@ -134,17 +160,13 @@ describe("ConversationPage", () => {
     });
 
     const item = await screen.findByRole("listitem");
-    const collapseButton = within(item).getByRole("button", {
-      name: "Collapse conversation event body",
-    });
-
-    expect(within(item).getByText("foldable body content")).toBeInTheDocument();
-
-    await user.click(collapseButton);
-
     expect(
-      within(item).getByText("foldable body content"),
-    ).not.toBeVisible();
+      within(item).getByRole("button", {
+        name: "Expand conversation event body",
+      }),
+    ).toBeInTheDocument();
+    expect(within(item).getByText("## Folded heading foldable body content")).toBeInTheDocument();
+    expect(within(item).queryByRole("heading", { name: "Folded heading" })).not.toBeInTheDocument();
 
     await user.click(
       within(item).getByRole("button", {
@@ -152,7 +174,39 @@ describe("ConversationPage", () => {
       }),
     );
 
-    expect(within(item).getByText("foldable body content")).toBeVisible();
+    expect(within(item).getByRole("heading", { name: "Folded heading" })).toBeVisible();
+    expect(
+      within(item).getByRole("button", {
+        name: "Collapse conversation event body",
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it("truncates folded event body preview to 100 characters", async () => {
+    const longBody = `${"a".repeat(100)}b`;
+
+    renderConversationPage({
+      issue_identifier: "issue-48",
+      issue_id: "48",
+      run_id: "run-fold-preview",
+      events: [
+        {
+          at: "2026-06-15T01:00:00Z",
+          event: "item/completed",
+          message: "item completed",
+          payload_json: JSON.stringify({
+            item: {
+              type: "text",
+              text: longBody,
+            },
+          }),
+        },
+      ],
+    });
+
+    const item = await screen.findByRole("listitem");
+
+    expect(within(item).getByText(`${"a".repeat(100)}...`)).toBeInTheDocument();
   });
 
   it("uses a fallback header for unknown completed item types", async () => {
@@ -182,6 +236,8 @@ describe("ConversationPage", () => {
   });
 
   it("renders command approval requests with the reason and command only", async () => {
+    const user = userEvent.setup();
+
     renderConversationPage({
       issue_identifier: "issue-49",
       issue_id: "49",
@@ -202,18 +258,20 @@ describe("ConversationPage", () => {
     });
 
     const item = await screen.findByRole("listitem");
+    await expandEventBody(user, item);
+
     const approvalRequest = within(item).getByRole("region", { name: "Approval request" });
 
     expect(within(item).getByText("approval requested")).toBeInTheDocument();
-    expect(
-      within(approvalRequest).getByRole("heading", { name: "needs elevated filesystem access" }),
-    ).toBeInTheDocument();
-    expect(within(approvalRequest).getByText("npm run build")).toBeInTheDocument();
+    expect(within(approvalRequest).getByText("needs elevated filesystem access")).toBeInTheDocument();
+    expect(getCodeByText(approvalRequest, "npm run build")).toBeInTheDocument();
     expect(screen.queryByText("availableDecisions")).not.toBeInTheDocument();
     expect(screen.queryByText("proposedExecpolicyAmendment")).not.toBeInTheDocument();
   });
 
   it("finds approval request details nested under params", async () => {
+    const user = userEvent.setup();
+
     renderConversationPage({
       issue_identifier: "issue-49",
       issue_id: "49",
@@ -235,15 +293,18 @@ describe("ConversationPage", () => {
       ],
     });
 
-    const approvalRequest = await screen.findByRole("region", { name: "Approval request" });
+    const item = await screen.findByRole("listitem");
+    await expandEventBody(user, item);
 
-    expect(
-      within(approvalRequest).getByRole("heading", { name: "needs command approval" }),
-    ).toBeInTheDocument();
-    expect(within(approvalRequest).getByText("make test")).toBeInTheDocument();
+    const approvalRequest = within(item).getByRole("region", { name: "Approval request" });
+
+    expect(within(approvalRequest).getByText("needs command approval")).toBeInTheDocument();
+    expect(getCodeByText(approvalRequest, "make test")).toBeInTheDocument();
   });
 
   it("renders token usage and rate limit update events", async () => {
+    const user = userEvent.setup();
+
     renderConversationPage({
       issue_identifier: "issue-50",
       issue_id: "50",
@@ -299,12 +360,19 @@ describe("ConversationPage", () => {
     });
 
     await screen.findByText("Conversation history · run-usage");
+    const items = screen.getAllByRole("listitem");
 
     expect(screen.getByText("token usage updated")).toBeInTheDocument();
+
+    await expandEventBody(user, items[0]);
+
     expect(screen.getByRole("region", { name: "Token usage" })).toBeInTheDocument();
     expect(screen.getByText("8,712,831")).toBeInTheDocument();
     expect(screen.getByText("Context window 258,400 tokens")).toBeInTheDocument();
     expect(screen.getByText("rate limits updated")).toBeInTheDocument();
+
+    await expandEventBody(user, items[1]);
+
     expect(screen.getByRole("region", { name: "Rate limits" })).toBeInTheDocument();
     expect(screen.getByText("codex")).toBeInTheDocument();
     expect(screen.getByText("pro")).toBeInTheDocument();

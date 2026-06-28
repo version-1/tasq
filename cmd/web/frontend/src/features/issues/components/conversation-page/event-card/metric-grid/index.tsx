@@ -1,4 +1,4 @@
-import styles from "./index.module.css";
+import styles from "../index.module.css";
 
 export function MetricGrid({ items }: { items: Array<[string, string]> }) {
   return (

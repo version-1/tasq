@@ -1,8 +1,8 @@
 import { useTranslation } from "react-i18next";
 import { Markdown } from "@/components/ui/markdown";
 import type { OrchestratorConversationEvent } from "@/lib/types";
-import styles from "./index.module.css";
-import { itemCompletedView } from "./payload";
+import styles from "../../index.module.css";
+import { itemCompletedView } from "../../payload";
 
 export function ItemCompletedEventBody({ event }: { event: OrchestratorConversationEvent }) {
   const { t } = useTranslation();
