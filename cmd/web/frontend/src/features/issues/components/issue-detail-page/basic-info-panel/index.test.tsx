@@ -22,13 +22,17 @@ function renderBasicInfoPanel(issue = issueFixtures[2]) {
 
 describe("BasicInfoPanel", () => {
   it("renders dependency issue links with id and title", () => {
-    renderBasicInfoPanel();
+    renderBasicInfoPanel(issueFixtures[0]);
 
-    const dependencyLink = screen.getByRole("link", {
+    const firstDependencyLink = screen.getByRole("link", {
       name: "#2 Wire issue board to generated client",
     });
+    const secondDependencyLink = screen.getByRole("link", {
+      name: "#3 Verify status transitions",
+    });
 
-    expect(dependencyLink).toHaveAttribute("href", "/issues/2");
+    expect(firstDependencyLink).toHaveAttribute("href", "/issues/2");
+    expect(secondDependencyLink).toHaveAttribute("href", "/issues/3");
   });
 
   it("shows an empty dependency state when the issue has no dependencies", () => {
