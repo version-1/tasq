@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -72,6 +73,124 @@ func TestVersionInfoUsesInjectedBuildMetadata(t *testing.T) {
 	}
 	if commit != "abc1234" {
 		t.Fatalf("commit=%q, want %q", commit, "abc1234")
+	}
+}
+
+func TestUpdateRunsConfirmedFlowWithTag(t *testing.T) {
+	runner := &fakeUpdateRunner{
+		current:   "tq v0.1.0 (commit: old)",
+		target:    "v0.2.0-rc.1",
+		installed: "tq v0.2.0-rc.1 (commit: new)",
+		confirmOK: true,
+	}
+	stdout, stderr, code := runCLIWithUpdateRunner(t, []string{"update", "--tag", "v0.2.0-rc.1"}, "yes\n", runner)
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr)
+	}
+	wantCalls := []string{
+		"current",
+		"target:v0.2.0-rc.1",
+		"confirm",
+		"stop",
+		"install:v0.2.0-rc.1",
+		"installed",
+		"migrate",
+		"start",
+	}
+	assertStringSlice(t, runner.calls, wantCalls)
+	for _, want := range []string{
+		"Current version: tq v0.1.0 (commit: old)",
+		"Target version:  v0.2.0-rc.1",
+		"Installed version: tq v0.2.0-rc.1 (commit: new)",
+		"tq update complete",
+	} {
+		if !strings.Contains(stdout, want) {
+			t.Fatalf("stdout missing %q: %s", want, stdout)
+		}
+	}
+}
+
+func TestUpdateYesSkipsConfirmation(t *testing.T) {
+	runner := &fakeUpdateRunner{
+		current:   "tq v0.1.0 (commit: old)",
+		target:    "v0.2.0",
+		installed: "tq v0.2.0 (commit: new)",
+	}
+	_, stderr, code := runCLIWithUpdateRunner(t, []string{"update", "-y"}, "", runner)
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr)
+	}
+	wantCalls := []string{
+		"current",
+		"target:",
+		"stop",
+		"install:v0.2.0",
+		"installed",
+		"migrate",
+		"start",
+	}
+	assertStringSlice(t, runner.calls, wantCalls)
+}
+
+func TestUpdateCancelledBeforeStoppingServices(t *testing.T) {
+	runner := &fakeUpdateRunner{
+		current:   "tq v0.1.0 (commit: old)",
+		target:    "v0.2.0",
+		confirmOK: false,
+	}
+	stdout, stderr, code := runCLIWithUpdateRunner(t, []string{"update"}, "no\n", runner)
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr)
+	}
+	assertStringSlice(t, runner.calls, []string{"current", "target:", "confirm"})
+	if !strings.Contains(stdout, "Update cancelled") {
+		t.Fatalf("stdout missing cancellation: %s", stdout)
+	}
+}
+
+func TestUpdateStopsAfterInstallFailure(t *testing.T) {
+	runner := &fakeUpdateRunner{
+		current:    "tq v0.1.0 (commit: old)",
+		target:     "v0.2.0",
+		installErr: errors.New("download failed"),
+	}
+	stdout, stderr, code := runCLIWithUpdateRunner(t, []string{"update", "-y"}, "", runner)
+	if code != 1 {
+		t.Fatalf("code=%d stdout=%s stderr=%s", code, stdout, stderr)
+	}
+	assertStringSlice(t, runner.calls, []string{"current", "target:", "stop", "install:v0.2.0"})
+	message := decodeCLIError(t, stderr)
+	if !strings.Contains(message, "installing tq failed") || !strings.Contains(message, "download failed") {
+		t.Fatalf("unexpected error: %s", message)
+	}
+}
+
+func TestUpdateStopsBeforeMigrationWhenInstalledVersionCheckFails(t *testing.T) {
+	runner := &fakeUpdateRunner{
+		current:      "tq v0.1.0 (commit: old)",
+		target:       "v0.2.0",
+		installedErr: errors.New("not executable"),
+	}
+	stdout, stderr, code := runCLIWithUpdateRunner(t, []string{"update", "-y"}, "", runner)
+	if code != 1 {
+		t.Fatalf("code=%d stdout=%s stderr=%s", code, stdout, stderr)
+	}
+	assertStringSlice(t, runner.calls, []string{"current", "target:", "stop", "install:v0.2.0", "installed"})
+	message := decodeCLIError(t, stderr)
+	if !strings.Contains(message, "check installed version") || !strings.Contains(message, "not executable") {
+		t.Fatalf("unexpected error: %s", message)
+	}
+}
+
+func TestUpdateHelp(t *testing.T) {
+	stdout, stderr, code := runCLI(t, []string{"update", "--help"})
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr)
+	}
+	for _, want := range []string{"Usage: tq update [-y] [--tag TAG]", "--tag TAG", "-y"} {
+		if !strings.Contains(stdout, want) {
+			t.Fatalf("stdout missing %q: %s", want, stdout)
+		}
 	}
 }
 
@@ -1656,6 +1775,86 @@ func runCLI(t *testing.T, args []string) (string, string, int) {
 	var stderr bytes.Buffer
 	code := Run(context.Background(), args, &stdout, &stderr)
 	return stdout.String(), stderr.String(), code
+}
+
+func runCLIWithUpdateRunner(t *testing.T, args []string, stdin string, runner *fakeUpdateRunner) (string, string, int) {
+	t.Helper()
+	original := newUpdateRunner
+	newUpdateRunner = func(app, config) updateRunner {
+		return runner
+	}
+	t.Cleanup(func() {
+		newUpdateRunner = original
+	})
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := run(context.Background(), args, strings.NewReader(stdin), &stdout, &stderr)
+	return stdout.String(), stderr.String(), code
+}
+
+type fakeUpdateRunner struct {
+	calls        []string
+	current      string
+	target       string
+	installed    string
+	confirmOK    bool
+	installErr   error
+	migrateErr   error
+	startErr     error
+	installedErr error
+}
+
+func (r *fakeUpdateRunner) currentVersion(context.Context) (string, error) {
+	r.calls = append(r.calls, "current")
+	return r.current, nil
+}
+
+func (r *fakeUpdateRunner) targetVersion(_ context.Context, tag string) (string, error) {
+	r.calls = append(r.calls, "target:"+tag)
+	return r.target, nil
+}
+
+func (r *fakeUpdateRunner) confirm(context.Context) (bool, error) {
+	r.calls = append(r.calls, "confirm")
+	return r.confirmOK, nil
+}
+
+func (r *fakeUpdateRunner) stopServices(context.Context) error {
+	r.calls = append(r.calls, "stop")
+	return nil
+}
+
+func (r *fakeUpdateRunner) install(_ context.Context, tag string) error {
+	r.calls = append(r.calls, "install:"+tag)
+	return r.installErr
+}
+
+func (r *fakeUpdateRunner) installedVersion(context.Context) (string, error) {
+	r.calls = append(r.calls, "installed")
+	return r.installed, r.installedErr
+}
+
+func (r *fakeUpdateRunner) migrate(context.Context) error {
+	r.calls = append(r.calls, "migrate")
+	return r.migrateErr
+}
+
+func (r *fakeUpdateRunner) startServices(context.Context) error {
+	r.calls = append(r.calls, "start")
+	return r.startErr
+}
+
+func assertStringSlice(t *testing.T, got []string, want []string) {
+	t.Helper()
+	if len(got) != len(want) {
+		t.Fatalf("got calls=%v, want %v", got, want)
+	}
+	for i := range got {
+		if got[i] != want[i] {
+			t.Fatalf("got calls=%v, want %v", got, want)
+		}
+	}
 }
 
 func writeTestJSON(t *testing.T, w http.ResponseWriter, value any) {

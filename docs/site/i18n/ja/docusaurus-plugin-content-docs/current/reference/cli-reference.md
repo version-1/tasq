@@ -72,3 +72,6 @@ create と update は、該当する場合に `--title`、`--description`、`--s
 | `tq migrate status` | migration status を表示します。 |
 | `tq web` | 実行中の Web UI を開きます。 |
 | `tq version` | version information を出力します。 |
+| `tq update [-y] [--tag <tag>]` | release を install し、databases を migrate して services を再起動します。 |
+
+`tq update` は現在の version と更新先 version を表示し、local services の停止と再起動が入ることを確認してから、既定では最新の formal release を install します。その後、新しく install された `tq version` を確認し、migrations を実行して services を起動します。`-y` は確認 prompt を skip します。`--tag` は特定の release または prerelease tag を install します。

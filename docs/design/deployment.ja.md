@@ -72,6 +72,10 @@ build を実行する必要があります。
 サービス実行ファイルは固定名で同じ directory に install します。`tq service start` は source-based な `go run`
 service startup に fallback する前に、これらの sibling executables を探します。
 
+インストール済みのユーザーは `tq update` を実行すると、最新の formal release を固定のユーザーインストール先へ
+install し、ローカル migration を適用して services を再起動できます。`tq update --tag <tag>` は release
+tag と prerelease tag の両方を受け付け、特定の tag を install します。
+
 ## Failure Handling
 
 tag 作成前の検証で失敗した場合は、表示された問題を直して同じ command を再実行します。

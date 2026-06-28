@@ -72,6 +72,10 @@ build before GoReleaser.
 the service executables next to it with their fixed names. `tq service start` looks for those sibling
 executables before falling back to source-based `go run` service startup.
 
+Installed users can run `tq update` to install the latest formal release into the fixed user install
+location, apply local migrations, and restart services. `tq update --tag <tag>` accepts both release
+and prerelease tags for targeted installs.
+
 ## Failure Handling
 
 If validation fails before the tag is created, fix the reported issue and rerun the same command.
