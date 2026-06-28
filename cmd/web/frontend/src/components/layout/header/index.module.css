@@ -25,12 +25,8 @@
 }
 
 .moreButton,
-.notificationButton {
+.languageSelector {
   border: 0;
-  background: transparent;
-  border-radius: var(--radius-sm);
-  color: var(--primary-black);
-  padding: var(--space-1-5) var(--space-2);
 }
 
 .moreButton {
@@ -40,10 +36,6 @@
 }
 
 .moreButton:hover,
-.notificationButton:hover {
-  background: var(--extra-light-gray);
-}
-
 .globalActions {
   gap: var(--space-5-5);
   margin-left: auto;
@@ -79,14 +71,24 @@
   padding: 2px var(--space-1-5);
 }
 
-.notificationButton {
+.languageSelector {
   align-items: center;
+  color: var(--muted);
   display: inline-flex;
+  font-size: 13px;
+  font-weight: 700;
+  gap: var(--space-2);
+}
+
+.languageSelector select {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font: inherit;
+  font-weight: 700;
   height: 42px;
-  justify-content: center;
-  padding: var(--space-0);
-  width: 42px;
-  color: var(--primary-black);
+  padding: var(--space-0) var(--space-3);
 }
 
 .titleRow {
@@ -109,11 +111,9 @@
 
 .createActions {
   box-shadow: var(--shadow-header-action);
-  gap: 0;
 }
 
-.createButton,
-.createSplitButton {
+.createButton {
   align-items: center;
   background: var(--primary-black);
   border-color: var(--primary-black);
@@ -124,20 +124,12 @@
 }
 
 .createButton {
-  border-radius: var(--radius-sm) var(--space-0) var(--space-0) var(--radius-sm);
+  border-radius: var(--radius-sm);
   gap: var(--space-2);
   padding: var(--space-0) var(--space-4);
 }
 
-.createSplitButton {
-  border-left-color: var(--control-divider);
-  border-radius: var(--space-0) var(--radius-sm) var(--radius-sm) var(--space-0);
-  padding: var(--space-0);
-  width: 44px;
-}
-
-.createButton:hover,
-.createSplitButton:hover {
+.createButton:hover {
   background: var(--control-strong);
 }
 
@@ -178,6 +170,10 @@
   .globalActions,
   .createActions {
     flex-wrap: wrap;
+  }
+
+  .languageSelector {
+    justify-content: space-between;
   }
 
   .search {

@@ -1,69 +1,41 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
-import type { CreateProjectInput } from "@/lib/types";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { AddProjectDialog } from "./index";
 
-function renderAddProjectDialog({
-  error = "",
-  onCancel = vi.fn(),
-  onSubmit = vi.fn<(_: CreateProjectInput) => Promise<void>>().mockResolvedValue(undefined),
-}: {
-  error?: string;
-  onCancel?: () => void;
-  onSubmit?: (input: CreateProjectInput) => Promise<void>;
-} = {}) {
-  render(<AddProjectDialog error={error} onCancel={onCancel} onSubmit={onSubmit} />);
+const projectAddCommand = "tq project add --key tasq .";
 
-  return { onCancel, onSubmit };
+function renderAddProjectDialog({ onCancel = vi.fn() }: { onCancel?: () => void } = {}) {
+  render(<AddProjectDialog onCancel={onCancel} />);
+
+  return { onCancel };
 }
 
 describe("AddProjectDialog", () => {
-  it("submits trimmed project values", async () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  it("shows a copyable tq project add command", () => {
+    renderAddProjectDialog();
+
+    expect(screen.getByRole("heading", { name: "Add project" })).toBeInTheDocument();
+    expect(screen.getByText(projectAddCommand)).toBeInTheDocument();
+  });
+
+  it("copies the command to the clipboard", async () => {
     const user = userEvent.setup();
-    const onSubmit = vi.fn<(_: CreateProjectInput) => Promise<void>>().mockResolvedValue(undefined);
-    renderAddProjectDialog({ onSubmit });
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });
+    renderAddProjectDialog();
 
-    await user.clear(screen.getByLabelText("Location"));
-    await user.type(screen.getByLabelText("Location"), "  /workspace/product-website  ");
-    await user.type(screen.getByLabelText("Key"), "  product-website  ");
-    await user.clear(screen.getByLabelText("Name"));
-    await user.type(screen.getByLabelText("Name"), "  Product Website  ");
-    await user.type(screen.getByLabelText("Description"), "  Customer-facing site  ");
-    await user.click(screen.getByRole("button", { name: "Add" }));
+    await user.click(screen.getByRole("button", { name: "Copy command" }));
 
-    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
-    expect(onSubmit).toHaveBeenCalledWith({
-      description: "Customer-facing site",
-      key: "product-website",
-      location: "/workspace/product-website",
-      name: "Product Website",
+    await waitFor(() => {
+      expect(writeText).toHaveBeenCalledWith(projectAddCommand);
     });
-  });
-
-  it("shows validation errors without submitting", async () => {
-    const user = userEvent.setup();
-    const onSubmit = vi.fn<(_: CreateProjectInput) => Promise<void>>().mockResolvedValue(undefined);
-    renderAddProjectDialog({ onSubmit });
-
-    await user.click(screen.getByRole("button", { name: "Add" }));
-
-    expect(screen.getByText("Enter a project location")).toBeTruthy();
-    expect(onSubmit).not.toHaveBeenCalled();
-  });
-
-  it("requires the typed project location to be absolute", async () => {
-    const user = userEvent.setup();
-    const onSubmit = vi.fn<(_: CreateProjectInput) => Promise<void>>().mockResolvedValue(undefined);
-    renderAddProjectDialog({ onSubmit });
-
-    await user.type(screen.getByLabelText("Location"), "relative/path");
-    await user.type(screen.getByLabelText("Key"), "relative-path");
-    await user.type(screen.getByLabelText("Name"), "Relative Path");
-    await user.click(screen.getByRole("button", { name: "Add" }));
-
-    expect(screen.getByText("Enter an absolute project location")).toBeTruthy();
-    expect(onSubmit).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Copied" })).toBeInTheDocument();
   });
 
   it("calls onCancel from the close button", async () => {
@@ -71,7 +43,7 @@ describe("AddProjectDialog", () => {
     const onCancel = vi.fn();
     renderAddProjectDialog({ onCancel });
 
-    await user.click(screen.getByRole("button", { name: "Close" }));
+    await user.click(screen.getAllByRole("button", { name: "Close" })[0]);
 
     expect(onCancel).toHaveBeenCalledTimes(1);
   });

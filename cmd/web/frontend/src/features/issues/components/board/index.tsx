@@ -10,7 +10,7 @@ type StatusChangeHandler = (id: number, status: IssueStatus) => Promise<void>;
 const boardActions = [
   { icon: "filter", titleKey: "issues.board.filter" },
   { icon: "arrow-up-down", titleKey: "issues.board.sort" },
-  { icon: "layout-grid", titleKey: "issues.board.view" },
+  { icon: "ellipsis", titleKey: "issues.board.view" },
 ] satisfies Array<{ icon: IconProxyName; titleKey: string }>;
 
 export function IssueBoard({

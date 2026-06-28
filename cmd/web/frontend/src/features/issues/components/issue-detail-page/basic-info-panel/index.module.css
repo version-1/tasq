@@ -15,6 +15,23 @@
   margin: 0;
 }
 
+.dependencyList {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.dependencyLink {
+  color: var(--markdown-link);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration-line: underline;
+  text-underline-offset: 2px;
+}
+
+.dependencyLink:hover {
+  color: var(--markdown-link-hover);
+}
+
 .statusDropdown {
   inline-size: 100%;
   position: relative;

@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Bell, ChevronDown, MoreHorizontal, Plus, Search } from "lucide-react";
+import { MoreHorizontal, Plus, Search } from "lucide-react";
 import { useTabs } from "@/context/tabs";
+import { supportedLanguages, type SupportedLanguage } from "@/lib/i18n";
 import { Breadcrumb } from "./breadcrumb";
 import styles from "./index.module.css";
 
@@ -12,6 +13,8 @@ type HeaderProps = {
   projectName: string | null;
   issueCount: number | null;
   isIssueDetailPage?: boolean;
+  language: SupportedLanguage;
+  onLanguageChange: (language: SupportedLanguage) => void;
   onAddTask: () => void;
   showViewNavigation?: boolean;
   showAddTaskButton?: boolean;
@@ -20,6 +23,8 @@ type HeaderProps = {
 export function Header({
   activePage,
   isIssueDetailPage = false,
+  language,
+  onLanguageChange,
   onAddTask,
   projectName,
   showViewNavigation = true,
@@ -44,13 +49,20 @@ export function Header({
             <input type="search" placeholder={t("header.searchPlaceholder")} />
             <kbd>{t("header.commandKey")}</kbd>
           </label>
-          <button
-            type="button"
-            className={styles.notificationButton}
-            aria-label={t("header.notifications")}
-          >
-            <Bell aria-hidden="true" size={18} strokeWidth={1.8} />
-          </button>
+          <label className={styles.languageSelector}>
+            <span>{t("header.language")}</span>
+            <select
+              aria-label={t("header.language")}
+              value={language}
+              onChange={(event) => onLanguageChange(event.target.value as SupportedLanguage)}
+            >
+              {supportedLanguages.map((item) => (
+                <option key={item} value={item}>
+                  {t(`header.languages.${item}`)}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
       </div>
 
@@ -73,14 +85,6 @@ export function Header({
             <button type="button" className={styles.createButton} onClick={onAddTask}>
               <Plus aria-hidden="true" size={17} strokeWidth={1.8} />
               {t("header.addTask")}
-            </button>
-            <button
-              type="button"
-              className={styles.createSplitButton}
-              aria-label={t("header.moreProjectActions")}
-              onClick={onAddTask}
-            >
-              <ChevronDown aria-hidden="true" size={16} strokeWidth={1.8} />
             </button>
           </div>
         ) : null}
