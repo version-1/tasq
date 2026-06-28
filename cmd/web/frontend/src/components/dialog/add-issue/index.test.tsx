@@ -15,6 +15,19 @@ const project: Project = {
   updatedAt: "2026-06-08T00:00:00Z",
 };
 
+const docsProject: Project = {
+  createdAt: "2026-06-08T00:00:00Z",
+  description: "Docs work",
+  id: 8,
+  key: "docs",
+  location: "/workspace/docs",
+  name: "Docs",
+  workflowChecksum: "",
+  updatedAt: "2026-06-08T00:00:00Z",
+};
+
+const projects = [project, docsProject];
+
 const dependencyOptions: IssueSummary[] = [
   {
     assignee: "web",
@@ -46,6 +59,36 @@ const dependencyOptions: IssueSummary[] = [
     title: "Review add issue dialog copy",
     updatedAt: "2026-06-08T00:00:00Z",
   },
+  {
+    assignee: "docs",
+    createdAt: "2026-06-08T00:00:00Z",
+    dependency_ids: [],
+    description: "Draft docs",
+    id: 3,
+    priority: "normal",
+    projectId: 8,
+    projectKey: "docs",
+    queueStatus: "queued",
+    stats: { commentCount: 0 },
+    status: "ready",
+    title: "Draft docs dependency",
+    updatedAt: "2026-06-08T00:00:00Z",
+  },
+  {
+    assignee: "docs",
+    createdAt: "2026-06-08T00:00:00Z",
+    dependency_ids: [],
+    description: "Done docs",
+    id: 4,
+    priority: "low",
+    projectId: 8,
+    projectKey: "docs",
+    queueStatus: "completed",
+    stats: { commentCount: 0 },
+    status: "done",
+    title: "Done docs dependency",
+    updatedAt: "2026-06-08T00:00:00Z",
+  },
 ];
 
 function renderAddIssueDialog({
@@ -69,6 +112,7 @@ function renderAddIssueDialog({
       error={error}
       initialStatus={initialStatus}
       project={projectOverride}
+      projects={projects}
       onCancel={onCancel}
       onSubmit={onSubmit}
     />,
@@ -87,6 +131,7 @@ describe("AddIssueDialog", () => {
     await user.type(screen.getByLabelText("Description"), "  Covers the modal flow  ");
     await user.type(screen.getByLabelText("Assignee"), "  Yuki  ");
     await user.selectOptions(screen.getByLabelText("Priority"), "high");
+    expect(screen.getByLabelText("Project")).toHaveValue("7");
     await user.click(screen.getByRole("button", { name: "Add" }));
 
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
@@ -101,14 +146,41 @@ describe("AddIssueDialog", () => {
     expect(onSubmit.mock.calls[0][0]).not.toHaveProperty("dependency_ids");
   });
 
+  it("submits with the selected project and filters dependency options", async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn<(_: CreateIssueInput) => Promise<void>>().mockResolvedValue(undefined);
+    renderAddIssueDialog({ onSubmit });
+
+    await user.selectOptions(screen.getByLabelText("Project"), "8");
+    await user.type(screen.getByLabelText("Title"), "Create docs issue");
+    await user.click(screen.getByRole("button", { name: "Select dependencies" }));
+
+    expect(screen.queryByLabelText(/#2 Add issue form test coverage/)).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/#3 Draft docs dependency/)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/#4 Done docs dependency/)).not.toBeInTheDocument();
+
+    await user.click(screen.getByLabelText(/#3 Draft docs dependency/));
+    await user.click(screen.getByRole("button", { name: "Add" }));
+
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dependency_ids: [3],
+        projectId: 8,
+        title: "Create docs issue",
+      }),
+    );
+  });
+
   it("submits selected dependency IDs", async () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn<(_: CreateIssueInput) => Promise<void>>().mockResolvedValue(undefined);
     renderAddIssueDialog({ onSubmit });
 
     await user.type(screen.getByLabelText("Title"), "Create blocked issue");
-    await user.click(screen.getByLabelText("#2 Add issue form test coverage"));
-    await user.click(screen.getByLabelText("#1 Review add issue dialog copy"));
+    await user.click(screen.getByRole("button", { name: "Select dependencies" }));
+    await user.click(screen.getByLabelText(/#2 Add issue form test coverage/));
+    await user.click(screen.getByLabelText(/#1 Review add issue dialog copy/));
     await user.click(screen.getByRole("button", { name: "Add" }));
 
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));

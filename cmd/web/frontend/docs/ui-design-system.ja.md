@@ -451,7 +451,8 @@ header の `Create`) は所有モジュール内で個別にスタイル付け�
 
 `ModalOutlet` はポータルスロットを提供します。dialog の表現は呼び出し側の
 layout コンポーネントが所有します。
-繰り返し登場するルール (`add-issue-dialog` と `add-project-dialog` 参照):
+繰り返し登場するルール (`components/dialog/add-issue` と
+`components/dialog/add-project` 参照):
 
 - backdrop: `rgb(20 20 20 / 36%)`、ビューポート全面、padding
   `80px 24px 24px`、`z-index: 30`。

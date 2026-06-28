@@ -5,11 +5,10 @@ import { projectFixtures } from "@/mocks/fixtures/projects";
 import { AddIssueDialog } from "./index";
 
 const meta = {
-  title: "Layout/AddIssueDialog",
+  title: "Layout/Dialog/AddIssue",
   component: AddIssueDialog,
   args: {
     dependencyOptions: issueFixtures
-      .filter((issue) => issue.projectId === projectFixtures[0].id)
       .map((issue) => ({
         ...issue,
         queueStatus: storyQueueStatusForIssue(issue),
@@ -18,6 +17,7 @@ const meta = {
     error: "",
     initialStatus: "ready",
     project: projectFixtures[0],
+    projects: projectFixtures,
     onCancel: noop,
     onSubmit: asyncNoop,
   },
