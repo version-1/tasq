@@ -30,8 +30,8 @@ import type {
   Project,
   Summary,
 } from "@/lib/types";
-import { AddIssueDialog } from "./add-issue-dialog";
-import { AddProjectDialog } from "./add-project-dialog";
+import { AddIssueDialog } from "@/components/dialog/add-issue";
+import { AddProjectDialog } from "@/components/dialog/add-project";
 import { Header } from "./header";
 import { Sidebar } from "./sidebar";
 import styles from "./index.module.css";
@@ -394,6 +394,7 @@ function LayoutModalContent({ shellData }: { shellData: LayoutShellData }) {
         error={shellData.addIssueError}
         initialStatus={shellData.addIssueInitialStatus}
         project={shellData.activeProject}
+        projects={shellData.projects}
         onCancel={shellData.onCloseModal}
         onSubmit={shellData.onCreateIssue}
       />

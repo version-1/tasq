@@ -3,7 +3,7 @@ import { noop } from "@/stories/fixtures";
 import { AddProjectDialog } from "./index";
 
 const meta = {
-  title: "Layout/AddProjectDialog",
+  title: "Layout/Dialog/AddProject",
   component: AddProjectDialog,
   args: {
     onCancel: noop,

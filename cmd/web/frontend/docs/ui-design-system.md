@@ -450,8 +450,8 @@ the same custom property.
 ### Modal (`ui/modal`)
 
 `ModalOutlet` exposes a portal slot. Dialog presentation is owned by the
-calling layout component. Recurring rules (see `add-issue-dialog` and
-`add-project-dialog`):
+calling layout component. Recurring rules (see `components/dialog/add-issue`
+and `components/dialog/add-project`):
 
 - Backdrop: `rgb(20 20 20 / 36%)`, full viewport, `padding: 80px 24px 24px`,
   `z-index: 30`.
