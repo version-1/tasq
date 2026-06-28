@@ -236,8 +236,6 @@ describe("ConversationPage", () => {
   });
 
   it("renders command approval requests with the reason and command only", async () => {
-    const user = userEvent.setup();
-
     renderConversationPage({
       issue_identifier: "issue-49",
       issue_id: "49",
@@ -258,11 +256,10 @@ describe("ConversationPage", () => {
     });
 
     const item = await screen.findByRole("listitem");
-    await expandEventBody(user, item);
-
     const approvalRequest = within(item).getByRole("region", { name: "Approval request" });
 
     expect(within(item).getByText("approval requested")).toBeInTheDocument();
+    expect(within(item).queryByRole("button", { name: "Expand conversation event body" })).not.toBeInTheDocument();
     expect(within(approvalRequest).getByText("needs elevated filesystem access")).toBeInTheDocument();
     expect(getCodeByText(approvalRequest, "npm run build")).toBeInTheDocument();
     expect(screen.queryByText("availableDecisions")).not.toBeInTheDocument();
@@ -270,8 +267,6 @@ describe("ConversationPage", () => {
   });
 
   it("finds approval request details nested under params", async () => {
-    const user = userEvent.setup();
-
     renderConversationPage({
       issue_identifier: "issue-49",
       issue_id: "49",
@@ -294,8 +289,6 @@ describe("ConversationPage", () => {
     });
 
     const item = await screen.findByRole("listitem");
-    await expandEventBody(user, item);
-
     const approvalRequest = within(item).getByRole("region", { name: "Approval request" });
 
     expect(within(approvalRequest).getByText("needs command approval")).toBeInTheDocument();

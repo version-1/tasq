@@ -9,20 +9,22 @@
 }
 
 .approval {
-  border-color: var(--border);
-  box-shadow: var(--shadow-panel);
+  border-color: color-mix(in srgb, var(--warning) 36%, var(--border));
+  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--warning) 72%, var(--border)), var(--shadow-panel);
 }
 
 .header {
   align-items: start;
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.headerTop {
+  align-items: start;
   display: flex;
   gap: 12px;
   justify-content: space-between;
-}
-
-.headerTitleStack {
-  display: grid;
-  gap: 8px;
   min-width: 0;
 }
 
@@ -96,12 +98,14 @@
   --markdown-code-bg: var(--extra-light-gray);
 
   font-size: 12px;
+  inline-size: 100%;
   line-height: 1.45;
-  max-width: min(100%, 80ch);
+  min-width: 0;
 }
 
 .commandMarkdown pre {
   border-radius: var(--radius-sm);
+  inline-size: 100%;
   margin: 0;
   padding: 8px 10px;
 }
@@ -167,9 +171,16 @@
   gap: 12px;
 }
 
+.approvalTop {
+  background: color-mix(in srgb, var(--warning) 10%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--warning) 30%, var(--border));
+  border-radius: var(--radius-sm);
+  padding: 12px;
+}
+
 .approvalReasonBlock {
-  background: var(--extra-light-gray);
-  border: 1px solid var(--border);
+  background: var(--surface);
+  border: 1px solid color-mix(in srgb, var(--warning) 26%, var(--border));
   border-radius: var(--radius-sm);
   display: grid;
   gap: 5px;
@@ -191,13 +202,14 @@
 }
 
 .approvalCommandMarkdown {
-  --markdown-code-bg: var(--extra-light-gray);
+  --markdown-code-bg: var(--surface);
 
   font-size: 13px;
   line-height: 1.5;
 }
 
 .approvalCommandMarkdown pre {
+  border-color: color-mix(in srgb, var(--warning) 26%, var(--border));
   margin: 0;
 }
 
@@ -255,7 +267,7 @@
 }
 
 @media (max-width: 720px) {
-  .header {
+  .headerTop {
     align-items: start;
     flex-direction: column;
     gap: 4px;

@@ -22,6 +22,7 @@ export { EventHeader } from "./event-header";
 export function EventCard({ event }: { event: OrchestratorConversationEvent }) {
   const bodyID = useId();
   const [isBodyOpen, setIsBodyOpen] = useState(false);
+  const isApprovalRequest = event.event === "item/commandExecution/requestApproval";
 
   return (
     <article
@@ -30,13 +31,19 @@ export function EventCard({ event }: { event: OrchestratorConversationEvent }) {
         event.event === "item/commandExecution/requestApproval" ? styles.approval : "",
       ].join(" ")}
     >
+      {isApprovalRequest ? (
+        <div className={styles.approvalTop}>
+          <ApprovalRequestEventBody event={event} />
+        </div>
+      ) : null}
       <EventHeader
         bodyID={bodyID}
+        canFold={!isApprovalRequest}
         event={event}
         isBodyOpen={isBodyOpen}
         onToggleBody={() => setIsBodyOpen((current) => !current)}
       />
-      {isBodyOpen ? (
+      {isApprovalRequest ? null : isBodyOpen ? (
         <div id={bodyID} className={styles.body}>
           <EventBody event={event} />
         </div>

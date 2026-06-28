@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { IconProxy } from "@/components/ui/icon-proxy";
 import { Markdown } from "@/components/ui/markdown";
@@ -7,6 +8,7 @@ import { itemCompletedView, type Translator } from "../payload";
 
 type EventHeaderProps = {
   bodyID: string;
+  canFold?: boolean;
   event: OrchestratorConversationEvent;
   isBodyOpen: boolean;
   onToggleBody: () => void;
@@ -14,6 +16,7 @@ type EventHeaderProps = {
 
 export function EventHeader({
   bodyID,
+  canFold = true,
   event,
   isBodyOpen,
   onToggleBody,
@@ -22,62 +25,67 @@ export function EventHeader({
   const foldLabel = isBodyOpen
     ? t("issues.detailPage.collapseConversationEvent")
     : t("issues.detailPage.expandConversationEvent");
+  const title = headerTitle(event, t);
 
   return (
     <div className={styles.header}>
-      <HeaderTitle event={event} t={t} />
-      <div className={styles.headerMeta}>
-        <span className={styles.time}>{formatDateTime(event.at)}</span>
-        <button
-          type="button"
-          className={styles.foldButton}
-          aria-controls={bodyID}
-          aria-expanded={isBodyOpen}
-          aria-label={foldLabel}
-          title={foldLabel}
-          onClick={onToggleBody}
-        >
-          <IconProxy className={styles.foldIcon} name="chevron-down" size={16} strokeWidth={2.3} />
-        </button>
+      <div className={styles.headerTop}>
+        {title.label}
+        <div className={styles.headerMeta}>
+          <span className={styles.time}>{formatDateTime(event.at)}</span>
+          {canFold ? (
+            <button
+              type="button"
+              className={styles.foldButton}
+              aria-controls={bodyID}
+              aria-expanded={isBodyOpen}
+              aria-label={foldLabel}
+              title={foldLabel}
+              onClick={onToggleBody}
+            >
+              <IconProxy className={styles.foldIcon} name="chevron-down" size={16} strokeWidth={2.3} />
+            </button>
+          ) : null}
+        </div>
       </div>
+      {title.command ? (
+        <Markdown
+          className={styles.commandMarkdown}
+          content={`\`\`\`shell\n${title.command}\n\`\`\``}
+          emptyText=""
+        />
+      ) : null}
     </div>
   );
 }
 
-function HeaderTitle({
-  event,
-  t,
-}: {
-  event: OrchestratorConversationEvent;
-  t: Translator;
-}) {
+function headerTitle(
+  event: OrchestratorConversationEvent,
+  t: Translator,
+): { label: ReactNode; command: string } {
   if (event.event === "item/commandExecution/requestApproval") {
-    return (
-      <span className={[styles.type, styles.approvalBadge].join(" ")}>
-        {eventLabel(event.event, t)}
-      </span>
-    );
+    return {
+      label: (
+        <span className={[styles.type, styles.approvalBadge].join(" ")}>
+          {eventLabel(event.event, t)}
+        </span>
+      ),
+      command: "",
+    };
   }
 
   if (event.event !== "item/completed") {
-    return <span className={styles.type}>{eventLabel(event.event, t)}</span>;
+    return {
+      label: <span className={styles.type}>{eventLabel(event.event, t)}</span>,
+      command: "",
+    };
   }
 
   const item = itemCompletedView(event.payload_json);
-  if (item.command === "") {
-    return <span className={styles.type}>{item.type}</span>;
-  }
-
-  return (
-    <div className={styles.headerTitleStack}>
-      <span className={styles.type}>{item.type}</span>
-      <Markdown
-        className={styles.commandMarkdown}
-        content={`\`\`\`shell\n${item.command}\n\`\`\``}
-        emptyText=""
-      />
-    </div>
-  );
+  return {
+    label: <span className={styles.type}>{item.type}</span>,
+    command: item.command,
+  };
 }
 
 function eventLabel(event: OrchestratorConversationEvent["event"], t: Translator): string {
