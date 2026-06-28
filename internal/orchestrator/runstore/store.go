@@ -360,7 +360,9 @@ func (s *Store) ConversationEvents(ctx context.Context, runID string) ([]run.Run
 				'failed',
 				'cancelled',
 				'item/completed',
-				'item/commandExecution/requestApproval'
+				'item/commandExecution/requestApproval',
+				'thread/tokenUsage/updated',
+				'account/rateLimits/updated'
 			)
 		ORDER BY id ASC`, runID)
 	if err != nil {

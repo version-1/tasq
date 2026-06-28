@@ -130,6 +130,59 @@
   white-space: pre-wrap;
 }
 
+.metrics {
+  display: grid;
+  gap: 12px;
+}
+
+.metricGroup {
+  display: grid;
+  gap: 8px;
+}
+
+.metricHeading {
+  color: var(--primary-black);
+  font-size: 14px;
+  margin: 0;
+}
+
+.metricGrid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  margin: 0;
+}
+
+.metric {
+  background: var(--extra-light-gray);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 10px;
+}
+
+.metric dt {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.metric dd {
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.metricNote {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 0;
+}
+
 @media (max-width: 720px) {
   .header {
     align-items: start;

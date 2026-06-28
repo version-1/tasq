@@ -40,3 +40,62 @@ export const ApprovalRequest: Story = {
     },
   },
 };
+
+export const TokenUsage: Story = {
+  args: {
+    event: {
+      at: "2026-06-01T08:06:49.000Z",
+      event: "thread/tokenUsage/updated",
+      message: "token usage updated",
+      payload_json: JSON.stringify({
+        tokenUsage: {
+          total: {
+            totalTokens: 8712831,
+            inputTokens: 8684367,
+            cachedInputTokens: 8415104,
+            outputTokens: 28464,
+            reasoningOutputTokens: 5186,
+          },
+          last: {
+            totalTokens: 146759,
+            inputTokens: 146356,
+            cachedInputTokens: 145280,
+            outputTokens: 403,
+            reasoningOutputTokens: 203,
+          },
+          modelContextWindow: 258400,
+        },
+      }),
+    },
+  },
+};
+
+export const RateLimits: Story = {
+  args: {
+    event: {
+      at: "2026-06-01T08:06:54.000Z",
+      event: "account/rateLimits/updated",
+      message: "rate limits updated",
+      payload_json: JSON.stringify({
+        rateLimits: {
+          limitId: "codex",
+          limitName: null,
+          primary: {
+            usedPercent: 13,
+            windowDurationMins: 300,
+            resetsAt: 1781415835,
+          },
+          secondary: {
+            usedPercent: 13,
+            windowDurationMins: 10080,
+            resetsAt: 1781572462,
+          },
+          credits: null,
+          individualLimit: null,
+          planType: "pro",
+          rateLimitReachedType: null,
+        },
+      }),
+    },
+  },
+};

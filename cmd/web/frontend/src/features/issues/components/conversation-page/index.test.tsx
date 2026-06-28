@@ -197,4 +197,72 @@ describe("ConversationPage", () => {
     ).toBeInTheDocument();
     expect(within(approvalRequest).getByText("make test")).toBeInTheDocument();
   });
+
+  it("renders token usage and rate limit update events", async () => {
+    renderConversationPage({
+      issue_identifier: "issue-50",
+      issue_id: "50",
+      run_id: "run-usage",
+      events: [
+        {
+          at: "2026-06-15T04:00:00Z",
+          event: "thread/tokenUsage/updated",
+          message: "token usage updated",
+          payload_json: JSON.stringify({
+            tokenUsage: {
+              total: {
+                totalTokens: 8712831,
+                inputTokens: 8684367,
+                cachedInputTokens: 8415104,
+                outputTokens: 28464,
+                reasoningOutputTokens: 5186,
+              },
+              last: {
+                totalTokens: 146759,
+                inputTokens: 146356,
+                cachedInputTokens: 145280,
+                outputTokens: 403,
+                reasoningOutputTokens: 203,
+              },
+              modelContextWindow: 258400,
+            },
+          }),
+        },
+        {
+          at: "2026-06-15T04:01:00Z",
+          event: "account/rateLimits/updated",
+          message: "rate limits updated",
+          payload_json: JSON.stringify({
+            rateLimits: {
+              limitId: "codex",
+              primary: {
+                usedPercent: 13,
+                windowDurationMins: 300,
+                resetsAt: 1781415835,
+              },
+              secondary: {
+                usedPercent: 13,
+                windowDurationMins: 10080,
+                resetsAt: 1781572462,
+              },
+              planType: "pro",
+              rateLimitReachedType: null,
+            },
+          }),
+        },
+      ],
+    });
+
+    await screen.findByText("Conversation history · run-usage");
+
+    expect(screen.getByText("token usage updated")).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Token usage" })).toBeInTheDocument();
+    expect(screen.getByText("8,712,831")).toBeInTheDocument();
+    expect(screen.getByText("Context window 258,400 tokens")).toBeInTheDocument();
+    expect(screen.getByText("rate limits updated")).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Rate limits" })).toBeInTheDocument();
+    expect(screen.getByText("codex")).toBeInTheDocument();
+    expect(screen.getByText("pro")).toBeInTheDocument();
+    expect(screen.getByText("Not reached")).toBeInTheDocument();
+  });
 });

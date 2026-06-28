@@ -95,10 +95,124 @@ function EventBody({
     return <ApprovalRequest event={event} t={t} />;
   }
 
+  if (event.event === "thread/tokenUsage/updated") {
+    return <TokenUsage event={event} t={t} />;
+  }
+
+  if (event.event === "account/rateLimits/updated") {
+    return <RateLimits event={event} t={t} />;
+  }
+
   return (
     <p className={styles.statusMessage}>
       {event.message || t(`runStatuses.${event.event}`)}
     </p>
+  );
+}
+
+function TokenUsage({
+  event,
+  t,
+}: {
+  event: OrchestratorConversationEvent;
+  t: Translator;
+}) {
+  const payload = tokenUsageView(event.payload_json);
+
+  if (!payload) {
+    return (
+      <p className={styles.statusMessage}>
+        {event.message || t("issues.detailPage.emptyConversationEvent")}
+      </p>
+    );
+  }
+
+  return (
+    <section className={styles.metrics} aria-label={t("issues.detailPage.tokenUsage")}>
+      <div className={styles.metricGroup}>
+        <h3 className={styles.metricHeading}>{t("issues.detailPage.tokenUsageTotal")}</h3>
+        <MetricGrid
+          items={[
+            [t("issues.detailPage.totalTokens"), formatNumber(payload.total.totalTokens)],
+            [t("dashboard.inputTokens"), formatNumber(payload.total.inputTokens)],
+            [t("issues.detailPage.cachedInputTokens"), formatNumber(payload.total.cachedInputTokens)],
+            [t("dashboard.outputTokens"), formatNumber(payload.total.outputTokens)],
+            [t("issues.detailPage.reasoningOutputTokens"), formatNumber(payload.total.reasoningOutputTokens)],
+          ]}
+        />
+      </div>
+      <div className={styles.metricGroup}>
+        <h3 className={styles.metricHeading}>{t("issues.detailPage.tokenUsageLast")}</h3>
+        <MetricGrid
+          items={[
+            [t("issues.detailPage.totalTokens"), formatNumber(payload.last.totalTokens)],
+            [t("dashboard.inputTokens"), formatNumber(payload.last.inputTokens)],
+            [t("issues.detailPage.cachedInputTokens"), formatNumber(payload.last.cachedInputTokens)],
+            [t("dashboard.outputTokens"), formatNumber(payload.last.outputTokens)],
+            [t("issues.detailPage.reasoningOutputTokens"), formatNumber(payload.last.reasoningOutputTokens)],
+          ]}
+        />
+      </div>
+      <p className={styles.metricNote}>
+        {t("issues.detailPage.modelContextWindow", {
+          count: formatNumber(payload.modelContextWindow),
+        })}
+      </p>
+    </section>
+  );
+}
+
+function RateLimits({
+  event,
+  t,
+}: {
+  event: OrchestratorConversationEvent;
+  t: Translator;
+}) {
+  const payload = rateLimitsView(event.payload_json);
+
+  if (!payload) {
+    return (
+      <p className={styles.statusMessage}>
+        {event.message || t("issues.detailPage.emptyConversationEvent")}
+      </p>
+    );
+  }
+
+  return (
+    <section className={styles.metrics} aria-label={t("issues.detailPage.rateLimits")}>
+      <MetricGrid
+        items={[
+          [t("issues.detailPage.limitId"), payload.limitId],
+          [t("issues.detailPage.planType"), payload.planType],
+          [
+            t("issues.detailPage.primaryLimit"),
+            formatRateLimitWindow(payload.primary, t),
+          ],
+          [
+            t("issues.detailPage.secondaryLimit"),
+            formatRateLimitWindow(payload.secondary, t),
+          ],
+          [
+            t("issues.detailPage.rateLimitReachedType"),
+            payload.rateLimitReachedType || t("issues.detailPage.rateLimitNotReached"),
+          ],
+        ]}
+      />
+    </section>
+  );
+}
+
+function MetricGrid({ items }: { items: Array<[string, string]> }) {
+  return (
+    <dl className={styles.metricGrid}>
+      {items.map(([label, value]) => (
+        <div key={label} className={styles.metric}>
+          <dt>{label}</dt>
+          <dd>{value}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }
 
@@ -128,6 +242,132 @@ function eventLabel(event: OrchestratorConversationEvent["event"], t: Translator
     return t("issues.detailPage.turnCompleted");
   }
   return t(`runStatuses.${event}`);
+}
+
+type TokenUsageBucket = {
+  totalTokens: number;
+  inputTokens: number;
+  cachedInputTokens: number;
+  outputTokens: number;
+  reasoningOutputTokens: number;
+};
+
+type TokenUsageView = {
+  total: TokenUsageBucket;
+  last: TokenUsageBucket;
+  modelContextWindow: number;
+};
+
+type RateLimitWindow = {
+  usedPercent: number;
+  windowDurationMins: number;
+  resetsAt: number;
+};
+
+type RateLimitsView = {
+  limitId: string;
+  planType: string;
+  primary: RateLimitWindow;
+  secondary: RateLimitWindow;
+  rateLimitReachedType: string;
+};
+
+function tokenUsageView(payloadJSON: string): TokenUsageView | null {
+  const payload = parsePayloadJSON(payloadJSON);
+  if (!isRecord(payload) || !isRecord(payload.tokenUsage)) {
+    return null;
+  }
+  const total = tokenUsageBucket(payload.tokenUsage.total);
+  const last = tokenUsageBucket(payload.tokenUsage.last);
+  const modelContextWindow = findNumberField(payload.tokenUsage, "modelContextWindow");
+  if (!total || !last || modelContextWindow === null) {
+    return null;
+  }
+  return { total, last, modelContextWindow };
+}
+
+function tokenUsageBucket(value: unknown): TokenUsageBucket | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+  const totalTokens = findNumberField(value, "totalTokens");
+  const inputTokens = findNumberField(value, "inputTokens");
+  const cachedInputTokens = findNumberField(value, "cachedInputTokens");
+  const outputTokens = findNumberField(value, "outputTokens");
+  const reasoningOutputTokens = findNumberField(value, "reasoningOutputTokens");
+  if (
+    totalTokens === null ||
+    inputTokens === null ||
+    cachedInputTokens === null ||
+    outputTokens === null ||
+    reasoningOutputTokens === null
+  ) {
+    return null;
+  }
+  return {
+    totalTokens,
+    inputTokens,
+    cachedInputTokens,
+    outputTokens,
+    reasoningOutputTokens,
+  };
+}
+
+function rateLimitsView(payloadJSON: string): RateLimitsView | null {
+  const payload = parsePayloadJSON(payloadJSON);
+  if (!isRecord(payload) || !isRecord(payload.rateLimits)) {
+    return null;
+  }
+  const primary = rateLimitWindow(payload.rateLimits.primary);
+  const secondary = rateLimitWindow(payload.rateLimits.secondary);
+  const limitId = findStringField(payload.rateLimits, "limitId");
+  const planType = findStringField(payload.rateLimits, "planType");
+  if (!primary || !secondary || limitId === "" || planType === "") {
+    return null;
+  }
+  return {
+    limitId,
+    planType,
+    primary,
+    secondary,
+    rateLimitReachedType: findStringField(payload.rateLimits, "rateLimitReachedType"),
+  };
+}
+
+function rateLimitWindow(value: unknown): RateLimitWindow | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+  const usedPercent = findNumberField(value, "usedPercent");
+  const windowDurationMins = findNumberField(value, "windowDurationMins");
+  const resetsAt = findNumberField(value, "resetsAt");
+  if (usedPercent === null || windowDurationMins === null || resetsAt === null) {
+    return null;
+  }
+  return { usedPercent, windowDurationMins, resetsAt };
+}
+
+function formatRateLimitWindow(window: RateLimitWindow, t: Translator): string {
+  return t("issues.detailPage.rateLimitWindow", {
+    percent: window.usedPercent,
+    minutes: formatNumber(window.windowDurationMins),
+    resetsAt: formatUnixSeconds(window.resetsAt),
+  });
+}
+
+function formatUnixSeconds(value: number): string {
+  const date = new Date(value * 1000);
+  if (Number.isNaN(date.getTime())) {
+    return String(value);
+  }
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
+}
+
+function formatNumber(value: number): string {
+  return new Intl.NumberFormat().format(value);
 }
 
 function extractAggregatedOutput(payloadJSON: string): string {
