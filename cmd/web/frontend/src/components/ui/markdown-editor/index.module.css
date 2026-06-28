@@ -110,10 +110,15 @@
   width: 100%;
 }
 
+.panel,
+.textarea {
+  min-block-size: var(--markdown-editor-panel-min-block-size, auto);
+}
+
 .preview {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  min-block-size: 160px;
+  min-block-size: var(--markdown-editor-panel-min-block-size, 160px);
   padding: var(--space-4);
 }
 

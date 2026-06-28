@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useState, type CSSProperties } from "react";
 import { IconProxy } from "@/components/ui/icon-proxy";
 import { Markdown } from "@/components/ui/markdown";
 import styles from "./index.module.css";
@@ -25,6 +25,7 @@ export function MarkdownEditor({
   labels,
   rows = 12,
   showActions = true,
+  stablePanelRows,
   title,
   titleID,
   value,
@@ -38,6 +39,7 @@ export function MarkdownEditor({
   labels: MarkdownEditorLabels;
   rows?: number;
   showActions?: boolean;
+  stablePanelRows?: number;
   title?: string;
   titleID?: string;
   value: string;
@@ -54,6 +56,11 @@ export function MarkdownEditor({
   const activePanelID = `${editorID}-panel`;
   const rawTabID = `${editorID}-raw-tab`;
   const previewTabID = `${editorID}-preview-tab`;
+  const panelStyle = stablePanelRows
+    ? ({
+        "--markdown-editor-panel-min-block-size": `calc(${stablePanelRows}lh + (var(--space-3-5) * 2) + 2px)`,
+      } as CSSProperties)
+    : undefined;
 
   useEffect(() => {
     if (!isEditing) {
@@ -159,9 +166,11 @@ export function MarkdownEditor({
           </div>
           {activeTab === "raw" ? (
             <div
+              className={styles.panel}
               id={activePanelID}
               role="tabpanel"
               aria-labelledby={rawTabID}
+              style={panelStyle}
             >
               <textarea
                 aria-label={labels.textarea}
@@ -173,10 +182,11 @@ export function MarkdownEditor({
             </div>
           ) : (
             <div
-              className={styles.preview}
+              className={`${styles.panel} ${styles.preview}`}
               id={activePanelID}
               role="tabpanel"
               aria-labelledby={previewTabID}
+              style={panelStyle}
             >
               <Markdown content={draft} emptyText={labels.empty} />
             </div>

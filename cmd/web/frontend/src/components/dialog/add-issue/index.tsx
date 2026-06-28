@@ -123,6 +123,7 @@ export function AddIssueDialog({
                 textarea: t("addIssue.fields.description"),
               }}
               showActions={false}
+              stablePanelRows={32}
               value={values.description}
               onChange={(description) => setValues({ ...values, description })}
               rows={32}

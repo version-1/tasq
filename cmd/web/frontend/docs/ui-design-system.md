@@ -494,6 +494,8 @@ and `components/dialog/add-project`):
 - Edit mode uses underlined `Raw` / `Preview` tabs. `Raw` is a textarea with
   configurable rows; `Preview` renders the current draft immediately through
   `ui/markdown`.
+- Dialogs can opt into a stable tab panel height so switching between `Raw` and
+  `Preview` does not resize the surrounding form.
 - Save/cancel controls are optional so dialogs can own their own submit/cancel
   actions while reusing the same editing surface.
 - Failed saves keep the draft in edit mode and display the error message below
