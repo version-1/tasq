@@ -998,7 +998,7 @@ const resources = {
 
 function initialLanguage(): SupportedLanguage {
   if (typeof window === "undefined") {
-    return "ja";
+    return "en";
   }
 
   const stored = window.localStorage.getItem("tasq.language");
@@ -1006,7 +1006,7 @@ function initialLanguage(): SupportedLanguage {
     return stored;
   }
 
-  return navigator.language.toLowerCase().startsWith("en") ? "en" : "ja";
+  return "en";
 }
 
 export function isSupportedLanguage(
@@ -1017,7 +1017,7 @@ export function isSupportedLanguage(
 
 if (!i18n.isInitialized) {
   void i18n.use(initReactI18next).init({
-    fallbackLng: "ja",
+    fallbackLng: "en",
     interpolation: {
       escapeValue: false,
     },
