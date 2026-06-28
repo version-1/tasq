@@ -9,8 +9,8 @@
 }
 
 .approval {
-  border-color: color-mix(in srgb, var(--warning) 36%, var(--border));
-  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--warning) 72%, var(--border)), var(--shadow-panel);
+  border-color: var(--info-border);
+  box-shadow: inset 3px 0 0 var(--info-accent), var(--shadow-panel);
 }
 
 .header {
@@ -82,10 +82,10 @@
 }
 
 .approvalBadge {
-  background: var(--extra-light-gray);
-  border: 1px solid var(--border);
+  background: var(--info-bg);
+  border: 1px solid var(--info-border);
   border-radius: var(--radius-pill);
-  color: var(--primary-black);
+  color: var(--info-text);
   padding: 3px 10px;
 }
 
@@ -172,15 +172,15 @@
 }
 
 .approvalTop {
-  background: color-mix(in srgb, var(--warning) 10%, var(--surface));
-  border: 1px solid color-mix(in srgb, var(--warning) 30%, var(--border));
+  background: var(--info-bg);
+  border: 1px solid var(--info-border);
   border-radius: var(--radius-sm);
   padding: 12px;
 }
 
 .approvalReasonBlock {
   background: var(--surface);
-  border: 1px solid color-mix(in srgb, var(--warning) 26%, var(--border));
+  border: 1px solid var(--info-border);
   border-radius: var(--radius-sm);
   display: grid;
   gap: 5px;
@@ -188,7 +188,7 @@
 }
 
 .approvalLabel {
-  color: var(--muted);
+  color: var(--info-text);
   font-size: 12px;
   font-weight: 700;
 }
@@ -209,7 +209,7 @@
 }
 
 .approvalCommandMarkdown pre {
-  border-color: color-mix(in srgb, var(--warning) 26%, var(--border));
+  border-color: var(--info-border);
   margin: 0;
 }
 

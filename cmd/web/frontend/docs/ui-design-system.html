@@ -18,6 +18,10 @@
         --accent-strong: #1a1a1a;
         --danger: #b42318;
         --warning: #a15c07;
+        --info-accent: #2563eb;
+        --info-bg: #eff6ff;
+        --info-border: #bfdbfe;
+        --info-text: #1e3a8a;
         --ok: #087443;
         --primary-black: #0a0a0a;
         --dark-gray: #1a1a1a;
@@ -640,7 +644,10 @@
       }
 
       .callout {
-        border-left: 6px solid var(--warning);
+        background: var(--info-bg);
+        border-color: var(--info-border);
+        border-left: 6px solid var(--info-accent);
+        color: var(--info-text);
         padding: var(--space-4);
       }
 
