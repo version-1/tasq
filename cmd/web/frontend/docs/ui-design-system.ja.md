@@ -486,6 +486,22 @@ layout コンポーネントが所有します。
 - `attachment://<id>` 参照は
   `/tracker/api/v1/attachments/<id>/content` に書き換えられます。
 
+### Markdown Editor (`ui/markdown-editor`)
+
+- issue description と Markdown 入力 form field のために、共有 Markdown
+  renderer を read/edit mode で包む component。
+- Read mode は通常の Markdown 表示を維持し、header に compact な pencil
+  icon action を表示できます。
+- Edit mode は下線付きの `Raw` / `Preview` tabs を使います。`Raw` は rows
+  を設定できる textarea、`Preview` は現在の draft を即時に `ui/markdown`
+  で表示します。
+- Dialog は stable tab panel height を opt-in でき、`Raw` / `Preview`
+  を切り替えても周囲の form が resize しないようにできます。
+- Save/cancel controls は任意です。dialog が submit/cancel を所有する場合も、
+  同じ editing surface を再利用できます。
+- Save 失敗時は draft を edit mode に保持し、editor 下部に error message を
+  表示します。
+
 ### Panel Message (`ui/pannel-message`)
 
 - 致命的エラーと empty state 用の wide panel surface (`max-width: 960px`)。

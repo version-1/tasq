@@ -18,6 +18,7 @@ const api = vi.hoisted(() => ({
   fetchIssueAttachments: vi.fn(),
   fetchOrchestratorConversation: vi.fn(),
   fetchOrchestratorIssueRuntime: vi.fn(),
+  updateIssueDescription: vi.fn(),
   updateIssueStatus: vi.fn(),
 }));
 
@@ -41,6 +42,7 @@ describe("IssueDetailPage", () => {
     api.fetchIssueAttachments.mockReset();
     api.fetchOrchestratorConversation.mockReset();
     api.fetchOrchestratorIssueRuntime.mockReset();
+    api.updateIssueDescription.mockReset();
     api.updateIssueStatus.mockReset();
 
     api.fetchIssue.mockResolvedValue(issue);
@@ -48,6 +50,7 @@ describe("IssueDetailPage", () => {
     api.fetchOrchestratorIssueRuntime.mockResolvedValue(runtime);
     api.fetchComments.mockResolvedValue(commentsResponse);
     api.fetchOrchestratorConversation.mockResolvedValue(conversation);
+    api.updateIssueDescription.mockResolvedValue({ ...issue, description: "Updated **description**" });
   });
 
   it("shows the details tab by default without loading comments", async () => {
@@ -87,6 +90,65 @@ describe("IssueDetailPage", () => {
 
     expect(api.updateIssueStatus).toHaveBeenCalledWith(42, "in_progress");
     expect(screen.getByRole("button", { name: "Change status" })).toHaveTextContent("in_progress");
+  });
+
+  it("edits markdown descriptions", async () => {
+    const user = userEvent.setup();
+    renderIssueDetail();
+
+    await user.click(await screen.findByRole("button", { name: "Edit description" }));
+    await user.clear(screen.getByRole("textbox", { name: "Description" }));
+    await user.type(screen.getByRole("textbox", { name: "Description" }), "Updated **description**");
+    await user.click(screen.getByRole("tab", { name: "Preview" }));
+    expect(screen.getByText("description")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(api.updateIssueDescription).toHaveBeenCalledWith(42, "Updated **description**");
+    expect(
+      await screen.findByText((_, element) =>
+        element?.tagName === "P" && element.textContent === "Updated description",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("keeps markdown edit content when saving fails", async () => {
+    const user = userEvent.setup();
+    api.updateIssueDescription.mockRejectedValueOnce(new Error("failed to update"));
+    renderIssueDetail();
+
+    await user.click(await screen.findByRole("button", { name: "Edit description" }));
+    await user.clear(screen.getByRole("textbox", { name: "Description" }));
+    await user.type(screen.getByRole("textbox", { name: "Description" }), "Draft after failure");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(await screen.findByText("failed to update")).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Description" })).toHaveValue("Draft after failure");
+  });
+
+  it("saves an empty markdown description", async () => {
+    const user = userEvent.setup();
+    api.updateIssueDescription.mockResolvedValueOnce({ ...issue, description: "" });
+    renderIssueDetail();
+
+    await user.click(await screen.findByRole("button", { name: "Edit description" }));
+    await user.clear(screen.getByRole("textbox", { name: "Description" }));
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(api.updateIssueDescription).toHaveBeenCalledWith(42, "");
+    expect(await screen.findByText("No description")).toBeInTheDocument();
+  });
+
+  it("cancels markdown description edits", async () => {
+    const user = userEvent.setup();
+    renderIssueDetail();
+
+    await user.click(await screen.findByRole("button", { name: "Edit description" }));
+    await user.clear(screen.getByRole("textbox", { name: "Description" }));
+    await user.type(screen.getByRole("textbox", { name: "Description" }), "Discard this");
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+
+    expect(screen.queryByDisplayValue("Discard this")).not.toBeInTheDocument();
+    expect(screen.getByText("Show details in tabs.")).toBeInTheDocument();
   });
 
   it("loads comments when the comments tab is selected", async () => {

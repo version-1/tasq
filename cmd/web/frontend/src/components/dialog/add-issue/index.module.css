@@ -53,6 +53,18 @@
   font-weight: 700;
 }
 
+.markdownEditorField {
+  color: var(--dark-gray);
+  display: grid;
+  gap: var(--space-1-5);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.markdownEditorField textarea {
+  font-weight: 400;
+}
+
 .field input,
 .field select,
 .field textarea {

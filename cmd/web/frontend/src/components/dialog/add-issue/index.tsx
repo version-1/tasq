@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { issueStatuses, priorities } from "@/lib/types";
+import { MarkdownEditor } from "@/components/ui/markdown-editor";
 import type {
   CreateIssueInput,
   IssueStatus,
@@ -13,7 +14,6 @@ import { DialogActions } from "./dialog-actions";
 import { DialogHeader } from "./dialog-header";
 import { FormField } from "./form-field";
 import { FormSelect } from "./form-select";
-import { FormTextarea } from "./form-textarea";
 import styles from "./index.module.css";
 import type { AddIssueFormValues } from "./types";
 
@@ -107,13 +107,28 @@ export function AddIssueDialog({
             />
           </FormField>
 
-          <FormTextarea
-            label={t("addIssue.fields.description")}
-            placeholder={t("addIssue.placeholders.description")}
-            rows={32}
-            value={values.description}
-            onValueChange={(description) => setValues({ ...values, description })}
-          />
+          <div className={styles.markdownEditorField}>
+            <span>{t("addIssue.fields.description")}</span>
+            <MarkdownEditor
+              initialMode="edit"
+              initialTab="raw"
+              labels={{
+                cancel: t("markdownEditor.cancel"),
+                edit: t("markdownEditor.edit"),
+                empty: t("issues.noDescription"),
+                preview: t("markdownEditor.preview"),
+                raw: t("markdownEditor.raw"),
+                save: t("markdownEditor.save"),
+                saving: t("markdownEditor.saving"),
+                textarea: t("addIssue.fields.description"),
+              }}
+              showActions={false}
+              stablePanelRows={32}
+              value={values.description}
+              onChange={(description) => setValues({ ...values, description })}
+              rows={32}
+            />
+          </div>
 
           <FormSelect
             label={t("addIssue.fields.project")}
@@ -205,18 +220,25 @@ function initialAddIssueValues(status: IssueStatus, projectID: number | null): A
 }
 
 function toCreateIssueInput(values: AddIssueFormValues, title: string, projectID: number): CreateIssueInput {
+  const description = descriptionForCreate(values.description);
   const input: CreateIssueInput = {
     projectId: projectID,
     title,
-    description: values.description.trim() || undefined,
     status: values.status,
     priority: values.priority,
     assignee: values.assignee.trim() || undefined,
   };
+  if (description !== undefined) {
+    input.description = description;
+  }
   if (values.dependencyIDs.length > 0) {
     input.dependency_ids = values.dependencyIDs;
   }
   return input;
+}
+
+function descriptionForCreate(description: string): string | undefined {
+  return description.trim() === "" ? undefined : description;
 }
 
 function parseProjectID(value: string): number | null {

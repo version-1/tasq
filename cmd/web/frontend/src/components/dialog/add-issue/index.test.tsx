@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import type { CreateIssueInput, IssueSummary, Project } from "@/lib/types";
@@ -137,13 +137,36 @@ describe("AddIssueDialog", () => {
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
     expect(onSubmit).toHaveBeenCalledWith({
       assignee: "Yuki",
-      description: "Covers the modal flow",
+      description: "  Covers the modal flow  ",
       priority: "high",
       projectId: 7,
       status: "ready",
       title: "Ship modal tests",
     });
     expect(onSubmit.mock.calls[0][0]).not.toHaveProperty("dependency_ids");
+  });
+
+  it("omits blank markdown descriptions", async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn<(_: CreateIssueInput) => Promise<void>>().mockResolvedValue(undefined);
+    renderAddIssueDialog({ onSubmit });
+
+    await user.type(screen.getByLabelText("Title"), "Create issue without docs");
+    fireEvent.change(screen.getByLabelText("Description"), { target: { value: "  \n  " } });
+    await user.click(screen.getByRole("button", { name: "Add" }));
+
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+    expect(onSubmit.mock.calls[0][0]).not.toHaveProperty("description");
+  });
+
+  it("previews markdown descriptions", async () => {
+    const user = userEvent.setup();
+    renderAddIssueDialog();
+
+    await user.type(screen.getByLabelText("Description"), "## Preview title");
+    await user.click(screen.getByRole("tab", { name: "Preview" }));
+
+    expect(screen.getByRole("heading", { name: "Preview title" })).toBeInTheDocument();
   });
 
   it("submits with the selected project and filters dependency options", async () => {

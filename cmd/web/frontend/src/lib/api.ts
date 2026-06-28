@@ -22,6 +22,7 @@ import {
   type Project,
   type ProjectWorkflow,
   type Summary,
+  type UpdateIssueInput,
 } from "@/lib/generated/issue-tracker";
 import {
   getApiV1State,
@@ -134,6 +135,15 @@ export function updateIssueStatus(
   options?: ApiRequestOptions,
 ): Promise<Issue> {
   return unwrapResponse(patchApiV1IssuesId(id, { status }, noStore), options);
+}
+
+export function updateIssueDescription(
+  id: number,
+  description: string,
+  options?: ApiRequestOptions,
+): Promise<Issue> {
+  const input: UpdateIssueInput = { description };
+  return unwrapResponse(patchApiV1IssuesId(id, input, noStore), options);
 }
 
 export function fetchOrchestratorState(options?: ApiRequestOptions): Promise<StateResponse> {

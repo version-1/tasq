@@ -485,6 +485,22 @@ and `components/dialog/add-project`):
 - `attachment://<id>` references are rewritten to
   `/tracker/api/v1/attachments/<id>/content`.
 
+### Markdown Editor (`ui/markdown-editor`)
+
+- Wraps the shared Markdown renderer with read/edit modes for issue
+  descriptions and Markdown form fields.
+- Read mode preserves the normal Markdown presentation and can show a compact
+  pencil icon action in the header.
+- Edit mode uses underlined `Raw` / `Preview` tabs. `Raw` is a textarea with
+  configurable rows; `Preview` renders the current draft immediately through
+  `ui/markdown`.
+- Dialogs can opt into a stable tab panel height so switching between `Raw` and
+  `Preview` does not resize the surrounding form.
+- Save/cancel controls are optional so dialogs can own their own submit/cancel
+  actions while reusing the same editing surface.
+- Failed saves keep the draft in edit mode and display the error message below
+  the editor.
+
 ### Panel Message (`ui/pannel-message`)
 
 - Wide panel surface (`max-width: 960px`) used for terminal errors and empty
