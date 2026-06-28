@@ -11,6 +11,8 @@ import {
 import { IconProxy, type IconProxyName } from "@/components/ui/icon-proxy";
 import { PriorityBadge } from "@/features/issues/components/priority-badge";
 import { ProjectBadge } from "@/features/issues/components/project-badge";
+import { StatusBadge } from "@/features/issues/components/status-badge";
+import { PendingBadge } from "./pending-badge";
 import styles from "./index.module.css";
 
 type IssueStatusChangeHandler = (id: number, status: IssueStatus) => Promise<void>;
@@ -69,10 +71,8 @@ export function IssueCard({
 
   return (
     <article className={styles.taskCard} ref={cardRef}>
-      <div className={styles.titleRow}>
-        <Link className={styles.taskTitle} to={`/issues/${issue.id}`}>
-          #{issue.id} {issue.title}
-        </Link>
+      <div className={styles.cardHeader}>
+        <ProjectBadge projectKey={issue.projectKey} size="small" />
         <ContextMenu
           boundaryRef={cardRef}
           id={menuID}
@@ -120,9 +120,18 @@ export function IssueCard({
         </ContextMenu>
       </div>
 
+      <div className={styles.titleRow}>
+        <Link className={styles.taskTitle} to={`/issues/${issue.id}`}>
+          #{issue.id} {issue.title}
+        </Link>
+      </div>
+
       <div className={styles.metaRow}>
-        <ProjectBadge projectKey={issue.projectKey} />
-        <PriorityBadge priority={issue.priority} />
+        <div className={styles.statusGroup}>
+          <StatusBadge status={issue.status} />
+          <PriorityBadge priority={issue.priority} />
+        </div>
+        {issue.queueStatus === "pending" ? <PendingBadge className={styles.pendingBadge} /> : null}
       </div>
 
       <div className={styles.footerRow}>

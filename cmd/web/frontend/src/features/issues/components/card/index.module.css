@@ -4,17 +4,21 @@
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-card);
   display: grid;
-  gap: 0;
+  gap: 8px;
   min-height: 200px;
   padding: 10px 18px;
   position: relative;
 }
 
-.titleRow {
+.cardHeader {
   align-items: center;
-  display: grid;
-  gap: 8px;
-  grid-template-columns: minmax(0, 1fr) auto;
+  display: flex;
+  justify-content: space-between;
+  min-height: 22px;
+}
+
+.titleRow {
+  display: block;
 }
 
 .taskTitle {
@@ -61,8 +65,22 @@
 .metaRow {
   align-items: center;
   display: flex;
-  gap: 16px;
+  gap: 8px;
   justify-content: space-between;
+  min-width: 0;
+}
+
+.statusGroup {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.pendingBadge {
+  color: var(--text);
+  margin-left: auto;
 }
 
 .footerRow {
