@@ -399,6 +399,10 @@ priorities?: string;
  */
 assignee?: string;
 /**
+ * Search text used to match issue IDs exactly or issue titles case-insensitively. Empty or whitespace-only values are ignored.
+ */
+search?: string;
+/**
  * Maximum number of issues to return. Omit this parameter to preserve the legacy unpaginated response.
  * @minimum 1
  * @maximum 50

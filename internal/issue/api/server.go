@@ -291,6 +291,7 @@ func (s *Server) issues(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	assignee := parseIssueAssignee(r)
+	search := parseIssueSearch(r)
 	limit, offset, ok := parseIssuePagination(w, r)
 	if !ok {
 		return
@@ -305,6 +306,7 @@ func (s *Server) issues(w http.ResponseWriter, r *http.Request) {
 		ProjectIDs:    projectIDs,
 		Priorities:    priorities,
 		Assignee:      assignee,
+		Search:        search,
 		Limit:         limit,
 		Offset:        offset,
 		SortBy:        sortBy,
@@ -397,6 +399,10 @@ func parseIssueAssignee(r *http.Request) *string {
 		return nil
 	}
 	return &value
+}
+
+func parseIssueSearch(r *http.Request) string {
+	return strings.TrimSpace(r.URL.Query().Get("search"))
 }
 
 func parseIssueSort(w http.ResponseWriter, r *http.Request) (store.IssueSortBy, store.SortDirection, bool) {

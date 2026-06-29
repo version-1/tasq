@@ -71,12 +71,13 @@ export const handlers = [
     const priorities = parsePriorities(url.searchParams.get("priorities"));
     const states = parseStates(url.searchParams.get("states"));
     const assignee = optionalString(url.searchParams.get("assignee"));
+    const search = optionalString(url.searchParams.get("search"));
     const limit = optionalNumber(url.searchParams.get("limit"));
     const offset = limit === undefined ? 0 : (optionalNumber(url.searchParams.get("offset")) ?? 0);
     const sortBy = parseIssueSortBy(url.searchParams.get("sort_by"));
     const sortDirection = parseSortDirection(url.searchParams.get("sort_direction"));
-    const filters = { assignee, limit, offset, priorities, projectID, projectIDs, sortBy, sortDirection, states };
-    const total = countIssues({ assignee, priorities, projectID, projectIDs, states });
+    const filters = { assignee, limit, offset, priorities, projectID, projectIDs, search, sortBy, sortDirection, states };
+    const total = countIssues({ assignee, priorities, projectID, projectIDs, search, states });
     const nextOffset = limit && offset + limit < total ? offset + limit : null;
 
     return jsonOk(listIssues(filters), 200, { limit: limit ?? 0, offset, total, nextOffset });

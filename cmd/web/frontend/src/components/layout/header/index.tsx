@@ -1,8 +1,11 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { useEffect, useState } from "react";
 import { MoreHorizontal, Plus, Search } from "lucide-react";
 import { useTabs } from "@/context/tabs";
+import { fetchIssues } from "@/lib/api";
 import { supportedLanguages, type SupportedLanguage } from "@/lib/i18n";
+import type { Issue } from "@/lib/types";
 import { Breadcrumb } from "./breadcrumb";
 import styles from "./index.module.css";
 
@@ -32,11 +35,60 @@ export function Header({
 }: HeaderProps) {
   const { t } = useTranslation();
   const tabs = useTabs();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<Issue[]>([]);
+  const [searchState, setSearchState] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const title = isIssueDetailPage
     ? (projectName ?? t("issues.detailPage.detailTab"))
     : activePage === "issues"
       ? (projectName ?? t("header.issueList"))
       : t(pageHeadingKey(activePage));
+  const trimmedSearchQuery = searchQuery.trim();
+  const showSearchResults = isSearchFocused && trimmedSearchQuery !== "";
+  const searchResultsID = "header-search-results";
+
+  useEffect(() => {
+    if (trimmedSearchQuery === "") {
+      setSearchResults([]);
+      setSearchState("idle");
+      return;
+    }
+
+    let active = true;
+    setSearchState("loading");
+    const id = window.setTimeout(() => {
+      void fetchIssues(
+        {
+          limit: 6,
+          search: trimmedSearchQuery,
+          sort_by: "updated_at",
+          sort_direction: "desc",
+        },
+        { silent: true },
+      )
+        .then((response) => {
+          if (!active) return;
+          setSearchResults(response.data);
+          setSearchState("ready");
+        })
+        .catch(() => {
+          if (!active) return;
+          setSearchResults([]);
+          setSearchState("error");
+        });
+    }, 180);
+
+    return () => {
+      active = false;
+      window.clearTimeout(id);
+    };
+  }, [trimmedSearchQuery]);
+
+  function closeSearchResults() {
+    setSearchQuery("");
+    setIsSearchFocused(false);
+  }
 
   return (
     <header className={styles.header}>
@@ -44,11 +96,60 @@ export function Header({
         <Breadcrumb />
 
         <div className={styles.globalActions}>
-          <label className={styles.search}>
-            <Search aria-hidden="true" size={16} strokeWidth={1.8} />
-            <input type="search" placeholder={t("header.searchPlaceholder")} />
-            <kbd>{t("header.commandKey")}</kbd>
-          </label>
+          <div
+            className={styles.searchShell}
+            onBlur={(event) => {
+              if (!event.currentTarget.contains(event.relatedTarget)) {
+                setIsSearchFocused(false);
+              }
+            }}
+          >
+            <label className={styles.search}>
+              <Search aria-hidden="true" size={16} strokeWidth={1.8} />
+              <input
+                type="search"
+                placeholder={t("header.searchPlaceholder")}
+                value={searchQuery}
+                aria-label={t("header.searchPlaceholder")}
+                aria-controls={showSearchResults ? searchResultsID : undefined}
+                aria-expanded={showSearchResults}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                onFocus={() => setIsSearchFocused(true)}
+              />
+              <kbd>{t("header.commandKey")}</kbd>
+            </label>
+            {showSearchResults ? (
+              <div className={styles.searchResults} id={searchResultsID}>
+                <p className={styles.searchResultsTitle}>{t("header.searchResults")}</p>
+                {searchState === "loading" ? (
+                  <p className={styles.searchMessage}>{t("header.searchLoading")}</p>
+                ) : null}
+                {searchState === "error" ? (
+                  <p className={styles.searchMessage}>{t("header.searchError")}</p>
+                ) : null}
+                {searchState === "ready" && searchResults.length === 0 ? (
+                  <p className={styles.searchMessage}>{t("header.searchEmpty")}</p>
+                ) : null}
+                {searchResults.length > 0 ? (
+                  <ul className={styles.searchResultList}>
+                    {searchResults.map((issue) => (
+                      <li key={issue.id}>
+                        <Link
+                          className={styles.searchResultLink}
+                          to={`/issues/${issue.id}`}
+                          onClick={closeSearchResults}
+                        >
+                          <span className={styles.searchResultID}>#{issue.id}</span>
+                          <span className={styles.searchResultTitle}>{issue.title}</span>
+                          <span className={styles.searchResultMeta}>{issue.projectKey}</span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
           <label className={styles.languageSelector}>
             <select
               aria-label={t("header.language")}

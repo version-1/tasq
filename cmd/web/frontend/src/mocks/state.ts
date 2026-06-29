@@ -31,6 +31,7 @@ type IssueListFilters = {
   projectID?: number;
   projectIDs?: number[];
   priorities?: Priority[];
+  search?: string;
   sortBy?: "id" | "priority" | "created_at" | "updated_at";
   sortDirection?: "asc" | "desc";
   states?: IssueStatus[];
@@ -86,20 +87,7 @@ export function getProjectWorkflow(projectID: number): ProjectWorkflow | null {
 }
 
 export function listIssues(filters: IssueListFilters = {}): Issue[] {
-  const filtered = issues.filter((issue) => {
-      const matchesProject = matchesProjectFilter(issue, filters);
-      const matchesState =
-        filters.states === undefined ||
-        filters.states.length === 0 ||
-        filters.states.includes(issue.status);
-      const matchesPriority =
-        filters.priorities === undefined ||
-        filters.priorities.length === 0 ||
-        filters.priorities.includes(issue.priority);
-      const matchesAssignee = filters.assignee === undefined || issue.assignee === filters.assignee;
-
-      return matchesProject && matchesState && matchesPriority && matchesAssignee;
-    });
+  const filtered = issues.filter((issue) => matchesIssueFilters(issue, filters));
   const sorted = sortIssues(filtered, filters.sortBy ?? "updated_at", filters.sortDirection ?? "desc");
   if (filters.limit === undefined) {
     return clone(sorted);
@@ -150,20 +138,23 @@ function priorityRank(priority: Priority): number {
 }
 
 export function countIssues(filters: IssueListFilters = {}): number {
-  return issues.filter((issue) => {
-    const matchesProject = matchesProjectFilter(issue, filters);
-    const matchesState =
-      filters.states === undefined ||
-      filters.states.length === 0 ||
-      filters.states.includes(issue.status);
-    const matchesPriority =
-      filters.priorities === undefined ||
-      filters.priorities.length === 0 ||
-      filters.priorities.includes(issue.priority);
-    const matchesAssignee = filters.assignee === undefined || issue.assignee === filters.assignee;
+  return issues.filter((issue) => matchesIssueFilters(issue, filters)).length;
+}
 
-    return matchesProject && matchesState && matchesPriority && matchesAssignee;
-  }).length;
+function matchesIssueFilters(issue: Issue, filters: IssueListFilters): boolean {
+  const matchesProject = matchesProjectFilter(issue, filters);
+  const matchesState =
+    filters.states === undefined ||
+    filters.states.length === 0 ||
+    filters.states.includes(issue.status);
+  const matchesPriority =
+    filters.priorities === undefined ||
+    filters.priorities.length === 0 ||
+    filters.priorities.includes(issue.priority);
+  const matchesAssignee = filters.assignee === undefined || issue.assignee === filters.assignee;
+  const matchesSearch = matchesIssueSearch(issue, filters.search);
+
+  return matchesProject && matchesState && matchesPriority && matchesAssignee && matchesSearch;
 }
 
 function matchesProjectFilter(issue: Issue, filters: IssueListFilters): boolean {
@@ -173,6 +164,16 @@ function matchesProjectFilter(issue: Issue, filters: IssueListFilters): boolean 
   return filters.projectIDs === undefined ||
     filters.projectIDs.length === 0 ||
     filters.projectIDs.includes(issue.projectId);
+}
+
+function matchesIssueSearch(issue: Issue, search: string | undefined): boolean {
+  const query = search?.trim() ?? "";
+  if (query === "") {
+    return true;
+  }
+  const parsedID = Number.parseInt(query, 10);
+  const matchesID = /^\d+$/.test(query) && Number.isSafeInteger(parsedID) && parsedID > 0 && issue.id === parsedID;
+  return matchesID || issue.title.toLocaleLowerCase().includes(query.toLocaleLowerCase());
 }
 
 export function getIssue(id: number): Issue | null {

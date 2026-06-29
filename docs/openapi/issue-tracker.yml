@@ -244,6 +244,13 @@ paths:
           description: Assignee name used to limit issues to a single assignee. Omit this parameter to list all assignees.
           schema:
             type: string
+        - name: search
+          in: query
+          required: false
+          description: Search text used to match issue IDs exactly or issue titles case-insensitively. Empty or whitespace-only values are ignored.
+          schema:
+            type: string
+            example: login
         - name: limit
           in: query
           required: false
