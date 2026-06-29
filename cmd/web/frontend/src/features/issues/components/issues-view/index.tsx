@@ -6,10 +6,12 @@ import type { StatusChangeHandler } from "./types";
 import styles from "./index.module.css";
 
 export function IssuesView({
+  showFilterSortActions = true,
   summary,
   onAddIssue,
   onStatusChange,
 }: {
+  showFilterSortActions?: boolean;
   summary: Summary;
   onAddIssue: (status?: IssueStatus) => void;
   onStatusChange: StatusChangeHandler;
@@ -17,6 +19,7 @@ export function IssuesView({
   return (
     <div className={styles.issuesLayout}>
       <IssueBoard
+        showFilterSortActions={showFilterSortActions}
         summary={summary}
         onAddIssue={onAddIssue}
         onStatusChange={onStatusChange}
