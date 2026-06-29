@@ -58,7 +58,7 @@ The primary key is `(parent_issue_id, dependency_issue_id)`, so duplicate edges 
 
 Dependency updates are validated in the store layer before replacing the edge set. The graph must remain a DAG. Validation rejects direct self-dependency, missing dependency issues, duplicate dependency IDs, and multi-hop cycles such as `A -> B -> C -> A`. Cycle errors include the issue ID path involved in the cycle.
 
-Queue state is derived from this table and issue status. `queued` means the issue is `ready` and all dependencies are in satisfied statuses: `done`, `cancelled`, `duplicate`, `failed`, or `blocked`. `pending` means the issue is `ready` and at least one dependency remains active: `backlog`, `ready`, `in_progress`, or `review`.
+Queue state is derived from this table and issue status. `queued` means the issue is `ready` and all dependencies are in satisfied statuses: `done`, `cancelled`, or `duplicate`. `pending` means the issue is `ready` and at least one dependency remains in any other status, including `backlog`, `ready`, `in_progress`, `review`, `blocked`, or `failed`.
 
 ### Comment
 

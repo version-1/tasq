@@ -29,7 +29,7 @@ func (s *Store) Queue(ctx context.Context, filter IssueFilter) (entity.Queue, er
 		Pending: []entity.QueueIssue{},
 	}
 	for _, item := range issues {
-		blocked := activeDependencyIDs(dependencies[item.ID])
+		blocked := blockingDependencyIDs(dependencies[item.ID])
 		if len(blocked) > 0 {
 			queue.Pending = append(queue.Pending, entity.QueueIssue{Issue: item, BlockedDependencyIDs: blocked})
 			continue
@@ -79,7 +79,7 @@ func issueIDs(issues []entity.Issue) []int64 {
 	return ids
 }
 
-func activeDependencyIDs(dependencies []dependencyStatus) []int64 {
+func blockingDependencyIDs(dependencies []dependencyStatus) []int64 {
 	ids := []int64{}
 	for _, dependency := range dependencies {
 		if !entity.IsSatisfiedDependencyStatus(dependency.Status) {

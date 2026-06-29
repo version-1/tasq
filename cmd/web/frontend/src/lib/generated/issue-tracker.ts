@@ -256,7 +256,7 @@ export interface CreateIssueInput {
 }
 
 export type QueueIssueAllOf = {
-  /** Active dependency issue IDs that keep a pending issue out of the queued set. */
+  /** Blocking dependency issue IDs that keep a pending issue out of the queued set. */
   blocked_dependency_ids?: number[];
 };
 
@@ -1218,7 +1218,7 @@ export const postApiV1IssuesStates = async (issueStatesInput: IssueStatesInput, 
 
 
 /**
- * Returns ready issues split into queued and pending derived states. Queued issues have no active dependencies and are sorted by priority descending, then ID ascending. Pending issues still have at least one active dependency.
+ * Returns ready issues split into queued and pending derived states. Queued issues have no blocking dependencies and are sorted by priority descending, then ID ascending. Pending issues still have at least one blocking dependency. Satisfied dependency statuses are done, cancelled, and duplicate.
  * @summary List dispatchable and pending ready issues.
  */
 export type getApiV1QueueResponse200 = {
