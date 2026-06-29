@@ -7,7 +7,7 @@ import { IssuesTableView } from "@/features/issues/components/table-view";
 
 export default function DashboardTablePage() {
   const { t } = useTranslation();
-  const { refreshIntervalMs, searchQuery } = useLayoutData();
+  const { refreshIntervalMs } = useLayoutData();
   const { activeProject, isProjectIssueScope, projects } = useLayoutShellData();
 
   if (isProjectIssueScope && !activeProject) {
@@ -19,7 +19,6 @@ export default function DashboardTablePage() {
       projectOptions={projects}
       projectID={activeProject?.id ?? null}
       refreshIntervalMs={refreshIntervalMs}
-      searchQuery={searchQuery}
     />
   );
 }

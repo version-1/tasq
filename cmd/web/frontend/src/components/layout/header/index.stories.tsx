@@ -23,11 +23,9 @@ const meta = {
     projectName: "Product Website",
     issueCount: 24,
     language: "ja",
-    searchQuery: "",
     showViewNavigation: true,
     onAddTask: () => undefined,
     onLanguageChange: () => undefined,
-    onSearchQueryChange: () => undefined,
   },
 } satisfies Meta<typeof Header>;
 
