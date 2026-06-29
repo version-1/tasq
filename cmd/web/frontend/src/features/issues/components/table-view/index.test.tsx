@@ -67,6 +67,7 @@ function renderTable({ projectID = 1 }: { projectID?: number | null } = {}) {
         projectID={projectID}
         projectOptions={projectOptions}
         refreshIntervalMs={60_000}
+        searchQuery=""
       />
     </MemoryRouter>,
   );
@@ -179,6 +180,27 @@ describe("IssuesTableView", () => {
         { silent: true },
       );
     });
+  });
+
+  it("reloads with the search query", async () => {
+    fetchIssuesMock.mockResolvedValueOnce(response([baseIssue]));
+
+    render(
+      <MemoryRouter>
+        <IssuesTableView
+          projectID={1}
+          projectOptions={projectOptions}
+          refreshIntervalMs={60_000}
+          searchQuery=" login "
+        />
+      </MemoryRouter>,
+    );
+
+    await screen.findByRole("link", { name: "Add issue table view" });
+    expect(fetchIssuesMock).toHaveBeenCalledWith(
+      expect.objectContaining({ search: "login" }),
+      { silent: true },
+    );
   });
 
   it("reloads with priority sort parameters", async () => {

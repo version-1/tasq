@@ -741,6 +741,106 @@ func TestIssuesFiltersByAssignee(t *testing.T) {
 	assertIssueIDs(t, issues, []int64{assigned.ID})
 }
 
+func TestIssuesSearchesByIDAndTitle(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer(t)
+	idMatch := createIssue(t, server, "Unrelated issue", entity.StatusReady)
+	_ = createIssue(t, server, "No match", entity.StatusReady)
+	titleMatch := createIssue(t, server, "Investigate issue "+stringID(idMatch.ID), entity.StatusReady)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/issues?search="+stringID(idMatch.ID)+"&sort_by=id&sort_direction=asc", nil)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d body=%s", rec.Code, rec.Body.String())
+	}
+	issues := decodeData[[]entity.Issue](t, rec)
+	assertIssueIDs(t, issues, []int64{idMatch.ID, titleMatch.ID})
+}
+
+func TestIssuesSearchesTitleCaseInsensitively(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer(t)
+	match := createIssue(t, server, "Fix LOGIN flow", entity.StatusReady)
+	_ = createIssue(t, server, "Fix signup flow", entity.StatusReady)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/issues?search=login", nil)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d body=%s", rec.Code, rec.Body.String())
+	}
+	issues := decodeData[[]entity.Issue](t, rec)
+	assertIssueIDs(t, issues, []int64{match.ID})
+}
+
+func TestIssuesSearchCombinesWithFiltersAndPagination(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer(t)
+	project := createProject(t, server, "SEARCH")
+	otherProject := createProject(t, server, "OTHERSEARCH")
+	first := createIssueInProject(t, server, project.ID, "Login first", entity.StatusReady)
+	second := createIssueInProject(t, server, project.ID, "Login second", entity.StatusReady)
+	_ = createIssueInProject(t, server, project.ID, "Login backlog", entity.StatusBacklog)
+	_ = createIssueInProject(t, server, otherProject.ID, "Login external", entity.StatusReady)
+	_ = createIssueInProject(t, server, project.ID, "Signup ready", entity.StatusReady)
+
+	req := httptest.NewRequest(
+		http.MethodGet,
+		"/api/v1/issues?search=login&states=ready&project_id="+stringID(project.ID)+"&sort_by=id&sort_direction=asc&limit=1&offset=1",
+		nil,
+	)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d body=%s", rec.Code, rec.Body.String())
+	}
+	var payload struct {
+		Data []entity.Issue `json:"data"`
+		Meta struct {
+			Total int `json:"total"`
+		} `json:"meta"`
+	}
+	if err := json.NewDecoder(rec.Body).Decode(&payload); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	assertIssueIDs(t, payload.Data, []int64{second.ID})
+	if payload.Meta.Total != 2 {
+		t.Fatalf("total = %d, want 2", payload.Meta.Total)
+	}
+	if first.ID >= second.ID {
+		t.Fatalf("test setup issue IDs are not increasing: first=%d second=%d", first.ID, second.ID)
+	}
+}
+
+func TestIssuesEmptySearchReturnsAll(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer(t)
+	first := createIssue(t, server, "First issue", entity.StatusReady)
+	second := createIssue(t, server, "Second issue", entity.StatusBacklog)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/issues?search=%20%20", nil)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d body=%s", rec.Code, rec.Body.String())
+	}
+	issues := decodeData[[]entity.Issue](t, rec)
+	assertIssueIDs(t, issues, []int64{second.ID, first.ID})
+}
+
 func TestIssuesSortsByIDAscending(t *testing.T) {
 	t.Parallel()
 

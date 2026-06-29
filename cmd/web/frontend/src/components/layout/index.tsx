@@ -48,10 +48,12 @@ export type LayoutData = {
   summary: Summary;
   issues: IssueSummary[];
   selectedIssue: IssueSummary | null;
+  searchQuery: string;
   refreshIntervalMs: number;
   language: SupportedLanguage;
   onRefreshIntervalChange: (intervalMs: number) => void;
   onLanguageChange: (language: SupportedLanguage) => void;
+  onSearchQueryChange: (query: string) => void;
   onSelectIssue: (issueID: number) => void;
   onAddIssue: (status?: IssueStatus) => void;
   onStatusChange: (id: number, status: IssueStatus) => Promise<void>;
@@ -65,6 +67,7 @@ export type LayoutShellData = {
   isIssueDetailPage: boolean;
   isProjectIssueScope: boolean;
   issues: IssueSummary[];
+  searchQuery: string;
   layoutData: LayoutData | null;
   loadState: LoadState;
   projects: Project[];
@@ -105,6 +108,7 @@ function LayoutContent({ children }: { children: ReactNode }) {
   const [addIssueInitialStatus, setAddIssueInitialStatus] =
     useState<IssueStatus>("backlog");
   const [addIssueError, setAddIssueError] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [issueDetailTitleOverride, setIssueDetailTitleOverride] = useState<string | null>(null);
   const [refreshIntervalMs, setRefreshIntervalMs] = useState(
     defaultRefreshIntervalMs,
@@ -177,11 +181,11 @@ function LayoutContent({ children }: { children: ReactNode }) {
       : null;
   const summary = useMemo(() => {
     if (!loadedSummary) return null;
-    if (!isProjectIssueScope) return loadedSummary;
-    return scopedProject
+    const scopedSummary = !isProjectIssueScope ? loadedSummary : scopedProject
       ? filterSummaryByProject(loadedSummary, scopedProject.id)
       : emptySummary(loadedSummary);
-  }, [isProjectIssueScope, loadedSummary, scopedProject]);
+    return filterSummaryBySearch(scopedSummary, searchQuery);
+  }, [isProjectIssueScope, loadedSummary, scopedProject, searchQuery]);
   const issues = useMemo(() => {
     if (!summary) return [];
     return summary.columns.flatMap((column) => column.issues);
@@ -259,10 +263,12 @@ function LayoutContent({ children }: { children: ReactNode }) {
         summary,
         issues,
         selectedIssue,
+        searchQuery,
         refreshIntervalMs,
         language,
         onRefreshIntervalChange: handleRefreshIntervalChange,
         onLanguageChange: handleLanguageChange,
+        onSearchQueryChange: setSearchQuery,
         onSelectIssue: setSelectedIssueID,
         onAddIssue: handleAddIssue,
         onStatusChange: handleStatusChange,
@@ -277,6 +283,7 @@ function LayoutContent({ children }: { children: ReactNode }) {
     isIssueDetailPage,
     isProjectIssueScope,
     issues,
+    searchQuery,
     layoutData,
     loadState,
     projects,
@@ -353,8 +360,10 @@ export function ShellLayout({
           issueCount={shellData.summary ? shellData.issues.length : null}
           isIssueDetailPage={shellData.isIssueDetailPage}
           language={shellData.layoutData?.language ?? "ja"}
+          searchQuery={shellData.searchQuery}
           onAddTask={() => shellData.onAddIssue("backlog")}
           onLanguageChange={shellData.layoutData?.onLanguageChange ?? (() => undefined)}
+          onSearchQueryChange={shellData.layoutData?.onSearchQueryChange ?? (() => undefined)}
           showAddTaskButton={showAddTaskButton}
           showViewNavigation={showViewNavigation}
         />
@@ -418,6 +427,28 @@ function filterSummaryByProject(summary: Summary, projectID: number): Summary {
     columns: summary.columns.map((column) => ({
       ...column,
       issues: column.issues.filter((issue) => issue.projectId === projectID),
+    })),
+  };
+}
+
+function filterSummaryBySearch(summary: Summary, searchQuery: string): Summary {
+  const query = searchQuery.trim();
+  if (query === "") {
+    return summary;
+  }
+  const numericQuery = Number.parseInt(query, 10);
+  const hasNumericQuery = /^\d+$/.test(query) && Number.isSafeInteger(numericQuery) && numericQuery > 0;
+  const loweredQuery = query.toLocaleLowerCase();
+
+  return {
+    ...summary,
+    columns: summary.columns.map((column) => ({
+      ...column,
+      issues: column.issues.filter((issue) => {
+        const matchesID = hasNumericQuery && issue.id === numericQuery;
+        const matchesTitle = issue.title.toLocaleLowerCase().includes(loweredQuery);
+        return matchesID || matchesTitle;
+      }),
     })),
   };
 }

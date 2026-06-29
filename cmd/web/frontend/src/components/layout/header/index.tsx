@@ -14,7 +14,9 @@ type HeaderProps = {
   issueCount: number | null;
   isIssueDetailPage?: boolean;
   language: SupportedLanguage;
+  searchQuery: string;
   onLanguageChange: (language: SupportedLanguage) => void;
+  onSearchQueryChange: (query: string) => void;
   onAddTask: () => void;
   showViewNavigation?: boolean;
   showAddTaskButton?: boolean;
@@ -25,8 +27,10 @@ export function Header({
   isIssueDetailPage = false,
   language,
   onLanguageChange,
+  onSearchQueryChange,
   onAddTask,
   projectName,
+  searchQuery,
   showViewNavigation = true,
   showAddTaskButton = true,
 }: HeaderProps) {
@@ -46,7 +50,12 @@ export function Header({
         <div className={styles.globalActions}>
           <label className={styles.search}>
             <Search aria-hidden="true" size={16} strokeWidth={1.8} />
-            <input type="search" placeholder={t("header.searchPlaceholder")} />
+            <input
+              type="search"
+              placeholder={t("header.searchPlaceholder")}
+              value={searchQuery}
+              onChange={(event) => onSearchQueryChange(event.target.value)}
+            />
             <kbd>{t("header.commandKey")}</kbd>
           </label>
           <label className={styles.languageSelector}>

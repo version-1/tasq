@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -26,6 +27,7 @@ type IssueFilter struct {
 	ProjectIDs    []int64
 	Priorities    []entity.Priority
 	Assignee      *string
+	Search        string
 	Limit         int
 	Offset        int
 	SortBy        IssueSortBy
@@ -483,6 +485,16 @@ func (s *Store) issuesByFilterOrder(ctx context.Context, filter IssueFilter, ord
 		args = append(args, *filter.Assignee)
 		clauses = append(clauses, `issues.assignee = ?`)
 	}
+	if search := strings.TrimSpace(filter.Search); search != "" {
+		titlePattern := "%" + escapeLikePattern(strings.ToLower(search)) + "%"
+		if id, err := strconv.ParseInt(search, 10, 64); err == nil && id > 0 {
+			args = append(args, id, titlePattern)
+			clauses = append(clauses, `(issues.id = ? OR lower(issues.title) LIKE ? ESCAPE '\')`)
+		} else {
+			args = append(args, titlePattern)
+			clauses = append(clauses, `lower(issues.title) LIKE ? ESCAPE '\'`)
+		}
+	}
 	if filter.Limit < 0 {
 		return IssueList{}, errors.New("limit is invalid")
 	}
@@ -524,6 +536,11 @@ func (s *Store) issuesByFilterOrder(ctx context.Context, filter IssueFilter, ord
 		return IssueList{}, err
 	}
 	return IssueList{Issues: issues, Total: total}, nil
+}
+
+func escapeLikePattern(value string) string {
+	replacer := strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
+	return replacer.Replace(value)
 }
 
 func (s *Store) IssueStatesByIDs(ctx context.Context, ids []int64) ([]entity.IssueState, error) {

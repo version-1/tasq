@@ -32,10 +32,12 @@ export function IssuesTableView({
   projectOptions,
   projectID,
   refreshIntervalMs,
+  searchQuery,
 }: {
   projectOptions: Project[];
   projectID: number | null;
   refreshIntervalMs: number;
+  searchQuery: string;
 }) {
   const { t } = useTranslation();
   const [selectedStatuses, setSelectedStatuses] = useState<IssueStatus[]>([...defaultStatuses]);
@@ -50,10 +52,11 @@ export function IssuesTableView({
     ? selectedProjectIDs.join(",")
     : undefined;
   const prioritiesParam = selectedPriorities.length > 0 ? selectedPriorities.join(",") : undefined;
+  const searchParam = searchQuery.trim() === "" ? undefined : searchQuery.trim();
 
   useEffect(() => {
     setOffset(0);
-  }, [prioritiesParam, projectID, projectIDsParam, sortBy, sortDirection, statesParam]);
+  }, [prioritiesParam, projectID, projectIDsParam, searchParam, sortBy, sortDirection, statesParam]);
 
   useEffect(() => {
     let active = true;
@@ -67,6 +70,7 @@ export function IssuesTableView({
             priorities: prioritiesParam,
             project_id: projectID ?? undefined,
             project_ids: projectIDsParam,
+            search: searchParam,
             sort_by: sortBy,
             sort_direction: sortDirection,
             states: statesParam,
@@ -95,7 +99,7 @@ export function IssuesTableView({
       active = false;
       window.clearInterval(id);
     };
-  }, [offset, prioritiesParam, projectID, projectIDsParam, refreshIntervalMs, sortBy, sortDirection, statesParam, t]);
+  }, [offset, prioritiesParam, projectID, projectIDsParam, refreshIntervalMs, searchParam, sortBy, sortDirection, statesParam, t]);
 
   const response = loadState.kind === "ready" ? loadState.response : null;
   const issues = response?.data ?? [];
