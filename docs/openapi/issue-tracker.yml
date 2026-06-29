@@ -346,7 +346,7 @@ paths:
       tags:
         - Issues
       summary: List dispatchable and pending ready issues.
-      description: Returns ready issues split into queued and pending derived states. Queued issues have no active dependencies and are sorted by priority descending, then ID ascending. Pending issues still have at least one active dependency.
+      description: Returns ready issues split into queued and pending derived states. Queued issues have no blocking dependencies and are sorted by priority descending, then ID ascending. Pending issues still have at least one blocking dependency. Satisfied dependency statuses are done, cancelled, and duplicate.
       parameters:
         - name: project_id
           in: query
@@ -1031,7 +1031,7 @@ components:
           properties:
             blocked_dependency_ids:
               type: array
-              description: Active dependency issue IDs that keep a pending issue out of the queued set.
+              description: Blocking dependency issue IDs that keep a pending issue out of the queued set.
               items:
                 type: integer
                 format: int64

@@ -760,10 +760,10 @@ func (s *Store) Summary(ctx context.Context) (entity.Summary, error) {
 			if item.Status != status {
 				continue
 			}
-			activeDependencies := activeDependencyIDs(dependencies[item.ID])
+			blockingDependencies := blockingDependencyIDs(dependencies[item.ID])
 			column.Issues = append(column.Issues, entity.IssueSummary{
 				Issue:       item,
-				QueueStatus: entity.IssueQueueStatus(item.Status, len(activeDependencies) > 0),
+				QueueStatus: entity.IssueQueueStatus(item.Status, len(blockingDependencies) > 0),
 				Stats: entity.IssueStats{
 					CommentCount: commentCounts[item.ID],
 				},

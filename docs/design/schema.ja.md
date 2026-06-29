@@ -60,7 +60,7 @@ primary key は `(parent_issue_id, dependency_issue_id)` で、重複 edge は�
 
 dependency update は edge set を置き換える前に store layer で検証されます。graph は DAG でなければなりません。検証は直接の自己依存、存在しない dependency issue、重複した dependency ID、`A -> B -> C -> A` のような multi-hop cycle を拒否します。cycle error には cycle に含まれる issue ID path が含まれます。
 
-queue state はこの table と issue status から導出されます。`queued` は issue が `ready` で、すべての dependency が満たされた status（`done`, `cancelled`, `duplicate`, `failed`, `blocked`）にあることを意味します。`pending` は issue が `ready` だが、少なくとも 1 件の dependency が active status（`backlog`, `ready`, `in_progress`, `review`）に残っていることを意味します。
+queue state はこの table と issue status から導出されます。`queued` は課題が `ready` で、すべての依存先が満たされた status（`done`, `cancelled`, `duplicate`）にあることを意味します。`pending` は課題が `ready` だが、少なくとも 1 件の依存先がそれ以外の status（`backlog`, `ready`, `in_progress`, `review`, `blocked`, `failed` など）に残っていることを意味します。
 
 ### Comment
 

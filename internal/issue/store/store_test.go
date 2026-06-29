@@ -1253,7 +1253,9 @@ func TestQueueClassifiesAndSortsReadyIssues(t *testing.T) {
 
 	project := createTestProject(t, store, "QUEUE")
 	doneDep := createStoreIssue(t, store, project.ID, "Done dependency", entity.StatusDone, entity.PriorityNormal)
+	cancelledDep := createStoreIssue(t, store, project.ID, "Cancelled dependency", entity.StatusCancelled, entity.PriorityNormal)
 	blockedDep := createStoreIssue(t, store, project.ID, "Blocked dependency", entity.StatusBlocked, entity.PriorityNormal)
+	failedDep := createStoreIssue(t, store, project.ID, "Failed dependency", entity.StatusFailed, entity.PriorityNormal)
 	activeDep := createStoreIssue(t, store, project.ID, "Active dependency", entity.StatusInProgress, entity.PriorityNormal)
 	low := createStoreIssue(t, store, project.ID, "Low ready", entity.StatusReady, entity.PriorityLow)
 	high := createStoreIssue(t, store, project.ID, "High ready", entity.StatusReady, entity.PriorityHigh)
@@ -1261,10 +1263,10 @@ func TestQueueClassifiesAndSortsReadyIssues(t *testing.T) {
 	pending := createStoreIssue(t, store, project.ID, "Pending ready", entity.StatusReady, entity.PriorityUrgent)
 	normal := createStoreIssue(t, store, project.ID, "Normal ready", entity.StatusReady, entity.PriorityNormal)
 	_ = createStoreIssue(t, store, project.ID, "Backlog issue", entity.StatusBacklog, entity.PriorityUrgent)
-	if err := store.SetDependencyIDs(ctx, urgent.ID, []int64{doneDep.ID, blockedDep.ID}); err != nil {
+	if err := store.SetDependencyIDs(ctx, urgent.ID, []int64{doneDep.ID, cancelledDep.ID}); err != nil {
 		t.Fatalf("set resolved dependencies: %v", err)
 	}
-	if err := store.SetDependencyIDs(ctx, pending.ID, []int64{activeDep.ID, doneDep.ID}); err != nil {
+	if err := store.SetDependencyIDs(ctx, pending.ID, []int64{activeDep.ID, doneDep.ID, blockedDep.ID, failedDep.ID}); err != nil {
 		t.Fatalf("set pending dependencies: %v", err)
 	}
 
@@ -1274,7 +1276,7 @@ func TestQueueClassifiesAndSortsReadyIssues(t *testing.T) {
 	}
 	assertQueueIssueIDs(t, queue.Queued, []int64{urgent.ID, high.ID, normal.ID, low.ID})
 	assertQueueIssueIDs(t, queue.Pending, []int64{pending.ID})
-	assertInt64s(t, queue.Pending[0].BlockedDependencyIDs, []int64{activeDep.ID})
+	assertInt64s(t, queue.Pending[0].BlockedDependencyIDs, []int64{blockedDep.ID, failedDep.ID, activeDep.ID})
 }
 
 func TestSummaryReturnsColumnsWithIssueStats(t *testing.T) {
@@ -1356,6 +1358,14 @@ func TestSummaryReturnsIssueQueueStatus(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create active dependency issue: %v", err)
 	}
+	blockedDependency, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Blocked dependency", Status: entity.StatusBlocked})
+	if err != nil {
+		t.Fatalf("create blocked dependency issue: %v", err)
+	}
+	failedDependency, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Failed dependency", Status: entity.StatusFailed})
+	if err != nil {
+		t.Fatalf("create failed dependency issue: %v", err)
+	}
 	satisfiedDependency, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Satisfied dependency", Status: entity.StatusDone})
 	if err != nil {
 		t.Fatalf("create satisfied dependency issue: %v", err)
@@ -1363,6 +1373,10 @@ func TestSummaryReturnsIssueQueueStatus(t *testing.T) {
 	pending, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Pending", Status: entity.StatusReady})
 	if err != nil {
 		t.Fatalf("create pending issue: %v", err)
+	}
+	blockedPending, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Blocked pending", Status: entity.StatusReady})
+	if err != nil {
+		t.Fatalf("create blocked pending issue: %v", err)
 	}
 	queued, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Queued", Status: entity.StatusReady})
 	if err != nil {
@@ -1394,6 +1408,9 @@ func TestSummaryReturnsIssueQueueStatus(t *testing.T) {
 	if err := store.SetDependencyIDs(ctx, pending.ID, []int64{activeDependency.ID}); err != nil {
 		t.Fatalf("set pending dependencies: %v", err)
 	}
+	if err := store.SetDependencyIDs(ctx, blockedPending.ID, []int64{blockedDependency.ID, failedDependency.ID}); err != nil {
+		t.Fatalf("set blocked pending dependencies: %v", err)
+	}
 	if err := store.SetDependencyIDs(ctx, queued.ID, []int64{satisfiedDependency.ID}); err != nil {
 		t.Fatalf("set queued dependencies: %v", err)
 	}
@@ -1404,11 +1421,12 @@ func TestSummaryReturnsIssueQueueStatus(t *testing.T) {
 	}
 	queueStatusByIssueID := summaryQueueStatuses(summary)
 	want := map[int64]entity.QueueStatus{
-		backlog.ID:    entity.QueueStatusBacklog,
-		pending.ID:    entity.QueueStatusPending,
-		queued.ID:     entity.QueueStatusQueued,
-		processing.ID: entity.QueueStatusProcessing,
-		completed.ID:  entity.QueueStatusCompleted,
+		backlog.ID:        entity.QueueStatusBacklog,
+		pending.ID:        entity.QueueStatusPending,
+		blockedPending.ID: entity.QueueStatusPending,
+		queued.ID:         entity.QueueStatusQueued,
+		processing.ID:     entity.QueueStatusProcessing,
+		completed.ID:      entity.QueueStatusCompleted,
 	}
 	for _, id := range inactiveIssueIDs {
 		want[id] = entity.QueueStatusInactive

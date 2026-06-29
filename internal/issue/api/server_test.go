@@ -1024,13 +1024,17 @@ func TestQueueReturnsQueuedAndPendingIssues(t *testing.T) {
 
 	server := newTestServer(t)
 	doneDep := createIssue(t, server, "Done dependency", entity.StatusDone)
+	cancelledDep := createIssue(t, server, "Cancelled dependency", entity.StatusCancelled)
+	duplicateDep := createIssue(t, server, "Duplicate dependency", entity.StatusDuplicate)
+	blockedDep := createIssue(t, server, "Blocked dependency", entity.StatusBlocked)
+	failedDep := createIssue(t, server, "Failed dependency", entity.StatusFailed)
 	activeDep := createIssue(t, server, "Active dependency", entity.StatusReady)
 	queued := createIssueWithPriority(t, server, "Queued issue", entity.StatusReady, entity.PriorityHigh)
 	pending := createIssueWithPriority(t, server, "Pending issue", entity.StatusReady, entity.PriorityUrgent)
-	if err := server.store.SetDependencyIDs(context.Background(), queued.ID, []int64{doneDep.ID}); err != nil {
+	if err := server.store.SetDependencyIDs(context.Background(), queued.ID, []int64{doneDep.ID, cancelledDep.ID, duplicateDep.ID}); err != nil {
 		t.Fatalf("set queued dependencies: %v", err)
 	}
-	if err := server.store.SetDependencyIDs(context.Background(), pending.ID, []int64{activeDep.ID}); err != nil {
+	if err := server.store.SetDependencyIDs(context.Background(), pending.ID, []int64{activeDep.ID, blockedDep.ID, failedDep.ID}); err != nil {
 		t.Fatalf("set pending dependencies: %v", err)
 	}
 
@@ -1049,9 +1053,7 @@ func TestQueueReturnsQueuedAndPendingIssues(t *testing.T) {
 	if len(queue.Pending) != 1 || queue.Pending[0].ID != pending.ID {
 		t.Fatalf("pending = %+v", queue.Pending)
 	}
-	if len(queue.Pending[0].BlockedDependencyIDs) != 1 || queue.Pending[0].BlockedDependencyIDs[0] != activeDep.ID {
-		t.Fatalf("blocked dependency ids = %+v", queue.Pending[0].BlockedDependencyIDs)
-	}
+	assertInt64s(t, queue.Pending[0].BlockedDependencyIDs, []int64{blockedDep.ID, failedDep.ID, activeDep.ID})
 }
 
 func TestCreateIssueReturnsDependencyIDs(t *testing.T) {

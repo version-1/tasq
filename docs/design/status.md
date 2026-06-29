@@ -16,15 +16,15 @@ The API validates that `issue.status` is one of the allowed enum values. It does
 | `ready` | Work is ready to be considered for dispatch. | Active dependency status. Queue status is `pending` or `queued` depending on dependencies. |
 | `in_progress` | Work has been picked up and is being processed. | Active dependency status. Queue status is `processing`. |
 | `review` | Work is waiting for human review or final validation. | Active dependency status, because downstream work should wait for review to finish. Queue status is `inactive`. |
-| `blocked` | Work cannot proceed without external input or a resolved blocker. | Satisfied dependency status. Queue status is `inactive`. |
-| `failed` | Work ended unsuccessfully. | Satisfied dependency status. Queue status is `inactive`. |
+| `blocked` | Work cannot proceed without external input or a resolved blocker. | Blocking dependency status. Queue status is `inactive`. |
+| `failed` | Work ended unsuccessfully. | Blocking dependency status. Queue status is `inactive`. |
 | `cancelled` | Work was intentionally stopped and should not continue. | Satisfied dependency status. Queue status is `inactive`. |
 | `duplicate` | Work is represented by another issue. | Satisfied dependency status. Queue status is `inactive`. |
 | `done` | Work is complete. | Satisfied dependency status. Queue status is `completed`. |
 
 Active dependency statuses are `backlog`, `ready`, `in_progress`, and `review`.
 
-Satisfied dependency statuses are `done`, `cancelled`, `duplicate`, `failed`, and `blocked`.
+Satisfied dependency statuses are `done`, `cancelled`, and `duplicate`. Every other dependency status, including `blocked` and `failed`, keeps dependent ready issues pending.
 
 ## `queueStatus`
 

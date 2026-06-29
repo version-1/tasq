@@ -57,8 +57,6 @@ func TestDependencyStatusClassification(t *testing.T) {
 		StatusDone:      true,
 		StatusCancelled: true,
 		StatusDuplicate: true,
-		StatusFailed:    true,
-		StatusBlocked:   true,
 	}
 
 	for _, status := range OrderedStatuses() {
@@ -70,8 +68,8 @@ func TestDependencyStatusClassification(t *testing.T) {
 		if gotSatisfied != satisfied[status] {
 			t.Fatalf("IsSatisfiedDependencyStatus(%q) = %t, want %t", status, gotSatisfied, satisfied[status])
 		}
-		if gotActive == gotSatisfied {
-			t.Fatalf("dependency status %q must be classified as exactly one of active or satisfied", status)
+		if gotActive && gotSatisfied {
+			t.Fatalf("dependency status %q must not be both active and satisfied", status)
 		}
 	}
 	if IsActiveDependencyStatus(Status("unknown")) {

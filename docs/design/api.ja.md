@@ -37,7 +37,7 @@ issue-tracker はユーザー向け API です。
 
 課題は必ず 1 つのプロジェクトに属します。`POST /api/v1/issues` は `projectId` を必須とし、初期の依存関係として `dependency_ids` を受け取ります。課題のレスポンスは `projectId` と `projectKey` の両方を返します。課題レスポンスには `dependency_ids` が含まれます。依存がない場合は空配列を返します。`GET /api/v1/issues` は任意の query parameter として `states`、`project_id`、`project_ids`、`priorities`、`assignee`、`search`、`limit`、`offset`、`sort_by`、`sort_direction` を受け取ります。project filter を省略した場合は、すべてのプロジェクトの課題を一覧表示します。`project_id` は 1 つのプロジェクトに絞り込み、`project_ids` はテーブルフィルター用にカンマ区切りの複数プロジェクトを受け取ります。`priorities` はカンマ区切りの優先度を受け取ります。`search` は課題 ID の完全一致と、課題タイトルの大文字小文字を区別しない部分一致で検索します。数値の search text は、完全一致する ID またはその文字列を含むタイトルに一致します。空文字または空白のみの `search` は無視します。検索は他のフィルターと組み合わせ、sorting と pagination より前に適用します。`sort_by` は `id`、`priority`、`created_at`、`updated_at` のみ、`sort_direction` は `asc`、`desc` のみ受け付けます。
 
-`GET /api/v1/summary` は課題ボードのカラムを返します。各課題サマリーには、システム全体のキューから見た課題の状態である `queueStatus` が含まれます。`queueStatus=backlog` は課題の status が `backlog` の状態です。`queueStatus=pending` は課題が `ready` だが、アクティブな依存関係が 1 件以上残っている状態です。`queueStatus=queued` は課題が `ready` で、アクティブな依存関係がない状態です。`queueStatus=processing` は課題の status が `in_progress` の状態です。`queueStatus=completed` は課題の status が `done` の状態です。`queueStatus=inactive` はキュー処理の対象外で、`review`、`blocked`、`failed`、`cancelled`、`duplicate` を含みます。status の定義と想定される遷移は [status.ja.md](status.ja.md) を参照してください。
+`GET /api/v1/summary` は課題ボードのカラムを返します。各課題サマリーには、システム全体のキューから見た課題の状態である `queueStatus` が含まれます。`queueStatus=backlog` は課題の status が `backlog` の状態です。`queueStatus=pending` は課題が `ready` だが、ブロック中の依存先が 1 件以上残っている状態です。`queueStatus=queued` は課題が `ready` で、ブロック中の依存先がない状態です。`queueStatus=processing` は課題の status が `in_progress` の状態です。`queueStatus=completed` は課題の status が `done` の状態です。`queueStatus=inactive` はキュー処理の対象外で、`review`、`blocked`、`failed`、`cancelled`、`duplicate` を含みます。status の定義と想定される遷移は [status.ja.md](status.ja.md) を参照してください。
 
 ### `POST /api/v1/issues`
 
@@ -80,7 +80,7 @@ Response:
 
 `PATCH /api/v1/issues/{id}` は、任意の full replacement field として `dependency_ids` を受け取ります。省略した場合、既存の依存関係は維持されます。空配列を渡すと、すべての依存関係を削除します。API は存在しない dependency issue、自己依存、重複した dependency ID、dependency cycle を作る更新を拒否します。
 
-`GET /api/v1/queue` は ready issue を `queued` と `pending` の配列に分けて返します。`queued` issue は ready かつ active dependency がない課題です。`pending` issue は ready だが active dependency が 1 件以上残っている課題です。active dependency status は `backlog`、`ready`、`in_progress`、`review` です。満たされた dependency status は `done`、`cancelled`、`duplicate`、`failed`、`blocked` です。各配列は priority desc（`urgent`, `high`, `normal`, `low`）と ID asc で並びます。この endpoint は issue listing と同じ `project_id` filter semantics を受け取ります。pending item には、pending の原因になっている active dependency の `blocked_dependency_ids` が含まれます。
+`GET /api/v1/queue` は `ready` の課題を `queued` と `pending` の配列に分けて返します。`queued` は `ready` かつブロック中の依存先がない課題です。`pending` は `ready` だが、ブロック中の依存先が 1 件以上残っている課題です。満たされた依存先の status は `done`、`cancelled`、`duplicate` です。それ以外の依存先 status は課題を `pending` に残します。各配列は priority desc（`urgent`, `high`, `normal`, `low`）と ID asc で並びます。この endpoint は課題一覧と同じ `project_id` filter semantics を受け取ります。`pending` の項目には、pending の原因になっている依存先の `blocked_dependency_ids` が含まれます。
 
 JSON の成功レスポンスは `{ "data": ..., "meta": {} }` を使います。JSON のエラーレスポンスは `{ "error": { "code": "...", "message": "..." }, "meta": {} }` を使います。
 

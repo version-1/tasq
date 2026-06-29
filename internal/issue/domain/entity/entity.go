@@ -393,7 +393,7 @@ func IsActiveDependencyStatus(status Status) bool {
 
 func IsSatisfiedDependencyStatus(status Status) bool {
 	switch status {
-	case StatusDone, StatusCancelled, StatusDuplicate, StatusFailed, StatusBlocked:
+	case StatusDone, StatusCancelled, StatusDuplicate:
 		return true
 	default:
 		return false

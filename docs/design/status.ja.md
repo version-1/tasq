@@ -16,15 +16,15 @@ API は `issue.status` が許可された enum 値のいずれかであること
 | `ready` | 割り当て候補にできる作業。 | アクティブな依存状態。`queueStatus` は依存関係に応じて `pending` または `queued`。 |
 | `in_progress` | すでに着手され、処理中の作業。 | アクティブな依存状態。`queueStatus` は `processing`。 |
 | `review` | 人によるレビューまたは最終確認を待っている作業。 | アクティブな依存状態。後続作業はレビュー完了を待つべきです。`queueStatus` は `inactive`。 |
-| `blocked` | 外部入力またはブロッカーの解消が必要で、進められない作業。 | 満たされた依存状態。`queueStatus` は `inactive`。 |
-| `failed` | 失敗として終了した作業。 | 満たされた依存状態。`queueStatus` は `inactive`。 |
+| `blocked` | 外部入力またはブロッカーの解消が必要で、進められない作業。 | 依存先としては後続をブロックする状態。`queueStatus` は `inactive`。 |
+| `failed` | 失敗として終了した作業。 | 依存先としては後続をブロックする状態。`queueStatus` は `inactive`。 |
 | `cancelled` | 意図的に停止され、続行しない作業。 | 満たされた依存状態。`queueStatus` は `inactive`。 |
 | `duplicate` | 別の課題で表現されている重複作業。 | 満たされた依存状態。`queueStatus` は `inactive`。 |
 | `done` | 完了した作業。 | 満たされた依存状態。`queueStatus` は `completed`。 |
 
 アクティブな依存状態は `backlog`、`ready`、`in_progress`、`review` です。
 
-満たされた依存状態は `done`、`cancelled`、`duplicate`、`failed`、`blocked` です。
+満たされた依存状態は `done`、`cancelled`、`duplicate` です。`blocked` と `failed` を含むそれ以外の依存先 status は、依存している `ready` の課題を `pending` に残します。
 
 ## `queueStatus`
 

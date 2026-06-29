@@ -323,9 +323,7 @@ function isSatisfiedDependencyStatus(status: IssueStatus): boolean {
   return (
     status === "done" ||
     status === "cancelled" ||
-    status === "duplicate" ||
-    status === "failed" ||
-    status === "blocked"
+    status === "duplicate"
   );
 }
 
