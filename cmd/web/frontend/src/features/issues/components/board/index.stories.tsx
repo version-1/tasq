@@ -52,3 +52,9 @@ export const Empty: Story = {
     summary: emptySummary,
   },
 };
+
+export const ProjectScoped: Story = {
+  args: {
+    showFilterSortActions: false,
+  },
+};

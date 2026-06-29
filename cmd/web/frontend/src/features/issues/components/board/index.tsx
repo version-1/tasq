@@ -14,22 +14,29 @@ const boardActions = [
 ] satisfies Array<{ icon: IconProxyName; showLabel?: boolean; titleKey: string }>;
 
 export function IssueBoard({
+  showFilterSortActions = true,
   summary,
   onAddIssue,
   onStatusChange,
 }: {
+  showFilterSortActions?: boolean;
   summary: Summary;
   onAddIssue: (status?: IssueStatus) => void;
   onStatusChange: StatusChangeHandler;
 }) {
   const { t } = useTranslation();
   const issues = summary.columns.flatMap((column) => column.issues);
+  const visibleBoardActions = showFilterSortActions
+    ? boardActions
+    : boardActions.filter((action) =>
+      action.titleKey !== "issues.board.filter" && action.titleKey !== "issues.board.sort"
+    );
 
   return (
     <section className={styles.board} aria-label={t("header.board")}>
       <div className={styles.boardToolbar}>
         <div className={styles.boardActions}>
-          {boardActions.map((action) => (
+          {visibleBoardActions.map((action) => (
             <button key={action.titleKey} type="button" aria-label={t(action.titleKey)}>
               <IconProxy name={action.icon} size={15} />
               {action.showLabel === false ? null : t(action.titleKey)}
