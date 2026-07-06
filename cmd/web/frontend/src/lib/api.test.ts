@@ -3,6 +3,7 @@ import { toastStore } from "@/lib/toast";
 import { fetchProjectWorkflow, fetchSummary } from "./api";
 
 const issueTracker = vi.hoisted(() => ({
+  deleteApiV1ProjectsId: vi.fn(),
   getApiV1Summary: vi.fn(),
   postApiV1Issues: vi.fn(),
   getApiV1IssuesId: vi.fn(),

@@ -1,5 +1,6 @@
 import {
   getApiV1Attachments,
+  deleteApiV1ProjectsId,
   getApiV1Issues,
   getApiV1IssuesId,
   getApiV1IssuesIssueIdComments,
@@ -129,6 +130,10 @@ export function createProject(input: CreateProjectInput, options?: ApiRequestOpt
   return unwrapResponse(postApiV1Projects(input, noStore), options);
 }
 
+export function deleteProject(id: number, options?: ApiRequestOptions): Promise<void> {
+  return unwrapVoidResponse(deleteApiV1ProjectsId(id, noStore), options);
+}
+
 export function updateIssueStatus(
   id: number,
   status: IssueStatus,
@@ -194,6 +199,17 @@ async function unwrapEnvelope<T extends ApiEnvelope<unknown>>(
     throw notifyAndCreateError(payload.error, options);
   }
   return resolved.data as T;
+}
+
+async function unwrapVoidResponse(
+  response: Promise<{ data: unknown; status: number }>,
+  options?: ApiRequestOptions,
+): Promise<void> {
+  const resolved = await response;
+  if (resolved.status >= 400) {
+    const payload = resolved.data as ErrorResponse;
+    throw notifyAndCreateError(payload.error, options);
+  }
 }
 
 async function unwrapOrchestratorResponse<T>(

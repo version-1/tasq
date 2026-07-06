@@ -90,12 +90,6 @@
   width: 16px;
 }
 
-.projectMore {
-  color: var(--dark-gray);
-  flex: 0 0 auto;
-  margin-left: auto;
-}
-
 .settingsLink {
   border-top: 1px solid var(--light-gray);
   margin-top: auto;

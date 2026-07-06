@@ -44,6 +44,7 @@ function renderHeader() {
       <TabsProvider activeKey="issues">
         <Header
           activePage="issues"
+          canDeleteProject={true}
           issueCount={1}
           language="en"
           projectName="Tasq"
@@ -91,5 +92,31 @@ describe("Header", () => {
     await waitFor(() => {
       expect(screen.getByText("No matching issues")).toBeInTheDocument();
     });
+  });
+
+  it("opens project actions and selects project delete", async () => {
+    const user = userEvent.setup();
+    const onDeleteProject = vi.fn();
+    render(
+      <MemoryRouter>
+        <TabsProvider activeKey="issues">
+          <Header
+            activePage="issues"
+            canDeleteProject={true}
+            issueCount={1}
+            language="en"
+            projectName="Tasq"
+            onAddTask={() => undefined}
+            onDeleteProject={onDeleteProject}
+            onLanguageChange={() => undefined}
+          />
+        </TabsProvider>
+      </MemoryRouter>,
+    );
+
+    await user.click(screen.getByRole("button", { name: "More project actions" }));
+    await user.click(screen.getByRole("menuitem", { name: "Delete project" }));
+
+    expect(onDeleteProject).toHaveBeenCalledTimes(1);
   });
 });
