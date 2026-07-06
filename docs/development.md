@@ -1,5 +1,37 @@
 # Development Workflow
 
+## Local Development Quick Start
+
+Use Docker Compose through `make` for local development:
+
+```sh
+make dev-up
+```
+
+This starts the `dev` container and OpenAPI UI, then launches the issue-tracker, orchestrator, and Web UI inside the `dev` container. Docker Compose assigns host ports automatically, and the command prints the assigned URLs.
+
+Show the URLs again:
+
+```sh
+make dev-ports
+```
+
+Stop the environment:
+
+```sh
+make dev-down
+```
+
+List all available development commands:
+
+```sh
+make help
+```
+
+### Linux/WSL2 Sandbox Prerequisite
+
+Codex uses Bubblewrap for Linux sandboxing. The dev image installs `bubblewrap`, but Linux and WSL2 hosts must also allow unprivileged user namespace creation for Codex sandboxed commands to work reliably. If Codex reports `bwrap: No permissions to create a new namespace`, treat it as a host or Docker runtime capability issue, not just a missing package in the image.
+
 ## Worktree Usage
 
 Create worktrees under sequential directories from `.worktrees/1` to `.worktrees/n` at the repository root, and use them as the working directories for tasks.
@@ -49,6 +81,20 @@ Use this flow from the start of a task to handoff.
 
 Use the GitHub CLI (`gh`) for GitHub operations such as viewing pull requests, creating pull requests, and checking pull request status.
 
+## Verification
+
+Run the standard Compose-backed checks:
+
+```sh
+make dev-test
+```
+
+Run the broader build check before handing off changes that affect both Go services and the Web UI:
+
+```sh
+make dev-build
+```
+
 ## API Generation
 
 Use `generate:api` for frontend API client generation.
@@ -74,6 +120,70 @@ When updating documentation, keep the English `.md` file and the Japanese `*.ja.
 - Keep links between the English and Japanese versions aligned.
 - Do not link Japanese `*.ja.md` counterparts from `AGENTS.md`; link the English `.md` document there.
 - Treat ADRs as historical decision records. Do not rewrite an earlier ADR to fit a later decision, except for clearly mechanical fixes such as typos or broken links. When a new decision changes or constrains an earlier one, write the change in a new ADR and describe the relationship there.
+
+## Repository Documentation
+
+- [docs/development.md](development.md): repository workflow, task flow, documentation update rules, and component workflow links.
+- [WORKFLOW.md](../WORKFLOW.md): Symphony runtime workflow contract used by the orchestrator.
+- [docs/design.md](design.md): system architecture and service boundaries.
+- [docs/design/deployment.md](design/deployment.md): release tag creation, GitHub Actions, and GoReleaser deployment flow.
+- [docs/references/makefile.md](references/makefile.md): Makefile targets, variables, and local development command reference.
+- [cmd/issue-tracker/WORKFLOW.md](../cmd/issue-tracker/WORKFLOW.md): issue-tracker development workflow.
+- [cmd/orchestrator/WORKFLOW.md](../cmd/orchestrator/WORKFLOW.md): orchestrator development workflow.
+- [cmd/web/WORKFLOW.md](../cmd/web/WORKFLOW.md): Web UI development workflow.
+- [docs/design/web.md](design/web.md): Web UI structure and styling conventions.
+- [docs/openapi/issue-tracker.yml](openapi/issue-tracker.yml): issue-tracker OpenAPI contract.
+- [docs/symphony/README.md](symphony/README.md): Symphony documentation index.
+- [docs/symphony/SPEC.md](symphony/SPEC.md): Symphony orchestration and runner specification.
+- [docs/symphony/DEVIATIONS.md](symphony/DEVIATIONS.md): intentional deviations from the Symphony specification.
+
+## Operational Notes
+
+- Runtime state and SQLite files are created under `.tasq/` in the repository and are ignored by git.
+- Compose stores Go module/build caches, `cmd/web/frontend/node_modules`, Codex login state, and GitHub CLI login state in named Docker volumes.
+- The orchestrator resolves each project's `WORKFLOW.md` for Symphony-oriented runtime settings and the per-issue agent prompt, with `$TQ_HOME/WORKFLOW.md` as the fallback.
+- The Web UI calls local backends through the Go server proxy paths `/tracker/*` and `/orchestrator/*`.
+- `tq` resolves the issue-tracker API URL from `$TQ_HOME/system/state.json` when run through `make run-tq`.
+- Run `make dev-codex-login` once to authenticate Codex with device auth and persist credentials in the `codex-home` Docker volume.
+- Run `make dev-gh-login` once to authenticate GitHub CLI, configure Git to use `gh` as its HTTPS credential helper, and persist credentials in the `gh-config` Docker volume. Use an HTTPS Git remote for pushes from the dev container.
+- Use `make dev-codex-status` and `make dev-gh-status` to confirm the dev container is authenticated before running agent workflows that need Codex or GitHub access.
+
+## tq CLI
+
+List issues:
+
+```sh
+make run-tq ARGS="issue list"
+```
+
+Get an issue:
+
+```sh
+make run-tq ARGS="issue get 1"
+```
+
+Create an issue:
+
+```sh
+make run-tq ARGS='issue create --project tasq --title "Wire Symphony workflow" --description "Define the first workflow contract" --status ready --priority high'
+```
+
+Use issue shortcuts for common status and text updates:
+
+```sh
+make run-tq ARGS="issue ready 1"
+make run-tq ARGS="issue close 1"
+make run-tq ARGS='issue rename 1 "Clarify workflow contract"'
+make run-tq ARGS='issue edit 1 "Updated description"'
+```
+
+Use `--output json` for machine-readable output:
+
+```sh
+make run-tq ARGS="--output json issue list"
+```
+
+For the full command reference, see [docs/references/tq.md](references/tq.md).
 
 ## Component Workflows
 
