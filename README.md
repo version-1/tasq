@@ -2,121 +2,133 @@
 
 AI coding agent task manager.
 
-tasq is a CLI tool for running multiple AI coding-agent tasks in parallel with Claude Code, Codex, and similar agents.
+tasq helps you turn implementation work into a visible queue, start local services for that queue, and inspect progress from both the `tq` CLI and the Web UI.
 
-It creates an isolated workspace for each task and supports the workflow from task registration, agent execution, state management, review, and integration.
+Japanese counterpart: [README.ja.md](README.ja.md).
 
 ## Problem
 
-AI coding agents make it possible to work on multiple implementation tasks at the same time. The bottleneck moves from writing code to managing parallel work.
+AI coding agents make it possible to work on several implementation tasks at the same time. The bottleneck moves from writing code to coordinating parallel work.
 
-### Human context switching
-
-Agents can run in parallel, but humans still need to track the state of each task:
-
-- Which tasks were assigned.
-- Which agents are running.
-- How far each task has progressed.
-- What should be reviewed next.
-
-This increases coordination cost and makes it harder to keep a reliable overview of active work.
-
-### Workspace conflicts
-
-Running multiple agents in one repository checkout can create conflicts:
-
-- Branch switching interrupts other work.
-- Unfinished changes overlap.
-- Multiple agents may edit the same files from the same workspace.
-
-### Repeated setup work
-
-Each agent task often needs the same preparation steps:
-
-- Create a branch.
-- Create a worktree.
-- Install or verify dependencies.
-- Run the right setup and verification commands.
-
-Repeating that setup for every task slows down parallel execution.
+Teams still need to know which tasks exist, which ones are ready, what is running, what needs review, and which local workspace belongs to which task. Running every agent in one checkout also increases branch-switching and file-conflict risk.
 
 ## Solution
 
-tasq manages executable tasks as a queue and creates agent-ready workspaces for tasks that are ready to run.
+tasq gives agent work a product surface: an issue tracker, local services, a CLI, and a Web UI that keep task state and project context in one place.
 
 ![Tasq task queue to parallel agent workspaces](docs/site/static/img/agent-task-queue.svg)
 
-The goal is not just faster code generation. The goal is to reduce the management cost introduced by parallel agent work.
+Tasks move through a reviewable workflow:
+
+```text
+backlog -> ready -> in_progress -> review -> done
+```
 
 ## Features
 
-### Task queue
+- Issue queue for agent-sized tasks, priorities, dependencies, and comments.
+- `tq` CLI for creating tasks, updating state, adding progress comments, and scripting workflows.
+- Local issue-tracker, orchestrator, and Web UI services backed by SQLite.
+- Web UI for scanning projects, issues, comments, queue status, and service state.
+- Project registration so issues stay tied to a real local repository path.
+- Release archives that include the runtime binaries needed for a binary-only local setup.
 
-Track implementation tasks as they move through the workflow.
+## Install
+
+Download the latest GitHub Release archive for your platform, extract it, and place all four binaries on your `PATH`.
+
+Each release tarball contains:
+
+- `tq`: the CLI you run directly.
+- `issue-tracker`: the local REST API service.
+- `orchestrator`: the local run-state service.
+- `web`: the local Web UI server with embedded frontend assets.
+
+Install the latest formal release:
 
 ```sh
-tasq add "implement user login"
+version="$(curl -fsSLI -o /dev/null -w '%{url_effective}' https://github.com/version-1/tasq/releases/latest | sed 's#.*/##')"
+os="$(uname -s | tr '[:upper:]' '[:lower:]')"
+arch="$(uname -m)"
+case "$arch" in x86_64) arch="amd64" ;; aarch64) arch="arm64" ;; esac
+archive="tasq_${version#v}_${os}_${arch}.tar.gz"
+tmp_dir="$(mktemp -d)"
+curl -fsSL "https://github.com/version-1/tasq/releases/download/${version}/${archive}" -o "${tmp_dir}/${archive}"
+tar -xzf "${tmp_dir}/${archive}" -C "${tmp_dir}"
+install_dir="${HOME}/.local/bin"
+mkdir -p "$install_dir"
+cp "${tmp_dir}/tq" "${tmp_dir}/issue-tracker" "${tmp_dir}/orchestrator" "${tmp_dir}/web" "$install_dir/"
+chmod 0755 "$install_dir/tq" "$install_dir/issue-tracker" "$install_dir/orchestrator" "$install_dir/web"
 ```
 
-```text
-TODO
-READY
-RUNNING
-DONE
+Make sure the install directory is on your `PATH`:
+
+```sh
+export PATH="${HOME}/.local/bin:${PATH}"
+tq version
 ```
 
-### Isolated workspace
+## Getting Started
 
-Create a Git worktree for each task so agents can work independently.
+Tasq stores machine-local runtime data under `TQ_HOME`. If `TQ_HOME` is not set, it uses `~/.tasq`.
 
-```text
-project/
-├── main
-└── .worktrees/
-    ├── task-a
-    ├── task-b
-    └── task-c
+Initialize local databases and start the issue-tracker, orchestrator, and Web UI with explicit local ports:
+
+```sh
+export TQ_HOME="${HOME}/.tasq"
+export TQ_API_URL="http://127.0.0.1:47651"
+tq migrate
+issue-tracker -addr 127.0.0.1:47651 &
+tracker_pid=$!
+orchestrator -issue-tracker http://127.0.0.1:47651 -port 47652 &
+orchestrator_pid=$!
+web -addr 127.0.0.1:47653 \
+  -tracker-url http://127.0.0.1:47651 \
+  -orchestrator-url http://127.0.0.1:47652 &
+web_pid=$!
+sleep 1
 ```
 
-### Parallel agent execution
+This starts the local services on:
 
-Run multiple agents at the same time without sharing one mutable checkout.
+| Service | Port |
+| --- | ---: |
+| issue-tracker | `47651` |
+| orchestrator | `47652` |
+| web | `47653` |
 
-```text
-task-a -> Codex A
-task-b -> Codex B
-task-c -> Codex C
+Register a local repository as a project:
+
+```sh
+tq project add --key tasq-demo .
 ```
 
-### Review workflow
+Create a task and move it into the queue:
 
-Review and integrate agent output per task.
-
-```text
-RUNNING
-   |
-   v
-REVIEW
-   |
-   v
-MERGED
+```sh
+tq issue create \
+  --project tasq-demo \
+  --title "Try Tasq from binaries" \
+  --description "Create the first issue through the tq CLI."
+tq issue list --project tasq-demo
 ```
 
-tasq provides task management, workspace isolation, and agent execution support for AI coding-agent workflows.
+Open the Web UI at [http://127.0.0.1:47653](http://127.0.0.1:47653) and confirm that the project and issue are visible.
 
-## Components
+Stop the local services when you are done:
 
-- Issue Tracker: Go REST API backed by SQLite. It owns issues, comments, projects, workspaces, and UI summaries.
-- Orchestrator: Go service backed by SQLite. It records run state and runner events for runtime inspection.
-- `tq`: Go CLI for agents and workflow tools to create, read, list, and update issues through the issue-tracker API.
-- Web UI: Go-served Vite + React client for the issue-tracker API.
-- TUI: Go terminal client for the same issue-tracker API.
+```sh
+kill "$web_pid" "$orchestrator_pid" "$tracker_pid"
+```
 
-For the full architecture, see [docs/design.md](docs/design.md).
-For local configuration, see [docs/design/configuration.md](docs/design/configuration.md).
+If one of these ports is already in use, choose another loopback port and update `TQ_API_URL`, `-issue-tracker`, `-tracker-url`, and `-orchestrator-url` consistently.
 
-## Developer Documentation
+## Documentation
 
-For local development, verification, command references, and repository workflow, see [docs/development.md](docs/development.md).
+- [Design documentation](docs/design.md)
+- [Release binary startup notes](docs/design/release-binary-startup.md)
+- [CLI reference](docs/site/docs/reference/cli-reference.md)
 
-Japanese counterpart: [README.ja.md](README.ja.md).
+## Development
+
+For repository workflow, local development, and verification, see [docs/development.md](docs/development.md).
