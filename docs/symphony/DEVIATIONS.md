@@ -224,6 +224,33 @@ This deviates from the following SPEC.md sections:
 | §17.7 | CLI accepts a positional workflow path and falls back to `./WORKFLOW.md` | Orchestrator CLI does not select one workflow file for all projects |
 | §18 | Workflow path selection supports explicit runtime path and cwd default | Effective workflow is resolved at issue dispatch time |
 
+## Project Deletion Cleanup
+
+Symphony does not define a project deletion API. Tasq implements project deletion in the
+issue-tracker API and performs best-effort cross-store cleanup of orchestrator runtime records for
+the deleted project's issues.
+
+The selected Tasq behavior is:
+
+- The issue-tracker reads the project-owned issue IDs, asks the orchestrator runstore to delete
+  `runner_events`, `workspace_setup_failures`, `workspace_metadata`, and `runs` for those issue IDs,
+  then deletes the issue-tracker project descendants.
+- The orchestrator runstore checks for `running` runs and deletes descendants in one SQLite
+  transaction. If any target run is `running`, the delete returns `409 Conflict` and does not delete
+  issue-tracker or orchestrator records.
+- The cleanup order is intentionally orchestrator-first because the issue IDs are the cross-store
+  join key. If orchestrator cleanup succeeds but issue-tracker deletion later fails, retrying the
+  project deletion is idempotent for orchestrator records and can still delete the issue-tracker
+  records.
+- Tasq does not introduce a cross-store lock. A new run can theoretically be created after the
+  running check and before issue-tracker deletion. The current orchestrator dispatch path reads
+  eligible issues from the issue-tracker, so once issue-tracker deletion commits there is no durable
+  issue for future dispatch; the narrow check-then-delete race is accepted as an implementation
+  tradeoff rather than a distributed transaction.
+- Project deletion removes persisted workspace metadata and setup failure records, but it does not
+  delete workspace directories. Workspace filesystem cleanup remains owned by the workspace manager's
+  normal lifecycle.
+
 ## Multi-Project Orchestration
 
 Symphony assumes one process serves one project (one `WORKFLOW.md`, one `tracker.project_slug`,

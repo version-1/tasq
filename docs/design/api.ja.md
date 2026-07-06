@@ -33,7 +33,7 @@ issue-tracker はユーザー向け API です。
 - `GET /api/v1/attachments/{id}/content`
 - `DELETE /api/v1/attachments/{id}`
 
-`DELETE /api/v1/projects/{id}` は project と、その project が所有する issue-tracker 上の子孫データを削除します。対象は issues、その issues を参照する issue dependency edges、comments、attachment records と `$TQ_HOME/system/data/attachments` 配下の attachment files、保存済み project workflow overrides です。`project.location` に記録されたユーザーの project directory や worktrees は削除・変更しません。
+`DELETE /api/v1/projects/{id}` は project と、その project が所有する issue-tracker 上の子孫データを削除します。対象は issues、その issues を参照する issue dependency edges、comments、attachment records と `$TQ_HOME/system/data/attachments` 配下の attachment files、保存済み project workflow overrides です。所有する issues に紐づく orchestrator runtime の子孫データである runs、runner events、workspace metadata、workspace setup failures も削除します。所有 issue に `running` の orchestrator run が 1 件でもある場合、endpoint は `409 Conflict` と `projects.delete.running_runs` を返し、issue-tracker と orchestrator のどちらのレコードも削除しません。途中失敗後も issue IDs を使って再実行できるように、orchestrator runtime records を issue-tracker records より先に削除します。`project.location` に記録されたユーザーの project directory や worktrees は削除・変更しません。
 
 添付ファイルのアップロードは、`entity_type`、`entity_id`、`file` を持つ multipart form data を受け取ります。最初の実装では PNG、JPEG、GIF、WebP の画像ファイルを 5 MiB までサポートします。添付ファイルのバイト列は `$TQ_HOME/system/data/attachments` 配下に保存し、SQLite にはメタデータと相対パスを保存します。課題とコメントの本文は、`![screenshot](attachment://att_...)` のような Markdown image link で添付ファイルを参照します。
 

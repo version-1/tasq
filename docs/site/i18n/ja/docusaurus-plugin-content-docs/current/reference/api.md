@@ -32,7 +32,7 @@ error responses は次を使います。
 | `POST` | `/api/v1/projects` | project を作成します。 |
 | `GET` | `/api/v1/projects/{id}` | project を読みます。 |
 | `PATCH` | `/api/v1/projects/{id}` | project を更新します。 |
-| `DELETE` | `/api/v1/projects/{id}` | linked issues がない場合に project を削除します。 |
+| `DELETE` | `/api/v1/projects/{id}` | target run が running でない場合に、project、issue-tracker descendants、orchestrator runtime descendants を削除します。 |
 | `GET` | `/api/v1/projects/{id}/workflow` | stored workflow override を読みます。 |
 | `PUT` | `/api/v1/projects/{id}/workflow` | workflow override を保存します。 |
 | `DELETE` | `/api/v1/projects/{id}/workflow` | workflow override を削除します。 |

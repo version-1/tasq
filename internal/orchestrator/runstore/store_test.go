@@ -326,6 +326,117 @@ func TestStoreRecordsRunnerEventAndWorkspaceMetadata(t *testing.T) {
 	}
 }
 
+func TestDeleteProjectIssueDataRejectsRunningRunsWithoutDeleting(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "orchestrator.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer store.Close()
+
+	runningRun := createRun(t, ctx, store, 7)
+	runningRun, err = store.UpdateRunStatus(ctx, runningRun.RunID, run.StatusRunning, "")
+	if err != nil {
+		t.Fatalf("mark running: %v", err)
+	}
+	if err := store.RecordRunnerEvent(ctx, runningRun.RunID, "running", "started", ""); err != nil {
+		t.Fatalf("record runner event: %v", err)
+	}
+	if err := store.UpsertWorkspaceMetadata(ctx, WorkspaceMetadataInput{
+		WorkspaceKey: "issue-7",
+		IssueID:      7,
+		Path:         "/tmp/workspace/issue-7",
+		CreatedNow:   true,
+		SourcePath:   "/tmp/repo",
+	}); err != nil {
+		t.Fatalf("upsert workspace metadata: %v", err)
+	}
+	if err := store.RecordWorkspaceSetupFailure(ctx, 7, "issue-7", "/tmp/workspace/issue-7", "failed"); err != nil {
+		t.Fatalf("record workspace setup failure: %v", err)
+	}
+
+	err = store.DeleteProjectIssueData(ctx, []int64{7})
+
+	if !errors.Is(err, ErrProjectHasRunningRuns) {
+		t.Fatalf("delete error = %v, want ErrProjectHasRunningRuns", err)
+	}
+	if _, err := store.RunByRunID(ctx, runningRun.RunID); err != nil {
+		t.Fatalf("running run was deleted: %v", err)
+	}
+	if count := countRows(t, store, "runner_events"); count != 1 {
+		t.Fatalf("runner_events count = %d, want 1", count)
+	}
+	if count := countRows(t, store, "workspace_metadata"); count != 1 {
+		t.Fatalf("workspace_metadata count = %d, want 1", count)
+	}
+	if count := countRows(t, store, "workspace_setup_failures"); count != 1 {
+		t.Fatalf("workspace_setup_failures count = %d, want 1", count)
+	}
+}
+
+func TestDeleteProjectIssueDataDeletesRunsEventsAndWorkspaceRecords(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "orchestrator.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer store.Close()
+
+	projectRun := createRun(t, ctx, store, 7)
+	if _, err := store.UpdateRunStatus(ctx, projectRun.RunID, run.StatusSucceeded, ""); err != nil {
+		t.Fatalf("mark project run succeeded: %v", err)
+	}
+	otherRun := createRun(t, ctx, store, 8)
+	if _, err := store.UpdateRunStatus(ctx, otherRun.RunID, run.StatusSucceeded, ""); err != nil {
+		t.Fatalf("mark other run succeeded: %v", err)
+	}
+	for _, runID := range []string{projectRun.RunID, otherRun.RunID} {
+		if err := store.RecordRunnerEvent(ctx, runID, "succeeded", "done", ""); err != nil {
+			t.Fatalf("record event for %s: %v", runID, err)
+		}
+	}
+	for _, input := range []WorkspaceMetadataInput{
+		{WorkspaceKey: "issue-7", IssueID: 7, Path: "/tmp/workspace/issue-7", CreatedNow: true, SourcePath: "/tmp/repo"},
+		{WorkspaceKey: "issue-8", IssueID: 8, Path: "/tmp/workspace/issue-8", CreatedNow: true, SourcePath: "/tmp/repo"},
+	} {
+		if err := store.UpsertWorkspaceMetadata(ctx, input); err != nil {
+			t.Fatalf("upsert workspace metadata: %v", err)
+		}
+	}
+	if err := store.RecordWorkspaceSetupFailure(ctx, 7, "issue-7", "/tmp/workspace/issue-7", "failed"); err != nil {
+		t.Fatalf("record project workspace setup failure: %v", err)
+	}
+	if err := store.RecordWorkspaceSetupFailure(ctx, 8, "issue-8", "/tmp/workspace/issue-8", "failed"); err != nil {
+		t.Fatalf("record other workspace setup failure: %v", err)
+	}
+
+	if err := store.DeleteProjectIssueData(ctx, []int64{7}); err != nil {
+		t.Fatalf("delete project issue data: %v", err)
+	}
+	if _, err := store.RunByRunID(ctx, projectRun.RunID); !errors.Is(err, sql.ErrNoRows) {
+		t.Fatalf("project run error = %v, want sql.ErrNoRows", err)
+	}
+	if _, err := store.RunByRunID(ctx, otherRun.RunID); err != nil {
+		t.Fatalf("other run error = %v", err)
+	}
+	if count := countRows(t, store, "runs"); count != 1 {
+		t.Fatalf("runs count = %d, want 1", count)
+	}
+	if count := countRows(t, store, "runner_events"); count != 1 {
+		t.Fatalf("runner_events count = %d, want 1", count)
+	}
+	if count := countRows(t, store, "workspace_metadata"); count != 1 {
+		t.Fatalf("workspace_metadata count = %d, want 1", count)
+	}
+	if count := countRows(t, store, "workspace_setup_failures"); count != 1 {
+		t.Fatalf("workspace_setup_failures count = %d, want 1", count)
+	}
+}
+
 func schemaObjectExists(t *testing.T, store *Store, name string) bool {
 	t.Helper()
 
@@ -365,6 +476,16 @@ func schemaColumnExists(t *testing.T, store *Store, table string, column string)
 		t.Fatalf("iterate columns for %s: %v", table, err)
 	}
 	return false
+}
+
+func countRows(t *testing.T, store *Store, table string) int {
+	t.Helper()
+
+	var count int
+	if err := store.db.QueryRow(`SELECT COUNT(*) FROM ` + table).Scan(&count); err != nil {
+		t.Fatalf("count %s: %v", table, err)
+	}
+	return count
 }
 
 func createRun(t *testing.T, ctx context.Context, store *Store, issueID int64) run.Run {

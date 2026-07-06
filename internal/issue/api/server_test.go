@@ -20,6 +20,8 @@ import (
 
 	"github.com/version-1/tasq/internal/issue/domain/entity"
 	"github.com/version-1/tasq/internal/issue/store"
+	"github.com/version-1/tasq/internal/orchestrator/run"
+	"github.com/version-1/tasq/internal/orchestrator/runstore"
 )
 
 func TestSuccessResponseEnvelope(t *testing.T) {
@@ -1463,6 +1465,107 @@ func TestDeleteProjectCascadesIssueCommentsAttachmentsAndWorkflow(t *testing.T) 
 	assertAttachmentFileMissing(t, server, commentAttachment.Path)
 }
 
+func TestDeleteProjectRejectsRunningOrchestratorRuns(t *testing.T) {
+	t.Parallel()
+
+	server, orchestratorStore := newTestServerWithRunstore(t)
+	project := createProject(t, server, "RUNNING")
+	issue := createIssueInProject(t, server, project.ID, "Running issue", entity.StatusInProgress)
+	storedRun, err := orchestratorStore.CreateRun(context.Background(), runstore.CreateRunInput{
+		IssueID:        issue.ID,
+		Workspace:      "/tmp/workspaces/issue-running",
+		Attempt:        1,
+		OrchestratorID: "orchestrator",
+	})
+	if err != nil {
+		t.Fatalf("create run: %v", err)
+	}
+	if _, err := orchestratorStore.UpdateRunStatus(context.Background(), storedRun.RunID, run.StatusRunning, ""); err != nil {
+		t.Fatalf("mark running: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodDelete, "/api/v1/projects/"+stringID(project.ID), nil)
+	rec := httptest.NewRecorder()
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("delete status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	assertErrorCode(t, rec, "projects.delete.running_runs")
+	if _, err := server.store.Project(context.Background(), project.ID); err != nil {
+		t.Fatalf("project was deleted: %v", err)
+	}
+	if _, err := server.store.Issue(context.Background(), issue.ID); err != nil {
+		t.Fatalf("issue was deleted: %v", err)
+	}
+	if _, err := orchestratorStore.RunByRunID(context.Background(), storedRun.RunID); err != nil {
+		t.Fatalf("run was deleted: %v", err)
+	}
+}
+
+func TestDeleteProjectCleansOrchestratorDataBeforeIssueTrackerData(t *testing.T) {
+	t.Parallel()
+
+	server, orchestratorStore := newTestServerWithRunstore(t)
+	project := createProject(t, server, "ORCHDEL")
+	issue := createIssueInProject(t, server, project.ID, "Completed issue", entity.StatusDone)
+	storedRun, err := orchestratorStore.CreateRun(context.Background(), runstore.CreateRunInput{
+		IssueID:        issue.ID,
+		Workspace:      "/tmp/workspaces/issue-complete",
+		Attempt:        1,
+		OrchestratorID: "orchestrator",
+	})
+	if err != nil {
+		t.Fatalf("create run: %v", err)
+	}
+	if _, err := orchestratorStore.UpdateRunStatus(context.Background(), storedRun.RunID, run.StatusSucceeded, ""); err != nil {
+		t.Fatalf("mark succeeded: %v", err)
+	}
+	if err := orchestratorStore.RecordRunnerEvent(context.Background(), storedRun.RunID, "succeeded", "done", ""); err != nil {
+		t.Fatalf("record runner event: %v", err)
+	}
+	if err := orchestratorStore.UpsertWorkspaceMetadata(context.Background(), runstore.WorkspaceMetadataInput{
+		WorkspaceKey: "issue-complete",
+		IssueID:      issue.ID,
+		Path:         "/tmp/workspaces/issue-complete",
+		CreatedNow:   true,
+		SourcePath:   "/tmp/repo",
+	}); err != nil {
+		t.Fatalf("upsert workspace metadata: %v", err)
+	}
+	if err := orchestratorStore.RecordWorkspaceSetupFailure(context.Background(), issue.ID, "issue-complete", "/tmp/workspaces/issue-complete", "failed"); err != nil {
+		t.Fatalf("record workspace setup failure: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodDelete, "/api/v1/projects/"+stringID(project.ID), nil)
+	rec := httptest.NewRecorder()
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("delete status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	if _, err := orchestratorStore.RunByRunID(context.Background(), storedRun.RunID); !errors.Is(err, sql.ErrNoRows) {
+		t.Fatalf("run error = %v, want sql.ErrNoRows", err)
+	}
+	events, err := orchestratorStore.RunnerEvents(context.Background(), storedRun.RunID, 10)
+	if err != nil {
+		t.Fatalf("runner events: %v", err)
+	}
+	if len(events) != 0 {
+		t.Fatalf("runner events = %+v, want empty", events)
+	}
+	count, err := orchestratorStore.WorkspaceSetupFailureCount(context.Background())
+	if err != nil {
+		t.Fatalf("workspace setup failure count: %v", err)
+	}
+	if count != 0 {
+		t.Fatalf("workspace setup failure count = %d, want 0", count)
+	}
+	if _, err := server.store.Issue(context.Background(), issue.ID); !errors.Is(err, sql.ErrNoRows) {
+		t.Fatalf("issue err = %v, want sql.ErrNoRows", err)
+	}
+}
+
 func TestAttachmentUploadRejectsInvalidType(t *testing.T) {
 	t.Parallel()
 
@@ -1492,6 +1595,30 @@ func newTestServer(t *testing.T) *Server {
 		}
 	})
 	return NewServerWithAttachmentStorage(issueStore, store.NewAttachmentStorage(t.TempDir()))
+}
+
+func newTestServerWithRunstore(t *testing.T) (*Server, *runstore.Store) {
+	t.Helper()
+
+	issueStore, err := store.OpenMigrated(context.Background(), filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open issue store: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := issueStore.Close(); err != nil {
+			t.Fatalf("close issue store: %v", err)
+		}
+	})
+	orchestratorStore, err := runstore.OpenMigrated(context.Background(), filepath.Join(t.TempDir(), "orchestrator.sqlite"))
+	if err != nil {
+		t.Fatalf("open orchestrator store: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := orchestratorStore.Close(); err != nil {
+			t.Fatalf("close orchestrator store: %v", err)
+		}
+	})
+	return NewServerWithStores(issueStore, store.NewAttachmentStorage(t.TempDir()), orchestratorStore), orchestratorStore
 }
 
 func stringID(id int64) string {

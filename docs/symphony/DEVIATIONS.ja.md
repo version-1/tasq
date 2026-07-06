@@ -231,6 +231,31 @@ SPEC.md の以下のセクションと乖離します:
 | §17.7 | CLI は位置引数のワークフローパスを受け取り、`./WORKFLOW.md` に fallback する | Orchestrator CLI は全プロジェクト用の単一ワークフローファイルを選択しない |
 | §18 | ワークフローパス選択は、明示的な実行時パスと cwd の既定値をサポートする | 有効なワークフローは課題の割り当て時に解決される |
 
+## Project Deletion Cleanup
+
+Symphony は project deletion API を定義していません。Tasq は issue-tracker API で project deletion を
+実装し、削除対象 project の issues に紐づく orchestrator runtime records を best-effort で
+cross-store cleanup します。
+
+Tasq が選択した振る舞いは次のとおりです。
+
+- issue-tracker は project が所有する issue IDs を読み取り、orchestrator runstore にそれらの issue IDs
+  に紐づく `runner_events`、`workspace_setup_failures`、`workspace_metadata`、`runs` の削除を依頼し、
+  その後 issue-tracker 側の project descendants を削除します。
+- orchestrator runstore は `running` runs の確認と子孫削除を 1 つの SQLite transaction で行います。
+  対象 run に `running` が 1 件でもある場合、delete は `409 Conflict` を返し、issue-tracker と
+  orchestrator のどちらの records も削除しません。
+- cleanup order は意図的に orchestrator-first です。issue IDs が cross-store join key だからです。
+  orchestrator cleanup が成功した後に issue-tracker deletion が失敗しても、project deletion を再実行すれば
+  orchestrator records の削除は冪等で、issue-tracker records はまだ削除できます。
+- Tasq は cross-store lock を導入しません。running check の後、issue-tracker deletion の前に新しい run が
+  作られる可能性は理論上あります。現在の orchestrator dispatch path は issue-tracker から eligible issues を
+  読むため、issue-tracker deletion が commit されると将来の dispatch 対象となる durable issue は残りません。
+  この狭い check-then-delete race は distributed transaction ではなく実装上の tradeoff として許容します。
+- Project deletion は永続化された workspace metadata と setup failure records を削除しますが、
+  workspace directories は削除しません。Workspace filesystem cleanup は workspace manager の通常の
+  lifecycle が引き続き所有します。
+
 ## Multi-Project Orchestration
 
 Symphony は 1 プロセスが 1 プロジェクトを担当する前提です（1 つの `WORKFLOW.md`、1 つの

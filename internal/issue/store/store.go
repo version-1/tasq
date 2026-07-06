@@ -307,6 +307,24 @@ func (s *Store) DeleteProject(ctx context.Context, id int64) error {
 	return nil
 }
 
+func (s *Store) ProjectIssueIDs(ctx context.Context, projectID int64) ([]int64, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT id FROM issues WHERE project_id = ? ORDER BY id ASC`, projectID)
+	if err != nil {
+		return nil, fmt.Errorf("list project issue ids: %w", err)
+	}
+	defer rows.Close()
+
+	var issueIDs []int64
+	for rows.Next() {
+		var issueID int64
+		if err := rows.Scan(&issueID); err != nil {
+			return nil, err
+		}
+		issueIDs = append(issueIDs, issueID)
+	}
+	return issueIDs, rows.Err()
+}
+
 func (s *Store) resolveAttachmentStorage() (*AttachmentStorage, error) {
 	if s.attachmentStorage != nil {
 		return s.attachmentStorage, nil

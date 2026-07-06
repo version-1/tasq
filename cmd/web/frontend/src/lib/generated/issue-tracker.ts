@@ -777,6 +777,7 @@ export const patchApiV1ProjectsId = async (id: number,
 
 
 /**
+ * Deletes the project and its issue-tracker descendants, including issues, issue dependencies, comments, attachment records and files under the tracker home, and stored project workflow overrides. Also deletes orchestrator runtime descendants for the owned issues, including runs, runner events, workspace metadata, and workspace setup failures. Returns 409 with `projects.delete.running_runs` when any owned issue has a running orchestrator run. Orchestrator runtime records are deleted before issue-tracker records so partial failures can be retried. The project location directory and worktrees are not modified.
  * @summary Delete a project.
  */
 export type deleteApiV1ProjectsIdResponse204 = {
@@ -793,11 +794,16 @@ export type deleteApiV1ProjectsIdResponse404 = {
   data: ErrorResponse
   status: 404
 }
+
+export type deleteApiV1ProjectsIdResponse409 = {
+  data: ErrorResponse
+  status: 409
+}
     
 export type deleteApiV1ProjectsIdResponseSuccess = (deleteApiV1ProjectsIdResponse204) & {
   headers: Headers;
 };
-export type deleteApiV1ProjectsIdResponseError = (deleteApiV1ProjectsIdResponse400 | deleteApiV1ProjectsIdResponse404) & {
+export type deleteApiV1ProjectsIdResponseError = (deleteApiV1ProjectsIdResponse400 | deleteApiV1ProjectsIdResponse404 | deleteApiV1ProjectsIdResponse409) & {
   headers: Headers;
 };
 
