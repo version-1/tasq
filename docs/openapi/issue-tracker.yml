@@ -121,11 +121,13 @@ paths:
       tags:
         - Projects
       summary: Delete a project.
-      description: Deletes the project and its issue-tracker descendants, including issues, issue dependencies, comments, attachment records and files under the tracker home, and stored project workflow overrides. The project location directory and worktrees are not modified.
+      description: Deletes the project and its issue-tracker descendants, including issues, issue dependencies, comments, attachment records and files under the tracker home, and stored project workflow overrides. Also deletes orchestrator runtime descendants for the owned issues, including runs, runner events, workspace metadata, and workspace setup failures. Returns 409 with `projects.delete.running_runs` when any owned issue has a running orchestrator run. Orchestrator runtime records are deleted before issue-tracker records so partial failures can be retried. The project location directory and worktrees are not modified.
       responses:
         "204":
           description: Project deleted.
         "400":
+          $ref: "#/components/responses/Error"
+        "409":
           $ref: "#/components/responses/Error"
         "404":
           $ref: "#/components/responses/Error"

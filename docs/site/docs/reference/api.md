@@ -32,7 +32,7 @@ Error responses use:
 | `POST` | `/api/v1/projects` | Create a project. |
 | `GET` | `/api/v1/projects/{id}` | Read a project. |
 | `PATCH` | `/api/v1/projects/{id}` | Update a project. |
-| `DELETE` | `/api/v1/projects/{id}` | Delete a project when no issues link to it. |
+| `DELETE` | `/api/v1/projects/{id}` | Delete a project, issue-tracker descendants, and orchestrator runtime descendants unless a target run is running. |
 | `GET` | `/api/v1/projects/{id}/workflow` | Read stored workflow override. |
 | `PUT` | `/api/v1/projects/{id}/workflow` | Store workflow override. |
 | `DELETE` | `/api/v1/projects/{id}/workflow` | Remove workflow override. |

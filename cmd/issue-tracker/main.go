@@ -15,6 +15,7 @@ import (
 	tqconfig "github.com/version-1/tasq/internal/config"
 	"github.com/version-1/tasq/internal/issue/api"
 	"github.com/version-1/tasq/internal/issue/store"
+	"github.com/version-1/tasq/internal/orchestrator/runstore"
 )
 
 func main() {
@@ -40,9 +41,18 @@ func main() {
 			log.Printf("close issue store: %v", err)
 		}
 	}()
+	orchestratorStore, err := runstore.Open(ctx, tqconfig.OrchestratorDBPath(home))
+	if err != nil {
+		log.Fatalf("open orchestrator store: %v", err)
+	}
+	defer func() {
+		if err := orchestratorStore.Close(); err != nil {
+			log.Printf("close orchestrator store: %v", err)
+		}
+	}()
 
 	server := &http.Server{
-		Handler:           api.NewServer(issueStore).Handler(),
+		Handler:           api.NewServerWithOrchestratorStore(issueStore, orchestratorStore).Handler(),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 	listener, err := net.Listen("tcp", *addr)

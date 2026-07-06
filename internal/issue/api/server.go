@@ -16,12 +16,18 @@ import (
 
 	"github.com/version-1/tasq/internal/issue/domain/entity"
 	"github.com/version-1/tasq/internal/issue/store"
+	"github.com/version-1/tasq/internal/orchestrator/runstore"
 	"gopkg.in/yaml.v3"
 )
 
 type Server struct {
-	store             *store.Store
-	attachmentStorage *store.AttachmentStorage
+	store                 *store.Store
+	attachmentStorage     *store.AttachmentStorage
+	projectRunDataDeleter projectRunDataDeleter
+}
+
+type projectRunDataDeleter interface {
+	DeleteProjectIssueData(ctx context.Context, issueIDs []int64) error
 }
 
 func NewServer(issueStore *store.Store) *Server {
@@ -31,6 +37,15 @@ func NewServer(issueStore *store.Store) *Server {
 func NewServerWithAttachmentStorage(issueStore *store.Store, attachmentStorage *store.AttachmentStorage) *Server {
 	issueStore.SetAttachmentStorage(attachmentStorage)
 	return &Server{store: issueStore, attachmentStorage: attachmentStorage}
+}
+
+func NewServerWithOrchestratorStore(issueStore *store.Store, orchestratorStore *runstore.Store) *Server {
+	return &Server{store: issueStore, projectRunDataDeleter: orchestratorStore}
+}
+
+func NewServerWithStores(issueStore *store.Store, attachmentStorage *store.AttachmentStorage, orchestratorStore *runstore.Store) *Server {
+	issueStore.SetAttachmentStorage(attachmentStorage)
+	return &Server{store: issueStore, attachmentStorage: attachmentStorage, projectRunDataDeleter: orchestratorStore}
 }
 
 func (s *Server) Handler() http.Handler {
@@ -133,6 +148,21 @@ func (s *Server) deleteProject(w http.ResponseWriter, r *http.Request) {
 	id, ok := pathID(w, r, "project", "projects.delete")
 	if !ok {
 		return
+	}
+	if s.projectRunDataDeleter != nil {
+		issueIDs, err := s.store.ProjectIssueIDs(r.Context(), id)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "projects.delete.project_issue_ids_failed", err)
+			return
+		}
+		if err := s.projectRunDataDeleter.DeleteProjectIssueData(r.Context(), issueIDs); err != nil {
+			if errors.Is(err, runstore.ErrProjectHasRunningRuns) {
+				writeError(w, http.StatusConflict, "projects.delete.running_runs", err)
+				return
+			}
+			writeError(w, http.StatusInternalServerError, "projects.delete.orchestrator_cleanup_failed", err)
+			return
+		}
 	}
 	if err := s.store.DeleteProject(r.Context(), id); err != nil {
 		writeStoreError(w, err, "projects.delete", "project")

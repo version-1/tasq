@@ -366,7 +366,8 @@ export const getApiV1IssueIdentifier = async (issueIdentifier: string, options?:
 
 /**
  * Returns chronological run status transition events, `turn_completed`,
-`item/completed`, and `item/commandExecution/requestApproval` events for
+`item/completed`, `item/commandExecution/requestApproval`,
+`thread/tokenUsage/updated`, and `account/rateLimits/updated` events for
 a run that belongs to the requested issue identifier.
 
  * @summary Get conversation events for one run.

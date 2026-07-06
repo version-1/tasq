@@ -5,7 +5,9 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"encoding/hex"
+	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	_ "modernc.org/sqlite"
@@ -18,6 +20,8 @@ import (
 type Store struct {
 	db *sql.DB
 }
+
+var ErrProjectHasRunningRuns = errors.New("project has running runs")
 
 func Open(ctx context.Context, path string) (*Store, error) {
 	db, err := sql.Open("sqlite", path)
@@ -277,6 +281,53 @@ func (s *Store) WorkspaceSetupFailureCount(ctx context.Context) (int, error) {
 	return count, nil
 }
 
+func (s *Store) DeleteProjectIssueData(ctx context.Context, issueIDs []int64) error {
+	if len(issueIDs) == 0 {
+		return nil
+	}
+	placeholders := queryPlaceholders(len(issueIDs))
+	args := int64Args(issueIDs)
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	var runningCount int
+	if err := tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM runs
+		WHERE issue_id IN (`+placeholders+`)
+			AND status = ?`, append(args, string(run.StatusRunning))...).Scan(&runningCount); err != nil {
+		return fmt.Errorf("count running project runs: %w", err)
+	}
+	if runningCount > 0 {
+		return fmt.Errorf("%w: %d running run(s)", ErrProjectHasRunningRuns, runningCount)
+	}
+
+	if _, err := tx.ExecContext(ctx, `DELETE FROM runner_events
+		WHERE run_id IN (
+			SELECT run_id FROM runs WHERE issue_id IN (`+placeholders+`)
+		)`, args...); err != nil {
+		return fmt.Errorf("delete project runner events: %w", err)
+	}
+	if _, err := tx.ExecContext(ctx, `DELETE FROM workspace_setup_failures
+		WHERE issue_id IN (`+placeholders+`)`, args...); err != nil {
+		return fmt.Errorf("delete project workspace setup failures: %w", err)
+	}
+	if _, err := tx.ExecContext(ctx, `DELETE FROM workspace_metadata
+		WHERE issue_id IN (`+placeholders+`)`, args...); err != nil {
+		return fmt.Errorf("delete project workspace metadata: %w", err)
+	}
+	if _, err := tx.ExecContext(ctx, `DELETE FROM runs
+		WHERE issue_id IN (`+placeholders+`)`, args...); err != nil {
+		return fmt.Errorf("delete project runs: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit project run cleanup: %w", err)
+	}
+	return nil
+}
+
 func (s *Store) RunByRunID(ctx context.Context, runID string) (run.Run, error) {
 	row := s.db.QueryRowContext(ctx, `SELECT id, run_id, issue_id, status, workspace, thread_id, attempt, error, orchestrator_id, created_at, updated_at
 		FROM runs WHERE run_id = ?`, runID)
@@ -435,6 +486,18 @@ func boolInt(value bool) int {
 
 func nullString(value string) sql.NullString {
 	return sql.NullString{String: value, Valid: value != ""}
+}
+
+func queryPlaceholders(count int) string {
+	return strings.TrimRight(strings.Repeat("?,", count), ",")
+}
+
+func int64Args(values []int64) []any {
+	args := make([]any, 0, len(values))
+	for _, value := range values {
+		args = append(args, value)
+	}
+	return args
 }
 
 func formatTime(value time.Time) string {
