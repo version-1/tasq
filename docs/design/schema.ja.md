@@ -100,7 +100,7 @@ queue state はこの table と issue status から導出されます。`queued`
 | CreatedAt   | `time.Time`| auto               | —                  | `now()`     | —                                                                  |
 | UpdatedAt   | `time.Time`| auto               | auto               | `now()`     | —                                                                  |
 
-project を削除すると、issue-tracker が所有する子孫データも cascade 削除されます。対象は issues、その issues を参照する issue dependency edges、comments、attachment records と `$TQ_HOME/system/data/attachments` 配下の attachment files、保存済み project workflow overrides です。project 削除はディスク上の `Location` や worktrees を変更しません。
+project を削除すると、issue-tracker が所有する子孫データも cascade 削除されます。対象は issues、その issues を参照する issue dependency edges、comments、attachment records と `$TQ_HOME/system/data/attachments` 配下の attachment files、保存済み project workflow overrides です。所有する issues に紐づく orchestrator runtime の子孫データである runs、runner events、workspace metadata、workspace setup failures も削除します。所有 issue に `running` の orchestrator run が 1 件でもある場合、project 削除は拒否されます。project 削除はディスク上の `Location` や worktrees を削除・変更しません。
 
 ### ProjectWorkflow
 
