@@ -9,5 +9,6 @@ Tasq design documentation is split by concern:
 - [Status](design/status.md): issue status, derived queue status, and expected workflow transitions.
 - [Operations](design/operations.md): local development environment, verification, and open decisions.
 - [Deployment](design/deployment.md): release tag creation, GitHub Actions, and GoReleaser deployment flow.
+- [Release Binary Startup](design/release-binary-startup.md): binary-only startup requirements for the README Getting Started flow.
 
 For Web UI structure and styling conventions, see [design/web.md](design/web.md).
