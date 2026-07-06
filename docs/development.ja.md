@@ -1,5 +1,37 @@
 # Development Workflow
 
+## Local Development Quick Start
+
+Local development では `make` 経由で Docker Compose を使います。
+
+```sh
+make dev-up
+```
+
+このコマンドは `dev` container と OpenAPI UI を起動し、`dev` container 内で issue-tracker、orchestrator、Web UI を起動します。Docker Compose が host ports を自動割り当てし、割り当てられた URLs を表示します。
+
+URLs を再表示します。
+
+```sh
+make dev-ports
+```
+
+環境を停止します。
+
+```sh
+make dev-down
+```
+
+利用可能な development commands を一覧します。
+
+```sh
+make help
+```
+
+### Linux/WSL2 Sandbox Prerequisite
+
+Codex は Linux sandboxing に Bubblewrap を使います。Dev image は `bubblewrap` を install しますが、Codex の sandboxed command を安定して動かすには Linux / WSL2 host 側でも unprivileged user namespace creation が許可されている必要があります。Codex が `bwrap: No permissions to create a new namespace` を報告する場合は、image に package がないだけではなく、host または Docker runtime の capability issue として扱います。
+
 ## Worktree 運用
 
 作業はリポジトリ直下の `.worktrees/1` から `.worktrees/n` までの連番ディレクトリに worktree を作成し、そこを作業ディレクトリとして使います。
@@ -49,6 +81,20 @@ git worktree add .worktrees/2 <branch>
 
 Pull Request の確認、作成、状態確認などの GitHub 操作には GitHub CLI (`gh`) を使います。
 
+## Verification
+
+標準の Compose-backed checks を実行します。
+
+```sh
+make dev-test
+```
+
+Go services と Web UI の両方に影響する変更を handoff する前は、broader build check を実行します。
+
+```sh
+make dev-build
+```
+
 ## API 生成
 
 Frontend API client の生成には `generate:api` を使います。
@@ -74,6 +120,70 @@ Documentation を更新するときは、英語版の `.md` と日本語版の `
 - 英語版と日本語版の links を揃えます。
 - 日本語版の `*.ja.md` は `AGENTS.md` から link しなくてかまいません。`AGENTS.md` では英語版の `.md` を link します。
 - ADR は historical decision record として扱います。typo や broken link のような明らかな mechanical fix を除き、後続 decision に合わせて過去 ADR を書き換えません。新しい decision が過去 ADR を変更または制約する場合は、新しい ADR 側にその変更と関係を書きます。
+
+## Repository Documentation
+
+- [docs/development.ja.md](development.ja.md): repository workflow、task flow、documentation update rules、component workflow links。
+- [WORKFLOW.md](../WORKFLOW.md): orchestrator が使う Symphony runtime workflow contract。
+- [docs/design.md](design.md): system architecture と service boundaries。
+- [docs/design/deployment.ja.md](design/deployment.ja.md): release tag 作成、GitHub Actions、GoReleaser の deployment flow。
+- [docs/references/makefile.ja.md](references/makefile.ja.md): Makefile targets、variables、local development command reference。
+- [cmd/issue-tracker/WORKFLOW.md](../cmd/issue-tracker/WORKFLOW.md): issue-tracker development workflow。
+- [cmd/orchestrator/WORKFLOW.md](../cmd/orchestrator/WORKFLOW.md): orchestrator development workflow。
+- [cmd/web/WORKFLOW.md](../cmd/web/WORKFLOW.md): Web UI development workflow。
+- [docs/design/web.md](design/web.md): Web UI structure と styling conventions。
+- [docs/openapi/issue-tracker.yml](openapi/issue-tracker.yml): issue-tracker OpenAPI contract。
+- [docs/symphony/README.md](symphony/README.md): Symphony documentation index。
+- [docs/symphony/SPEC.md](symphony/SPEC.md): Symphony orchestration and runner specification。
+- [docs/symphony/DEVIATIONS.md](symphony/DEVIATIONS.md): Symphony specification からの intentional deviations。
+
+## Operational Notes
+
+- Runtime state と SQLite files は repository の `.tasq/` 配下に作成され、git からは無視されます。
+- Compose は Go module/build caches、`cmd/web/frontend/node_modules`、Codex login state、GitHub CLI login state を named Docker volumes に保存します。
+- Orchestrator は各 project の `WORKFLOW.md` から Symphony-oriented runtime settings と issue ごとの agent prompt を解決し、fallback として `$TQ_HOME/WORKFLOW.md` を使います。
+- Web UI は Go server の proxy paths `/tracker/*` と `/orchestrator/*` 経由で local backends を呼び出します。
+- `make run-tq` 経由で実行した `tq` は `$TQ_HOME/system/state.json` から issue-tracker API URL を解決します。
+- Codex を device auth で認証し、authentication を `codex-home` Docker volume に永続化するため、初回に `make dev-codex-login` を実行します。
+- GitHub CLI を認証し、Git が `gh` を HTTPS credential helper として使うよう設定し、credential を `gh-config` Docker volume に永続化するため、初回に `make dev-gh-login` を実行します。Dev container から push する場合は HTTPS Git remote を使います。
+- Codex または GitHub access が必要な agent workflow を実行する前に、`make dev-codex-status` と `make dev-gh-status` で dev container が認証済みであることを確認します。
+
+## tq CLI
+
+issue を一覧表示します。
+
+```sh
+make run-tq ARGS="issue list"
+```
+
+issue を取得します。
+
+```sh
+make run-tq ARGS="issue get 1"
+```
+
+issue を作成します。
+
+```sh
+make run-tq ARGS='issue create --project tasq --title "Wire Symphony workflow" --description "Define the first workflow contract" --status ready --priority high'
+```
+
+よく使う status / text update には issue shortcut を使えます。
+
+```sh
+make run-tq ARGS="issue ready 1"
+make run-tq ARGS="issue close 1"
+make run-tq ARGS='issue rename 1 "Clarify workflow contract"'
+make run-tq ARGS='issue edit 1 "Updated description"'
+```
+
+machine-readable output が必要な場合は `--output json` を使います。
+
+```sh
+make run-tq ARGS="--output json issue list"
+```
+
+完全な command reference は [docs/references/tq.ja.md](references/tq.ja.md) を参照してください。
 
 ## Component Workflows
 
