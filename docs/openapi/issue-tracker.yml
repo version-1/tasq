@@ -121,6 +121,7 @@ paths:
       tags:
         - Projects
       summary: Delete a project.
+      description: Deletes the project and its issue-tracker descendants, including issues, issue dependencies, comments, attachment records and files under the tracker home, and stored project workflow overrides. The project location directory and worktrees are not modified.
       responses:
         "204":
           description: Project deleted.

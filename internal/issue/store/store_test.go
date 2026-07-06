@@ -5,7 +5,9 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -604,7 +606,63 @@ func TestProjectCRUD(t *testing.T) {
 	}
 }
 
-func TestDeleteProjectRejectsLinkedIssues(t *testing.T) {
+func TestDeleteProjectCascadesIssueDataAndAttachmentFiles(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	home := t.TempDir()
+	store, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer store.Close()
+	store.SetAttachmentStorage(NewAttachmentStorage(home))
+
+	project := createTestProject(t, store, "CASCADE")
+	otherProject := createTestProject(t, store, "OTHER")
+	issue, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Linked issue"})
+	if err != nil {
+		t.Fatalf("create issue: %v", err)
+	}
+	otherIssue, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: otherProject.ID, Title: "Other issue", DependencyIDs: []int64{issue.ID}})
+	if err != nil {
+		t.Fatalf("create other issue: %v", err)
+	}
+	comment, err := store.CreateComment(ctx, entity.CreateCommentInput{IssueID: issue.ID, Author: "codex", Type: entity.CommentGeneral, Body: "comment"})
+	if err != nil {
+		t.Fatalf("create comment: %v", err)
+	}
+	issueAttachment := createStoredAttachmentFile(t, store, home, entity.AttachmentEntityIssue, strconvID(issue.ID), "issue.png")
+	commentAttachment := createStoredAttachmentFile(t, store, home, entity.AttachmentEntityComment, strconvID(comment.ID), "comment.png")
+	now := nowString()
+	if _, err := store.db.ExecContext(ctx, `INSERT INTO project_workflows (
+		project_id, frontmatter_json, body, checksum, created_at, updated_at
+	) VALUES (?, ?, ?, ?, ?, ?)`, project.ID, `{}`, "custom workflow", strings.Repeat("c", 64), now, now); err != nil {
+		t.Fatalf("insert project workflow: %v", err)
+	}
+
+	if err := store.DeleteProject(ctx, project.ID); err != nil {
+		t.Fatalf("delete project: %v", err)
+	}
+
+	assertTableCount(t, store, `SELECT COUNT(*) FROM projects WHERE id = ?`, 0, project.ID)
+	assertTableCount(t, store, `SELECT COUNT(*) FROM issues WHERE id = ?`, 0, issue.ID)
+	assertTableCount(t, store, `SELECT COUNT(*) FROM comments WHERE id = ?`, 0, comment.ID)
+	assertTableCount(t, store, `SELECT COUNT(*) FROM attachments WHERE id IN (?, ?)`, 0, issueAttachment.ID, commentAttachment.ID)
+	assertTableCount(t, store, `SELECT COUNT(*) FROM issue_dependencies WHERE parent_issue_id = ? AND dependency_issue_id = ?`, 0, otherIssue.ID, issue.ID)
+	assertTableCount(t, store, `SELECT COUNT(*) FROM project_workflows WHERE project_id = ?`, 0, project.ID)
+	assertAttachmentFileMissing(t, home, issueAttachment.Path)
+	assertAttachmentFileMissing(t, home, commentAttachment.Path)
+
+	if _, err := store.Project(ctx, otherProject.ID); err != nil {
+		t.Fatalf("other project should remain: %v", err)
+	}
+	if _, err := store.Issue(ctx, otherIssue.ID); err != nil {
+		t.Fatalf("other issue should remain: %v", err)
+	}
+}
+
+func TestDeleteProjectRollsBackDatabaseWhenAttachmentFileDeleteFails(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -613,16 +671,63 @@ func TestDeleteProjectRejectsLinkedIssues(t *testing.T) {
 		t.Fatalf("open store: %v", err)
 	}
 	defer store.Close()
+	store.SetAttachmentStorage(NewAttachmentStorage(t.TempDir()))
 
-	project := createTestProject(t, store, "LINKED")
-	if _, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Linked issue"}); err != nil {
+	project := createTestProject(t, store, "ROLLBACK")
+	issue, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Issue"})
+	if err != nil {
 		t.Fatalf("create issue: %v", err)
 	}
-	if err := store.DeleteProject(ctx, project.ID); err == nil || !strings.Contains(err.Error(), "linked issues") {
-		t.Fatalf("err = %v, want linked issues error", err)
+	comment, err := store.CreateComment(ctx, entity.CreateCommentInput{IssueID: issue.ID, Author: "codex", Type: entity.CommentGeneral, Body: "comment"})
+	if err != nil {
+		t.Fatalf("create comment: %v", err)
 	}
-	if _, err := store.Project(ctx, project.ID); err != nil {
-		t.Fatalf("project should remain: %v", err)
+	if _, err := store.CreateAttachment(ctx, entity.CreateAttachmentInput{
+		ID:          "att_bad_path",
+		EntityType:  entity.AttachmentEntityIssue,
+		EntityID:    strconvID(issue.ID),
+		Filename:    "bad.png",
+		Path:        "/outside-home/bad.png",
+		ContentType: "image/png",
+		Size:        8,
+	}); err != nil {
+		t.Fatalf("create attachment: %v", err)
+	}
+
+	if err := store.DeleteProject(ctx, project.ID); err == nil || !strings.Contains(err.Error(), "attachment path must be relative") {
+		t.Fatalf("err = %v, want attachment path error", err)
+	}
+
+	assertTableCount(t, store, `SELECT COUNT(*) FROM projects WHERE id = ?`, 1, project.ID)
+	assertTableCount(t, store, `SELECT COUNT(*) FROM issues WHERE id = ?`, 1, issue.ID)
+	assertTableCount(t, store, `SELECT COUNT(*) FROM comments WHERE id = ?`, 1, comment.ID)
+	assertTableCount(t, store, `SELECT COUNT(*) FROM attachments WHERE id = ?`, 1, "att_bad_path")
+}
+
+func createStoredAttachmentFile(t *testing.T, store *Store, home string, entityType string, entityID string, filename string) entity.Attachment {
+	t.Helper()
+
+	storage := NewAttachmentStorage(home)
+	input, err := storage.Save(entityType, entityID, filename, "image/png", []byte{0x89, 'P', 'N', 'G', '\r', '\n', 0x1a, '\n'})
+	if err != nil {
+		t.Fatalf("save attachment: %v", err)
+	}
+	attachment, err := store.CreateAttachment(context.Background(), input)
+	if err != nil {
+		t.Fatalf("create attachment: %v", err)
+	}
+	return attachment
+}
+
+func assertAttachmentFileMissing(t *testing.T, home string, relativePath string) {
+	t.Helper()
+
+	path, err := NewAttachmentStorage(home).Resolve(relativePath)
+	if err != nil {
+		t.Fatalf("resolve attachment: %v", err)
+	}
+	if _, err := os.Stat(path); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("attachment file stat err = %v, want not exist", err)
 	}
 }
 
@@ -1468,6 +1573,22 @@ func schemaObjectExists(t *testing.T, store *Store, name string) bool {
 		t.Fatalf("query schema object %q: %v", name, err)
 	}
 	return exists
+}
+
+func assertTableCount(t *testing.T, store *Store, query string, want int, args ...any) {
+	t.Helper()
+
+	var count int
+	if err := store.db.QueryRow(query, args...).Scan(&count); err != nil {
+		t.Fatalf("count rows: %v", err)
+	}
+	if count != want {
+		t.Fatalf("count = %d, want %d", count, want)
+	}
+}
+
+func strconvID(id int64) string {
+	return strconv.FormatInt(id, 10)
 }
 
 func assertIssueIDs(t *testing.T, issues []entity.Issue, want []int64) {

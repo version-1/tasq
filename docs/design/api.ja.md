@@ -33,6 +33,8 @@ issue-tracker はユーザー向け API です。
 - `GET /api/v1/attachments/{id}/content`
 - `DELETE /api/v1/attachments/{id}`
 
+`DELETE /api/v1/projects/{id}` は project と、その project が所有する issue-tracker 上の子孫データを削除します。対象は issues、その issues を参照する issue dependency edges、comments、attachment records と `$TQ_HOME/system/data/attachments` 配下の attachment files、保存済み project workflow overrides です。`project.location` に記録されたユーザーの project directory や worktrees は削除・変更しません。
+
 添付ファイルのアップロードは、`entity_type`、`entity_id`、`file` を持つ multipart form data を受け取ります。最初の実装では PNG、JPEG、GIF、WebP の画像ファイルを 5 MiB までサポートします。添付ファイルのバイト列は `$TQ_HOME/system/data/attachments` 配下に保存し、SQLite にはメタデータと相対パスを保存します。課題とコメントの本文は、`![screenshot](attachment://att_...)` のような Markdown image link で添付ファイルを参照します。
 
 課題は必ず 1 つのプロジェクトに属します。`POST /api/v1/issues` は `projectId` を必須とし、初期の依存関係として `dependency_ids` を受け取ります。課題のレスポンスは `projectId` と `projectKey` の両方を返します。課題レスポンスには `dependency_ids` が含まれます。依存がない場合は空配列を返します。`GET /api/v1/issues` は任意の query parameter として `states`、`project_id`、`project_ids`、`priorities`、`assignee`、`search`、`limit`、`offset`、`sort_by`、`sort_direction` を受け取ります。project filter を省略した場合は、すべてのプロジェクトの課題を一覧表示します。`project_id` は 1 つのプロジェクトに絞り込み、`project_ids` はテーブルフィルター用にカンマ区切りの複数プロジェクトを受け取ります。`priorities` はカンマ区切りの優先度を受け取ります。`search` は課題 ID の完全一致と、課題タイトルの大文字小文字を区別しない部分一致で検索します。数値の search text は、完全一致する ID またはその文字列を含むタイトルに一致します。空文字または空白のみの `search` は無視します。検索は他のフィルターと組み合わせ、sorting と pagination より前に適用します。`sort_by` は `id`、`priority`、`created_at`、`updated_at` のみ、`sort_direction` は `asc`、`desc` のみ受け付けます。

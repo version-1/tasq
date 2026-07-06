@@ -18,7 +18,8 @@ import (
 )
 
 type Store struct {
-	db *sql.DB
+	db                *sql.DB
+	attachmentStorage *AttachmentStorage
 }
 
 type IssueFilter struct {
@@ -88,6 +89,10 @@ func OpenMigrated(ctx context.Context, path string) (*Store, error) {
 		return nil, err
 	}
 	return &Store{db: db}, nil
+}
+
+func (s *Store) SetAttachmentStorage(storage *AttachmentStorage) {
+	s.attachmentStorage = storage
 }
 
 func (s *Store) Close() error {
@@ -230,12 +235,49 @@ func (s *Store) DeleteProject(ctx context.Context, id int64) error {
 			_ = tx.Rollback()
 		}
 	}()
-	var issueCount int
-	if err := tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM issues WHERE project_id = ?`, id).Scan(&issueCount); err != nil {
-		return fmt.Errorf("count project issues: %w", err)
+
+	attachments, err := projectAttachments(ctx, tx, id)
+	if err != nil {
+		return err
 	}
-	if issueCount > 0 {
-		return errors.New("project has linked issues")
+	var storage *AttachmentStorage
+	if len(attachments) > 0 {
+		storage, err = s.resolveAttachmentStorage()
+		if err != nil {
+			return fmt.Errorf("resolve attachment storage: %w", err)
+		}
+		for _, attachment := range attachments {
+			if _, err := storage.Resolve(attachment.Path); err != nil {
+				return fmt.Errorf("resolve attachment file %s: %w", attachment.ID, err)
+			}
+		}
+	}
+	if _, err := tx.ExecContext(ctx, `DELETE FROM attachments
+		WHERE entity_type = ? AND entity_id IN (
+			SELECT CAST(id AS TEXT) FROM issues WHERE project_id = ?
+		)`, entity.AttachmentEntityIssue, id); err != nil {
+		return fmt.Errorf("delete issue attachments: %w", err)
+	}
+	if _, err := tx.ExecContext(ctx, `DELETE FROM attachments
+		WHERE entity_type = ? AND entity_id IN (
+			SELECT CAST(comments.id AS TEXT)
+			FROM comments
+			JOIN issues ON issues.id = comments.issue_id
+			WHERE issues.project_id = ?
+		)`, entity.AttachmentEntityComment, id); err != nil {
+		return fmt.Errorf("delete comment attachments: %w", err)
+	}
+	if _, err := tx.ExecContext(ctx, `DELETE FROM issue_dependencies
+		WHERE parent_issue_id IN (SELECT id FROM issues WHERE project_id = ?)
+		   OR dependency_issue_id IN (SELECT id FROM issues WHERE project_id = ?)`, id, id); err != nil {
+		return fmt.Errorf("delete issue dependencies: %w", err)
+	}
+	if _, err := tx.ExecContext(ctx, `DELETE FROM comments
+		WHERE issue_id IN (SELECT id FROM issues WHERE project_id = ?)`, id); err != nil {
+		return fmt.Errorf("delete comments: %w", err)
+	}
+	if _, err := tx.ExecContext(ctx, `DELETE FROM issues WHERE project_id = ?`, id); err != nil {
+		return fmt.Errorf("delete issues: %w", err)
 	}
 	if _, err := tx.ExecContext(ctx, `DELETE FROM project_workflows WHERE project_id = ?`, id); err != nil {
 		return fmt.Errorf("delete project workflow: %w", err)
@@ -251,11 +293,58 @@ func (s *Store) DeleteProject(ctx context.Context, id int64) error {
 	if affected == 0 {
 		return sql.ErrNoRows
 	}
+	if storage != nil {
+		for _, attachment := range attachments {
+			if err := storage.Delete(attachment.Path); err != nil {
+				return fmt.Errorf("delete attachment file %s: %w", attachment.ID, err)
+			}
+		}
+	}
 	if err := tx.Commit(); err != nil {
 		return err
 	}
 	tx = nil
 	return nil
+}
+
+func (s *Store) resolveAttachmentStorage() (*AttachmentStorage, error) {
+	if s.attachmentStorage != nil {
+		return s.attachmentStorage, nil
+	}
+	return NewAttachmentStorageFromHome()
+}
+
+func projectAttachments(ctx context.Context, tx *sql.Tx, projectID int64) ([]entity.Attachment, error) {
+	rows, err := tx.QueryContext(ctx, `SELECT `+attachmentColumns()+` FROM attachments
+		WHERE entity_type = ? AND entity_id IN (
+			SELECT CAST(id AS TEXT) FROM issues WHERE project_id = ?
+		)
+		UNION ALL
+		SELECT `+attachmentColumns()+` FROM attachments
+		WHERE entity_type = ? AND entity_id IN (
+			SELECT CAST(comments.id AS TEXT)
+			FROM comments
+			JOIN issues ON issues.id = comments.issue_id
+			WHERE issues.project_id = ?
+		)
+		ORDER BY created_at ASC, id ASC`, entity.AttachmentEntityIssue, projectID, entity.AttachmentEntityComment, projectID)
+	if err != nil {
+		return nil, fmt.Errorf("list project attachments: %w", err)
+	}
+	defer rows.Close()
+
+	var attachments []entity.Attachment
+	for rows.Next() {
+		attachment, err := scanAttachment(rows)
+		if err != nil {
+			return nil, err
+		}
+		attachments = append(attachments, attachment)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate project attachments: %w", err)
+	}
+	return attachments, nil
 }
 
 func (s *Store) UpsertProjectWorkflow(ctx context.Context, input entity.UpsertProjectWorkflowInput) (entity.ProjectWorkflow, error) {

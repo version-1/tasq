@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/textproto"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -1411,6 +1412,57 @@ func TestAttachmentUploadListContentAndDelete(t *testing.T) {
 	}
 }
 
+func TestDeleteProjectCascadesIssueCommentsAttachmentsAndWorkflow(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer(t)
+	project := createProject(t, server, "DELETE")
+	issue := createIssueInProject(t, server, project.ID, "Issue with image", entity.StatusBacklog)
+	comment := createComment(t, server, issue.ID, "Comment with image")
+	issueAttachment := uploadAttachment(t, server, entity.AttachmentEntityIssue, stringID(issue.ID), "issue.png")
+	commentAttachment := uploadAttachment(t, server, entity.AttachmentEntityComment, stringID(comment.ID), "comment.png")
+	issueAttachment = readAttachment(t, server, issueAttachment.ID)
+	commentAttachment = readAttachment(t, server, commentAttachment.ID)
+	if _, err := server.store.UpsertProjectWorkflow(context.Background(), entity.UpsertProjectWorkflowInput{
+		ProjectID:       project.ID,
+		FrontmatterJSON: `{}`,
+		Body:            "Project prompt",
+		Checksum:        strings.Repeat("d", 64),
+	}); err != nil {
+		t.Fatalf("upsert workflow: %v", err)
+	}
+	assertAttachmentFileExists(t, server, issueAttachment.Path)
+	assertAttachmentFileExists(t, server, commentAttachment.Path)
+
+	req := httptest.NewRequest(http.MethodDelete, "/api/v1/projects/"+stringID(project.ID), nil)
+	rec := httptest.NewRecorder()
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("delete status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	if _, err := server.store.Project(context.Background(), project.ID); !errors.Is(err, sql.ErrNoRows) {
+		t.Fatalf("project err = %v, want sql.ErrNoRows", err)
+	}
+	if _, err := server.store.Issue(context.Background(), issue.ID); !errors.Is(err, sql.ErrNoRows) {
+		t.Fatalf("issue err = %v, want sql.ErrNoRows", err)
+	}
+	if _, err := server.store.Comment(context.Background(), comment.ID); !errors.Is(err, sql.ErrNoRows) {
+		t.Fatalf("comment err = %v, want sql.ErrNoRows", err)
+	}
+	if _, err := server.store.Attachment(context.Background(), issueAttachment.ID); !errors.Is(err, sql.ErrNoRows) {
+		t.Fatalf("issue attachment err = %v, want sql.ErrNoRows", err)
+	}
+	if _, err := server.store.Attachment(context.Background(), commentAttachment.ID); !errors.Is(err, sql.ErrNoRows) {
+		t.Fatalf("comment attachment err = %v, want sql.ErrNoRows", err)
+	}
+	if _, err := server.store.ProjectWorkflow(context.Background(), project.ID); !errors.Is(err, sql.ErrNoRows) {
+		t.Fatalf("workflow err = %v, want sql.ErrNoRows", err)
+	}
+	assertAttachmentFileMissing(t, server, issueAttachment.Path)
+	assertAttachmentFileMissing(t, server, commentAttachment.Path)
+}
+
 func TestAttachmentUploadRejectsInvalidType(t *testing.T) {
 	t.Parallel()
 
@@ -1590,6 +1642,54 @@ func newAttachmentUploadRequest(t *testing.T, entityType string, entityID string
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/attachments", &body)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 	return req
+}
+
+func uploadAttachment(t *testing.T, server *Server, entityType string, entityID string, filename string) entity.Attachment {
+	t.Helper()
+
+	req := newAttachmentUploadRequest(t, entityType, entityID, filename, "image/png", []byte{
+		0x89, 'P', 'N', 'G', '\r', '\n', 0x1a, '\n',
+	})
+	rec := httptest.NewRecorder()
+	server.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("upload status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	return decodeData[entity.Attachment](t, rec)
+}
+
+func readAttachment(t *testing.T, server *Server, id string) entity.Attachment {
+	t.Helper()
+
+	attachment, err := server.store.Attachment(context.Background(), id)
+	if err != nil {
+		t.Fatalf("read attachment: %v", err)
+	}
+	return attachment
+}
+
+func assertAttachmentFileExists(t *testing.T, server *Server, relativePath string) {
+	t.Helper()
+
+	path, err := server.attachmentStorage.Resolve(relativePath)
+	if err != nil {
+		t.Fatalf("resolve attachment: %v", err)
+	}
+	if _, err := os.Stat(path); err != nil {
+		t.Fatalf("attachment file stat: %v", err)
+	}
+}
+
+func assertAttachmentFileMissing(t *testing.T, server *Server, relativePath string) {
+	t.Helper()
+
+	path, err := server.attachmentStorage.Resolve(relativePath)
+	if err != nil {
+		t.Fatalf("resolve attachment: %v", err)
+	}
+	if _, err := os.Stat(path); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("attachment file stat err = %v, want not exist", err)
+	}
 }
 
 func assertErrorCode(t *testing.T, rec *httptest.ResponseRecorder, want string) {

@@ -29,6 +29,7 @@ func NewServer(issueStore *store.Store) *Server {
 }
 
 func NewServerWithAttachmentStorage(issueStore *store.Store, attachmentStorage *store.AttachmentStorage) *Server {
+	issueStore.SetAttachmentStorage(attachmentStorage)
 	return &Server{store: issueStore, attachmentStorage: attachmentStorage}
 }
 
