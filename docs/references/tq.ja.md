@@ -271,11 +271,19 @@ make run-tq ARGS="project check tasq"
 
 ### `project remove`
 
-プロジェクトキーを指定してプロジェクトを削除します。
+プロジェクトキーを指定してプロジェクトを削除します。既定では、`project remove` は取り消し不可の操作である警告と、削除対象になるプロジェクトおよび子孫データを表示し、削除を開始する前に正確なプロジェクトキーの入力を求めます。削除では、プロジェクトと、課題、コメント、添付ファイル、ワークフロー上書き、run data などの子孫データが削除されます。
 
 ```sh
 make run-tq ARGS="project remove tasq"
 ```
+
+agent や script から使う場合は、`-y` でプロンプトをスキップできます。
+
+```sh
+make run-tq ARGS="project remove -y tasq"
+```
+
+プロジェクトに実行中の run がある場合、削除前にコマンドは失敗し、API が返した理由を表示します。
 
 ## ワークフロー
 

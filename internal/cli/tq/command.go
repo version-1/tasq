@@ -738,9 +738,16 @@ func printProjectHelp(w io.Writer) {
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "Actions:")
 	fmt.Fprintln(w, "  add      Add a project for a repository")
-	fmt.Fprintln(w, "  remove   Remove a project by key")
+	fmt.Fprintln(w, "  remove   Remove a project by key (-y skips confirmation)")
 	fmt.Fprintln(w, "  check    Check local project workflow files")
 	fmt.Fprintln(w, "  list     List projects")
+}
+
+func printProjectRemoveHelp(w io.Writer) {
+	fmt.Fprintln(w, "Usage: tq project remove [-y] <project-key>")
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, "Flags:")
+	fmt.Fprintln(w, "  -y  Remove without confirmation")
 }
 
 func printWorkflowHelp(w io.Writer) {

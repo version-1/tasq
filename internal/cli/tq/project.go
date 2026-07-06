@@ -1,10 +1,12 @@
 package tq
 
 import (
+	"bufio"
 	"context"
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -50,12 +52,31 @@ func (a app) projectList(ctx context.Context, args []string, cfg config) error {
 }
 
 func (a app) projectRemove(ctx context.Context, args []string, cfg config) error {
-	if len(args) != 1 {
-		return usageError("usage: tq project remove <project-key>")
+	if len(args) > 0 && (args[0] == "help" || args[0] == "-help" || args[0] == "--help") {
+		printProjectRemoveHelp(a.stdout)
+		return nil
 	}
-	project, err := a.projectByKey(ctx, args[0])
+	fs := newFlagSet("project remove")
+	yes := fs.Bool("y", false, "remove without confirmation")
+	if err := fs.Parse(args); err != nil {
+		return usageError(err.Error())
+	}
+	if fs.NArg() != 1 {
+		return usageError("usage: tq project remove [-y] <project-key>")
+	}
+	project, err := a.projectByKey(ctx, fs.Arg(0))
 	if err != nil {
 		return err
+	}
+	if !*yes {
+		ok, err := a.confirmProjectRemoval(project)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			fmt.Fprintln(a.stdout, "Project removal cancelled")
+			return nil
+		}
 	}
 	if err := a.client.deleteProject(ctx, project.ID); err != nil {
 		return err
@@ -65,6 +86,18 @@ func (a app) projectRemove(ctx context.Context, args []string, cfg config) error
 	}
 	fmt.Fprintf(a.stdout, "Removed project %s\n", project.Key)
 	return nil
+}
+
+func (a app) confirmProjectRemoval(project entity.Project) (bool, error) {
+	fmt.Fprintf(a.stdout, "WARNING: This operation cannot be undone.\n")
+	fmt.Fprintf(a.stdout, "Project to remove: %s (%s)\n", project.Key, project.Name)
+	fmt.Fprintln(a.stdout, "This deletes the project and descendant data, including issues, comments, attachments, workflow overrides, and run data.")
+	fmt.Fprintf(a.stdout, "Type the project key to confirm: ")
+	line, err := bufio.NewReader(a.stdin).ReadString('\n')
+	if err != nil && !errors.Is(err, io.EOF) {
+		return false, fmt.Errorf("read confirmation: %w", err)
+	}
+	return strings.TrimSpace(line) == project.Key, nil
 }
 
 func (a app) workflowRemove(ctx context.Context, args []string, cfg config) error {
