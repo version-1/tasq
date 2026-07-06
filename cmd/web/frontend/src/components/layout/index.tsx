@@ -1,4 +1,4 @@
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   createContext,
@@ -15,6 +15,7 @@ import { PanelMessage } from "@/components/ui/pannel-message";
 import { ToastStack } from "@/components/ui/toast";
 import {
   createIssue,
+  deleteProject,
   fetchProjects,
   fetchSummary,
   updateIssueStatus,
@@ -32,6 +33,7 @@ import type {
 } from "@/lib/types";
 import { AddIssueDialog } from "@/components/dialog/add-issue";
 import { AddProjectDialog } from "@/components/dialog/add-project";
+import { DeleteProjectDialog } from "@/components/dialog/delete-project";
 import { Header } from "./header";
 import { Sidebar } from "./sidebar";
 import styles from "./index.module.css";
@@ -62,6 +64,8 @@ export type LayoutShellData = {
   activeProject: Project | null;
   addIssueError: string;
   addIssueInitialStatus: IssueStatus;
+  deleteProjectError: string;
+  isDeletingProject: boolean;
   isIssueDetailPage: boolean;
   isProjectIssueScope: boolean;
   issues: IssueSummary[];
@@ -75,6 +79,8 @@ export type LayoutShellData = {
   onAddProject: () => void;
   onCloseModal: () => void;
   onCreateIssue: (input: CreateIssueInput) => Promise<void>;
+  onDeleteProject: () => void;
+  onConfirmDeleteProject: () => Promise<void>;
 };
 
 const layoutDataContext = createContext<LayoutData | null>(null);
@@ -96,6 +102,7 @@ export function Layout({ children }: { children: ReactNode }) {
 function LayoutContent({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const activePage = activePageFromPathname(pathname);
   const issueScope = issueScopeFromPathname(pathname);
   const issueDetailID = issueIDFromPathname(pathname);
@@ -105,6 +112,8 @@ function LayoutContent({ children }: { children: ReactNode }) {
   const [addIssueInitialStatus, setAddIssueInitialStatus] =
     useState<IssueStatus>("backlog");
   const [addIssueError, setAddIssueError] = useState("");
+  const [deleteProjectError, setDeleteProjectError] = useState("");
+  const [isDeletingProject, setIsDeletingProject] = useState(false);
   const [issueDetailTitleOverride, setIssueDetailTitleOverride] = useState<string | null>(null);
   const [refreshIntervalMs, setRefreshIntervalMs] = useState(
     defaultRefreshIntervalMs,
@@ -230,8 +239,35 @@ function LayoutContent({ children }: { children: ReactNode }) {
     modal.openModal(modalIDs.addProject);
   }
 
+  function handleDeleteProject() {
+    setDeleteProjectError("");
+    modal.openModal(modalIDs.deleteProject);
+  }
+
+  async function handleConfirmDeleteProject() {
+    if (!activeProject) return;
+    setIsDeletingProject(true);
+    setDeleteProjectError("");
+    try {
+      await deleteProject(activeProject.id, { silent: true });
+      await load({ silent: true });
+      modal.closeModal();
+      navigate("/dashboard");
+      toast.success({ message: t("toast.success.projectDeleted") });
+    } catch (error) {
+      setDeleteProjectError(
+        error instanceof Error
+          ? error.message
+          : t("layout.failedToDeleteProject"),
+      );
+    } finally {
+      setIsDeletingProject(false);
+    }
+  }
+
   function handleCloseModal() {
     setAddIssueError("");
+    setDeleteProjectError("");
     modal.closeModal();
   }
 
@@ -274,7 +310,9 @@ function LayoutContent({ children }: { children: ReactNode }) {
     activeProject,
     addIssueError,
     addIssueInitialStatus,
+    deleteProjectError,
     isIssueDetailPage,
+    isDeletingProject,
     isProjectIssueScope,
     issues,
     layoutData,
@@ -291,6 +329,8 @@ function LayoutContent({ children }: { children: ReactNode }) {
     onAddProject: handleAddProject,
     onCloseModal: handleCloseModal,
     onCreateIssue: handleCreateIssue,
+    onDeleteProject: handleDeleteProject,
+    onConfirmDeleteProject: handleConfirmDeleteProject,
   };
 
   return (
@@ -354,7 +394,9 @@ export function ShellLayout({
           isIssueDetailPage={shellData.isIssueDetailPage}
           language={shellData.layoutData?.language ?? "ja"}
           onAddTask={() => shellData.onAddIssue("backlog")}
+          onDeleteProject={shellData.onDeleteProject}
           onLanguageChange={shellData.layoutData?.onLanguageChange ?? (() => undefined)}
+          canDeleteProject={shellData.isProjectIssueScope && shellData.activeProject !== null}
           showAddTaskButton={showAddTaskButton}
           showViewNavigation={showViewNavigation}
         />
@@ -403,6 +445,18 @@ function LayoutModalContent({ shellData }: { shellData: LayoutShellData }) {
 
   if (modal.activeModalID === modalIDs.addProject) {
     return <AddProjectDialog onCancel={shellData.onCloseModal} />;
+  }
+
+  if (modal.activeModalID === modalIDs.deleteProject && shellData.activeProject) {
+    return (
+      <DeleteProjectDialog
+        error={shellData.deleteProjectError}
+        isDeleting={shellData.isDeletingProject}
+        project={shellData.activeProject}
+        onCancel={shellData.onCloseModal}
+        onConfirm={shellData.onConfirmDeleteProject}
+      />
+    );
   }
 
   return null;

@@ -63,6 +63,7 @@ const knownErrorCodes = [
   "projects.delete.invalid_id",
   "projects.delete.invalid_input",
   "projects.delete.not_found",
+  "projects.delete.running_runs",
   "projects.get.invalid_id",
   "projects.get.invalid_input",
   "projects.get.not_found",

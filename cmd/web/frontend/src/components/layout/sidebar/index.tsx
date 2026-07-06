@@ -74,9 +74,6 @@ export function Sidebar({
                 to={`/projects/${encodeURIComponent(project.key)}/issues`}
               >
                 {project.name}
-                {isActive ? (
-                  <IconProxy name="ellipsis" className={styles.projectMore} />
-                ) : null}
               </Link>
             );
           })}

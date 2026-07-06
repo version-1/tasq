@@ -91,7 +91,9 @@ export const storyShellData: LayoutShellData = {
   activeProject: projectFixtures[0],
   addIssueError: "",
   addIssueInitialStatus: "backlog" as IssueStatus,
+  deleteProjectError: "",
   isIssueDetailPage: false,
+  isDeletingProject: false,
   isProjectIssueScope: false,
   issues: storySummary.columns.flatMap((column) => column.issues),
   layoutData: {
@@ -119,4 +121,6 @@ export const storyShellData: LayoutShellData = {
   onAddProject: noop,
   onCloseModal: noop,
   onCreateIssue: asyncNoop,
+  onDeleteProject: noop,
+  onConfirmDeleteProject: asyncNoop,
 };

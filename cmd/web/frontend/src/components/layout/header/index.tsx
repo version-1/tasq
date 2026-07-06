@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
 import { MoreHorizontal, Plus, Search } from "lucide-react";
+import { ContextMenu, ContextMenuItem } from "@/components/ui/context-menu";
 import { useTabs } from "@/context/tabs";
 import { fetchIssues } from "@/lib/api";
 import { supportedLanguages, type SupportedLanguage } from "@/lib/i18n";
@@ -19,6 +20,8 @@ type HeaderProps = {
   language: SupportedLanguage;
   onLanguageChange: (language: SupportedLanguage) => void;
   onAddTask: () => void;
+  onDeleteProject?: () => void;
+  canDeleteProject?: boolean;
   showViewNavigation?: boolean;
   showAddTaskButton?: boolean;
 };
@@ -29,7 +32,9 @@ export function Header({
   language,
   onLanguageChange,
   onAddTask,
+  onDeleteProject,
   projectName,
+  canDeleteProject = false,
   showViewNavigation = true,
   showAddTaskButton = true,
 }: HeaderProps) {
@@ -39,6 +44,7 @@ export function Header({
   const [searchResults, setSearchResults] = useState<Issue[]>([]);
   const [searchState, setSearchState] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [isProjectMenuOpen, setIsProjectMenuOpen] = useState(false);
   const title = isIssueDetailPage
     ? (projectName ?? t("issues.detailPage.detailTab"))
     : activePage === "issues"
@@ -47,6 +53,7 @@ export function Header({
   const trimmedSearchQuery = searchQuery.trim();
   const showSearchResults = isSearchFocused && trimmedSearchQuery !== "";
   const searchResultsID = "header-search-results";
+  const projectMenuID = "header-project-actions";
 
   useEffect(() => {
     if (trimmedSearchQuery === "") {
@@ -88,6 +95,11 @@ export function Header({
   function closeSearchResults() {
     setSearchQuery("");
     setIsSearchFocused(false);
+  }
+
+  function handleDeleteProjectSelect() {
+    setIsProjectMenuOpen(false);
+    onDeleteProject?.();
   }
 
   return (
@@ -169,14 +181,30 @@ export function Header({
       <div className={styles.titleRow}>
         <div className={styles.titleGroup}>
           <h1>{title}</h1>
-          {activePage === "issues" ? (
-            <button
-              type="button"
-              className={styles.moreButton}
-              aria-label={t("header.moreProjectActions")}
+          {activePage === "issues" && canDeleteProject ? (
+            <ContextMenu
+              id={projectMenuID}
+              isOpen={isProjectMenuOpen}
+              label={t("header.projectActionsMenu")}
+              onOpenChange={setIsProjectMenuOpen}
+              trigger={(triggerProps) => (
+                <button
+                  type="button"
+                  className={styles.moreButton}
+                  aria-label={t("header.moreProjectActions")}
+                  {...triggerProps}
+                >
+                  <MoreHorizontal aria-hidden="true" size={19} strokeWidth={1.8} />
+                </button>
+              )}
             >
-              <MoreHorizontal aria-hidden="true" size={19} strokeWidth={1.8} />
-            </button>
+              <ContextMenuItem
+                label={t("header.deleteProject")}
+                onSelect={handleDeleteProjectSelect}
+              >
+                {t("header.deleteProject")}
+              </ContextMenuItem>
+            </ContextMenu>
           ) : null}
         </div>
 
