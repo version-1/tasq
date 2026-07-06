@@ -52,7 +52,7 @@ create と update は、該当する場合に `--title`、`--description`、`--s
 | Command | Purpose |
 | --- | --- |
 | `tq project add [path] [--key <key>]` | repository を登録します。 |
-| `tq project remove <key>` | project を削除します。 |
+| `tq project remove [-y] <key>` | key 入力確認後に project を削除します。`-y` で prompt を skip できます。 |
 | `tq project check [key]` | project setup を validate します。 |
 | `tq project list` | registered projects を list します。 |
 | `tq workflow add --project <key> (--file <path> \| --body <text>)` | workflow override を保存します。 |

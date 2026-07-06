@@ -52,7 +52,7 @@ Allowed comment types are `progress`, `blocker`, `handoff`, and `general`.
 | Command | Purpose |
 | --- | --- |
 | `tq project add [path] [--key <key>]` | Register a repository. |
-| `tq project remove <key>` | Remove a project. |
+| `tq project remove [-y] <key>` | Remove a project after key confirmation, or skip the prompt with `-y`. |
 | `tq project check [key]` | Validate project setup. |
 | `tq project list` | List registered projects. |
 | `tq workflow add --project <key> (--file <path> \| --body <text>)` | Store a workflow override. |

@@ -1228,7 +1228,7 @@ func TestProjectAddCheckRemoveAgainstIssueTrackerAPI(t *testing.T) {
 		t.Fatalf("unexpected list stdout: %s", stdout)
 	}
 
-	stdout, stderr, code = runCLI(t, []string{"--api-url", server.URL, "project", "remove", "demo-project"})
+	stdout, stderr, code = runCLI(t, []string{"--api-url", server.URL, "project", "remove", "-y", "demo-project"})
 	if code != 0 {
 		t.Fatalf("remove code=%d stderr=%s", code, stderr)
 	}
@@ -1241,6 +1241,172 @@ func TestProjectAddCheckRemoveAgainstIssueTrackerAPI(t *testing.T) {
 	}
 	if len(projects) != 0 {
 		t.Fatalf("projects after remove = %+v", projects)
+	}
+}
+
+func TestProjectRemoveRequiresMatchingKeyConfirmation(t *testing.T) {
+	requests := []string{}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests = append(requests, r.Method+" "+r.URL.Path)
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/projects":
+			writeTestJSON(t, w, apiResponse[[]entity.Project]{
+				Data: []entity.Project{{ID: 7, Key: "demo-project", Name: "Demo Project"}},
+			})
+		case r.Method == http.MethodDelete && r.URL.Path == "/api/v1/projects/7":
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
+	}))
+	defer server.Close()
+
+	stdout, stderr, code := runCLIWithStdin(t, []string{
+		"--api-url", server.URL,
+		"project", "remove", "demo-project",
+	}, "demo-project\n")
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr)
+	}
+	if !strings.Contains(stdout, "WARNING: This operation cannot be undone.") ||
+		!strings.Contains(stdout, "issues, comments, attachments, workflow overrides, and run data") ||
+		!strings.Contains(stdout, "Removed project demo-project") {
+		t.Fatalf("unexpected stdout: %s", stdout)
+	}
+	assertStringSlice(t, requests, []string{"GET /api/v1/projects", "DELETE /api/v1/projects/7"})
+}
+
+func TestProjectRemoveCancelsWhenConfirmationKeyDoesNotMatch(t *testing.T) {
+	deleteCalled := false
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/projects":
+			writeTestJSON(t, w, apiResponse[[]entity.Project]{
+				Data: []entity.Project{{ID: 7, Key: "demo-project", Name: "Demo Project"}},
+			})
+		case r.Method == http.MethodDelete && r.URL.Path == "/api/v1/projects/7":
+			deleteCalled = true
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
+	}))
+	defer server.Close()
+
+	stdout, stderr, code := runCLIWithStdin(t, []string{
+		"--api-url", server.URL,
+		"project", "remove", "demo-project",
+	}, "wrong-project\n")
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr)
+	}
+	if stderr != "" {
+		t.Fatalf("stderr=%s", stderr)
+	}
+	if deleteCalled {
+		t.Fatal("delete was called for mismatched confirmation")
+	}
+	if !strings.Contains(stdout, "Project removal cancelled") {
+		t.Fatalf("unexpected stdout: %s", stdout)
+	}
+}
+
+func TestProjectRemoveYesSkipsConfirmation(t *testing.T) {
+	requests := []string{}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests = append(requests, r.Method+" "+r.URL.Path)
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/projects":
+			writeTestJSON(t, w, apiResponse[[]entity.Project]{
+				Data: []entity.Project{{ID: 7, Key: "demo-project", Name: "Demo Project"}},
+			})
+		case r.Method == http.MethodDelete && r.URL.Path == "/api/v1/projects/7":
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
+	}))
+	defer server.Close()
+
+	stdout, stderr, code := runCLIWithStdin(t, []string{
+		"--api-url", server.URL,
+		"project", "remove", "-y", "demo-project",
+	}, "")
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr)
+	}
+	if strings.Contains(stdout, "Type the project key to confirm") {
+		t.Fatalf("confirmation prompt was shown: %s", stdout)
+	}
+	if !strings.Contains(stdout, "Removed project demo-project") {
+		t.Fatalf("unexpected stdout: %s", stdout)
+	}
+	assertStringSlice(t, requests, []string{"GET /api/v1/projects", "DELETE /api/v1/projects/7"})
+}
+
+func TestProjectRemoveNonInteractiveCancelsWithoutDelete(t *testing.T) {
+	deleteCalled := false
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/projects":
+			writeTestJSON(t, w, apiResponse[[]entity.Project]{
+				Data: []entity.Project{{ID: 7, Key: "demo-project", Name: "Demo Project"}},
+			})
+		case r.Method == http.MethodDelete && r.URL.Path == "/api/v1/projects/7":
+			deleteCalled = true
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
+	}))
+	defer server.Close()
+
+	stdout, stderr, code := runCLIWithStdin(t, []string{
+		"--api-url", server.URL,
+		"project", "remove", "demo-project",
+	}, "")
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr)
+	}
+	if deleteCalled {
+		t.Fatal("delete was called without confirmation input")
+	}
+	if !strings.Contains(stdout, "Project removal cancelled") {
+		t.Fatalf("unexpected stdout: %s", stdout)
+	}
+}
+
+func TestProjectRemoveRunningRunErrorIncludesReason(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/projects":
+			writeTestJSON(t, w, apiResponse[[]entity.Project]{
+				Data: []entity.Project{{ID: 7, Key: "demo-project", Name: "Demo Project"}},
+			})
+		case r.Method == http.MethodDelete && r.URL.Path == "/api/v1/projects/7":
+			w.WriteHeader(http.StatusConflict)
+			writeTestJSON(t, w, apiErrorResponse{
+				Error: struct {
+					Code    string `json:"code"`
+					Message string `json:"message"`
+				}{Code: "projects.delete.running_runs", Message: "project has running runs: 1 running run(s)"},
+			})
+		default:
+			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
+	}))
+	defer server.Close()
+
+	stdout, stderr, code := runCLIWithStdin(t, []string{
+		"--api-url", server.URL,
+		"project", "remove", "-y", "demo-project",
+	}, "")
+	if code != 1 {
+		t.Fatalf("code=%d stdout=%s stderr=%s", code, stdout, stderr)
+	}
+	message := decodeCLIError(t, stderr)
+	if !strings.Contains(message, "project has running runs") || !strings.Contains(message, "1 running run(s)") {
+		t.Fatalf("unexpected error: %s", message)
 	}
 }
 
@@ -1774,6 +1940,14 @@ func runCLI(t *testing.T, args []string) (string, string, int) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	code := Run(context.Background(), args, &stdout, &stderr)
+	return stdout.String(), stderr.String(), code
+}
+
+func runCLIWithStdin(t *testing.T, args []string, stdin string) (string, string, int) {
+	t.Helper()
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := run(context.Background(), args, strings.NewReader(stdin), &stdout, &stderr)
 	return stdout.String(), stderr.String(), code
 }
 

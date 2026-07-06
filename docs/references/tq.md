@@ -271,11 +271,19 @@ When no project key is provided, `project check` tries to find the project regis
 
 ### `project remove`
 
-Remove a project by key.
+Remove a project by key. By default, `project remove` prints an irreversible-operation warning, lists the project and descendant data that will be deleted, and requires typing the exact project key before deletion starts. The deletion removes the project and descendant data such as issues, comments, attachments, workflow overrides, and run data.
 
 ```sh
 make run-tq ARGS="project remove tasq"
 ```
+
+Pass `-y` to skip the prompt for agents and scripts.
+
+```sh
+make run-tq ARGS="project remove -y tasq"
+```
+
+If the project has running runs, the command fails before deletion and prints the API-provided reason.
 
 ## Workflows
 
