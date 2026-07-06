@@ -20,6 +20,16 @@ tq issue create \
 
 `--project` takes the project *key* (kebab-case), not the numeric id.
 
+### Claude Code command approval
+
+When running `tq issue create` from Claude Code, prefer a single physical command line for `--description`. A literal multi-line description can cause Claude Code to ask for command execution approval because the command text becomes harder to classify.
+
+For long descriptions, keep the shell command on one line and use ANSI-C quoting with escaped newlines:
+
+```bash
+tq issue create --project my-app --title "Migrate auth to OIDC" --description $'Context: replace the legacy session cookie.\nAcceptance: OIDC login works and the old cookie path is removed.'
+```
+
 ## Inspect
 
 ```bash
