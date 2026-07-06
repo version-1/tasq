@@ -47,19 +47,12 @@ backlog -> ready -> in_progress -> review -> done
 最新の正式リリースをインストールします。
 
 ```sh
-version="$(curl -fsSLI -o /dev/null -w '%{url_effective}' https://github.com/version-1/tasq/releases/latest | sed 's#.*/##')"
-os="$(uname -s | tr '[:upper:]' '[:lower:]')"
-arch="$(uname -m)"
-case "$arch" in x86_64) arch="amd64" ;; aarch64) arch="arm64" ;; esac
-archive="tasq_${version#v}_${os}_${arch}.tar.gz"
-tmp_dir="$(mktemp -d)"
-curl -fsSL "https://github.com/version-1/tasq/releases/download/${version}/${archive}" -o "${tmp_dir}/${archive}"
-tar -xzf "${tmp_dir}/${archive}" -C "${tmp_dir}"
-install_dir="${HOME}/.local/bin"
-mkdir -p "$install_dir"
-cp "${tmp_dir}/tq" "${tmp_dir}/issue-tracker" "${tmp_dir}/orchestrator" "${tmp_dir}/web" "$install_dir/"
-chmod 0755 "$install_dir/tq" "$install_dir/issue-tracker" "$install_dir/orchestrator" "$install_dir/web"
+curl -fsSLO https://raw.githubusercontent.com/version-1/tasq/main/scripts/install.sh
+less install.sh
+sh install.sh
 ```
+
+実行前に installer の内容を確認してください。Installer は、ダウンロードした release archive を release の `checksums.txt` で検証し、その後 installed `tq` binary が展開元の release binary と一致することを検証します。成功すると `verified installed tq sha256: ...` が表示されます。
 
 インストール先のディレクトリが `PATH` に含まれることを確認します。
 

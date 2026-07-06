@@ -47,19 +47,12 @@ Each release tarball contains:
 Install the latest formal release:
 
 ```sh
-version="$(curl -fsSLI -o /dev/null -w '%{url_effective}' https://github.com/version-1/tasq/releases/latest | sed 's#.*/##')"
-os="$(uname -s | tr '[:upper:]' '[:lower:]')"
-arch="$(uname -m)"
-case "$arch" in x86_64) arch="amd64" ;; aarch64) arch="arm64" ;; esac
-archive="tasq_${version#v}_${os}_${arch}.tar.gz"
-tmp_dir="$(mktemp -d)"
-curl -fsSL "https://github.com/version-1/tasq/releases/download/${version}/${archive}" -o "${tmp_dir}/${archive}"
-tar -xzf "${tmp_dir}/${archive}" -C "${tmp_dir}"
-install_dir="${HOME}/.local/bin"
-mkdir -p "$install_dir"
-cp "${tmp_dir}/tq" "${tmp_dir}/issue-tracker" "${tmp_dir}/orchestrator" "${tmp_dir}/web" "$install_dir/"
-chmod 0755 "$install_dir/tq" "$install_dir/issue-tracker" "$install_dir/orchestrator" "$install_dir/web"
+curl -fsSLO https://raw.githubusercontent.com/version-1/tasq/main/scripts/install.sh
+less install.sh
+sh install.sh
 ```
+
+Review the installer before running it. The installer verifies the downloaded release archive against the release `checksums.txt`, then verifies the installed `tq` binary matches the extracted release binary. A successful install prints `verified installed tq sha256: ...`.
 
 Make sure the install directory is on your `PATH`:
 
