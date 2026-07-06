@@ -98,7 +98,7 @@ Attachment records live in SQLite, while file bytes are stored under `$TQ_HOME/s
 | CreatedAt   | `time.Time`| auto               | —                  | `now()`     | —                                                                  |
 | UpdatedAt   | `time.Time`| auto               | auto               | `now()`     | —                                                                  |
 
-Projects cannot be deleted while linked issues exist.
+Deleting a project cascades through issue-tracker-owned descendants: issues, issue dependency edges that reference those issues, comments, attachment records and attachment files under `$TQ_HOME/system/data/attachments`, and stored project workflow overrides. Project deletion does not modify `Location` on disk or any worktrees.
 
 ### ProjectWorkflow
 

@@ -100,7 +100,7 @@ queue state はこの table と issue status から導出されます。`queued`
 | CreatedAt   | `time.Time`| auto               | —                  | `now()`     | —                                                                  |
 | UpdatedAt   | `time.Time`| auto               | auto               | `now()`     | —                                                                  |
 
-関連する課題が存在する間、プロジェクトは削除できません。
+project を削除すると、issue-tracker が所有する子孫データも cascade 削除されます。対象は issues、その issues を参照する issue dependency edges、comments、attachment records と `$TQ_HOME/system/data/attachments` 配下の attachment files、保存済み project workflow overrides です。project 削除はディスク上の `Location` や worktrees を変更しません。
 
 ### ProjectWorkflow
 
