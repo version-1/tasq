@@ -1,24 +1,24 @@
 # tasq
 
-AI coding agent task manager.
+AI コーディングエージェント向けタスクマネージャー。
 
-tasq は、実装作業を見える queue にし、その queue のための local services を起動し、`tq` CLI と Web UI の両方から進捗を確認できるようにする tool です。
+tasq は、実装作業を見えるキューにし、そのキューのためのローカルサービスを起動し、`tq` CLI と Web UI の両方から進捗を確認できるようにするツールです。
 
 English counterpart: [README.md](README.md).
 
 ## Problem
 
-AI coding agents により、複数の実装タスクを同時に進められるようになりました。ボトルネックは code generation そのものから、parallel work の coordination へ移ります。
+AI コーディングエージェントにより、複数の実装タスクを同時に進められるようになりました。ボトルネックはコード生成そのものから、並列作業の調整へ移ります。
 
-チームは、どのタスクが存在するか、どれが ready か、何が実行中か、何を review すべきか、どの local workspace がどの task に対応するかを把握し続ける必要があります。すべての agent を 1 つの checkout で実行すると、branch switching や file conflict のリスクも高まります。
+チームは、どのタスクが存在するか、どれが準備完了か、何が実行中か、何をレビューすべきか、どのローカルワークスペースがどのタスクに対応するかを把握し続ける必要があります。すべてのエージェントを 1 つのチェックアウトで実行すると、ブランチ切り替えやファイル競合のリスクも高まります。
 
 ## Solution
 
-tasq は agent work に product surface を与えます。Issue tracker、local services、CLI、Web UI により、task state と project context を 1 か所に集めます。
+tasq はエージェント作業にプロダクトとしての操作面を与えます。Issue Tracker、ローカルサービス、CLI、Web UI により、タスクの状態とプロジェクトの文脈を 1 か所に集めます。
 
 ![Tasq task queue to parallel agent workspaces](docs/site/static/img/agent-task-queue.svg)
 
-タスクは review 可能な workflow を進みます。
+タスクはレビュー可能なワークフローを進みます。
 
 ```text
 backlog -> ready -> in_progress -> review -> done
@@ -26,25 +26,25 @@ backlog -> ready -> in_progress -> review -> done
 
 ## Features
 
-- Agent-sized tasks、priorities、dependencies、comments を扱う issue queue。
-- Task 作成、状態更新、progress comment 追加、workflow scripting のための `tq` CLI。
-- SQLite backed の local issue-tracker、orchestrator、Web UI services。
-- Projects、issues、comments、queue status、service state を確認する Web UI。
-- Issues を実際の local repository path に結び付ける project registration。
-- Binary-only local setup に必要な runtime binaries を含む release archives。
+- エージェント向けサイズのタスク、優先度、依存関係、コメントを扱う課題キュー。
+- タスク作成、状態更新、進捗コメント追加、ワークフローのスクリプト化に使う `tq` CLI。
+- SQLite を使うローカルの issue-tracker、orchestrator、Web UI サービス。
+- プロジェクト、課題、コメント、キューの状態、サービスの状態を確認する Web UI。
+- 課題を実際のローカルリポジトリのパスに結び付けるプロジェクト登録。
+- バイナリのみのローカル構成に必要な実行時バイナリを含むリリースアーカイブ。
 
 ## Install
 
-最新の GitHub Release archive を platform に合わせて download し、展開した 4 つの binaries を `PATH` に配置します。
+最新の GitHub Release アーカイブをプラットフォームに合わせてダウンロードし、展開した 4 つのバイナリを `PATH` に配置します。
 
-各 release tarball には次の binary が含まれます。
+各リリース tarball には次のバイナリが含まれます。
 
 - `tq`: 直接実行する CLI。
-- `issue-tracker`: local REST API service。
-- `orchestrator`: local run-state service。
-- `web`: frontend assets を埋め込んだ local Web UI server。
+- `issue-tracker`: ローカル REST API サービス。
+- `orchestrator`: ローカルの実行状態サービス。
+- `web`: フロントエンド資産を埋め込んだローカル Web UI サーバー。
 
-最新の formal release を install します。
+最新の正式リリースをインストールします。
 
 ```sh
 version="$(curl -fsSLI -o /dev/null -w '%{url_effective}' https://github.com/version-1/tasq/releases/latest | sed 's#.*/##')"
@@ -61,7 +61,7 @@ cp "${tmp_dir}/tq" "${tmp_dir}/issue-tracker" "${tmp_dir}/orchestrator" "${tmp_d
 chmod 0755 "$install_dir/tq" "$install_dir/issue-tracker" "$install_dir/orchestrator" "$install_dir/web"
 ```
 
-Install directory が `PATH` に含まれることを確認します。
+インストール先のディレクトリが `PATH` に含まれることを確認します。
 
 ```sh
 export PATH="${HOME}/.local/bin:${PATH}"
@@ -70,9 +70,9 @@ tq version
 
 ## Getting Started
 
-Tasq は machine-local runtime data を `TQ_HOME` 配下に保存します。`TQ_HOME` が未設定の場合は `~/.tasq` を使います。
+Tasq はマシンローカルの実行時データを `TQ_HOME` 配下に保存します。`TQ_HOME` が未設定の場合は `~/.tasq` を使います。
 
-Local databases を初期化し、明示的な local ports で issue-tracker、orchestrator、Web UI を起動します。
+ローカルデータベースを初期化し、明示的なローカルポートで issue-tracker、orchestrator、Web UI を起動します。
 
 ```sh
 export TQ_HOME="${HOME}/.tasq"
@@ -89,7 +89,7 @@ web_pid=$!
 sleep 1
 ```
 
-この手順では local services を次の ports で起動します。
+この手順では、ローカルサービスを次のポートで起動します。
 
 | Service | Port |
 | --- | ---: |
@@ -97,13 +97,13 @@ sleep 1
 | orchestrator | `47652` |
 | web | `47653` |
 
-Local repository を project として登録します。
+ローカルリポジトリをプロジェクトとして登録します。
 
 ```sh
 tq project add --key tasq-demo .
 ```
 
-Task を作成し、queue に載せます。
+タスクを作成し、キューに載せます。
 
 ```sh
 tq issue create \
@@ -113,22 +113,22 @@ tq issue create \
 tq issue list --project tasq-demo
 ```
 
-Web UI を [http://127.0.0.1:47653](http://127.0.0.1:47653) で開き、project と issue が表示されることを確認します。
+Web UI を [http://127.0.0.1:47653](http://127.0.0.1:47653) で開き、プロジェクトと課題が表示されることを確認します。
 
-完了したら local services を停止します。
+完了したらローカルサービスを停止します。
 
 ```sh
 kill "$web_pid" "$orchestrator_pid" "$tracker_pid"
 ```
 
-これらの ports のいずれかが使用中の場合は、別の loopback port を選び、`TQ_API_URL`、`-issue-tracker`、`-tracker-url`、`-orchestrator-url` を揃えて変更してください。
+これらのポートのいずれかが使用中の場合は、別のループバックポートを選び、`TQ_API_URL`、`-issue-tracker`、`-tracker-url`、`-orchestrator-url` を揃えて変更してください。
 
 ## Documentation
 
-- [Design documentation](docs/design.ja.md)
-- [Release binary startup notes](docs/design/release-binary-startup.ja.md)
-- [CLI reference](docs/site/i18n/ja/docusaurus-plugin-content-docs/current/reference/cli-reference.md)
+- [設計ドキュメント](docs/design.ja.md)
+- [リリースバイナリの起動メモ](docs/design/release-binary-startup.ja.md)
+- [CLI リファレンス](docs/site/i18n/ja/docusaurus-plugin-content-docs/current/reference/cli-reference.md)
 
 ## Development
 
-Repository workflow、local development、verification は [docs/development.ja.md](docs/development.ja.md) を参照してください。
+リポジトリのワークフロー、ローカル開発、検証については [docs/development.ja.md](docs/development.ja.md) を参照してください。
