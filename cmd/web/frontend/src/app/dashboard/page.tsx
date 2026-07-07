@@ -8,6 +8,7 @@ export default function DashboardPage() {
 
   return (
     <IssuesView
+      showFilterSortActions={false}
       summary={summary}
       onAddIssue={onAddIssue}
       onStatusChange={onStatusChange}
