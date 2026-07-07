@@ -16,7 +16,7 @@ Teams still need to know which tasks exist, which ones are ready, what is runnin
 
 tasq gives agent work a product surface: an issue tracker, local services, a CLI, and a Web UI that keep task state and project context in one place.
 
-![Tasq task queue to parallel agent workspaces](docs/site/static/img/agent-task-queue.svg)
+![Tasq agent issue flow](docs/site/static/img/agent-issue-flow.png)
 
 Tasks move through a reviewable workflow:
 

@@ -31,7 +31,7 @@ Agent task ごとに、branch 作成、worktree 作成、dependencies の確認�
 
 Tasq は executable tasks を queue として管理し、ready になったタスクに対して agent-ready な workspace を作成します。
 
-![Tasq task queue to parallel agent workspaces](/img/agent-task-queue.svg)
+![Tasq のエージェント課題フロー](/img/agent-issue-flow.png)
 
 ## Tasq が提供するもの
 
