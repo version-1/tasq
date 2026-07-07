@@ -18,7 +18,6 @@ import { TabsProvider, type TabPageLink } from "./context/tabs";
 const dashboardHeaderPages = [
   { key: "board", href: "/dashboard", titleKey: "header.board" },
   { key: "table", href: "/dashboard/table", titleKey: "issues.table.tableTab" },
-  { key: "stats", href: "/dashboard/stats", titleKey: "dashboard.statsTab" },
 ] satisfies readonly TabPageLink[];
 
 const projectDetailHeaderPages = [

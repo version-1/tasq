@@ -16,6 +16,7 @@ function ContextMenuStory() {
       isOpen={isOpen}
       label="Story actions"
       onOpenChange={setIsOpen}
+      placement="bottom-start"
       trigger={(props) => (
         <button type="button" {...props}>
           Actions
@@ -24,6 +25,9 @@ function ContextMenuStory() {
     >
       <ContextMenuGroupLabel>Status</ContextMenuGroupLabel>
       <ContextMenuItem onSelect={() => setIsOpen(false)}>Move to review</ContextMenuItem>
+      <ContextMenuItem variant="danger" onSelect={() => setIsOpen(false)}>
+        Delete project
+      </ContextMenuItem>
       <ContextMenuItem disabled title="Current state">
         Already in progress
       </ContextMenuItem>

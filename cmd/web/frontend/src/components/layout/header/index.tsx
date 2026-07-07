@@ -187,6 +187,7 @@ export function Header({
               isOpen={isProjectMenuOpen}
               label={t("header.projectActionsMenu")}
               onOpenChange={setIsProjectMenuOpen}
+              placement="bottom-start"
               trigger={(triggerProps) => (
                 <button
                   type="button"
@@ -201,6 +202,7 @@ export function Header({
               <ContextMenuItem
                 label={t("header.deleteProject")}
                 onSelect={handleDeleteProjectSelect}
+                variant="danger"
               >
                 {t("header.deleteProject")}
               </ContextMenuItem>
