@@ -14,14 +14,20 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-dialog);
+  display: flex;
+  max-block-size: calc(100dvh - 104px);
   max-width: 930px;
+  overflow: hidden;
   width: min(100%, 930px);
 }
 
 .addIssueForm {
   display: grid;
   gap: var(--space-4);
+  max-block-size: 100%;
+  overflow-y: auto;
   padding: var(--space-4-5);
+  width: 100%;
 }
 
 .dialogHeader {
@@ -290,6 +296,10 @@
 @media (max-width: 900px) {
   .dialogBackdrop {
     padding: 32px 16px 16px;
+  }
+
+  .dialog {
+    max-block-size: calc(100dvh - 48px);
   }
 
   .formGrid {
