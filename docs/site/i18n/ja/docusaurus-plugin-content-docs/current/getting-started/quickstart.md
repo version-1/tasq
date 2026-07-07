@@ -9,6 +9,11 @@ sidebar_position: 2
 この手順では Tasq をインストールし、local services を起動して、1 つの
 project を登録し、最初の issue を作成します。
 
+まずは、この手動のコマンドベースの手順を実行してください。`tq` で issue を作成し、
+内容を確認できるようになったら、次に
+[エージェントチュートリアル](pathname:///getting-started/agent-tutorial) へ進み、
+Codex や Claude Code から同じ workflow を動かします。
+
 Codex permissions や繰り返し使う agent development environment を準備する
 場合は、[Setup Guide](pathname:///getting-started/setup-guide) を使ってください。
 

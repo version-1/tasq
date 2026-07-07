@@ -39,6 +39,9 @@ Tasq manages executable tasks as a queue and creates agent-ready workspaces for 
 - Isolated Git worktrees for agent execution.
 - Parallel agent execution without sharing one mutable checkout.
 - Review workflow support from running work to reviewed output.
+- Recovery from blocked Codex runs, such as `requestApproval` waits, by using
+  `codex resume <session-id>` from the Codex CLI. See
+  [Recover a Blocked Session](pathname:///guides/recover-blocked-session).
 - A local issue tracker, `tq` CLI, Web UI, and orchestration boundary for run history and workspace metadata.
 
 ## Goal

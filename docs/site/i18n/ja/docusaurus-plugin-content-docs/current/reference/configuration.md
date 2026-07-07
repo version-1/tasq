@@ -63,6 +63,11 @@ running services は discovery metadata を `system/state.json` に書き込み�
     "addr": "http://127.0.0.1:37652",
     "db": "/Users/me/.tasq/system/data/orchestrator.sqlite",
     "started_at": "2026-06-01T10:00:01Z"
+  },
+  "web": {
+    "pid": 12347,
+    "addr": "127.0.0.1:37653",
+    "started_at": "2026-06-01T10:00:02Z"
   }
 }
 ```
@@ -72,5 +77,6 @@ running services は discovery metadata を `system/state.json` に書き込み�
 | Value | Resolution |
 | --- | --- |
 | Issue-tracker API URL | `--api-url`, `TQ_API_URL`, `state.json`, `http://localhost:37651` |
+| Web UI URL | `state.json` の web entry。Web UI が起動していない場合は `tq service start` が必要です。 |
 | Comment author | `--author`, `TQ_AUTHOR`, `config.yaml author`, `$USER` |
 | Orchestrator concurrency | workflow と `config.yaml max_concurrent_agents` の小さい方 |

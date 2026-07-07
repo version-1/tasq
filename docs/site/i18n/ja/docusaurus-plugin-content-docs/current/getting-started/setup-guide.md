@@ -38,6 +38,55 @@ CI/CD authentication の詳細は、公式の
 Tasq を最短でインストールする手順は [QuickStart](./quickstart) を参照してください。
 コマンドの挙動と API 解決の詳細は [tq CLI](./concepts/tq-cli) を参照してください。
 
+## Project workflow を追加する
+
+repository root に `WORKFLOW.md` を追加し、その project の Tasq タスクでエージェントが
+たどる作業手順を明確にします。内容は運用に直結するものに絞ります。issue の確認方法、
+変更の進め方、検証コマンド、どの時点で作業を戻すかを書いてください。
+
+例:
+
+```md
+# WORKFLOW.md
+
+## Task Intake
+
+1. Run `tq issue get <issue-id>` and read the title, description, comments, and
+   attachments before editing files.
+2. Run `git status --short` and inspect the current branch.
+3. Restate the goal, scope, and verification commands before making changes.
+
+## Implementation
+
+1. Keep changes scoped to the issue.
+2. Update tests or documentation when behavior or setup instructions change.
+3. Add progress comments with `tq comment add <issue-id> --type progress` when
+   the task takes more than one focused step.
+
+## Verification
+
+1. Run the smallest relevant tests first.
+2. For docs-site changes, run `npm run build` from `docs/site`.
+3. Report any command that could not be run and why.
+
+## Handoff
+
+1. Move the issue to review only after verification passes.
+2. Summarize changed files, verification results, and remaining risks.
+3. If requested, create a pull request and link it from the issue comments.
+```
+
+workflow を repository と一緒に管理する場合は、`WORKFLOW.md` を project に commit
+します。machine-local な override が必要な場合は、Tasq に保存します。
+
+```sh
+tq workflow add --project tasq-demo --file WORKFLOW.md
+tq workflow show --project tasq-demo
+```
+
+解決順序と override の挙動は
+[Workflow Configuration](../guides/workflow-configuration) を参照してください。
+
 ## 最小限の Codex 権限設定
 
 自律実行の詳細なセットアップは

@@ -10,6 +10,8 @@
   --tasq-inline-code-background: #eff6ff;
   --tasq-inline-code-border: #bfdbfe;
   --tasq-inline-code-color: #1e40af;
+  --tasq-shell-code-border: #dbeafe;
+  --tasq-shell-code-shadow: 0 1px 2px rgb(30 64 175 / 8%);
 }
 
 [data-theme='dark'] {
@@ -23,6 +25,8 @@
   --tasq-inline-code-background: #172554;
   --tasq-inline-code-border: #1d4ed8;
   --tasq-inline-code-color: #bfdbfe;
+  --tasq-shell-code-border: #1e3a8a;
+  --tasq-shell-code-shadow: 0 1px 2px rgb(0 0 0 / 24%);
 }
 
 .markdown :not(pre) > code {
@@ -39,4 +43,21 @@
   color: inherit;
   font-weight: inherit;
   padding: 0;
+}
+
+.markdown .theme-code-block[class*='language-sh'] {
+  border: 1px solid var(--tasq-shell-code-border);
+  border-radius: 8px;
+  box-shadow: var(--tasq-shell-code-shadow);
+  margin: 1rem 0 1.25rem;
+  overflow: hidden;
+}
+
+.markdown .theme-code-block[class*='language-sh'] pre.prism-code {
+  line-height: 1.65;
+  padding: 1rem 1.125rem;
+}
+
+.markdown .theme-code-block[class*='language-sh'] .token-line {
+  min-height: 1.65rem;
 }

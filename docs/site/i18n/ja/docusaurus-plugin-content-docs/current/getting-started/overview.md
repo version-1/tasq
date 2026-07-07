@@ -39,6 +39,9 @@ Tasq は executable tasks を queue として管理し、ready になったタ�
 - Agent execution のための isolated Git worktrees。
 - 1 つの mutable checkout を共有しない parallel agent execution。
 - Running work から reviewed output までの review workflow support。
+- `requestApproval` 待ちなどで Codex の実行が blocked になっても、Codex CLI から
+  `codex resume <session-id>` を使って作業を続行できる復旧経路。詳しくは
+  [blocked になったセッションを復旧する](pathname:///guides/recover-blocked-session)を参照してください。
 - Local issue tracker、`tq` CLI、Web UI、run history と workspace metadata のための orchestration boundary。
 
 ## Goal

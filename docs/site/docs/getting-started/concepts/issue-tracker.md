@@ -8,7 +8,9 @@ sidebar_position: 3
 
 The issue-tracker is the user-facing source of truth for Tasq work.
 
-It stores projects, issues, comments, attachment metadata, and summary data in SQLite. It also serves the API used by `tq`, the Web UI, and other clients.
+It stores projects, issues, comments, attachment metadata, and summary data in
+SQLite. It also serves the API used by `tq`, the Web UI, agents, and other
+clients.
 
 ## Responsibilities
 

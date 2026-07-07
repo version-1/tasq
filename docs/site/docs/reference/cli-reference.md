@@ -29,6 +29,7 @@ API URL resolution order is `--api-url`, `TQ_API_URL`, `$TQ_HOME/system/state.js
 | `tq issue get <id>` | Show one issue. |
 | `tq issue create --project <key> --title <title>` | Create an issue. |
 | `tq issue update <id> [flags]` | Update issue fields. |
+| `tq issue watch [--interval <duration>] [--seen-ttl <duration>] [--verbose]` | Poll ready issues and emit JSON event envelopes. |
 | `tq issue close <id>` | Move an issue to `done`. |
 | `tq issue cancel <id>` | Move an issue to `failed`. |
 | `tq issue ready <id>` | Move an issue to `ready`. |
@@ -36,7 +37,14 @@ API URL resolution order is `--api-url`, `TQ_API_URL`, `$TQ_HOME/system/state.js
 | `tq issue rename <id> <title>` | Update the title. |
 | `tq issue edit <id> <description>` | Update the description. |
 
-Create and update accept `--title`, `--description`, `--status`, `--priority`, `--assignee`, and `--attach` where applicable. Update also accepts `--dependency <comma-separated-ids>` to replace dependencies and `--clear-dependencies` to remove them.
+Create and update accept `--title`, `--description`, `--status`, `--priority`,
+`--assignee`, and `--attach` where applicable. Update also accepts
+`--dependency <comma-separated-ids>` to replace dependencies and
+`--clear-dependencies` to remove them.
+
+`tq issue watch` is intended for agent loops. It reads the ready queue,
+deduplicates emitted issues for the configured seen TTL, emits `issue-ready`
+events, and continues polling after transient API errors.
 
 ## Comment Commands
 
@@ -73,5 +81,7 @@ Allowed comment types are `progress`, `blocker`, `handoff`, and `general`.
 | `tq web` | Open the running Web UI. |
 | `tq version` | Print version information. |
 | `tq update [-y] [--tag <tag>]` | Install a release, migrate databases, and restart services. |
+
+Log services are `tracker` or `issue-tracker`, `orchestrator`, and `web`.
 
 `tq update` prints the current and target versions, confirms that local services will stop and restart, installs the latest formal release by default, verifies the newly installed `tq version`, runs migrations, and starts services. `-y` skips the confirmation prompt. `--tag` installs a specific release or prerelease tag.

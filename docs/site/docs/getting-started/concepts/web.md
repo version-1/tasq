@@ -6,14 +6,20 @@ sidebar_position: 4
 
 # Web
 
-The Web UI is a Go-served Vite and React application for viewing and updating Tasq issues in a browser.
+The Web UI is a Go-served Vite and React application for viewing and updating
+Tasq issues in a browser.
 
-It is designed as a local operations surface rather than a hosted multi-tenant product. The server runs on a loopback port during local service startup and proxies API calls to the local backends.
+It is designed as a local operations surface rather than a hosted multi-tenant
+product. The server runs on the local loopback Web port during service startup
+and proxies API calls to the local backends.
 
 ## Responsibilities
 
 - Render project and issue summaries.
-- Display status, priority, assignee, descriptions, comments, and run links where available.
+- Display status, priority, assignee, descriptions, comments, and run links
+  where available.
+- Show issue activity so operators can find run context such as a Codex thread
+  ID when a blocked session needs to be resumed.
 - Move issues between statuses through the issue-tracker API.
 - Serve browser routes through SPA fallback.
 - Proxy `/tracker/*` to the issue-tracker and `/orchestrator/*` to the orchestrator.
@@ -38,4 +44,8 @@ sequenceDiagram
 
 ## Conceptual Boundary
 
-The Web UI does not own persistence. It presents and mutates issue state through the issue-tracker API, and it can inspect orchestrator runtime state through the Web server proxy when those views are available.
+The Web UI does not own persistence. It presents and mutates issue state through
+the issue-tracker API, and it can inspect orchestrator runtime state through the
+Web server proxy when those views are available. Activity and run links are
+navigation aids; the issue-tracker and orchestrator remain the authoritative
+stores.
