@@ -16,7 +16,7 @@ AI コーディングエージェントにより、複数の実装タスクを�
 
 tasq はエージェント作業にプロダクトとしての操作面を与えます。Issue Tracker、ローカルサービス、CLI、Web UI により、タスクの状態とプロジェクトの文脈を 1 か所に集めます。
 
-![Tasq task queue to parallel agent workspaces](docs/site/static/img/agent-task-queue.svg)
+![Tasq agent issue flow](docs/site/static/img/agent-issue-flow.png)
 
 タスクはレビュー可能なワークフローを進みます。
 
