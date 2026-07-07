@@ -441,9 +441,11 @@ header の `Create`) は所有モジュール内で個別にスタイル付け�
 
 ### Context Menu (`ui/context-menu`)
 
-- トリガーに対して絶対配置され、`40px` 下に開きます。
+- トリガーに対して絶対配置され、`40px` 下に開きます。デフォルト配置では
+  メニューの終端をトリガーに揃え、`bottom-start` はトリガーから右方向へ開きます。
 - 最小幅 `188px`、padding `8px`、行 gap `4px`、radius `8px`、card shadow。
 - アイテム: padding `8px 8px`、radius `6px`、hover で `--extra-light-gray`。
+- 破壊的操作のアイテムは `variant="danger"` を使い、text color は `--danger`。
 - グループラベル: `12px` muted、メニューグループのタイトル用。
 - ヘルプフッター: キーボードヒント用の小さな muted 段落。
 

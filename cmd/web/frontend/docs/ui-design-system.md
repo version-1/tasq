@@ -440,10 +440,13 @@ the same custom property.
 
 ### Context Menu (`ui/context-menu`)
 
-- Positioned absolutely against its trigger, opens `40px` below.
+- Positioned absolutely against its trigger, opens `40px` below. Default
+  placement aligns the menu end edge to the trigger; `bottom-start` opens from
+  the trigger toward the right.
 - `188px` minimum width with `8px` padding, `4px` row gap, `8px` radius, and a
   card shadow.
 - Items: `8px 8px` padding, `6px` radius, `--extra-light-gray` hover.
+- Destructive items use `variant="danger"` and color text with `--danger`.
 - Group label: `12px` muted, used to title menu groups.
 - Help footer: small muted paragraph for keyboard hints.
 

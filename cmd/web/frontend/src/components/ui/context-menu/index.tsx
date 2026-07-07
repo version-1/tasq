@@ -15,6 +15,7 @@ type ContextMenuProps = {
   isOpen: boolean;
   label: string;
   onOpenChange: (isOpen: boolean) => void;
+  placement?: "bottom-end" | "bottom-start";
   trigger: (props: ContextMenuTriggerProps) => ReactNode;
 };
 
@@ -25,6 +26,7 @@ export function ContextMenu({
   isOpen,
   label,
   onOpenChange,
+  placement = "bottom-end",
   trigger,
 }: ContextMenuProps) {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -57,7 +59,12 @@ export function ContextMenu({
         onClick: () => onOpenChange(!isOpen),
       })}
       {isOpen ? (
-        <div aria-label={label} className={styles.menu} id={id} role="menu">
+        <div
+          aria-label={label}
+          className={[styles.menu, styles[placement]].join(" ")}
+          id={id}
+          role="menu"
+        >
           {children}
         </div>
       ) : null}
@@ -75,17 +82,21 @@ export function ContextMenuItem({
   label,
   onSelect,
   title,
+  variant = "default",
 }: {
   children: ReactNode;
   disabled?: boolean;
   label?: string;
   onSelect?: () => void;
   title?: string;
+  variant?: "default" | "danger";
 }) {
   return (
     <button
       aria-label={label}
-      className={styles.item}
+      className={[styles.item, variant === "danger" ? styles.dangerItem : ""]
+        .filter(Boolean)
+        .join(" ")}
       disabled={disabled}
       role="menuitem"
       title={title}

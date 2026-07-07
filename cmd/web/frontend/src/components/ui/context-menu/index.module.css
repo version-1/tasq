@@ -12,9 +12,16 @@
   min-width: 188px;
   padding: 8px;
   position: absolute;
-  right: 0;
   top: 40px;
   z-index: var(--z-menu);
+}
+
+.bottom-end {
+  right: 0;
+}
+
+.bottom-start {
+  left: 0;
 }
 
 .groupLabel {
@@ -36,6 +43,10 @@
 .item:hover:not(:disabled),
 .item:focus-visible:not(:disabled) {
   background: var(--extra-light-gray);
+}
+
+.dangerItem {
+  color: var(--danger);
 }
 
 .item:disabled {
