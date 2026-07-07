@@ -40,6 +40,7 @@ error responses は次を使います。
 | `GET` | `/api/v1/issues` | issues を list します。 |
 | `POST` | `/api/v1/issues` | issue を作成します。 |
 | `POST` | `/api/v1/issues/states` | issue states を bulk で読みます。 |
+| `GET` | `/api/v1/queue` | エージェントが実行できる issue を、依存関係から算出した queue status と一緒に list します。 |
 | `GET` | `/api/v1/issues/{id}` | issue を読みます。 |
 | `PATCH` | `/api/v1/issues/{id}` | issue を更新します。 |
 | `GET` | `/api/v1/issues/{issueId}/comments` | comments を list します。 |
@@ -50,6 +51,14 @@ error responses は次を使います。
 | `GET` | `/api/v1/attachments/{id}/content` | attachment bytes を download します。 |
 | `DELETE` | `/api/v1/attachments/{id}` | attachment を削除します。 |
 
+issue listing では `states`、`project_id`、`project_ids`、`priorities`、
+`assignee`、`search` で絞り込めます。sorting では `sort_by` に `id`、
+`priority`、`created_at`、`updated_at` を指定でき、`sort_direction` は `asc` または
+`desc` です。pagination は `limit` と `offset` を使い、`limit` の上限は `50` です。
+
+comment listing は `cursor` と `limit` を受け付けます。attachment listing は
+`entity_type` と `entity_id` を受け付けます。
+
 ## Attachments
 
 Attachment uploads は `entity_type`、`entity_id`、`file` を含む multipart form data を使います。supported image types は PNG、JPEG、GIF、WebP で、上限は 5 MiB です。
@@ -58,4 +67,14 @@ Attachment bytes は `$TQ_HOME/system/data/attachments` 配下に置かれます
 
 ## Orchestrator API
 
-orchestrator は、port configuration で enabled になっている場合に runtime inspection 向けの optional loopback HTTP APIs を公開します。user-facing issue mutation API ではありません。
+orchestrator は runtime inspection 向けの loopback HTTP APIs を公開します。user-facing
+issue mutation API ではありません。
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/v1/state` | running / retrying runs と集約された runtime metadata を確認します。 |
+| `POST` | `/api/v1/refresh` | refresher が設定されている場合に orchestrator refresh を要求します。 |
+| `GET` | `/api/v1/{issue_identifier}` | 1 つの issue の runtime state、runs、workspace path、recent events を確認します。 |
+| `GET` | `/api/v1/{issue_identifier}/runs/{run_id}/conversations` | run の conversation events を読みます。 |
+
+`issue_identifier` には `issue-12` のような orchestrator issue identifier form を指定します。

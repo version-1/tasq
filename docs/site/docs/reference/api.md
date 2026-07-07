@@ -40,6 +40,7 @@ Error responses use:
 | `GET` | `/api/v1/issues` | List issues. |
 | `POST` | `/api/v1/issues` | Create an issue. |
 | `POST` | `/api/v1/issues/states` | Read issue states in bulk. |
+| `GET` | `/api/v1/queue` | List issues that are eligible for agent execution, including dependency-derived queue status. |
 | `GET` | `/api/v1/issues/{id}` | Read an issue. |
 | `PATCH` | `/api/v1/issues/{id}` | Update an issue. |
 | `GET` | `/api/v1/issues/{issueId}/comments` | List comments. |
@@ -50,6 +51,14 @@ Error responses use:
 | `GET` | `/api/v1/attachments/{id}/content` | Download attachment bytes. |
 | `DELETE` | `/api/v1/attachments/{id}` | Delete an attachment. |
 
+Issue listing supports filters for `states`, `project_id`, `project_ids`,
+`priorities`, `assignee`, and `search`. Sorting supports `sort_by` values
+`id`, `priority`, `created_at`, and `updated_at` with `sort_direction` `asc` or
+`desc`. Pagination uses `limit` and `offset`; `limit` is capped at `50`.
+
+Comment listing supports `cursor` and `limit`. Attachment listing supports
+`entity_type` and `entity_id`.
+
 ## Attachments
 
 Attachment uploads use multipart form data with `entity_type`, `entity_id`, and `file`. Supported image types are PNG, JPEG, GIF, and WebP up to 5 MiB.
@@ -58,4 +67,15 @@ Attachment bytes live under `$TQ_HOME/system/data/attachments`. SQLite stores me
 
 ## Orchestrator API
 
-The orchestrator exposes optional loopback HTTP APIs for runtime inspection when enabled with a port configuration. It is not the user-facing issue mutation API.
+The orchestrator exposes loopback HTTP APIs for runtime inspection. It is not
+the user-facing issue mutation API.
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/v1/state` | Inspect running and retrying runs plus aggregated runtime metadata. |
+| `POST` | `/api/v1/refresh` | Request an orchestrator refresh when a refresher is configured. |
+| `GET` | `/api/v1/{issue_identifier}` | Inspect runtime state, runs, workspace path, and recent events for one issue. |
+| `GET` | `/api/v1/{issue_identifier}/runs/{run_id}/conversations` | Read conversation events for a run. |
+
+`issue_identifier` accepts the orchestrator issue identifier form such as
+`issue-12`.

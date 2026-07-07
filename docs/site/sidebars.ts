@@ -8,6 +8,7 @@ const sidebars: SidebarsConfig = {
       items: [
         'getting-started/overview',
         'getting-started/quickstart',
+        'getting-started/agent-tutorial',
         'getting-started/setup-guide',
         {
           type: 'category',

@@ -36,6 +36,56 @@ or add a note before handing work back.
 For the shortest Tasq install path, see [QuickStart](./quickstart). For command
 behavior and API resolution details, see [tq CLI](./concepts/tq-cli).
 
+## Add a Project Workflow
+
+Add a `WORKFLOW.md` file to the repository root so agents know the expected
+route for every Tasq task in that project. Keep it operational: how to inspect
+the issue, how to make changes, which commands verify the work, and when to
+hand the result back.
+
+Example:
+
+```md
+# WORKFLOW.md
+
+## Task Intake
+
+1. Run `tq issue get <issue-id>` and read the title, description, comments, and
+   attachments before editing files.
+2. Run `git status --short` and inspect the current branch.
+3. Restate the goal, scope, and verification commands before making changes.
+
+## Implementation
+
+1. Keep changes scoped to the issue.
+2. Update tests or documentation when behavior or setup instructions change.
+3. Add progress comments with `tq comment add <issue-id> --type progress` when
+   the task takes more than one focused step.
+
+## Verification
+
+1. Run the smallest relevant tests first.
+2. For docs-site changes, run `npm run build` from `docs/site`.
+3. Report any command that could not be run and why.
+
+## Handoff
+
+1. Move the issue to review only after verification passes.
+2. Summarize changed files, verification results, and remaining risks.
+3. If requested, create a pull request and link it from the issue comments.
+```
+
+When the workflow should live in the repository, commit `WORKFLOW.md` with the
+project. If you need a machine-local override instead, store it through Tasq:
+
+```sh
+tq workflow add --project tasq-demo --file WORKFLOW.md
+tq workflow show --project tasq-demo
+```
+
+For resolution order and override behavior, see
+[Workflow Configuration](../guides/workflow-configuration).
+
 ## Minimal Codex Permissions
 
 Detailed autonomy setup belongs in

@@ -9,6 +9,11 @@ sidebar_position: 2
 This path installs Tasq, starts the local services, registers one project, and
 creates the first issue.
 
+Run this manual, command-based path first. After you can create and inspect an
+issue with `tq`, continue with
+[Agent Tutorial](pathname:///getting-started/agent-tutorial) to let Codex or
+Claude Code drive the same workflow.
+
 Use [Setup Guide](pathname:///getting-started/setup-guide) instead when you are
 preparing Codex permissions or a repeatable agent development environment.
 

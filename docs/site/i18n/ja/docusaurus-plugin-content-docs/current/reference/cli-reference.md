@@ -29,6 +29,7 @@ API URL resolution order は `--api-url`、`TQ_API_URL`、`$TQ_HOME/system/state
 | `tq issue get <id>` | 1 つの issue を表示します。 |
 | `tq issue create --project <key> --title <title>` | issue を作成します。 |
 | `tq issue update <id> [flags]` | issue fields を更新します。 |
+| `tq issue watch [--interval <duration>] [--seen-ttl <duration>] [--verbose]` | ready な issue を polling し、JSON event envelopes を出力します。 |
 | `tq issue close <id>` | issue を `done` に移動します。 |
 | `tq issue cancel <id>` | issue を `failed` に移動します。 |
 | `tq issue ready <id>` | issue を `ready` に移動します。 |
@@ -36,7 +37,14 @@ API URL resolution order は `--api-url`、`TQ_API_URL`、`$TQ_HOME/system/state
 | `tq issue rename <id> <title>` | title を更新します。 |
 | `tq issue edit <id> <description>` | description を更新します。 |
 
-create と update は、該当する場合に `--title`、`--description`、`--status`、`--priority`、`--assignee`、`--attach` を受け付けます。update では、依存関係を置き換える `--dependency <comma-separated-ids>` と、依存関係を削除する `--clear-dependencies` も指定できます。
+create と update は、該当する場合に `--title`、`--description`、`--status`、
+`--priority`、`--assignee`、`--attach` を受け付けます。update では、依存関係を
+置き換える `--dependency <comma-separated-ids>` と、依存関係を削除する
+`--clear-dependencies` も指定できます。
+
+`tq issue watch` はエージェントの loop で使うことを想定しています。ready queue を
+読み、設定された seen TTL の間は同じ issue の出力を重複排除し、`issue-ready` event
+を出力します。一時的な API error が起きても polling を継続します。
 
 ## Comment Commands
 
@@ -73,5 +81,7 @@ create と update は、該当する場合に `--title`、`--description`、`--s
 | `tq web` | 実行中の Web UI を開きます。 |
 | `tq version` | version information を出力します。 |
 | `tq update [-y] [--tag <tag>]` | release を install し、databases を migrate して services を再起動します。 |
+
+log service には `tracker` または `issue-tracker`、`orchestrator`、`web` を指定できます。
 
 `tq update` は現在の version と更新先 version を表示し、local services の停止と再起動が入ることを確認してから、既定では最新の formal release を install します。その後、新しく install された `tq version` を確認し、migrations を実行して services を起動します。`-y` は確認 prompt を skip します。`--tag` は特定の release または prerelease tag を install します。
