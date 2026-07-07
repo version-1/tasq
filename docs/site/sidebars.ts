@@ -25,7 +25,12 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: 'Guides',
-      items: ['guides/workflow-configuration', 'guides/web-ui-operations'],
+      items: [
+        'guides/codex-autonomy-setup',
+        'guides/recover-blocked-session',
+        'guides/workflow-configuration',
+        'guides/web-ui-operations',
+      ],
     },
     {
       type: 'category',

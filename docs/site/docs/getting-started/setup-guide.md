@@ -6,73 +6,66 @@ sidebar_position: 3
 
 # Setup Guide
 
-This guide covers setup outside `tq` that makes repeated local agent work predictable.
+This guide covers the minimum local setup outside `tq` that Tasq expects before
+you run Codex-backed agent work repeatedly.
 
 Keep these settings scoped to trusted local projects. Avoid granting broad global permissions for commands that can change Git history, remote state, credentials, or system configuration.
 
 ## Codex Authentication
 
-For normal interactive work, sign in with ChatGPT so Codex uses subscription access and the active ChatGPT workspace controls.
+Codex authentication is a prerequisite for Tasq agent runs that use Codex. This
+guide assumes the Codex CLI is already authenticated with the account and
+workspace you intend to use.
 
-```sh
-codex login
-```
+For login methods, device authentication, API-key authentication, credential
+storage, and CI/CD authentication, see the official
+[Codex Authentication](https://developers.openai.com/codex/auth) documentation.
 
-For remote terminals, use device authentication.
+## Agent-Friendly `tq` Usage
 
-```sh
-codex login --device-auth
-```
+The `tq` command is often used by agents such as Codex and Claude Code rather
+than by a human typing every command directly. Install Tasq so the `tq` command
+is available on `PATH`, then install or expose the `tasq-cli` agent guide in the
+agent environment.
 
-Use API key authentication only when you intentionally want usage billed through an OpenAI Platform account instead of ChatGPT subscription access.
+With `tasq-cli` available, agents have a compact reference for common `tq`
+commands, issue lookup, comments, status transitions, and service operations.
+That reduces ambiguity when an agent needs to inspect a task, update progress,
+or add a note before handing work back.
 
-## Trust Local Projects
+For the shortest Tasq install path, see [QuickStart](./quickstart). For command
+behavior and API resolution details, see [tq CLI](./concepts/tq-cli).
 
-Codex loads project-local `.codex/` settings only for trusted projects. Add every checkout or worktree that agents will use.
+## Minimal Codex Permissions
+
+Detailed autonomy setup belongs in
+[Codex Autonomy Setup](../guides/codex-autonomy-setup). For this setup guide,
+start with the smallest `~/.codex/config.toml` entry that trusts the Tasq
+checkout and grants workspace-write access to the checkout plus the repository
+Git metadata.
 
 ```toml
 # ~/.codex/config.toml
 
+default_permissions = "tasq_workspace"
+
 [projects."/Users/YOU/src/tasq"]
 trust_level = "trusted"
 
-[projects."/Users/YOU/src/tasq/.worktrees/agents/issue-57"]
-trust_level = "trusted"
-```
+[permissions.tasq_workspace]
+description = "Tasq checkout with Git metadata writes enabled."
+extends = ":workspace"
 
-Use absolute paths. If an agent runner creates disposable worktrees, add the concrete worktree path before starting Codex.
+[permissions.tasq_workspace.filesystem.":workspace_roots"]
+"." = "write"
 
-## Allow Git Metadata Writes
-
-Linked worktrees often keep Git metadata outside the workspace directory. Commands such as `git rebase`, `git commit`, and `git checkout` may need access to the parent repository `.git` directory.
-
-Resolve the required paths from each worktree:
-
-```sh
-git rev-parse --path-format=absolute --git-common-dir
-git rev-parse --path-format=absolute --git-dir
-```
-
-Then allow the workspace and the required Git metadata path in the Codex permission profile.
-
-```toml
-[permissions.tasq-workspace.workspace_roots]
+[permissions.tasq_workspace.workspace_roots]
 "/Users/YOU/src/tasq" = true
-"/Users/YOU/src/tasq/.worktrees/agents/issue-57" = true
 "/Users/YOU/src/tasq/.git" = true
 ```
 
-Prefer exact paths. Granting the whole parent `.git` directory is simpler for many worktrees, while granting only a specific `.git/worktrees/<name>` path is narrower.
-
-## Command Rules
-
-Allow routine read and verification commands narrowly. Keep remote writes and destructive operations behind prompts or safe wrappers.
-
-Useful low-risk rules usually cover:
-
-- `tq issue get`, `tq issue list`, and `tq comment list`.
-- `git status`, `git diff`, `git log`, and `git show`.
-- `make dev-docs-build` for documentation changes.
-- Read-only `gh pr view`, `gh pr diff`, and `gh pr checks`.
-
-Do not globally allow broad commands such as `rm`, `git reset`, `git push`, direct `gh pr edit`, or shell wrappers with arbitrary arguments.
+Use exact absolute paths for your local checkout. If you run agents from
+additional worktrees, cache directories, or SDK tool directories, add only the
+specific paths required by that workflow. The full checklist for worktrees,
+cache writes, command rules, and recovery paths is in
+[Codex Autonomy Setup](../guides/codex-autonomy-setup).
