@@ -1,0 +1,1 @@
+scaffold: set up Vite + React + TypeScript project
