@@ -36,6 +36,7 @@ import { AddProjectDialog } from "@/components/dialog/add-project";
 import { DeleteProjectDialog } from "@/components/dialog/delete-project";
 import { Header } from "./header";
 import { Sidebar } from "./sidebar";
+import { useTheme } from "./use-theme";
 import styles from "./index.module.css";
 
 export type TasqPage = "issues" | "dashboard" | "settings";
@@ -373,6 +374,7 @@ export function ShellLayout({
   showViewNavigation?: boolean;
 }) {
   const { t } = useTranslation();
+  const { isDark, setIsDark } = useTheme();
 
   return (
     <div className={styles.appFrame}>
@@ -383,7 +385,9 @@ export function ShellLayout({
             ? (shellData.activeProject?.id ?? null)
             : null
         }
+        isDarkMode={isDark}
         onAddProject={shellData.onAddProject}
+        onDarkModeChange={setIsDark}
         projects={shellData.projects}
       />
       <main className={styles.shell}>
