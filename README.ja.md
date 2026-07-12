@@ -12,9 +12,19 @@ English counterpart: [README.md](README.md).
 
 ## Problem
 
-AI コーディングエージェントにより、複数の実装タスクを同時に進められるようになりました。ボトルネックはコード生成そのものから、並列作業の調整へ移ります。
+AI コーディングエージェントにより、複数の実装タスクを同時に進められるようになりました。ボトルネックはコードを書くことから、並列作業の管理へ移ります。
 
-チームは、どのタスクが存在するか、どれが準備完了か、何が実行中か、何をレビューすべきか、どのローカルワークスペースがどのタスクに対応するかを把握し続ける必要があります。すべてのエージェントを 1 つのチェックアウトで実行すると、ブランチ切り替えやファイル競合のリスクも高まります。
+### 人間のコンテキスト切り替え
+
+エージェントは並列に実行できますが、人間はどのタスクを割り当てたか、どのエージェントが実行中か、各タスクがどこまで進んでいるか、次に何をレビューすべきかを追跡する必要があります。
+
+### ワークスペースの競合
+
+複数のエージェントを 1 つのリポジトリのチェックアウトで実行すると、ブランチ切り替えの問題、未完了の変更による競合、ファイル編集の重複が発生する可能性があります。
+
+### セットアップ作業の繰り返し
+
+エージェントのタスクごとに、ブランチとワークツリーの作成、依存関係の確認、適切なセットアップコマンドの実行といった同じ準備作業が必要になりがちです。
 
 ## Solution
 
@@ -65,60 +75,7 @@ export PATH="${HOME}/.local/bin:${PATH}"
 tq version
 ```
 
-## Getting Started
-
-Tasq はマシンローカルの実行時データを `TQ_HOME` 配下に保存します。`TQ_HOME` が未設定の場合は `~/.tasq` を使います。
-
-ローカルデータベースを初期化し、明示的なローカルポートで issue-tracker、orchestrator、Web UI を起動します。
-
-```sh
-export TQ_HOME="${HOME}/.tasq"
-export TQ_API_URL="http://127.0.0.1:47651"
-tq migrate
-issue-tracker -addr 127.0.0.1:47651 &
-tracker_pid=$!
-orchestrator -issue-tracker http://127.0.0.1:47651 -port 47652 &
-orchestrator_pid=$!
-web -addr 127.0.0.1:47653 \
-  -tracker-url http://127.0.0.1:47651 \
-  -orchestrator-url http://127.0.0.1:47652 &
-web_pid=$!
-sleep 1
-```
-
-この手順では、ローカルサービスを次のポートで起動します。
-
-| Service | Port |
-| --- | ---: |
-| issue-tracker | `47651` |
-| orchestrator | `47652` |
-| web | `47653` |
-
-ローカルリポジトリをプロジェクトとして登録します。
-
-```sh
-tq project add --key tasq-demo .
-```
-
-タスクを作成し、キューに載せます。
-
-```sh
-tq issue create \
-  --project tasq-demo \
-  --title "Try Tasq from binaries" \
-  --description "Create the first issue through the tq CLI."
-tq issue list --project tasq-demo
-```
-
-Web UI を [http://127.0.0.1:47653](http://127.0.0.1:47653) で開き、プロジェクトと課題が表示されることを確認します。
-
-完了したらローカルサービスを停止します。
-
-```sh
-kill "$web_pid" "$orchestrator_pid" "$tracker_pid"
-```
-
-これらのポートのいずれかが使用中の場合は、別のループバックポートを選び、`TQ_API_URL`、`-issue-tracker`、`-tracker-url`、`-orchestrator-url` を揃えて変更してください。
+## [Getting Started](https://version-1.github.io/tasq/ja/)
 
 ## Documentation
 
