@@ -4,9 +4,9 @@ AI コーディングエージェント向けタスクマネージャー。
 
 tasq は、実装作業を見えるキューにし、そのキューのためのローカルサービスを起動し、`tq` CLI と Web UI の両方から進捗を確認できるようにするツールです。
 
-[![Tasq の紹介動画を見る](docs/site/static/img/tasq-thumbnail.png)](docs/site/static/video/tasq-intro.mp4)
+[![Tasq の紹介動画を見る](docs/site/static/img/tasq-thumbnail.png)](https://github.com/user-attachments/assets/8c4fdc9c-c70b-4f86-8e0a-323f8880ffb7)
 
-[Tasq の紹介動画を見る](docs/site/static/video/tasq-intro.mp4)。
+[Tasq の紹介動画を見る](https://github.com/user-attachments/assets/8c4fdc9c-c70b-4f86-8e0a-323f8880ffb7)。
 
 English counterpart: [README.md](README.md).
 
