@@ -41,7 +41,9 @@ const meta = {
   args: {
     activePage: "issues",
     activeProjectID: 1,
+    isDarkMode: false,
     onAddProject: () => undefined,
+    onDarkModeChange: () => undefined,
     projects,
   },
 } satisfies Meta<typeof Sidebar>;

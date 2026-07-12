@@ -8,14 +8,18 @@ import styles from "./index.module.css";
 type SidebarProps = {
   activePage: "issues" | "dashboard" | "settings";
   activeProjectID: number | null;
+  isDarkMode: boolean;
   projects: Project[];
   onAddProject: () => void;
+  onDarkModeChange: (isDark: boolean) => void;
 };
 
 export function Sidebar({
   activePage,
   activeProjectID,
+  isDarkMode,
   onAddProject,
+  onDarkModeChange,
   projects,
 }: SidebarProps) {
   const { t } = useTranslation();
@@ -87,7 +91,11 @@ export function Sidebar({
 
       <label className={styles.themeSwitch}>
         <span>{t("sidebar.darkMode")}</span>
-        <Switch aria-label={t("sidebar.darkMode")} />
+        <Switch
+          aria-label={t("sidebar.darkMode")}
+          checked={isDarkMode}
+          onChange={onDarkModeChange}
+        />
       </label>
     </aside>
   );
