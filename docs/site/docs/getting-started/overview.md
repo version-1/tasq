@@ -11,6 +11,10 @@ Tasq is an AI coding-agent task manager for running multiple implementation task
 
 It creates an isolated workspace for each task and supports the workflow from task registration, agent execution, state management, review, and integration.
 
+<video src="/tasq/video/tasq-intro.mp4" controls width="100%">
+  <a href="/tasq/video/tasq-intro.mp4">Watch the Tasq introduction video.</a>
+</video>
+
 ## Problem
 
 AI coding agents make it possible to work on multiple implementation tasks at the same time. The bottleneck moves from writing code to managing parallel work.
