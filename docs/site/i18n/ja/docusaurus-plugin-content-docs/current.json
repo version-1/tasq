@@ -18,9 +18,5 @@
   "sidebar.docsSidebar.category.Reference": {
     "message": "リファレンス",
     "description": "The label for category 'Reference' in sidebar 'docsSidebar'"
-  },
-  "sidebar.docsSidebar.category.Contributing": {
-    "message": "コントリビューション",
-    "description": "The label for category 'Contributing' in sidebar 'docsSidebar'"
   }
 }
