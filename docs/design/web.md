@@ -93,11 +93,35 @@ Supported languages:
 
 Keep user-facing UI text in `cmd/web/frontend/src/lib/i18n.ts`. Components should render translated text with `useTranslation()` instead of hard-coded display strings. User-provided issue content, API identifiers, and route path segments can remain untranslated.
 
+## Theme
+
+The Web UI supports light and dark themes. `cmd/web/frontend/index.html` resolves
+the initial theme before React mounts and sets `data-theme` on `html`, preventing
+the first paint from using the wrong token set.
+
+The resolution order is:
+
+1. A valid persisted value in `localStorage` under `tasq.theme` (`light` or
+   `dark`).
+2. The operating system preference from `prefers-color-scheme` when no valid
+   persisted value is available.
+
+`src/components/layout/use-theme.ts` owns the runtime behavior used by the
+layout sidebar switch. Changing the switch updates `html[data-theme]` and
+persists the explicit choice under `tasq.theme`. While no explicit choice is
+stored, the hook follows operating system preference changes; once a choice is
+stored, that choice takes precedence.
+
 ## Styling
 
 The frontend uses CSS Modules for component and page styling.
 
 Keep `cmd/web/frontend/src/app/globals.css` limited to global tokens and base element resets. Feature-specific styles must live next to the component that owns the markup.
+
+Light tokens are defined on `:root`; `[data-theme="dark"]` overrides the color
+and shadow token values. Components must continue to consume semantic CSS
+variables rather than branching on the active theme or introducing theme-local
+color literals.
 
 See [Web UI Color Palette](web-color-pallete.md) for global color tokens.
 

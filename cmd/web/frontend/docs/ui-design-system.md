@@ -234,9 +234,21 @@ elsewhere.
 
 ### Dark Theme
 
-Set `data-theme="dark"` on an ancestor (normally `html`) to override every
-color and shadow token while preserving component token references. The full
-dark palette is documented in [web-color-pallete.md](design/web-color-pallete.md).
+Light mode tokens are declared on `:root`. Setting `data-theme="dark"` on an
+ancestor (normally `html`) overrides every color and shadow token while
+preserving component token references. The full dark palette is documented in
+[web-color-pallete.md](design/web-color-pallete.md).
+
+`index.html` sets `html[data-theme]` before React mounts. A valid
+`localStorage` value at `tasq.theme` (`light` or `dark`) takes precedence; when
+there is no valid saved value, the initial theme follows `prefers-color-scheme`.
+The layout theme switch persists an explicit value with the same key. Only when
+no value is stored does the runtime hook follow subsequent operating system
+preference changes.
+
+Theme changes must be implemented by changing `data-theme` and semantic token
+values. Components must not add theme-specific selector branches or hardcoded
+color and shadow values.
 
 ### Typography
 

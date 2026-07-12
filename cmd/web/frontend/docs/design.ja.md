@@ -223,6 +223,17 @@ Application shell と global navigation component は `src/components/layout/` �
 
 Feature view は layout shell の中に render できますが、layout component が feature-specific presentation を所有しないようにします。
 
+### テーマの責務
+
+`src/components/layout/use-theme.ts` は、レイアウトのサイドバーにあるテーマ切替スイッチの
+実行時のテーマ状態を所有します。選択した `light` または `dark` の値を `localStorage` の
+`tasq.theme` に保存し、解決した値を `html[data-theme]` に反映します。
+
+`index.html` は React のマウント前に同じ決定順序を適用します。すなわち、有効な
+`tasq.theme` の値を優先し、ない場合は `prefers-color-scheme` から初期テーマを取得します。
+この hook は、明示的な値が保存されていない間だけ OS の設定変更を監視します。マウント前の
+スクリプトと hook の決定ロジックは常に一致させてください。
+
 ## Project Workflow Settings
 
 Project workflow settings は `src/features/projects/components/workflow-settings-view/` 配下の feature component で表示します。

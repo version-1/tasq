@@ -263,6 +263,19 @@ This directory owns:
 Feature views may be rendered inside the layout shell, but layout components
 should not own feature-specific presentation.
 
+### Theme ownership
+
+`src/components/layout/use-theme.ts` owns the runtime theme state for the
+layout sidebar switch. It writes the selected `light` or `dark` value to
+`localStorage` under `tasq.theme` and reflects the resolved value through
+`html[data-theme]`.
+
+`index.html` applies the same resolution before React mounts: a valid
+`tasq.theme` value wins, otherwise `prefers-color-scheme` supplies the initial
+theme. The hook listens for operating system preference changes only while no
+explicit value is stored. Keep this resolution logic aligned between the
+pre-mount script and the hook.
+
 ## Project Workflow Settings
 
 Project workflow settings are rendered by feature components under
