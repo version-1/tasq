@@ -56,6 +56,11 @@ It gives developers one workflow for task management, workspace isolation, and a
 
 ## Documentation Map
 
-Start with [QuickStart](pathname:///getting-started/quickstart) when you want the shortest path to a running service. Use [Setup Guide](pathname:///getting-started/setup-guide) when preparing Codex and local command permissions for repeated agent work.
-
-The [Concepts](pathname:///getting-started/concepts/overview) pages explain the architecture. The [Guides](pathname:///guides/workflow-configuration) pages cover common operations. The [Reference](pathname:///reference/cli-reference) pages define commands, APIs, configuration, and schemas.
+| Documentation | Use it when |
+| --- | --- |
+| [QuickStart](pathname:///getting-started/quickstart) | You want the shortest path to a running service. |
+| [Agent Tutorial](pathname:///getting-started/agent-tutorial) | You want to take an agent-created plan through a Tasq issue and into a GitHub pull request. |
+| [Setup Guide](pathname:///getting-started/setup-guide) | You are preparing Codex and local command permissions for repeated agent work. |
+| [Concepts](pathname:///getting-started/concepts/overview) | You want to understand the architecture. |
+| [Guides](pathname:///guides/workflow-configuration) | You need help with common operations. |
+| [Reference](pathname:///reference/cli-reference) | You need command, API, configuration, or schema details. |

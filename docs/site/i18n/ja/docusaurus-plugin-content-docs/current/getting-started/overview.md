@@ -56,6 +56,11 @@ Task management、workspace isolation、agent execution を 1 つの workflow �
 
 ## Documentation Map
 
-動作する service までの最短経路が必要な場合は [QuickStart](pathname:///getting-started/quickstart) から始めてください。Codex と local command permissions を繰り返しの agent work 向けに準備する場合は [Setup Guide](pathname:///getting-started/setup-guide) を使います。
-
-[Concepts](pathname:///getting-started/concepts/overview) pages は architecture を説明します。[Guides](pathname:///guides/workflow-configuration) pages は一般的な operation を扱います。[Reference](pathname:///reference/cli-reference) pages は commands、APIs、configuration、schemas を定義します。
+| ドキュメント | 使う場面 |
+| --- | --- |
+| [QuickStart](pathname:///getting-started/quickstart) | 動作するサービスまでの最短経路が必要な場合。 |
+| [Agent Tutorial](pathname:///getting-started/agent-tutorial) | エージェントが作成した計画を Tasq の課題にし、GitHub pull request まで進めたい場合。 |
+| [Setup Guide](pathname:///getting-started/setup-guide) | 繰り返すエージェント作業に向けて、Codex とローカルコマンドの権限を準備する場合。 |
+| [Concepts](pathname:///getting-started/concepts/overview) | アーキテクチャを理解したい場合。 |
+| [Guides](pathname:///guides/workflow-configuration) | 一般的な操作の手順が必要な場合。 |
+| [Reference](pathname:///reference/cli-reference) | コマンド、API、設定、スキーマの詳細を確認したい場合。 |
