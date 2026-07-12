@@ -12,9 +12,19 @@ Japanese counterpart: [README.ja.md](README.ja.md).
 
 ## Problem
 
-AI coding agents make it possible to work on several implementation tasks at the same time. The bottleneck moves from writing code to coordinating parallel work.
+AI coding agents make it possible to work on multiple implementation tasks at the same time. The bottleneck moves from writing code to managing parallel work.
 
-Teams still need to know which tasks exist, which ones are ready, what is running, what needs review, and which local workspace belongs to which task. Running every agent in one checkout also increases branch-switching and file-conflict risk.
+### Human Context Switching
+
+Agents can run in parallel, but humans still need to track which tasks were assigned, which agents are running, how far each task has progressed, and what should be reviewed next.
+
+### Workspace Conflicts
+
+Running multiple agents in one repository checkout can create branch switching issues, unfinished-change conflicts, and overlapping file edits.
+
+### Repeated Setup Work
+
+Each agent task often needs the same preparation steps: create a branch, create a worktree, verify dependencies, and run the right setup commands.
 
 ## Solution
 
