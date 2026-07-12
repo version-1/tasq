@@ -233,9 +233,19 @@ token を参照します。共通の table primitive は `var(--ledger-rule, var
 
 ### ダークテーマ
 
-祖先要素（通常は `html`）に `data-theme="dark"` を付けると、component token の
-参照を保ったまま全色・shadow token を上書きします。ダークパレットの全体は
+ライトテーマのトークンは `:root` に定義します。祖先要素（通常は `html`）に
+`data-theme="dark"` を付けると、コンポーネントトークンの参照を保ったまま、すべての色と
+shadow トークンを上書きします。ダークパレットの全体は
 [web-color-pallete.ja.md](design/web-color-pallete.ja.md) に記載します。
+
+`index.html` は React のマウント前に `html[data-theme]` を設定します。`localStorage` の
+`tasq.theme` に有効な値（`light` または `dark`）があればそれを優先し、保存値がない場合は
+`prefers-color-scheme` に従って初期テーマを決めます。レイアウトのテーマ切替スイッチは同じ
+キーに明示的な値を保存します。実行時の hook が OS の設定変更に追従するのは、値が保存されて
+いない場合だけです。
+
+テーマを変えるときは、`data-theme` と意味的なトークン値を変更します。コンポーネントごとに
+テーマ専用のセレクタ分岐や色・shadow の固定値を追加してはいけません。
 
 ### タイポグラフィ
 

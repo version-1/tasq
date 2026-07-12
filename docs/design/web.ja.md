@@ -91,11 +91,31 @@ Web UI は表示文字列に `react-i18next` を使います。
 
 ユーザーに表示する UI text は `cmd/web/frontend/src/lib/i18n.ts` に置きます。コンポーネントは hard-coded display string ではなく、`useTranslation()` で翻訳済みテキストを表示します。ユーザーが入力した課題本文、API identifier、route path segment は翻訳しないままで構いません。
 
+## テーマ
+
+Web UI はライトテーマとダークテーマに対応します。`cmd/web/frontend/index.html` は
+React のマウント前に初期テーマを解決し、`html` に `data-theme` を設定します。これにより、
+初回描画で誤ったトークンセットが使われることを防ぎます。
+
+テーマの決定順序は次のとおりです。
+
+1. `localStorage` の `tasq.theme` に保存された有効な値（`light` または `dark`）。
+2. 有効な保存値がない場合は、`prefers-color-scheme` による OS の設定。
+
+`src/components/layout/use-theme.ts` は、レイアウトのサイドバーにある切替スイッチで使う
+実行時の挙動を所有します。スイッチを変更すると `html[data-theme]` を更新し、明示的な選択を
+`tasq.theme` に保存します。明示的な選択が保存されていない間は OS の設定変更に追従し、保存後は
+その選択を優先します。
+
 ## Styling
 
 フロントエンドはコンポーネントとページのスタイルに CSS Modules を使います。
 
 `cmd/web/frontend/src/app/globals.css` はグローバルトークンと基本要素のリセットに限定します。機能固有のスタイルは、その markup を所有するコンポーネントの隣に置きます。
+
+ライトテーマのトークンは `:root` に定義し、`[data-theme="dark"]` では色と shadow の
+トークン値を上書きします。コンポーネントは、アクティブテーマで分岐したりテーマ専用の色の
+固定値を追加したりせず、意味的な CSS 変数を引き続き参照します。
 
 グローバルカラートークンは [Web UI Color Palette](web-color-pallete.md) を参照してください。
 
