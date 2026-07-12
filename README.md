@@ -4,6 +4,10 @@ AI coding agent task manager.
 
 tasq helps you turn implementation work into a visible queue, start local services for that queue, and inspect progress from both the `tq` CLI and the Web UI.
 
+[![Watch the Tasq introduction video](docs/site/static/img/tasq-thumbnail.png)](https://github.com/user-attachments/assets/8c4fdc9c-c70b-4f86-8e0a-323f8880ffb7)
+
+[Watch the Tasq introduction video](https://github.com/user-attachments/assets/8c4fdc9c-c70b-4f86-8e0a-323f8880ffb7).
+
 Japanese counterpart: [README.ja.md](README.ja.md).
 
 ## Problem

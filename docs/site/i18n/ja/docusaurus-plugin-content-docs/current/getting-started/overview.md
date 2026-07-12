@@ -11,6 +11,10 @@ Tasq は、Claude Code、Codex などの AI coding agent で複数の実装タ�
 
 タスクごとに独立した workspace を作成し、task registration、agent execution、state management、review、integration までの workflow を支援します。
 
+<video src="/tasq/video/tasq-intro.mp4" controls width="100%">
+  <a href="/tasq/video/tasq-intro.mp4">Tasq の紹介動画を見る。</a>
+</video>
+
 ## Problem
 
 AI coding agents により、複数の実装タスクを同時に進められるようになりました。ボトルネックは code generation そのものから、並列作業の管理へ移ります。
