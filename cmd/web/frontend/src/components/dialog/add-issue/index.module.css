@@ -1,6 +1,6 @@
 .dialogBackdrop {
   align-items: flex-start;
-  background: rgb(20 20 20 / 36%);
+  background: var(--backdrop);
   display: flex;
   inset: 0;
   justify-content: center;

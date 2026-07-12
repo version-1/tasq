@@ -130,8 +130,8 @@
 }
 
 .exitCode {
-  background: rgb(220 38 38 / 10%);
-  border: 1px solid rgb(220 38 38 / 22%);
+  background: var(--toast-error-bg);
+  border: 1px solid var(--toast-error-border);
   border-radius: var(--radius-sm);
   color: var(--danger);
   font-size: 13px;

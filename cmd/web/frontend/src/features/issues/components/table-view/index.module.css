@@ -1,9 +1,9 @@
 .tableView {
-  --ledger-ink: #17201b;
-  --ledger-muted: #5f6b64;
-  --ledger-rule: #e6e6e6;
-  --ledger-surface: #ffffff;
-  --ledger-wash: #fbfbfb;
+  --ledger-ink: var(--text);
+  --ledger-muted: var(--muted);
+  --ledger-rule: var(--border);
+  --ledger-surface: var(--surface);
+  --ledger-wash: var(--surface-wash);
   background: var(--ledger-wash);
   display: grid;
   gap: var(--space-4-5);

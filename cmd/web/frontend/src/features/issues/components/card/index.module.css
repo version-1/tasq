@@ -138,7 +138,7 @@
 }
 
 .quickAction-ready {
-  --quick-action-bg: #047857;
+  --quick-action-bg: var(--status-ready-text);
   --quick-action-border: transparent;
   --quick-action-text: var(--white);
 }
@@ -146,7 +146,7 @@
 .quickAction-done {
   --quick-action-bg: transparent;
   --quick-action-border: var(--border);
-  --quick-action-text: var(--primary-black);;
+  --quick-action-text: var(--primary-black);
 }
 
 .quickActionIcon {

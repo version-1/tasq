@@ -219,17 +219,24 @@ class.
 The table view declares a scoped "ledger" palette so that the issue table reads
 like an accounting ledger:
 
-| Token             | Value     |
+| Token             | Source token |
 | ----------------- | --------- |
-| `--ledger-ink`    | `#17201B` |
-| `--ledger-muted`  | `#5F6B64` |
-| `--ledger-rule`   | `#E6E6E6` |
-| `--ledger-surface`| `#FFFFFF` |
-| `--ledger-wash`   | `#FBFBFB` |
+| `--ledger-ink`    | `--text` |
+| `--ledger-muted`  | `--muted` |
+| `--ledger-rule`   | `--border` |
+| `--ledger-surface`| `--surface` |
+| `--ledger-wash`   | `--surface-wash` |
 
-These are local to `table-view` and `filter-options`. Generic table primitives
-read them with `var(--ledger-rule, var(--border))` so they degrade to the
-global tokens elsewhere.
+These are local aliases in `table-view` and `filter-options`, and resolve to
+global semantic tokens. Generic table primitives read them with
+`var(--ledger-rule, var(--border))` so they degrade to the global tokens
+elsewhere.
+
+### Dark Theme
+
+Set `data-theme="dark"` on an ancestor (normally `html`) to override every
+color and shadow token while preserving component token references. The full
+dark palette is documented in [web-color-pallete.md](design/web-color-pallete.md).
 
 ### Typography
 
