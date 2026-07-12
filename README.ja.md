@@ -77,59 +77,6 @@ tq version
 
 ## [Getting Started](https://version-1.github.io/tasq/ja/)
 
-Tasq はマシンローカルの実行時データを `TQ_HOME` 配下に保存します。`TQ_HOME` が未設定の場合は `~/.tasq` を使います。
-
-ローカルデータベースを初期化し、明示的なローカルポートで issue-tracker、orchestrator、Web UI を起動します。
-
-```sh
-export TQ_HOME="${HOME}/.tasq"
-export TQ_API_URL="http://127.0.0.1:47651"
-tq migrate
-issue-tracker -addr 127.0.0.1:47651 &
-tracker_pid=$!
-orchestrator -issue-tracker http://127.0.0.1:47651 -port 47652 &
-orchestrator_pid=$!
-web -addr 127.0.0.1:47653 \
-  -tracker-url http://127.0.0.1:47651 \
-  -orchestrator-url http://127.0.0.1:47652 &
-web_pid=$!
-sleep 1
-```
-
-この手順では、ローカルサービスを次のポートで起動します。
-
-| Service | Port |
-| --- | ---: |
-| issue-tracker | `47651` |
-| orchestrator | `47652` |
-| web | `47653` |
-
-ローカルリポジトリをプロジェクトとして登録します。
-
-```sh
-tq project add --key tasq-demo .
-```
-
-タスクを作成し、キューに載せます。
-
-```sh
-tq issue create \
-  --project tasq-demo \
-  --title "Try Tasq from binaries" \
-  --description "Create the first issue through the tq CLI."
-tq issue list --project tasq-demo
-```
-
-Web UI を [http://127.0.0.1:47653](http://127.0.0.1:47653) で開き、プロジェクトと課題が表示されることを確認します。
-
-完了したらローカルサービスを停止します。
-
-```sh
-kill "$web_pid" "$orchestrator_pid" "$tracker_pid"
-```
-
-これらのポートのいずれかが使用中の場合は、別のループバックポートを選び、`TQ_API_URL`、`-issue-tracker`、`-tracker-url`、`-orchestrator-url` を揃えて変更してください。
-
 ## Documentation
 
 - [設計ドキュメント](docs/design.ja.md)
