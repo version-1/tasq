@@ -4,6 +4,23 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" sizes="32x32" href="/logo/BlackLogo-2.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light";
+      let theme = systemTheme;
+
+      try {
+        const storedTheme = window.localStorage.getItem("tasq.theme");
+        if (storedTheme === "dark" || storedTheme === "light") {
+          theme = storedTheme;
+        }
+      } catch {
+        // Fall back to the operating system preference when storage is unavailable.
+      }
+
+      document.documentElement.dataset.theme = theme;
+    </script>
     <title>tasq</title>
   </head>
   <body>
