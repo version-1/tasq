@@ -81,10 +81,4 @@ tq version
 
 ## Documentation
 
-- [設計ドキュメント](docs/design.ja.md)
-- [リリースバイナリの起動メモ](docs/design/release-binary-startup.ja.md)
-- [CLI リファレンス](docs/site/i18n/ja/docusaurus-plugin-content-docs/current/reference/cli-reference.md)
-
-## Development
-
-リポジトリのワークフロー、ローカル開発、検証については [docs/development.ja.md](docs/development.ja.md) を参照してください。
+ガイド、概念、リファレンスは、[Tasq ドキュメントサイト](https://version-1.github.io/tasq/ja/)を参照してください。

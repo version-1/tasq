@@ -81,10 +81,4 @@ For setup and usage instructions, see the [Tasq documentation site](https://vers
 
 ## Documentation
 
-- [Design documentation](docs/design.md)
-- [Release binary startup notes](docs/design/release-binary-startup.md)
-- [CLI reference](docs/site/docs/reference/cli-reference.md)
-
-## Development
-
-For repository workflow, local development, and verification, see [docs/development.md](docs/development.md).
+For guides, concepts, and reference material, visit the [Tasq documentation site](https://version-1.github.io/tasq/).
