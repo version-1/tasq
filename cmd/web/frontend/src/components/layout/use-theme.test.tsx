@@ -57,8 +57,8 @@ describe("useTheme", () => {
     mediaQuery.setMatches(true);
     await waitFor(() => {
       expect(screen.getByRole("button")).toHaveTextContent("dark");
+      expect(document.documentElement).toHaveAttribute("data-theme", "dark");
     });
-    expect(document.documentElement).toHaveAttribute("data-theme", "dark");
   });
 
   it("persists a user choice and stops following the system setting", async () => {
