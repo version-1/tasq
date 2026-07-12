@@ -219,17 +219,23 @@ table 行が利用する status tone (`statusToneClassName`) は、単一の
 table view は、issue table を会計台帳のように見せるためにスコープ付きの
 "ledger" パレットを宣言します。
 
-| トークン            | 値        |
+| トークン            | 参照トークン |
 | ------------------- | --------- |
-| `--ledger-ink`      | `#17201B` |
-| `--ledger-muted`    | `#5F6B64` |
-| `--ledger-rule`     | `#E6E6E6` |
-| `--ledger-surface`  | `#FFFFFF` |
-| `--ledger-wash`     | `#FBFBFB` |
+| `--ledger-ink`      | `--text` |
+| `--ledger-muted`    | `--muted` |
+| `--ledger-rule`     | `--border` |
+| `--ledger-surface`  | `--surface` |
+| `--ledger-wash`     | `--surface-wash` |
 
-これらは `table-view` と `filter-options` のローカル変数です。
-共通の table primitive は `var(--ledger-rule, var(--border))` のように
-参照することで、他の場所ではグローバルトークンにフォールバックします。
+これらは `table-view` と `filter-options` のローカル alias で、global semantic
+token を参照します。共通の table primitive は `var(--ledger-rule, var(--border))`
+のように参照することで、他の場所ではグローバルトークンにフォールバックします。
+
+### ダークテーマ
+
+祖先要素（通常は `html`）に `data-theme="dark"` を付けると、component token の
+参照を保ったまま全色・shadow token を上書きします。ダークパレットの全体は
+[web-color-pallete.ja.md](design/web-color-pallete.ja.md) に記載します。
 
 ### タイポグラフィ
 
