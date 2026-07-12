@@ -51,7 +51,6 @@ docs/site/
     getting-started/       Overview, QuickStart, setup, and concepts.
     guides/                User-facing task and operations guides.
     reference/             CLI, API, configuration, and schema reference.
-    contributing/          Local development and verification guidance.
   static/img/              Static diagrams and other docs images.
   i18n/ja/                 Japanese localized Docusaurus content.
   src/
@@ -76,9 +75,8 @@ Source content for the published docs lives under `docs/site/docs/`. The docs-si
 The current English docs-site has 17 pages:
 
 - Getting Started: Overview, QuickStart, Setup Guide, and five Concepts pages.
-- Guides: Workflow Configuration and Web UI Operations.
+- Guides: Codex Autonomy Setup, Recover a Blocked Session, Workflow Configuration, and Web UI Operations.
 - Reference: CLI Reference, API, Configuration, and Schema.
-- Contributing: Development Setup, Running Locally, and Testing.
 
 The sidebar is explicit. When adding a new page under `docs/site/docs/`, update `sidebars.ts` if the page should appear in the navigation.
 

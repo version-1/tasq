@@ -43,15 +43,6 @@ const sidebars: SidebarsConfig = {
         'reference/schema',
       ],
     },
-    {
-      type: 'category',
-      label: 'Contributing',
-      items: [
-        'contributing/development-setup',
-        'contributing/running-locally',
-        'contributing/testing',
-      ],
-    },
   ],
 };
 

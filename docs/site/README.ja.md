@@ -51,7 +51,6 @@ docs/site/
     getting-started/       概要、QuickStart、セットアップ、コンセプト。
     guides/                利用者向けのタスクと運用ガイド。
     reference/             CLI、API、設定、スキーマのリファレンス。
-    contributing/          ローカル開発と検証のガイド。
   static/img/              静的な図表やその他のドキュメント画像。
   i18n/ja/                 Docusaurus の日本語ローカライズコンテンツ。
   src/
@@ -76,9 +75,8 @@ docs/site/
 現在の英語 docs-site は 17 ページ構成です。
 
 - Getting Started: Overview、QuickStart、Setup Guide、5 つの Concepts ページ。
-- Guides: Workflow Configuration、Web UI Operations。
+- Guides: Codex Autonomy Setup、Recover a Blocked Session、Workflow Configuration、Web UI Operations。
 - Reference: CLI Reference、API、Configuration、Schema。
-- Contributing: Development Setup、Running Locally、Testing。
 
 sidebar は明示的に管理しています。`docs/site/docs/` に新しいページを追加し、そのページを navigation に表示したい場合は `sidebars.ts` も更新してください。
 
