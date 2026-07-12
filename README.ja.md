@@ -75,7 +75,9 @@ export PATH="${HOME}/.local/bin:${PATH}"
 tq version
 ```
 
-## [Getting Started](https://version-1.github.io/tasq/ja/)
+## Getting Started
+
+セットアップと利用方法については、[Tasq ドキュメントサイト](https://version-1.github.io/tasq/ja/)を参照してください。
 
 ## Documentation
 

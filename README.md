@@ -75,7 +75,9 @@ export PATH="${HOME}/.local/bin:${PATH}"
 tq version
 ```
 
-## [Getting Started](https://version-1.github.io/tasq/)
+## Getting Started
+
+For setup and usage instructions, see the [Tasq documentation site](https://version-1.github.io/tasq/).
 
 ## Documentation
 
