@@ -65,7 +65,7 @@ export PATH="${HOME}/.local/bin:${PATH}"
 tq version
 ```
 
-## Getting Started
+## [Getting Started](https://version-1.github.io/tasq/)
 
 Tasq stores machine-local runtime data under `TQ_HOME`. If `TQ_HOME` is not set, it uses `~/.tasq`.
 

@@ -65,7 +65,7 @@ export PATH="${HOME}/.local/bin:${PATH}"
 tq version
 ```
 
-## Getting Started
+## [Getting Started](https://version-1.github.io/tasq/ja/)
 
 Tasq はマシンローカルの実行時データを `TQ_HOME` 配下に保存します。`TQ_HOME` が未設定の場合は `~/.tasq` を使います。
 
