@@ -747,6 +747,11 @@ Use titles that match ownership:
 Storybook-only fixtures live in `src/stories`. Production code must not import
 Storybook helpers.
 
+Use the **Theme** toolbar to switch any story between the default light palette
+and the dark palette. The Storybook preview applies the selected value to the
+document's `data-theme` attribute, so the same global CSS tokens used by the
+application are reviewed without changing component code.
+
 ## Adding New UI
 
 1. Identify whether the new piece is a UI primitive, a layout shell concern,

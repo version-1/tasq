@@ -754,6 +754,11 @@ issue table の実行行は `statusToneClassName(issue.status)` を適用し、
 Storybook 専用のフィクスチャは `src/stories` 配下に置きます。プロダクション
 コードは Storybook ヘルパーを import してはいけません。
 
+Storybook の **Theme** ツールバーで、任意の Story を既定のライトパレットと
+ダークパレットの間で切り替えられます。Storybook のプレビューは選択した値を
+ドキュメントの `data-theme` 属性に適用するため、コンポーネントコードを変更せずに
+アプリケーションと同じグローバル CSS トークンを確認できます。
+
 ## 新しい UI を追加するとき
 
 1. 新しい部品が UI primitive なのか、layout shell の関心なのか、
