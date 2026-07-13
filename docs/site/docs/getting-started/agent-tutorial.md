@@ -50,6 +50,34 @@ tq project check tasq-todo
 creates a default `WORKFLOW.md` only when the repository does not already have
 one.
 
+### Minimal Permission Setup
+
+Before queuing work, allow Codex to write to this tutorial repository and its
+Git metadata. Add the following minimal profile to `~/.codex/config.toml`,
+replacing `/absolute/path/to/tasq-todo` with the path of your clone.
+
+```toml
+[projects."/absolute/path/to/tasq-todo"]
+trust_level = "trusted"
+
+default_permissions = "tasq_todo"
+
+[permissions.tasq_todo]
+description = "Allow Codex to work in the Tasq tutorial repository."
+extends = ":workspace"
+
+[permissions.tasq_todo.filesystem.":workspace_roots"]
+"." = "write"
+
+[permissions.tasq_todo.workspace_roots]
+"/absolute/path/to/tasq-todo" = true
+"/absolute/path/to/tasq-todo/.git" = true
+```
+
+This is the smallest setup for the tutorial checkout. Add only the specific
+tool cache directories that your workflow needs; see [Codex Autonomy Setup](pathname:///guides/codex-autonomy-setup)
+for command permissions and broader configurations.
+
 ## 2. Understand `WORKFLOW.md`
 
 `WORKFLOW.md` is the project-level contract that tells Tasq and its agents how

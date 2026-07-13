@@ -42,6 +42,30 @@ tq project check tasq-todo
 
 `tq project add` は、現在のリポジトリとプロジェクトキーを関連付けます。リポジトリに `WORKFLOW.md` が存在しない場合に限り、既定の `WORKFLOW.md` も作成します。
 
+### 最小権限の設定
+
+作業をキューに入れる前に、Codex がこのチュートリアル用リポジトリと Git メタデータへ書き込めるようにします。次の最小プロファイルを `~/.codex/config.toml` に追加してください。`/absolute/path/to/tasq-todo` はクローン先のパスに置き換えます。
+
+```toml
+[projects."/absolute/path/to/tasq-todo"]
+trust_level = "trusted"
+
+default_permissions = "tasq_todo"
+
+[permissions.tasq_todo]
+description = "Allow Codex to work in the Tasq tutorial repository."
+extends = ":workspace"
+
+[permissions.tasq_todo.filesystem.":workspace_roots"]
+"." = "write"
+
+[permissions.tasq_todo.workspace_roots]
+"/absolute/path/to/tasq-todo" = true
+"/absolute/path/to/tasq-todo/.git" = true
+```
+
+この設定は、チュートリアル用 checkout に必要な最小構成です。ツールのキャッシュディレクトリは、ワークフローで必要なものだけを追加してください。コマンドの許可やより広い設定については、[Codex 自律実行セットアップ](pathname:///guides/codex-autonomy-setup)を参照してください。
+
 ## 2. `WORKFLOW.md` を理解する
 
 `WORKFLOW.md` は、そのリポジトリで Tasq とエージェントがどのように作業するかを定めるプロジェクト単位の契約です。実行時設定と、エージェントに渡すタスク指示をまとめます。
