@@ -1,10 +1,10 @@
 ---
 id: install
-title: Install
+title: Installation
 sidebar_position: 2
 ---
 
-# Install
+# Installation
 
 Install Tasq and start its local services before following the [Agent Tutorial](pathname:///getting-started/agent-tutorial).
 
