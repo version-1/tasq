@@ -48,7 +48,7 @@ Docusaurus の `start` は一度に 1 つの locale だけを配信します。�
 ```text
 docs/site/
   docs/                    Docusaurus の docs コンテンツ。
-    getting-started/       概要、QuickStart、セットアップ、コンセプト。
+    getting-started/       概要、インストール、チュートリアル、セットアップ、コンセプト。
     guides/                利用者向けのタスクと運用ガイド。
     reference/             CLI、API、設定、スキーマのリファレンス。
   static/img/              静的な図表やその他のドキュメント画像。
@@ -74,7 +74,7 @@ docs/site/
 
 現在の英語 docs-site は 17 ページ構成です。
 
-- Getting Started: Overview、QuickStart、Setup Guide、5 つの Concepts ページ。
+- Getting Started: Overview、Install、Agent Tutorial、Setup Guide、5 つの Concepts ページ。
 - Guides: Codex Autonomy Setup、Recover a Blocked Session、Workflow Configuration、Web UI Operations。
 - Reference: CLI Reference、API、Configuration、Schema。
 

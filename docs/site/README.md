@@ -48,7 +48,7 @@ Docusaurus `start` serves one locale at a time. Use `npm run build` followed by 
 ```text
 docs/site/
   docs/                    Docusaurus docs content.
-    getting-started/       Overview, QuickStart, setup, and concepts.
+    getting-started/       Overview, installation, tutorial, setup, and concepts.
     guides/                User-facing task and operations guides.
     reference/             CLI, API, configuration, and schema reference.
   static/img/              Static diagrams and other docs images.
@@ -74,7 +74,7 @@ Source content for the published docs lives under `docs/site/docs/`. The docs-si
 
 The current English docs-site has 17 pages:
 
-- Getting Started: Overview, QuickStart, Setup Guide, and five Concepts pages.
+- Getting Started: Overview, Install, Agent Tutorial, Setup Guide, and five Concepts pages.
 - Guides: Codex Autonomy Setup, Recover a Blocked Session, Workflow Configuration, and Web UI Operations.
 - Reference: CLI Reference, API, Configuration, and Schema.
 
