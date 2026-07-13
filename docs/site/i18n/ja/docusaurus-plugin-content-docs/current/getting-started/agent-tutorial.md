@@ -96,7 +96,7 @@ prefix_rule(
 )
 ```
 
-自分のワークフローでは、許可リストをコマンド単位で選んでください。すべての `gh` コマンドを広く許可してはいけません。[Tasq の `tasq-dev.rules`](https://github.com/version-1/tasq/blob/main/codex/rules/tasq-dev.rules)を参考に許可するコマンドを選定してください。
+自分のワークフローでは、許可リストをコマンド単位で選んでください。すべての `gh` コマンドを広く許可してはいけません。[Tasq の `tasq-dev.rules`](https://github.com/version-1/tasq/blob/main/codex/rules/tasq-dev.rules)を参考に許可するコマンドを選定してください。Rules を設定したら、チュートリアルの作業をキューに入れる前に、[コマンド権限のカバレッジを確認する](pathname:///getting-started/setup-guide#verify-command-permission-coverage)で Tasq ライフサイクル全体を確認してください。
 
 ## 2. `WORKFLOW.md` を理解する
 

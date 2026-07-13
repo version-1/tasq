@@ -119,3 +119,35 @@ additional worktrees, cache directories, or SDK tool directories, add only the
 specific paths required by that workflow. The full checklist for worktrees,
 cache writes, command rules, and recovery paths is in
 [Codex Autonomy Setup](../guides/codex-autonomy-setup).
+
+<a id="verify-command-permission-coverage"></a>
+
+## Verify Command Permission Coverage
+
+Before autonomous work, use the repository's `tasq-permission-check` skill to
+check the Tasq lifecycle commands against the Rules file you configured. It
+uses `codex execpolicy check` and does not run the listed lifecycle commands,
+so it finds missing Rules without creating projects, issues, commits, or pull
+requests.
+
+Install the skill from the Tasq repository if it is not already available to
+your agent:
+
+```sh
+python "${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-installer/scripts/install-skill-from-github.py" \
+  --repo version-1/tasq \
+  --path .agents/skills/tasq-permission-check
+```
+
+Then ask Codex to run `tasq-permission-check` for the Rules file used by your
+project. For a direct check in a Tasq checkout, run:
+
+```sh
+bash .agents/skills/tasq-permission-check/scripts/check-execpolicy.sh \
+  --rules codex/rules/tasq-dev.rules
+```
+
+Every result other than `allow` is a permission gap. Add only the narrow Rule
+needed for that command, then run the check again. See the
+[skill instructions](https://github.com/version-1/tasq/blob/main/.agents/skills/tasq-permission-check/SKILL.md)
+for the lifecycle command list and reporting format.

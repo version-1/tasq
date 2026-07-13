@@ -113,7 +113,9 @@ prefix_rule(
 
 Choose the allowlist command by command for your own workflow; do not allow all
 `gh` commands broadly. Use [Tasq's `tasq-dev.rules`](https://github.com/version-1/tasq/blob/main/codex/rules/tasq-dev.rules)
-as a reference for selecting commands.
+as a reference for selecting commands. After configuring the Rules, follow
+[Verify Command Permission Coverage](pathname:///getting-started/setup-guide#verify-command-permission-coverage)
+to check the complete Tasq lifecycle before queuing the tutorial work.
 
 ## 2. Understand `WORKFLOW.md`
 
