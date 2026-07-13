@@ -168,6 +168,10 @@ When the agent completes the issue, confirm that the issue activity or comments
 link to a GitHub pull request. Review the change and its reported verification
 before merging.
 
+If an issue does not reach `review` and becomes `blocked` or another unexpected
+status, first inspect the comments in the Web UI to identify the reported cause.
+If the comments do not explain the problem, [Recover a Blocked Session](pathname:///guides/recover-blocked-session) may help you continue the affected Codex run.
+
 You do not need to wait for every issue in Tasq before applying this workflow
 to your own project. Start with one completed pull request, then register more
 projects as needed. Tasq becomes especially useful when it tracks several
