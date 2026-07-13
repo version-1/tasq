@@ -94,26 +94,27 @@ needed.
 
 Start Codex in plan mode in the `tasq-todo` directory. With Claude Code, use
 its plan mode when available; otherwise, use the same prompt and explicitly
-ask it not to edit files until you approve the plan.
+ask it not to edit files.
 
-Copy the prepared [TypeScript and React TODO app plan](https://github.com/version-1/tasq-todo/blob/main/docs/plan.md) into your prompt. It is the concrete plan used for this tutorial.
-
-In normal work, use a plan that Codex or Claude Code has created after inspecting your own repository. Treat the prepared plan as an example: review it, adapt its goal and scope to your project, and approve it before creating an issue.
-
-### Ask the Agent to Create the Tasq Issue
-
-After approving the plan, send this follow-up prompt. The agent should use the
-installed `tq` command rather than creating an issue only in prose.
+Send the following prompt. It asks the agent to read the prepared plan and use
+the installed `tq` command to turn it into Tasq issues, rather than copying the
+plan into the prompt or only describing the issues in prose.
 
 ```md
-Create a Tasq issue with `tq issue create`.
+Read this plan:
+https://github.com/version-1/tasq-todo/blob/main/docs/plan.md
 
-Use project key `tasq-todo`, title it "Build a TypeScript and React TODO app",
-and put the approved plan in the issue description. Report the issue ID when
-you finish.
+Use `tq issue create` to turn the plan into Tasq issues for project key
+`tasq-todo`. Create the issues in implementation order, record dependencies
+with `--dependency` where needed, and include the relevant plan details in each
+issue description. Do not implement the plan. Report every created issue ID
+when you finish.
 ```
 
-Confirm the issue exists:
+In normal work, first have Codex or Claude Code inspect your own repository and
+produce a plan. Then adapt this prompt to create issues from that approved plan.
+
+Confirm that the issues exist:
 
 ```sh
 tq issue list --project tasq-todo

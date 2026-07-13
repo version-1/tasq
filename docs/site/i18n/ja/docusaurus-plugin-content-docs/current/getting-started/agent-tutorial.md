@@ -69,23 +69,22 @@ Claude Code も代替手段として使えます。この任意スキルがな�
 
 ### プランモードで計画を作る
 
-`tasq-todo` ディレクトリで Codex をプランモードとして起動します。Claude Code ではプランモードを利用できる場合は選択し、利用できない場合は同じプロンプトで「計画を承認するまでファイルを編集しない」と明示してください。
+`tasq-todo` ディレクトリで Codex をプランモードとして起動します。Claude Code ではプランモードを利用できる場合は選択し、利用できない場合は同じプロンプトで「ファイルを編集しない」と明示してください。
 
-[TypeScript と React の TODO アプリ用に用意した計画](https://github.com/version-1/tasq-todo/blob/main/docs/plan.md)を、エージェントへのプロンプトにコピーしてください。これは、このチュートリアルで使う具体的な計画です。
-
-実際の作業では、Codex や Claude Code が自分のリポジトリを調査して作成した計画を使います。用意した計画はあくまで例として扱い、課題を作成する前に、自分のプロジェクトに合わせて目標とスコープを確認・調整して承認してください。
-
-### エージェントに Tasq の課題を作成させる
-
-計画を承認したら、次のプロンプトを送ります。エージェントには、文章だけで課題を作るのではなく、インストール済みの `tq` コマンドを使うよう依頼します。
+次のプロンプトを送ります。エージェントには、用意した計画を読み、計画をプロンプトへコピーしたり文章だけで課題を説明したりするのではなく、インストール済みの `tq` コマンドを使って Tasq の課題へ変換するよう依頼します。
 
 ```md
-Create a Tasq issue with `tq issue create`.
+Read this plan:
+https://github.com/version-1/tasq-todo/blob/main/docs/plan.md
 
-Use project key `tasq-todo`, title it "Build a TypeScript and React TODO app",
-and put the approved plan in the issue description. Report the issue ID when
-you finish.
+Use `tq issue create` to turn the plan into Tasq issues for project key
+`tasq-todo`. Create the issues in implementation order, record dependencies
+with `--dependency` where needed, and include the relevant plan details in each
+issue description. Do not implement the plan. Report every created issue ID
+when you finish.
 ```
+
+実際の作業では、まず Codex または Claude Code に自分のリポジトリを調査させ、計画を作成させてください。その後、承認した計画から課題を作成するよう、このプロンプトを調整します。
 
 課題が作成されたことを確認します。
 
