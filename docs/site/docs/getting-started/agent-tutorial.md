@@ -96,24 +96,9 @@ Start Codex in plan mode in the `tasq-todo` directory. With Claude Code, use
 its plan mode when available; otherwise, use the same prompt and explicitly
 ask it not to edit files until you approve the plan.
 
-Copy this prompt into the agent. It is intentionally in this tutorial for now;
-it can move to `tasq-todo/docs/plan.md` later.
+Copy the prepared [TypeScript and React TODO app plan](https://github.com/version-1/tasq-todo/blob/main/docs/plan.md) into your prompt. It is the concrete plan used for this tutorial.
 
-```md
-Create a concise implementation plan for a TypeScript and React TODO app.
-
-Do not edit files yet. Inspect the repository and propose a plan that includes:
-
-- a component structure for creating, completing, and filtering TODO items;
-- state and data-flow decisions;
-- accessible interaction details;
-- focused tests and verification commands; and
-- any risks or assumptions.
-
-Keep the plan small enough for one pull request.
-```
-
-Review the plan. Adjust the goal or scope before you create an issue.
+In normal work, use a plan that Codex or Claude Code has created after inspecting your own repository. Treat the prepared plan as an example: review it, adapt its goal and scope to your project, and approve it before creating an issue.
 
 ### Ask the Agent to Create the Tasq Issue
 

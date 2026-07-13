@@ -71,23 +71,9 @@ Claude Code も代替手段として使えます。この任意スキルがな�
 
 `tasq-todo` ディレクトリで Codex をプランモードとして起動します。Claude Code ではプランモードを利用できる場合は選択し、利用できない場合は同じプロンプトで「計画を承認するまでファイルを編集しない」と明示してください。
 
-次のプロンプトをエージェントへ貼り付けます。現在はチュートリアル内に置いていますが、将来は `tasq-todo/docs/plan.md` へ移動できます。
+[TypeScript と React の TODO アプリ用に用意した計画](https://github.com/version-1/tasq-todo/blob/main/docs/plan.md)を、エージェントへのプロンプトにコピーしてください。これは、このチュートリアルで使う具体的な計画です。
 
-```md
-Create a concise implementation plan for a TypeScript and React TODO app.
-
-Do not edit files yet. Inspect the repository and propose a plan that includes:
-
-- a component structure for creating, completing, and filtering TODO items;
-- state and data-flow decisions;
-- accessible interaction details;
-- focused tests and verification commands; and
-- any risks or assumptions.
-
-Keep the plan small enough for one pull request.
-```
-
-計画を確認し、課題を作る前に目標やスコープを調整してください。
+実際の作業では、Codex や Claude Code が自分のリポジトリを調査して作成した計画を使います。用意した計画はあくまで例として扱い、課題を作成する前に、自分のプロジェクトに合わせて目標とスコープを確認・調整して承認してください。
 
 ### エージェントに Tasq の課題を作成させる
 
