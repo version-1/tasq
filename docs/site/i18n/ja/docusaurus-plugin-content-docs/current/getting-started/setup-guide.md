@@ -120,3 +120,33 @@ cache directories、SDK tool directories からエージェントを実行する
 ワークフローに必要な path だけを追加します。worktree、cache writes、command
 rules、復旧経路を含む完全なチェックリストは
 [Codex 自律実行セットアップ](../guides/codex-autonomy-setup)を参照してください。
+
+<a id="verify-command-permission-coverage"></a>
+
+## コマンド権限のカバレッジを確認する
+
+自律実行の前に、リポジトリの `tasq-permission-check` スキルで、設定した Rules
+ファイルに対する Tasq ライフサイクルのコマンド許可を確認します。このスキルは
+`codex execpolicy check` を使い、列挙したライフサイクルコマンド自体は実行しないため、
+project、issue、commit、pull request を作らずに不足している Rule を見つけられます。
+
+エージェントでまだ利用できない場合は、Tasq リポジトリからスキルをインストールします。
+
+```sh
+python "${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-installer/scripts/install-skill-from-github.py" \
+  --repo version-1/tasq \
+  --path .agents/skills/tasq-permission-check
+```
+
+次に、プロジェクトで使う Rules ファイルに対して `tasq-permission-check` を実行するよう
+Codex に依頼してください。Tasq checkout 内で直接確認する場合は、次を実行します。
+
+```sh
+bash .agents/skills/tasq-permission-check/scripts/check-execpolicy.sh \
+  --rules codex/rules/tasq-dev.rules
+```
+
+`allow` 以外の結果は権限不足です。該当コマンドに必要な最小限の Rule だけを追加してから、
+もう一度確認してください。ライフサイクルコマンドの一覧と報告形式は
+[スキルの手順](https://github.com/version-1/tasq/blob/main/.agents/skills/tasq-permission-check/SKILL.md)
+を参照してください。

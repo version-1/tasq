@@ -1,0 +1,36 @@
+{
+  "skill_name": "tasq-permission-check",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Check whether codex/rules/tasq-dev.rules allows every command needed to autonomously complete a Tasq issue. Do not create an issue or pull request.",
+      "expected_output": "A sequential permission report that identifies every non-allow lifecycle command without executing mutating commands.",
+      "files": [],
+      "expectations": [
+        "Does not execute any mutating Tasq, Git, or GitHub command.",
+        "Checks the policy decision for every lifecycle command in the skill's command matrix.",
+        "Reports that git worktree remove and gh pr edit are not currently allowed."
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "A Tasq agent became blocked while cleaning up its worktree after creating a PR. Audit the current Codex Rules and tell me whether this should have required approval.",
+      "expected_output": "A focused policy check that identifies the worktree-cleanup command decision and does not remove a worktree.",
+      "files": [],
+      "expectations": [
+        "Checks git worktree remove through execpolicy rather than removing a worktree.",
+        "Reports the policy decision for worktree cleanup."
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Before enabling autonomous PR updates, verify whether the local Rules permit the required GitHub command. Do not edit a PR.",
+      "expected_output": "A policy check for the PR-update command, with a clear result and no GitHub mutation.",
+      "files": [],
+      "expectations": [
+        "Checks gh pr edit through execpolicy rather than editing a pull request.",
+        "Reports the policy decision for the PR-update command."
+      ]
+    }
+  ]
+}
