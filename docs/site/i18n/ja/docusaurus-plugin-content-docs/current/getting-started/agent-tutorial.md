@@ -66,6 +66,38 @@ extends = ":workspace"
 
 この設定は、チュートリアル用 checkout に必要な最小構成です。ツールのキャッシュディレクトリは、ワークフローで必要なものだけを追加してください。コマンドの許可やより広い設定については、[Codex 自律実行セットアップ](pathname:///guides/codex-autonomy-setup)を参照してください。
 
+### Rules でチュートリアル用コマンドを許可する
+
+エージェントが必要とするコマンドを Codex Rules で許可します。これにより、`tq` でチュートリアルの課題を作成・管理し、`gh` で pull request を確認・作成できます。次の内容を `~/.codex/rules/default.rules`、または trusted project の `.codex/rules/default.rules` に追加してください。
+
+```python
+prefix_rule(
+    pattern = ["gh", "pr", "create"],
+    decision = "allow",
+    justification = "Creating the tutorial pull request is an expected workflow step.",
+)
+
+prefix_rule(
+    pattern = ["gh", "pr", ["view", "list", "status", "diff", "checks"]],
+    decision = "allow",
+    justification = "Inspecting tutorial pull requests is safe.",
+)
+
+prefix_rule(
+    pattern = ["gh", "repo", ["view", "list"]],
+    decision = "allow",
+    justification = "Inspecting GitHub repository information is safe.",
+)
+
+prefix_rule(
+    pattern = ["tq"],
+    decision = "allow",
+    justification = "The tq CLI is required for the Tasq tutorial workflow.",
+)
+```
+
+自分のワークフローでは、許可リストをコマンド単位で選んでください。すべての `gh` コマンドを広く許可してはいけません。[Tasq の `tasq-dev.rules`](https://github.com/version-1/tasq/blob/main/codex/rules/tasq-dev.rules)を参考に許可するコマンドを選定してください。
+
 ## 2. `WORKFLOW.md` を理解する
 
 `WORKFLOW.md` は、そのリポジトリで Tasq とエージェントがどのように作業するかを定めるプロジェクト単位の契約です。実行時設定と、エージェントに渡すタスク指示をまとめます。
