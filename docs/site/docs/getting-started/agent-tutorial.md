@@ -78,6 +78,43 @@ This is the smallest setup for the tutorial checkout. Add only the specific
 tool cache directories that your workflow needs; see [Codex Autonomy Setup](pathname:///guides/codex-autonomy-setup)
 for command permissions and broader configurations.
 
+### Allow Tutorial Commands with Rules
+
+Allow the commands that the agent needs through Codex Rules. This lets it use
+`tq` to create and manage tutorial issues, and `gh` to inspect or create the
+pull request. Add the following to `~/.codex/rules/default.rules` (or to the
+trusted project's `.codex/rules/default.rules`):
+
+```python
+prefix_rule(
+    pattern = ["gh", "pr", "create"],
+    decision = "allow",
+    justification = "Creating the tutorial pull request is an expected workflow step.",
+)
+
+prefix_rule(
+    pattern = ["gh", "pr", ["view", "list", "status", "diff", "checks"]],
+    decision = "allow",
+    justification = "Inspecting tutorial pull requests is safe.",
+)
+
+prefix_rule(
+    pattern = ["gh", "repo", ["view", "list"]],
+    decision = "allow",
+    justification = "Inspecting GitHub repository information is safe.",
+)
+
+prefix_rule(
+    pattern = ["tq"],
+    decision = "allow",
+    justification = "The tq CLI is required for the Tasq tutorial workflow.",
+)
+```
+
+Choose the allowlist command by command for your own workflow; do not allow all
+`gh` commands broadly. Use [Tasq's `tasq-dev.rules`](https://github.com/version-1/tasq/blob/main/codex/rules/tasq-dev.rules)
+as a reference for selecting commands.
+
 ## 2. Understand `WORKFLOW.md`
 
 `WORKFLOW.md` is the project-level contract that tells Tasq and its agents how
