@@ -1,7 +1,7 @@
 ---
 id: setup-guide
 title: Setup Guide
-sidebar_position: 3
+sidebar_position: 4
 ---
 
 # Setup Guide
@@ -33,7 +33,7 @@ commands, issue lookup, comments, status transitions, and service operations.
 That reduces ambiguity when an agent needs to inspect a task, update progress,
 or add a note before handing work back.
 
-For the shortest Tasq install path, see [QuickStart](./quickstart). For command
+For the shortest Tasq install path, see [Install](./install). For command
 behavior and API resolution details, see [tq CLI](./concepts/tq-cli).
 
 ## Add a Project Workflow

@@ -51,6 +51,20 @@ const config: Config = {
     ],
   ],
 
+  plugins: [
+    [
+      '@docusaurus/plugin-client-redirects',
+      {
+        redirects: [
+          {
+            from: '/getting-started/quickstart',
+            to: '/getting-started/install',
+          },
+        ],
+      },
+    ],
+  ],
+
   themes: ['@docusaurus/theme-mermaid'],
 
   themeConfig: {

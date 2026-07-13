@@ -7,7 +7,7 @@ const sidebars: SidebarsConfig = {
       label: 'Getting Started',
       items: [
         'getting-started/overview',
-        'getting-started/quickstart',
+        'getting-started/install',
         'getting-started/agent-tutorial',
         'getting-started/setup-guide',
         {

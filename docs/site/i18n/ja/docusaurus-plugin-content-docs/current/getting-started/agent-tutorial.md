@@ -6,94 +6,140 @@ sidebar_position: 3
 
 # エージェントチュートリアル
 
-このチュートリアルは、[クイックスタート](pathname:///getting-started/quickstart) を
-完了したあとに実行します。Codex や Claude Code にタスクの計画を作らせ、その計画を
-Tasq の issue として登録し、エージェントのキューに流して GitHub pull request が
-作成されるところまで確認します。
+このチュートリアルでは、小さなリポジトリを登録し、コーディングエージェントに TypeScript と React の TODO アプリを計画させ、その計画から Tasq の課題を作成して、GitHub pull request ができるまで追跡します。
 
-このチュートリアルでは、次の準備が終わっている前提です。
+先に[インストール](pathname:///getting-started/install)を完了してください。
 
-- `tq` がインストールされ、`PATH` に入っている。
-- `tq service start` がすでに実行されている。
-- `tq project add` で project が登録されている。
-- Codex または Claude Code が local repository と GitHub に対して認証済みである。
+## 前提
 
-## 1. エージェントに plan を作成させる
+- `tq` コマンドがインストール済みで、`PATH` から実行できる。
+- `tq service start` が実行中である。`tq service status` で確認してください。
+- Codex CLI または Claude Code がインストール済みで、GitHub に対して認証されている。どちらも使えない場合は、このチュートリアルの `tq` コマンドを自分で実行できます。
+- Git と GitHub アカウントを利用できる。
 
-Tasq に登録した repository で Codex または Claude Code を起動します。issue を作成
-する前に、コードベースを確認して短い実装 plan を書くように依頼します。
+## 1. チュートリアル用プロジェクトを登録する
 
-プロンプト例:
+### `tasq-todo` を fork してクローンする
 
-```md
-Create a concise implementation plan for adding <task>. Do not edit files yet.
-Include the goal, concrete steps, verification commands, and any risks.
-```
-
-続行する前に plan を確認します。plan は 1 つの pull request に収まる大きさで、
-別のエージェントが迷わず実行できる程度に具体的であるべきです。
-
-## 2. エージェントに Tasq issue を作成させる
-
-plan の内容が正しければ、その plan から Tasq issue を作成するようにエージェントへ
-依頼します。
-
-プロンプト例:
-
-```md
-Create a Tasq issue for this plan with `tq issue create`. Use the registered
-project key, include the plan in the issue description, and report the issue ID.
-```
-
-エージェントは次のようなコマンドを実行します。
+GitHub で [version-1/tasq-todo](https://github.com/version-1/tasq-todo) を fork してから、自分の fork をクローンします。`<your-account>` は自分の GitHub アカウント名に置き換えてください。
 
 ```sh
-tq issue create \
-  --project tasq-demo \
-  --title "Add <task>" \
-  --description "<plan>"
+git clone https://github.com/<your-account>/tasq-todo.git
+cd tasq-todo
 ```
 
-## 3. Web UI で issue の内容を確認する
+自分のリポジトリを使っても構いません。その場合は、Tasq 上で識別しやすく、他のプロジェクトと重複しないプロジェクトキーを選んでください。
 
-issue を実行可能にする前に、Web UI で title、description、plan が正しいことを確認
-します。
+### Tasq にプロジェクトを追加する
 
-インストール済みの `tq` が issue 単位の Web navigation をサポートしている場合は、
-次を使います。
+リポジトリを登録し、ワークフローを検証します。
 
 ```sh
-tq issue web <issue-id>
+tq project add --key tasq-todo .
+tq project check tasq-todo
 ```
 
-そうでない場合は Web UI を開き、対象の issue を選択します。
+`tq project add` は、現在のリポジトリとプロジェクトキーを関連付けます。リポジトリに `WORKFLOW.md` が存在しない場合に限り、既定の `WORKFLOW.md` も作成します。
+
+## 2. `WORKFLOW.md` を理解する
+
+`WORKFLOW.md` は、そのリポジトリで Tasq とエージェントがどのように作業するかを定めるプロジェクト単位の契約です。実行時設定と、エージェントに渡すタスク指示をまとめます。
+
+[tasq-todo の `WORKFLOW.md`](https://github.com/version-1/tasq-todo/blob/main/WORKFLOW.md) には、次の 2 つが含まれています。
+
+- front matter では、ポーリング、`.worktrees/agents` のワークスペースルート、エージェントの制限、Codex app-server のコマンドを設定しています。
+- 本文では、すべてのエージェントへ課題のタイトル・説明と必須の流れを渡します。スコープ確認、分離したブランチまたは worktree の作成、変更、検証、pull request 作成、引き継ぎコメント、課題を `review` に移すところまでを定めています。
+
+自分のプロジェクトでは、このファイルを出発点としてコピーし、コマンド、テスト要件、ワークスペース設定をリポジトリに合わせて置き換えてください。ワークフローの解決順序や override の詳細は、[ワークフロー設定](pathname:///guides/workflow-configuration)を参照してください。
+
+## 3. 作業を計画し、課題を作成する
+
+### Codex に `tasq-cli` スキルをインストールする
+
+任意の `tasq-cli` スキルを使うと、Codex はプロジェクト、課題、ワークフロー、サービス、ログのコマンドを絞り込んだリファレンスとして参照できます。一度インストールしたら、Codex を再起動して新しいスキルを読み込ませます。
+
+```sh
+python "${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-installer/scripts/install-skill-from-github.py" \
+  --repo version-1/tasq \
+  --path .agents/skills/tasq-cli
+```
+
+Claude Code も代替手段として使えます。この任意スキルがなくても同じ `tq` コマンドを実行できます。下のコマンド指示をプロンプトに含め、必要に応じて [tq CLI リファレンス](pathname:///reference/cli-reference)を参照してください。
+
+### プランモードで計画を作る
+
+`tasq-todo` ディレクトリで Codex をプランモードとして起動します。Claude Code ではプランモードを利用できる場合は選択し、利用できない場合は同じプロンプトで「計画を承認するまでファイルを編集しない」と明示してください。
+
+次のプロンプトをエージェントへ貼り付けます。現在はチュートリアル内に置いていますが、将来は `tasq-todo/docs/plan.md` へ移動できます。
+
+```md
+Create a concise implementation plan for a TypeScript and React TODO app.
+
+Do not edit files yet. Inspect the repository and propose a plan that includes:
+
+- a component structure for creating, completing, and filtering TODO items;
+- state and data-flow decisions;
+- accessible interaction details;
+- focused tests and verification commands; and
+- any risks or assumptions.
+
+Keep the plan small enough for one pull request.
+```
+
+計画を確認し、課題を作る前に目標やスコープを調整してください。
+
+### エージェントに Tasq の課題を作成させる
+
+計画を承認したら、次のプロンプトを送ります。エージェントには、文章だけで課題を作るのではなく、インストール済みの `tq` コマンドを使うよう依頼します。
+
+```md
+Create a Tasq issue with `tq issue create`.
+
+Use project key `tasq-todo`, title it "Build a TypeScript and React TODO app",
+and put the approved plan in the issue description. Report the issue ID when
+you finish.
+```
+
+課題が作成されたことを確認します。
+
+```sh
+tq issue list --project tasq-todo
+```
+
+## 4. Web UI で課題を確認し、キューへ入れる
+
+ローカルの Web UI を開きます。
 
 ```sh
 tq web
 ```
 
-## 4. issue を ready にする
+プロジェクトと課題の一覧から `tasq-todo` を選び、作成した課題を開きます。エージェントに実行させる前に、タイトル、説明、計画、状態、コメント、アクティビティを確認してください。
 
-issue description が実行できる内容になったら、ready queue に移動します。
+準備ができたら UI で課題を `ready` に移動します。CLI からも同じ状態遷移を実行できます。
 
 ```sh
 tq issue ready <issue-id>
 ```
 
-この時点で、issue は orchestrator と agent runner が扱える対象になります。
+## 5. エージェントの実行を追跡する
 
-## 5. エージェントの進行を待つ
+Tasq は、依存関係が解決された `ready` 状態の課題だけを実行します。`--dependency <issue-id>` を指定して作成した課題は、依存先が終端状態になるまで実行キューに入りません。大きな変更を安全な順序の小さな作業に分けられます。
 
-Web UI で issue detail page を開いたままにします。エージェントが作業を開始すると、
-issue は `ready` から `in_progress` に変わります。
+課題詳細ページを開いたままにし、アクティビティとコメントで状態遷移、実行イベント、worktree 情報、エージェントからの引き継ぎを追跡します。
 
-進行状況は Web UI の activity と comments で確認します。run が blocked になった場合は、
-Web UI に表示される run context を使って CLI から復旧します。
+### blocked になった Codex 実行を復旧する
 
-## 6. GitHub pull request を確認する
+Codex の実行が blocked になった場合は、課題の Activity タブを開き、最新の実行に表示される thread ID をコピーします。リポジトリの checkout から、そのセッションを再開します。
 
-エージェントがタスクを完了したら、GitHub pull request が作成され、issue activity
-または comments から参照できることを確認します。
+```sh
+codex resume <thread-id>
+```
 
-pull request を review し、エージェントが報告した verification commands を確認して、
-通常の review と merge process に進みます。
+承認待ちを減らす自律的な設定は、[Codex 自律実行セットアップ](pathname:///guides/codex-autonomy-setup)を参照してください。`codex resume --last` などの復旧方法は、[blocked セッションの復旧](pathname:///guides/recover-blocked-session)で確認できます。
+
+## 6. pull request を確認する
+
+エージェントが課題を完了したら、課題のアクティビティまたはコメントから GitHub pull request へのリンクを確認します。マージ前に、変更内容とエージェントが報告した検証結果をレビューしてください。
+
+Tasq のすべての課題が終わるまで待つ必要はありません。まず 1 つの完了した pull request を自分のプロジェクトへ適用してみてください。複数のプロジェクトと独立したキューを同時に扱うとき、Tasq は特に強力になります。

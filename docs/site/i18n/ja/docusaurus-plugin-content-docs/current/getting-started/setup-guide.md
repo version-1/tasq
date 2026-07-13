@@ -1,7 +1,7 @@
 ---
 id: setup-guide
 title: セットアップガイド
-sidebar_position: 3
+sidebar_position: 4
 ---
 
 # セットアップガイド
@@ -35,7 +35,7 @@ CI/CD authentication の詳細は、公式の
 エージェントがタスクを確認したり、進捗を更新したり、作業を戻す前にメモを残したりする
 ときの迷いを減らせます。
 
-Tasq を最短でインストールする手順は [QuickStart](./quickstart) を参照してください。
+Tasq をインストールする手順は [インストール](./install) を参照してください。
 コマンドの挙動と API 解決の詳細は [tq CLI](./concepts/tq-cli) を参照してください。
 
 ## Project workflow を追加する

@@ -58,7 +58,7 @@ It gives developers one workflow for task management, workspace isolation, and a
 
 | Documentation | Use it when |
 | --- | --- |
-| [QuickStart](pathname:///getting-started/quickstart) | You want the shortest path to a running service. |
+| [Install](pathname:///getting-started/install) | You need to install the CLI and start the local services. |
 | [Agent Tutorial](pathname:///getting-started/agent-tutorial) | You want to take an agent-created plan through a Tasq issue and into a GitHub pull request. |
 | [Setup Guide](pathname:///getting-started/setup-guide) | You are preparing Codex and local command permissions for repeated agent work. |
 | [Concepts](pathname:///getting-started/concepts/overview) | You want to understand the architecture. |
