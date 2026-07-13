@@ -171,7 +171,11 @@ before merging.
 
 If an issue does not reach `review` and becomes `blocked` or another unexpected
 status, first inspect the comments in the Web UI to identify the reported cause.
-If the comments do not explain the problem, [Recover a Blocked Session](pathname:///guides/recover-blocked-session) may help you continue the affected Codex run.
+In many cases, Codex was not allowed to run a required command or did not have
+sufficient permissions. Review [Codex Autonomy Setup](pathname:///guides/codex-autonomy-setup)
+and adjust the command and permission configuration before retrying. If that
+does not resolve the problem, [Recover a Blocked Session](pathname:///guides/recover-blocked-session)
+may help you continue the affected Codex run.
 
 You do not need to wait for every issue in Tasq before applying this workflow
 to your own project. Start with one completed pull request, then register more
