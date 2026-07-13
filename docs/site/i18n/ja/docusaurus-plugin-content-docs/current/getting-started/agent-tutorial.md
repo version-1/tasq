@@ -15,6 +15,7 @@ sidebar_position: 3
 - `tq` コマンドがインストール済みで、`PATH` から実行できる。
 - `tq service start` が実行中である。`tq service status` で確認してください。
 - Codex CLI または Claude Code がインストール済みで、GitHub に対して認証されている。どちらも使えない場合は、このチュートリアルの `tq` コマンドを自分で実行できます。
+- GitHub CLI の `gh` がインストール済みで、認証されている。`gh auth status` で確認してください。
 - Git と GitHub アカウントを利用できる。
 
 ## 1. チュートリアル用プロジェクトを登録する

@@ -19,6 +19,7 @@ Complete [Install](pathname:///getting-started/install) first.
 - Codex CLI is installed and authenticated for GitHub, or Claude Code is
   installed and authenticated. You can also perform the `tq` commands yourself
   when neither agent is available.
+- GitHub CLI `gh` is installed and authenticated. Confirm it with `gh auth status`.
 - Git and a GitHub account are available.
 
 ## 1. Register the Tutorial Project
