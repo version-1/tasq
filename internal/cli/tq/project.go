@@ -259,8 +259,6 @@ func (a app) projectCheck(ctx context.Context, args []string, cfg config) error 
 		items = append(items, projectCheckItem{Name: "workflow.front_matter", Passed: false, Reason: "WORKFLOW.md is missing"})
 		items = append(items, projectCheckItem{Name: "api.tq_usage", Passed: false, Reason: "WORKFLOW.md is missing"})
 	}
-	items = append(items, checkAgentsFile(project.Location))
-
 	if err := writeProjectCheckItems(a.stdout, cfg.output, items); err != nil {
 		return err
 	}
@@ -529,15 +527,4 @@ func hasNestedField(raw map[string]any, path []string) bool {
 		current = next
 	}
 	return true
-}
-
-func checkAgentsFile(root string) projectCheckItem {
-	content, err := os.ReadFile(filepath.Join(root, "AGENTS.md"))
-	if err != nil {
-		return projectCheckItem{Name: "agents.references_development", Passed: false, Reason: "AGENTS.md is missing"}
-	}
-	if !strings.Contains(string(content), "docs/development.md") {
-		return projectCheckItem{Name: "agents.references_development", Passed: false, Reason: "AGENTS.md does not reference docs/development.md"}
-	}
-	return projectCheckItem{Name: "agents.references_development", Passed: true, Reason: "AGENTS.md references docs/development.md"}
 }
