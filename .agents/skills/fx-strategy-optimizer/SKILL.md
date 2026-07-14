@@ -62,10 +62,12 @@ Keep each iteration attributable: change one coherent hypothesis at a time. Avoi
 
 ### 3. Backtest and collect metrics
 
-Run the repository's documented command, using an isolated profile name:
+Determine the Compose project name from the target worktree before running a backtest. Use the worktree's isolated project name explicitly, rather than a fixed repository-wide value, so its network, containers, and volumes cannot collide with another workspace. The Makefile derives a default from the current directory name, but record the explicit value used in the report.
+
+Run the repository's documented command with that project name and an isolated profile name:
 
 ```bash
-COMPOSE_PROJECT_NAME=fx-autotrader make backtest \
+COMPOSE_PROJECT_NAME=<worktree-compose-project-name> make backtest \
   FROM=<from-rfc3339> \
   TO=<to-rfc3339> \
   PROFILE=<profile-name> \
@@ -126,6 +128,7 @@ Use this structure. Include failed iterations compactly so the result is reprodu
 - Optimization period: <from> to <to>
 - Holdout period: <from> to <to>
 - Command: `<exact command>`
+- Compose project name: `<worktree-compose-project-name>`
 - Result IDs: <optimization and holdout IDs>
 - Code revision: <commit or dirty-worktree note>
 

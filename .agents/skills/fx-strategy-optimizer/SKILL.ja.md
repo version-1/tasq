@@ -62,10 +62,12 @@ description: 指定されたプロフィットファクター目標に対して�
 
 ### 3. バックテストと指標収集
 
-runbook のコマンドを使い、独立した profile 名で実行する。
+バックテストの前に、対象 worktree の Compose project 名を決める。別の作業スペースの network・container・volume と衝突させないため、リポジトリ全体に固定した値ではなく、その worktree に隔離された project 名を明示する。Makefile はカレントディレクトリ名から既定値を作るが、実際に使った値をレポートへ残す。
+
+その project 名と独立した profile 名を指定して runbook のコマンドを実行する。
 
 ```bash
-COMPOSE_PROJECT_NAME=fx-autotrader make backtest \
+COMPOSE_PROJECT_NAME=<worktree-compose-project-name> make backtest \
   FROM=<from-rfc3339> \
   TO=<to-rfc3339> \
   PROFILE=<profile-name> \
@@ -118,6 +120,7 @@ holdout を次の順で判定する。
 - Optimization period: <from> to <to>
 - Holdout period: <from> to <to>
 - Command: `<exact command>`
+- Compose project name: `<worktree-compose-project-name>`
 - Result IDs: <optimization and holdout IDs>
 - Code revision: <commit or dirty-worktree note>
 
