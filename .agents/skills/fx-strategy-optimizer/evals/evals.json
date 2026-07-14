@@ -1,0 +1,23 @@
+{
+  "skill_name": "fx-strategy-optimizer",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "fx-autotrader で USD/JPY 向けに新しい strategy と profile を作ってください。2023-01-01 から 2023-12-31、目標 PF は 1.30 以上、最低 80 取引、最大 DD は backtest investment の 8% 以下です。BaseStrategy を使い、バックテストで改善を繰り返して最終レポートを出してください。",
+      "expected_output": "必須入力を正規化し、時系列 holdout を設けて、strategy・profile・登録・テスト・バックテスト結果と制約達成状況を再現可能なレポートで示す。",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "2024年4月から9月の USD_JPY で、PF 1.2、最低 40 取引、最大 DD 50000 円を条件に trend-follow 系 strategy を改善したい。既存 profile は上書きせず、新しい profile と backtest の比較を作って。",
+      "expected_output": "USD_JPY を usdjpy に正規化し、既存 trend strategy をベースラインに、1 仮説ずつ新規 strategy/profile を追加して、絶対 DD 条件を含む比較を報告する。",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "EUR/JPY の新規 breakout strategy を、2025-01-01〜2025-03-31で PF 1.4、最低 100 回、DD 10% 以下にしてください。データが足りなければ勝手に条件を緩めず理由をレポートしてください。",
+      "expected_output": "通貨ペアを canonical key に変換し、データ量と holdout の成立を確認する。不足または性能未達では、条件を変更せず evidence と次の安全な実験を報告する。",
+      "files": []
+    }
+  ]
+}
