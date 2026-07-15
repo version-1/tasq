@@ -76,6 +76,18 @@ func TestVersionInfoUsesInjectedBuildMetadata(t *testing.T) {
 	}
 }
 
+func TestNewGHCommandDisablesInteractivePrompts(t *testing.T) {
+	t.Setenv("GH_PROMPT_DISABLED", "")
+
+	cmd := newGHCommand(context.Background(), "release", "download")
+	for _, env := range cmd.Env {
+		if env == "GH_PROMPT_DISABLED=1" {
+			return
+		}
+	}
+	t.Fatalf("GH_PROMPT_DISABLED=1 not found in command environment: %v", cmd.Env)
+}
+
 func TestUpdateRunsConfirmedFlowWithTag(t *testing.T) {
 	runner := &fakeUpdateRunner{
 		current:   "tq v0.1.0 (commit: old)",

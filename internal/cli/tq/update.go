@@ -168,8 +168,15 @@ func (r defaultUpdateRunner) startServices(ctx context.Context) error {
 	return r.app.serviceStart(ctx, nil, r.cfg)
 }
 
+func newGHCommand(ctx context.Context, args ...string) *exec.Cmd {
+	cmd := exec.CommandContext(ctx, "gh", args...)
+	// Release updates must fail instead of waiting for an interactive prompt.
+	cmd.Env = append(os.Environ(), "GH_PROMPT_DISABLED=1")
+	return cmd
+}
+
 func latestFormalReleaseTag(ctx context.Context) (string, error) {
-	output, err := exec.CommandContext(ctx, "gh", "release", "list",
+	output, err := newGHCommand(ctx, "release", "list",
 		"--repo", updateReleaseRepo,
 		"--exclude-drafts",
 		"--exclude-pre-releases",
@@ -188,7 +195,7 @@ func latestFormalReleaseTag(ctx context.Context) (string, error) {
 }
 
 func releaseTag(ctx context.Context, tag string) (string, error) {
-	output, err := exec.CommandContext(ctx, "gh", "release", "view", tag,
+	output, err := newGHCommand(ctx, "release", "view", tag,
 		"--repo", updateReleaseRepo,
 		"--json", "tagName",
 		"--jq", ".tagName",
@@ -215,7 +222,7 @@ func installRelease(ctx context.Context, tag string, w io.Writer) error {
 	defer os.RemoveAll(tmpDir)
 
 	assetPattern := "tasq_*_" + platform + ".tar.gz"
-	output, err := exec.CommandContext(ctx, "gh", "release", "download", tag,
+	output, err := newGHCommand(ctx, "release", "download", tag,
 		"--repo", updateReleaseRepo,
 		"--pattern", assetPattern,
 		"--pattern", "checksums.txt",
