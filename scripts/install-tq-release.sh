@@ -7,6 +7,9 @@ repo="${TQ_RELEASE_REPO:-version-1/tasq}"
 install_dir="${TQ_INSTALL_DIR:-$HOME/.local/bin}"
 install_name="${TQ_INSTALL_NAME:-tq}"
 
+# Release installation is non-interactive; fail instead of waiting for gh to prompt.
+export GH_PROMPT_DISABLED="${GH_PROMPT_DISABLED:-1}"
+
 require_command() {
 	if ! command -v "$1" >/dev/null 2>&1; then
 		echo "$1 is required" >&2
