@@ -456,9 +456,29 @@ var templateNamePattern = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_
 
 const defaultTaskWorkPrompt = "Use `tq` to keep the issue tracker synchronized:\n" +
 	"\n" +
+	"If the `tasq-cli` skill is available, use it as the preferred guidance for tracker operations.\n" +
+	"\n" +
+	"- When work starts, move the issue to `in_progress` and leave a progress comment.\n" +
+	"- Add progress comments at meaningful milestones during the work.\n" +
+	"- If work is blocked, leave a blocker comment that explains why, then move the issue to `blocked`.\n" +
+	"- When the pull request is ready for review, leave a handoff comment with the PR and verification summary, then move the issue to `review`.\n" +
+	"- Always pass `--author codex` when posting comments.\n" +
+	"- Run only the commands for the current lifecycle stage; the examples below are not a single script.\n" +
+	"\n" +
 	"```sh\n" +
+	"# Start\n" +
 	"tq issue update {{ issue.id }} --status in_progress\n" +
-	"tq comment add {{ issue.id }} --type progress --body \"Started work.\"\n" +
+	"tq comment add {{ issue.id }} --author codex --type progress --body \"Started work.\"\n" +
+	"\n" +
+	"# Meaningful progress milestone\n" +
+	"tq comment add {{ issue.id }} --author codex --type progress --body \"Implemented the change; running verification.\"\n" +
+	"\n" +
+	"# Blocked (use instead of the review handoff)\n" +
+	"tq comment add {{ issue.id }} --author codex --type blocker --body \"Blocked: explain the blocker and what is needed.\"\n" +
+	"tq issue update {{ issue.id }} --status blocked\n" +
+	"\n" +
+	"# Ready for review\n" +
+	"tq comment add {{ issue.id }} --author codex --type handoff --body \"PR: <url>; verification: <summary>.\"\n" +
 	"tq issue update {{ issue.id }} --status review\n" +
 	"```\n" +
 	"\n" +

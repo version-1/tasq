@@ -508,8 +508,21 @@ func TestRenderPromptInjectsTaskWorkPromptByDefault(t *testing.T) {
 	if !strings.HasPrefix(prompt, "Use `tq` to keep the issue tracker synchronized:") {
 		t.Fatalf("prompt did not start with task work prompt: %q", prompt)
 	}
-	if !strings.Contains(prompt, "tq issue update 7 --status in_progress") {
-		t.Fatalf("prompt did not render injected issue ID: %q", prompt)
+	if !strings.Contains(prompt, "If the `tasq-cli` skill is available, use it as the preferred guidance for tracker operations.") {
+		t.Fatalf("prompt did not prefer the tasq-cli skill: %q", prompt)
+	}
+	wantCommands := []string{
+		"tq issue update 7 --status in_progress",
+		"tq comment add 7 --author codex --type progress",
+		"tq comment add 7 --author codex --type blocker",
+		"tq issue update 7 --status blocked",
+		"tq comment add 7 --author codex --type handoff",
+		"tq issue update 7 --status review",
+	}
+	for _, want := range wantCommands {
+		if !strings.Contains(prompt, want) {
+			t.Fatalf("prompt missing %q: %q", want, prompt)
+		}
 	}
 	if !strings.Contains(prompt, "\n\nWork on Runner task.") {
 		t.Fatalf("prompt missing workflow template: %q", prompt)
