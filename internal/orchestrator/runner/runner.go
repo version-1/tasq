@@ -456,6 +456,8 @@ var templateNamePattern = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_
 
 const defaultTaskWorkPrompt = "Use `tq` to keep the issue tracker synchronized:\n" +
 	"\n" +
+	"If the `tasq-cli` skill is available, use it as the preferred guidance for tracker operations.\n" +
+	"\n" +
 	"```sh\n" +
 	"tq issue update {{ issue.id }} --status in_progress\n" +
 	"tq comment add {{ issue.id }} --type progress --body \"Started work.\"\n" +

@@ -508,6 +508,9 @@ func TestRenderPromptInjectsTaskWorkPromptByDefault(t *testing.T) {
 	if !strings.HasPrefix(prompt, "Use `tq` to keep the issue tracker synchronized:") {
 		t.Fatalf("prompt did not start with task work prompt: %q", prompt)
 	}
+	if !strings.Contains(prompt, "If the `tasq-cli` skill is available, use it as the preferred guidance for tracker operations.") {
+		t.Fatalf("prompt did not prefer the tasq-cli skill: %q", prompt)
+	}
 	if !strings.Contains(prompt, "tq issue update 7 --status in_progress") {
 		t.Fatalf("prompt did not render injected issue ID: %q", prompt)
 	}
