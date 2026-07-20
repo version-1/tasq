@@ -31,6 +31,7 @@ const sidebars: SidebarsConfig = {
         'guides/recover-blocked-session',
         'guides/workflow-configuration',
         'guides/web-ui-operations',
+        'guides/update-tasq',
       ],
     },
     {
