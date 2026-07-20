@@ -84,4 +84,6 @@ create と update は、該当する場合に `--title`、`--description`、`--s
 
 log service には `tracker` または `issue-tracker`、`orchestrator`、`web` を指定できます。
 
-`tq update` は現在の version と更新先 version を表示し、local services の停止と再起動が入ることを確認してから、既定では最新の formal release を install します。その後、新しく install された `tq version` を確認し、migrations を実行して services を起動します。`-y` は確認 prompt を skip します。`--tag` は特定の release または prerelease tag を install します。
+`tq update` は現在のバージョンと更新先のバージョンを表示し、ローカルサービスの停止と再起動が入ることを確認してから、既定では最新の正式リリースをインストールします。その後、新しくインストールされた `tq version` を確認し、マイグレーションを実行してサービスを起動します。`-y` は確認プロンプトを省略します。`--tag` は特定のリリースまたはプレリリースのタグをインストールします。
+
+具体的な手順とサービス停止時の注意事項は、[Tasq を更新する](pathname:///guides/update-tasq)を参照してください。

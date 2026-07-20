@@ -85,3 +85,6 @@ Allowed comment types are `progress`, `blocker`, `handoff`, and `general`.
 Log services are `tracker` or `issue-tracker`, `orchestrator`, and `web`.
 
 `tq update` prints the current and target versions, confirms that local services will stop and restart, installs the latest formal release by default, verifies the newly installed `tq version`, runs migrations, and starts services. `-y` skips the confirmation prompt. `--tag` installs a specific release or prerelease tag.
+
+For step-by-step examples and service interruption guidance, see
+[Update Tasq](pathname:///guides/update-tasq).
