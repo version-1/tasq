@@ -43,6 +43,7 @@ func writeIssue(w io.Writer, format string, issue entity.Issue) error {
 	fmt.Fprintf(w, "Title: %s\n", issue.Title)
 	fmt.Fprintf(w, "Description: %s\n", issue.Description)
 	fmt.Fprintf(w, "Status: %s\n", colorValue(string(issue.Status), statusColor(issue.Status)))
+	fmt.Fprintf(w, "Changed reason: %s\n", valueOrDefault(issue.ChangedReason, "none"))
 	fmt.Fprintf(w, "Priority: %s\n", colorValue(string(issue.Priority), priorityColor(issue.Priority)))
 	fmt.Fprintf(w, "Assignee: %s\n", valueOrDefault(issue.Assignee, "unassigned"))
 	fmt.Fprintf(w, "Dependencies: %s\n", formatDependencyIDs(issue.DependencyIDs))

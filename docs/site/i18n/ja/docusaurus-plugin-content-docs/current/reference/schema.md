@@ -12,7 +12,8 @@ Tasq は create と update operations において store layer で entity data �
 
 | Entity | Required fields | Key constraints |
 | --- | --- | --- |
-| Issue | `projectId`, `title` | title 1-500 chars、description max 10,000 chars、assignee max 200 chars、immutable project ownership |
+| Issue | `projectId`, `title` | title 1-500 chars、description max 10,000 chars、changedReason max 200 chars、assignee max 200 chars、immutable project ownership |
+| IssueStatusEvent | status update により生成 | fromStatus、toStatus、optional changedReason、actor、optional commentId を記録 |
 | Comment | `issueId`, `author`, `body` | body 1-10,000 chars、type defaults to `general` |
 | Attachment | `entityType`, `entityId`, `file` | image PNG/JPEG/GIF/WebP、max 5 MiB |
 | Project | `key`, `name`, `location` | key format、name 1-200 chars、description max 10,000 chars、absolute location |
@@ -42,7 +43,7 @@ Tasq は create と update operations において store layer で entity data �
 
 ```mermaid
 flowchart TD
-  Short[200 chars] --> Assignee[assignee, project name, event type]
+  Short[200 chars] --> Assignee[assignee, changedReason, changedBy, project name, event type]
   Medium[500 chars] --> Title[issue title]
   Path[1,000 chars] --> Paths[project, workspace, attachment paths]
   Long[10,000 chars] --> Bodies[descriptions, comments, errors]

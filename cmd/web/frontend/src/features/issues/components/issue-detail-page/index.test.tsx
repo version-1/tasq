@@ -191,6 +191,7 @@ const issue: Issue = {
   title: "Refine issue detail",
   description: "Show details in tabs.",
   status: "ready",
+  changedReason: "",
   priority: "high",
   assignee: "frontend",
   dependency_ids: [],

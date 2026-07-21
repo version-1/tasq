@@ -19,6 +19,7 @@ const issue: Issue = {
   title: "Add issue search dropdown",
   description: "",
   status: "ready",
+  changedReason: "",
   priority: "normal",
   assignee: "",
   dependency_ids: [],

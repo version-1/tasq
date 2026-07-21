@@ -36,6 +36,7 @@ type Issue = {
   title: string;
   description: string;
   status: IssueStatus;
+  changedReason: string;
 };
 \`\`\`
 
@@ -98,6 +99,7 @@ export const issueFixtures: Issue[] = [
     title: "Design standalone mock workflow",
     description: markdownShowcaseDescription,
     status: "backlog",
+    changedReason: "",
     priority: "normal",
     assignee: "frontend",
     dependency_ids: [2, 3],
@@ -123,6 +125,7 @@ Load issue board data through the generated issue-tracker client so the standalo
 
 The board renders from generated client calls, status changes survive the next refresh, and type checking fails if the API response contract changes incompatibly.`,
     status: "ready",
+    changedReason: "",
     priority: "high",
     assignee: "web",
     dependency_ids: [],
@@ -148,6 +151,7 @@ Verify that status transitions update both the individual issue and the board su
 
 The behavior should match production semantics: the UI asks the API to update the issue, then reloads board data from the same source instead of mutating a separate local copy.`,
     status: "in_progress",
+    changedReason: "",
     priority: "normal",
     assignee: "qa",
     dependency_ids: [2],
@@ -173,6 +177,7 @@ Review the issue detail page while running only the frontend mock worker. The de
 
 Use this issue to inspect spacing, metadata labels, status actions, and long-description wrapping in both the card preview and the full detail page.`,
     status: "review",
+    changedReason: "",
     priority: "low",
     assignee: "",
     dependency_ids: [],
@@ -186,6 +191,7 @@ Use this issue to inspect spacing, metadata labels, status actions, and long-des
     title: "Outline agent onboarding guide",
     description: markdownShowcaseDescription,
     status: "backlog",
+    changedReason: "",
     priority: "normal",
     assignee: "docs",
     dependency_ids: [],
@@ -212,6 +218,7 @@ Review the command reference examples for accuracy against the current agent wor
 
 The reference can be used during a live task without forcing the reader to cross-check every example against source code or recent chat history.`,
     status: "review",
+    changedReason: "",
     priority: "high",
     assignee: "docs",
     dependency_ids: [],
@@ -237,6 +244,7 @@ Prepare a small but believable backlog for the sample project so the all-project
 
 The /dashboard route shows this project alongside Tasq and agent-docs work, while /projects/some-project/issues narrows the board to only the sample-project cards.`,
     status: "ready",
+    changedReason: "",
     priority: "low",
     assignee: "product",
     dependency_ids: [],
@@ -262,6 +270,7 @@ Validate the project-scoped issue navigation from the sidebar. Selecting a proje
 
 If a project key is unknown, the board should not fall back to all issues; it should show an empty scoped board with the requested key as context.`,
     status: "in_progress",
+    changedReason: "",
     priority: "normal",
     assignee: "web",
     dependency_ids: [],

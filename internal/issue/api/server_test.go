@@ -1198,6 +1198,36 @@ func TestIssueRoundTripDependencyIDs(t *testing.T) {
 	}
 }
 
+func TestUpdateIssueRecordsChangedReason(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer(t)
+	issue := createIssue(t, server, "Refine issue", entity.StatusReview)
+	req := httptest.NewRequest(http.MethodPatch, "/api/v1/issues/"+stringID(issue.ID), bytes.NewBufferString(`{
+		"status": "ready",
+		"changedReason": "refine_requested",
+		"changedBy": "codex"
+	}`))
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d body=%s", rec.Code, rec.Body.String())
+	}
+	updated := decodeData[entity.Issue](t, rec)
+	if updated.Status != entity.StatusReady || updated.ChangedReason != "refine_requested" {
+		t.Fatalf("updated issue = %+v", updated)
+	}
+	events, err := server.store.IssueStatusEventsByIssueID(context.Background(), issue.ID)
+	if err != nil {
+		t.Fatalf("list status events: %v", err)
+	}
+	if len(events) != 1 || events[0].Actor != "codex" || events[0].ChangedReason != "refine_requested" {
+		t.Fatalf("events = %+v", events)
+	}
+}
+
 func TestUpdateIssueRejectsDependencyCycle(t *testing.T) {
 	t.Parallel()
 

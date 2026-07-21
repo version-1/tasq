@@ -13,6 +13,7 @@ const issue: IssueSummary = {
   title: "Wire issue board to generated client",
   description: "Issue body should not render in the card.",
   status: "ready",
+  changedReason: "",
   priority: "high",
   assignee: "web",
   dependency_ids: [],

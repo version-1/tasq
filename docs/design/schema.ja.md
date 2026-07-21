@@ -40,11 +40,26 @@
 | Title         | `string`   | yes      | —         | min 1, max 500 chars |
 | Description   | `string`   | no       | `""`      | max 10,000 chars |
 | Status        | `Status`   | no       | `backlog` | enum: `backlog`, `ready`, `in_progress`, `review`, `done`, `blocked`, `failed`, `cancelled`, `duplicate` |
+| ChangedReason | `string`   | no       | `""`      | 最新 status change reason。max 200 chars |
 | Priority      | `Priority` | no       | `normal`  | enum: `low`, `normal`, `high`, `urgent` |
 | Assignee      | `string`   | no       | `""`      | max 200 chars、自由入力 |
 | DependencyIDs | `[]int64`  | no       | `[]`      | 初期 dependency set。各 ID は issue を参照すること。重複、自己依存、cycle は不可 |
 
 `dependency_ids` は issue creation と同じ transaction で適用されます。dependency validation が失敗した場合、issue は作成されません。
+
+### IssueStatusEvent
+
+`issue_status_events` table は status transition history を保存します。`issues.status` と `issues.changed_reason` は list、detail、queue reads で使う最新値として残します。
+
+| Field         | Go Type  | Required | Default | Constraints |
+|---------------|----------|----------|---------|-------------|
+| IssueID       | `int64`  | yes      | —       | `issues.id` を参照する |
+| FromStatus    | `Status` | yes      | —       | 変更前の issue status |
+| ToStatus      | `Status` | yes      | —       | 変更後の issue status |
+| ChangedReason | `string` | no       | `NULL`  | status change reason。API/store boundary では max 200 chars |
+| Actor         | `string` | no       | `""`    | status change actor。API/store boundary では max 200 chars |
+| CommentID     | `int64`  | no       | `NULL`  | optional related comment ID |
+| CreatedAt     | `string` | auto     | `now()` | RFC3339Nano timestamp text |
 
 ### IssueDependency
 

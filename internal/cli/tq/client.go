@@ -45,6 +45,8 @@ type updateIssueInput struct {
 	Title         *string          `json:"title,omitempty"`
 	Description   *string          `json:"description,omitempty"`
 	Status        *entity.Status   `json:"status,omitempty"`
+	ChangedReason *string          `json:"changedReason,omitempty"`
+	ChangedBy     *string          `json:"changedBy,omitempty"`
 	Priority      *entity.Priority `json:"priority,omitempty"`
 	Assignee      *string          `json:"assignee,omitempty"`
 	DependencyIDs *[]int64         `json:"dependency_ids,omitempty"`

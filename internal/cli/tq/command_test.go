@@ -626,6 +626,19 @@ func TestIssueReady(t *testing.T) {
 	}
 }
 
+func TestIssueReadyWithChangedReason(t *testing.T) {
+	stdout := assertIssueShortcut(t, issueShortcutTest{
+		args:        []string{"issue", "ready", "3", "--changed-reason", "refine_requested", "--changed-by", "codex"},
+		id:          3,
+		wantPatch:   map[string]string{"status": "ready", "changedReason": "refine_requested", "changedBy": "codex"},
+		response:    entity.Issue{ID: 3, Title: "Ready issue", Status: entity.StatusReady, ChangedReason: "refine_requested"},
+		wantMessage: ansiGreen + "✓" + ansiReset + " Issue #3 marked as ready",
+	})
+	if !strings.Contains(stdout, "Changed reason: refine_requested") {
+		t.Fatalf("unexpected stdout: %s", stdout)
+	}
+}
+
 func TestIssueDraft(t *testing.T) {
 	stdout := assertIssueShortcut(t, issueShortcutTest{
 		args:        []string{"issue", "draft", "8"},

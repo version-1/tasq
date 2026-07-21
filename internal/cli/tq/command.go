@@ -418,6 +418,8 @@ func (a app) issueUpdate(ctx context.Context, args []string, cfg config) error {
 	title := fs.String("title", "", "issue title")
 	description := fs.String("description", "", "issue description")
 	status := fs.String("status", "", "issue status")
+	changedReason := fs.String("changed-reason", "", "status change reason")
+	changedBy := fs.String("changed-by", defaultCommentAuthor(), "status change actor")
 	priority := fs.String("priority", "", "issue priority")
 	assignee := fs.String("assignee", "", "issue assignee")
 	dependency := fs.String("dependency", "", "comma-separated dependency issue IDs; fully replaces dependencies")
@@ -434,6 +436,7 @@ func (a app) issueUpdate(ctx context.Context, args []string, cfg config) error {
 	updated := false
 	dependencySet := false
 	clearDependenciesSet := false
+	changedBySet := false
 	fs.Visit(func(f *flag.Flag) {
 		switch f.Name {
 		case "title":
@@ -446,6 +449,12 @@ func (a app) issueUpdate(ctx context.Context, args []string, cfg config) error {
 			statusValue := entity.Status(*status)
 			patch.Status = &statusValue
 			updated = true
+		case "changed-reason":
+			patch.ChangedReason = changedReason
+			updated = true
+		case "changed-by":
+			patch.ChangedBy = changedBy
+			changedBySet = true
 		case "priority":
 			priorityValue := entity.Priority(*priority)
 			patch.Priority = &priorityValue
@@ -462,6 +471,9 @@ func (a app) issueUpdate(ctx context.Context, args []string, cfg config) error {
 	})
 	if dependencySet && clearDependenciesSet {
 		return usageError("dependency and clear-dependencies cannot be used together")
+	}
+	if changedBySet && patch.Status == nil {
+		return usageError("changed-by requires status")
 	}
 	if dependencySet {
 		if *dependency == "" {
@@ -521,15 +533,33 @@ func (a app) issueUpdate(ctx context.Context, args []string, cfg config) error {
 }
 
 func (a app) issueSetStatus(ctx context.Context, args []string, cfg config, status entity.Status, action string, usage string) error {
-	if len(args) != 1 {
+	if len(args) == 0 {
 		return usageError(usage)
 	}
 	id, err := parseID(args[0])
 	if err != nil {
 		return err
 	}
+	fs := newFlagSet("issue status")
+	changedReason := fs.String("changed-reason", "", "status change reason")
+	changedBy := fs.String("changed-by", defaultCommentAuthor(), "status change actor")
+	if err := fs.Parse(args[1:]); err != nil {
+		return usageError(err.Error())
+	}
+	if fs.NArg() != 0 {
+		return usageError("issue status action does not accept extra positional arguments")
+	}
 	statusValue := status
-	issue, err := a.client.updateIssue(ctx, id, updateIssueInput{Status: &statusValue})
+	input := updateIssueInput{Status: &statusValue}
+	fs.Visit(func(f *flag.Flag) {
+		switch f.Name {
+		case "changed-reason":
+			input.ChangedReason = changedReason
+		case "changed-by":
+			input.ChangedBy = changedBy
+		}
+	})
+	issue, err := a.client.updateIssue(ctx, id, input)
 	if err != nil {
 		return err
 	}

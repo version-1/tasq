@@ -33,12 +33,14 @@ API URL resolution order は `--api-url`、`TQ_API_URL`、`$TQ_HOME/system/state
 | `tq issue close <id>` | issue を `done` に移動します。 |
 | `tq issue cancel <id>` | issue を `failed` に移動します。 |
 | `tq issue ready <id>` | issue を `ready` に移動します。 |
+| `tq issue ready <id> --changed-reason refine_requested` | status change reason を付けて issue を `ready` に戻します。 |
 | `tq issue draft <id>` | issue を `backlog` に移動します。 |
 | `tq issue rename <id> <title>` | title を更新します。 |
 | `tq issue edit <id> <description>` | description を更新します。 |
 
 create と update は、該当する場合に `--title`、`--description`、`--status`、
-`--priority`、`--assignee`、`--attach` を受け付けます。update では、依存関係を
+`--priority`、`--assignee`、`--attach` を受け付けます。status update では
+`--changed-reason` と `--changed-by` も指定できます。update では、依存関係を
 置き換える `--dependency <comma-separated-ids>` と、依存関係を削除する
 `--clear-dependencies` も指定できます。
 

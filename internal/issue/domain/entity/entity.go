@@ -111,6 +111,7 @@ type Issue struct {
 	Title         string    `json:"title"`
 	Description   string    `json:"description"`
 	Status        Status    `json:"status"`
+	ChangedReason string    `json:"changedReason"`
 	Priority      Priority  `json:"priority"`
 	Assignee      string    `json:"assignee"`
 	DependencyIDs []int64   `json:"dependency_ids"`
@@ -137,9 +138,22 @@ type UpdateIssueInput struct {
 	Title         *string   `json:"title"`
 	Description   *string   `json:"description"`
 	Status        *Status   `json:"status"`
+	ChangedReason *string   `json:"changedReason"`
+	ChangedBy     *string   `json:"changedBy"`
 	Priority      *Priority `json:"priority"`
 	Assignee      *string   `json:"assignee"`
 	DependencyIDs *[]int64  `json:"dependency_ids,omitempty"`
+}
+
+type IssueStatusEvent struct {
+	ID            int64     `json:"id"`
+	IssueID       int64     `json:"issueId"`
+	FromStatus    Status    `json:"fromStatus"`
+	ToStatus      Status    `json:"toStatus"`
+	ChangedReason string    `json:"changedReason"`
+	Actor         string    `json:"actor"`
+	CommentID     *int64    `json:"commentId,omitempty"`
+	CreatedAt     time.Time `json:"createdAt"`
 }
 
 type QueueIssue struct {
@@ -263,6 +277,15 @@ func NormalizeUpdateIssue(input UpdateIssueInput) (UpdateIssueInput, error) {
 	}
 	if input.Status != nil && !IsValidStatus(*input.Status) {
 		return input, errors.New("status is invalid")
+	}
+	if input.ChangedReason != nil && runeCount(*input.ChangedReason) > maxNameLength {
+		return input, errors.New("changedReason must be 200 characters or fewer")
+	}
+	if input.ChangedBy != nil && runeCount(*input.ChangedBy) > maxNameLength {
+		return input, errors.New("changedBy must be 200 characters or fewer")
+	}
+	if input.ChangedBy != nil && input.Status == nil {
+		return input, errors.New("changedBy requires status")
 	}
 	if input.Priority != nil && !IsValidPriority(*input.Priority) {
 		return input, errors.New("priority is invalid")

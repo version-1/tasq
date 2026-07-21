@@ -38,11 +38,26 @@ Every issue belongs to exactly one project. Issue project ownership is set at cr
 | Title         | `string`   | yes      | —         | min 1, max 500 chars |
 | Description   | `string`   | no       | `""`      | max 10,000 chars |
 | Status        | `Status`   | no       | `backlog` | enum: `backlog`, `ready`, `in_progress`, `review`, `done`, `blocked`, `failed`, `cancelled`, `duplicate` |
+| ChangedReason | `string`   | no       | `""`      | latest status change reason, max 200 chars |
 | Priority      | `Priority` | no       | `normal`  | enum: `low`, `normal`, `high`, `urgent` |
 | Assignee      | `string`   | no       | `""`      | max 200 chars, free text |
 | DependencyIDs | `[]int64`  | no       | `[]`      | initial dependency set; each ID must reference an issue; no duplicates; no self-dependency; no cycles |
 
 `dependency_ids` is applied in the same transaction as issue creation. If dependency validation fails, the issue is not created.
+
+### IssueStatusEvent
+
+The `issue_status_events` table stores status transition history. `issues.status` and `issues.changed_reason` remain the latest values used by list, detail, and queue reads.
+
+| Field         | Go Type  | Required | Default | Constraints |
+|---------------|----------|----------|---------|-------------|
+| IssueID       | `int64`  | yes      | —       | references `issues.id` |
+| FromStatus    | `Status` | yes      | —       | previous issue status |
+| ToStatus      | `Status` | yes      | —       | new issue status |
+| ChangedReason | `string` | no       | `NULL`  | status change reason, max 200 chars at API/store boundary |
+| Actor         | `string` | no       | `""`    | status change actor, max 200 chars at API/store boundary |
+| CommentID     | `int64`  | no       | `NULL`  | optional related comment ID |
+| CreatedAt     | `string` | auto     | `now()` | RFC3339Nano timestamp text |
 
 ### IssueDependency
 

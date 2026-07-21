@@ -146,6 +146,8 @@ Flags:
 | `--title TITLE` | Replace the issue title. |
 | `--description TEXT` | Replace the issue description. |
 | `--status STATUS` | Replace the issue status. |
+| `--changed-reason REASON` | Record the latest status change reason. For refine work, use a stable value such as `refine_requested`. |
+| `--changed-by NAME` | Actor to record on the status event when `--status` changes the issue status. Defaults to the comment author fallback. |
 | `--priority PRIORITY` | Replace the issue priority. |
 | `--assignee NAME` | Replace the issue assignee. |
 | `--dependency IDS` | Replace the full dependency set with a comma-separated list of issue IDs. Empty values are rejected; use `--clear-dependencies` to remove all dependencies. |
@@ -153,6 +155,12 @@ Flags:
 | `--attach PATH` | Upload a PNG, JPEG, GIF, or WebP image and append a Markdown image reference to the description. |
 
 Attachment references use `![filename](attachment://<id>)`. The issue-tracker serves those images through the attachment content API, and the Web UI renders them from Markdown.
+
+Use `--changed-reason` when moving an issue back to `ready` for follow-up work:
+
+```sh
+make run-tq ARGS='issue ready 1 --changed-reason refine_requested --changed-by codex'
+```
 
 ## Comments
 

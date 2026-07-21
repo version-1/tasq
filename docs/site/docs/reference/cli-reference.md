@@ -33,12 +33,14 @@ API URL resolution order is `--api-url`, `TQ_API_URL`, `$TQ_HOME/system/state.js
 | `tq issue close <id>` | Move an issue to `done`. |
 | `tq issue cancel <id>` | Move an issue to `failed`. |
 | `tq issue ready <id>` | Move an issue to `ready`. |
+| `tq issue ready <id> --changed-reason refine_requested` | Move an issue back to `ready` with a status change reason. |
 | `tq issue draft <id>` | Move an issue to `backlog`. |
 | `tq issue rename <id> <title>` | Update the title. |
 | `tq issue edit <id> <description>` | Update the description. |
 
 Create and update accept `--title`, `--description`, `--status`, `--priority`,
-`--assignee`, and `--attach` where applicable. Update also accepts
+`--assignee`, and `--attach` where applicable. Status updates also accept
+`--changed-reason` and `--changed-by`. Update also accepts
 `--dependency <comma-separated-ids>` to replace dependencies and
 `--clear-dependencies` to remove them.
 

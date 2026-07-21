@@ -182,6 +182,8 @@ export interface Issue {
   title: string;
   description: string;
   status: IssueStatus;
+  /** Latest issue status change reason. Empty when no reason is recorded. */
+  changedReason: string;
   priority: Priority;
   assignee: string;
   dependency_ids: number[];
@@ -271,6 +273,16 @@ export interface UpdateIssueInput {
   title?: string;
   description?: string;
   status?: IssueStatus;
+  /**
+   * Latest issue status change reason. Pass an empty string to clear it.
+   * @maxLength 200
+   */
+  changedReason?: string;
+  /**
+   * Actor recorded on the status event when status changes.
+   * @maxLength 200
+   */
+  changedBy?: string;
   priority?: Priority;
   assignee?: string;
   /** Replaces the full dependency set when present. Omit this field to preserve existing dependencies; pass an empty array to clear dependencies. */

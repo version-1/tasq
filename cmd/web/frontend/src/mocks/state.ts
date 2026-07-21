@@ -203,6 +203,7 @@ export function createIssue(input: CreateIssueInput): Issue | null {
     title: input.title,
     description: input.description ?? "",
     status: input.status ?? "backlog",
+    changedReason: "",
     priority: input.priority ?? "normal",
     assignee: input.assignee ?? "",
     dependency_ids: [...dependencyIDs].sort((left, right) => left - right),

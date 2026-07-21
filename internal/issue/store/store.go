@@ -188,6 +188,44 @@ func projectExistsTx(ctx context.Context, tx *sql.Tx, id int64) error {
 	return nil
 }
 
+type issueStatusEventInput struct {
+	IssueID       int64
+	FromStatus    entity.Status
+	ToStatus      entity.Status
+	ChangedReason string
+	Actor         string
+	CommentID     *int64
+}
+
+func createIssueStatusEventTx(ctx context.Context, tx *sql.Tx, input issueStatusEventInput) error {
+	var commentID any
+	if input.CommentID != nil {
+		commentID = *input.CommentID
+	}
+	_, err := tx.ExecContext(ctx, `INSERT INTO issue_status_events (
+		issue_id, from_status, to_status, changed_reason, actor, comment_id, created_at
+	) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		input.IssueID,
+		input.FromStatus,
+		input.ToStatus,
+		nullString(input.ChangedReason),
+		input.Actor,
+		commentID,
+		nowString(),
+	)
+	if err != nil {
+		return fmt.Errorf("create issue status event: %w", err)
+	}
+	return nil
+}
+
+func nullString(value string) any {
+	if value == "" {
+		return nil
+	}
+	return value
+}
+
 func (s *Store) UpdateProject(ctx context.Context, id int64, input entity.UpdateProjectInput) (entity.Project, error) {
 	normalized, err := entity.NormalizeUpdateProject(input)
 	if err != nil {
@@ -271,6 +309,10 @@ func (s *Store) DeleteProject(ctx context.Context, id int64) error {
 		WHERE parent_issue_id IN (SELECT id FROM issues WHERE project_id = ?)
 		   OR dependency_issue_id IN (SELECT id FROM issues WHERE project_id = ?)`, id, id); err != nil {
 		return fmt.Errorf("delete issue dependencies: %w", err)
+	}
+	if _, err := tx.ExecContext(ctx, `DELETE FROM issue_status_events
+		WHERE issue_id IN (SELECT id FROM issues WHERE project_id = ?)`, id); err != nil {
+		return fmt.Errorf("delete issue status events: %w", err)
 	}
 	if _, err := tx.ExecContext(ctx, `DELETE FROM comments
 		WHERE issue_id IN (SELECT id FROM issues WHERE project_id = ?)`, id); err != nil {
@@ -719,8 +761,15 @@ func (s *Store) UpdateIssue(ctx context.Context, id int64, input entity.UpdateIs
 	if normalized.Description != nil {
 		current.Description = *normalized.Description
 	}
+	previousStatus := current.Status
 	if normalized.Status != nil {
 		current.Status = *normalized.Status
+	}
+	statusChanged := current.Status != previousStatus
+	if normalized.ChangedReason != nil {
+		current.ChangedReason = *normalized.ChangedReason
+	} else if statusChanged {
+		current.ChangedReason = ""
 	}
 	if normalized.Priority != nil {
 		current.Priority = *normalized.Priority
@@ -729,11 +778,12 @@ func (s *Store) UpdateIssue(ctx context.Context, id int64, input entity.UpdateIs
 		current.Assignee = *normalized.Assignee
 	}
 	_, err = tx.ExecContext(ctx, `UPDATE issues SET
-		title = ?, description = ?, status = ?, priority = ?, assignee = ?, updated_at = ?
+		title = ?, description = ?, status = ?, changed_reason = ?, priority = ?, assignee = ?, updated_at = ?
 		WHERE id = ?`,
 		current.Title,
 		current.Description,
 		current.Status,
+		nullString(current.ChangedReason),
 		current.Priority,
 		current.Assignee,
 		nowString(),
@@ -744,6 +794,21 @@ func (s *Store) UpdateIssue(ctx context.Context, id int64, input entity.UpdateIs
 	}
 	if normalized.DependencyIDs != nil {
 		if err := setDependencyIDsTx(ctx, tx, id, *normalized.DependencyIDs); err != nil {
+			return entity.Issue{}, err
+		}
+	}
+	if statusChanged {
+		actor := ""
+		if normalized.ChangedBy != nil {
+			actor = *normalized.ChangedBy
+		}
+		if err := createIssueStatusEventTx(ctx, tx, issueStatusEventInput{
+			IssueID:       id,
+			FromStatus:    previousStatus,
+			ToStatus:      current.Status,
+			ChangedReason: current.ChangedReason,
+			Actor:         actor,
+		}); err != nil {
 			return entity.Issue{}, err
 		}
 	}
@@ -828,6 +893,33 @@ func (s *Store) Comment(ctx context.Context, id int64) (entity.Comment, error) {
 	return item, nil
 }
 
+func (s *Store) IssueStatusEventsByIssueID(ctx context.Context, issueID int64) ([]entity.IssueStatusEvent, error) {
+	if issueID <= 0 {
+		return nil, errors.New("issueId is required")
+	}
+	if _, err := s.Issue(ctx, issueID); err != nil {
+		return nil, err
+	}
+	rows, err := s.db.QueryContext(ctx, `SELECT `+issueStatusEventColumns()+` FROM issue_status_events WHERE issue_id = ? ORDER BY created_at ASC, id ASC`, issueID)
+	if err != nil {
+		return nil, fmt.Errorf("list issue status events: %w", err)
+	}
+	defer rows.Close()
+
+	events := []entity.IssueStatusEvent{}
+	for rows.Next() {
+		event, err := scanIssueStatusEvent(rows)
+		if err != nil {
+			return nil, err
+		}
+		events = append(events, event)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate issue status events: %w", err)
+	}
+	return events, nil
+}
+
 func (s *Store) UpdateComment(ctx context.Context, id int64, input entity.UpdateCommentInput) (entity.Comment, error) {
 	normalized, err := entity.NormalizeUpdateComment(input)
 	if err != nil {
@@ -904,11 +996,15 @@ func (s *Store) commentCountsByIssueID(ctx context.Context) (map[int64]int, erro
 }
 
 func issueColumns() string {
-	return `issues.id, issues.project_id, projects.key, issues.title, issues.description, issues.status, issues.priority, issues.assignee, issues.created_at, issues.updated_at`
+	return `issues.id, issues.project_id, projects.key, issues.title, issues.description, issues.status, COALESCE(issues.changed_reason, ''), issues.priority, issues.assignee, issues.created_at, issues.updated_at`
 }
 
 func commentColumns() string {
 	return `id, issue_id, author, type, body, created_at`
+}
+
+func issueStatusEventColumns() string {
+	return `id, issue_id, from_status, to_status, COALESCE(changed_reason, ''), actor, comment_id, created_at`
 }
 
 func projectColumns() string {
@@ -941,7 +1037,7 @@ func scanIssue(row rowScanner) (entity.Issue, error) {
 	var item entity.Issue
 	var createdAt string
 	var updatedAt string
-	err := row.Scan(&item.ID, &item.ProjectID, &item.ProjectKey, &item.Title, &item.Description, &item.Status, &item.Priority, &item.Assignee, &createdAt, &updatedAt)
+	err := row.Scan(&item.ID, &item.ProjectID, &item.ProjectKey, &item.Title, &item.Description, &item.Status, &item.ChangedReason, &item.Priority, &item.Assignee, &createdAt, &updatedAt)
 	if err != nil {
 		return entity.Issue{}, err
 	}
@@ -955,6 +1051,25 @@ func scanIssue(row rowScanner) (entity.Issue, error) {
 	}
 	item.CreatedAt = parsedCreatedAt
 	item.UpdatedAt = parsedUpdatedAt
+	return item, nil
+}
+
+func scanIssueStatusEvent(row rowScanner) (entity.IssueStatusEvent, error) {
+	var item entity.IssueStatusEvent
+	var commentID sql.NullInt64
+	var createdAt string
+	err := row.Scan(&item.ID, &item.IssueID, &item.FromStatus, &item.ToStatus, &item.ChangedReason, &item.Actor, &commentID, &createdAt)
+	if err != nil {
+		return entity.IssueStatusEvent{}, err
+	}
+	if commentID.Valid {
+		item.CommentID = &commentID.Int64
+	}
+	parsedCreatedAt, err := parseTime(createdAt)
+	if err != nil {
+		return entity.IssueStatusEvent{}, err
+	}
+	item.CreatedAt = parsedCreatedAt
 	return item, nil
 }
 

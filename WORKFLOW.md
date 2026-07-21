@@ -23,6 +23,7 @@ server:
 Issue ID: {{ issue.id }}
 Title: {{ issue.title }}
 Status: {{ issue.status }}
+Changed reason: {{ issue.changedReason }}
 Priority: {{ issue.priority }}
 Assignee: {{ issue.assignee }}
 Attempt: {{ attempt }}
@@ -43,6 +44,7 @@ directories.
 ## Required Flow
 
 1. Confirm the task scope from the issue title and description above.
+   If `Changed reason` is `refine_requested`, treat the issue as follow-up work on an existing review or pull request. Read the latest comments, pull request state, CI failures, and review feedback before editing.
 2. Before branch creation, run `git fetch origin`, then create the task branch from `origin/main` or the repository's default branch.
 3. Create or switch to an isolated task branch/worktree before editing.
 4. Make focused changes that satisfy the issue.

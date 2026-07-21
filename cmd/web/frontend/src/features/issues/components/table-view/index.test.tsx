@@ -18,6 +18,7 @@ const baseIssue: Issue = {
   title: "Add issue table view",
   description: "",
   status: "ready",
+  changedReason: "",
   priority: "high",
   assignee: "frontend",
   dependency_ids: [],

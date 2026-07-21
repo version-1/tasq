@@ -146,6 +146,8 @@ make run-tq ARGS='issue update 1 --status in_progress'
 | `--title TITLE` | 課題のタイトルを置き換えます。 |
 | `--description TEXT` | 課題の説明を置き換えます。 |
 | `--status STATUS` | 課題のステータスを置き換えます。 |
+| `--changed-reason REASON` | 最新 status change reason を記録します。refine work では `refine_requested` のような安定した値を使います。 |
+| `--changed-by NAME` | `--status` が issue status を変更したとき、status event に記録する actor。省略時は comment author fallback を使います。 |
 | `--priority PRIORITY` | 課題の優先度を置き換えます。 |
 | `--assignee NAME` | 課題の担当者を置き換えます。 |
 | `--dependency IDS` | カンマ区切りの課題 ID で依存関係全体を置き換えます。空の値は拒否されます。すべての依存関係を削除する場合は `--clear-dependencies` を使います。 |
@@ -153,6 +155,12 @@ make run-tq ARGS='issue update 1 --status in_progress'
 | `--attach PATH` | PNG、JPEG、GIF、WebP 画像をアップロードし、説明に Markdown 画像参照を追記します。 |
 
 添付参照は `![filename](attachment://<id>)` の形式です。issue-tracker は attachment content API で画像を配信し、Web UI は Markdown から画像を表示します。
+
+follow-up work のために issue を `ready` へ戻す場合は `--changed-reason` を使います。
+
+```sh
+make run-tq ARGS='issue ready 1 --changed-reason refine_requested --changed-by codex'
+```
 
 ## コメント
 

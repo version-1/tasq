@@ -873,6 +873,7 @@ components:
         - title
         - description
         - status
+        - changedReason
         - priority
         - assignee
         - dependency_ids
@@ -893,6 +894,10 @@ components:
           type: string
         status:
           $ref: "#/components/schemas/IssueStatus"
+        changedReason:
+          type: string
+          description: Latest issue status change reason. Empty when no reason is recorded.
+          default: ""
         priority:
           $ref: "#/components/schemas/Priority"
         assignee:
@@ -1061,6 +1066,14 @@ components:
           type: string
         status:
           $ref: "#/components/schemas/IssueStatus"
+        changedReason:
+          type: string
+          description: Latest issue status change reason. Pass an empty string to clear it.
+          maxLength: 200
+        changedBy:
+          type: string
+          description: Actor recorded on the status event when status changes.
+          maxLength: 200
         priority:
           $ref: "#/components/schemas/Priority"
         assignee:

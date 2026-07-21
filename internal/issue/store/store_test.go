@@ -29,6 +29,8 @@ func TestOpenAppliesIssueTrackerSchema(t *testing.T) {
 		"issues_status_idx",
 		"issue_dependencies",
 		"issue_dependencies_dependency_issue_id_idx",
+		"issue_status_events",
+		"issue_status_events_issue_id_idx",
 		"comments",
 		"comments_issue_id_idx",
 		"projects",
@@ -40,6 +42,82 @@ func TestOpenAppliesIssueTrackerSchema(t *testing.T) {
 		if !schemaObjectExists(t, store, name) {
 			t.Fatalf("schema object %q does not exist", name)
 		}
+	}
+}
+
+func TestUpdateIssueRecordsStatusEventAndChangedReason(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer store.Close()
+
+	project := createTestProject(t, store, "STATUS")
+	issue, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Refine issue", Status: entity.StatusReview})
+	if err != nil {
+		t.Fatalf("create issue: %v", err)
+	}
+
+	status := entity.StatusReady
+	reason := "refine_requested"
+	actor := "codex"
+	updated, err := store.UpdateIssue(ctx, issue.ID, entity.UpdateIssueInput{
+		Status:        &status,
+		ChangedReason: &reason,
+		ChangedBy:     &actor,
+	})
+	if err != nil {
+		t.Fatalf("update issue: %v", err)
+	}
+	if updated.Status != entity.StatusReady || updated.ChangedReason != "refine_requested" {
+		t.Fatalf("updated issue = %+v", updated)
+	}
+
+	events, err := store.IssueStatusEventsByIssueID(ctx, issue.ID)
+	if err != nil {
+		t.Fatalf("list status events: %v", err)
+	}
+	if len(events) != 1 {
+		t.Fatalf("events = %+v", events)
+	}
+	event := events[0]
+	if event.IssueID != issue.ID || event.FromStatus != entity.StatusReview || event.ToStatus != entity.StatusReady || event.ChangedReason != "refine_requested" || event.Actor != "codex" {
+		t.Fatalf("event = %+v", event)
+	}
+	if event.CommentID != nil {
+		t.Fatalf("comment id = %v, want nil", *event.CommentID)
+	}
+}
+
+func TestUpdateIssueDoesNotRecordStatusEventWhenStatusIsUnchanged(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer store.Close()
+
+	project := createTestProject(t, store, "NOSTATUS")
+	issue, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Rename issue", Status: entity.StatusReady})
+	if err != nil {
+		t.Fatalf("create issue: %v", err)
+	}
+
+	title := "Renamed issue"
+	if _, err := store.UpdateIssue(ctx, issue.ID, entity.UpdateIssueInput{Title: &title}); err != nil {
+		t.Fatalf("update issue: %v", err)
+	}
+	events, err := store.IssueStatusEventsByIssueID(ctx, issue.ID)
+	if err != nil {
+		t.Fatalf("list status events: %v", err)
+	}
+	if len(events) != 0 {
+		t.Fatalf("events = %+v, want none", events)
 	}
 }
 
@@ -632,6 +710,12 @@ func TestDeleteProjectCascadesIssueDataAndAttachmentFiles(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create comment: %v", err)
 	}
+	readyStatus := entity.StatusReady
+	reason := "refine_requested"
+	actor := "codex"
+	if _, err := store.UpdateIssue(ctx, issue.ID, entity.UpdateIssueInput{Status: &readyStatus, ChangedReason: &reason, ChangedBy: &actor}); err != nil {
+		t.Fatalf("update issue status: %v", err)
+	}
 	issueAttachment := createStoredAttachmentFile(t, store, home, entity.AttachmentEntityIssue, strconvID(issue.ID), "issue.png")
 	commentAttachment := createStoredAttachmentFile(t, store, home, entity.AttachmentEntityComment, strconvID(comment.ID), "comment.png")
 	now := nowString()
@@ -648,6 +732,7 @@ func TestDeleteProjectCascadesIssueDataAndAttachmentFiles(t *testing.T) {
 	assertTableCount(t, store, `SELECT COUNT(*) FROM projects WHERE id = ?`, 0, project.ID)
 	assertTableCount(t, store, `SELECT COUNT(*) FROM issues WHERE id = ?`, 0, issue.ID)
 	assertTableCount(t, store, `SELECT COUNT(*) FROM comments WHERE id = ?`, 0, comment.ID)
+	assertTableCount(t, store, `SELECT COUNT(*) FROM issue_status_events WHERE issue_id = ?`, 0, issue.ID)
 	assertTableCount(t, store, `SELECT COUNT(*) FROM attachments WHERE id IN (?, ?)`, 0, issueAttachment.ID, commentAttachment.ID)
 	assertTableCount(t, store, `SELECT COUNT(*) FROM issue_dependencies WHERE parent_issue_id = ? AND dependency_issue_id = ?`, 0, otherIssue.ID, issue.ID)
 	assertTableCount(t, store, `SELECT COUNT(*) FROM project_workflows WHERE project_id = ?`, 0, project.ID)

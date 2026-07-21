@@ -44,6 +44,11 @@ func TestNormalizeUpdateIssue(t *testing.T) {
 	invalidStatus := Status("unknown")
 	invalidPriority := Priority("unknown")
 	longAssignee := strings.Repeat("x", 201)
+	status := StatusReady
+	changedReason := "refine_requested"
+	longChangedReason := strings.Repeat("x", 201)
+	changedBy := "codex"
+	longChangedBy := strings.Repeat("x", 201)
 	validDependencyIDs := []int64{1, 2}
 	invalidDependencyIDs := []int64{1, 0}
 	duplicateDependencyIDs := []int64{1, 1}
@@ -54,10 +59,15 @@ func TestNormalizeUpdateIssue(t *testing.T) {
 	}{
 		{name: "valid", input: UpdateIssueInput{Title: &validTitle}},
 		{name: "valid dependency ids", input: UpdateIssueInput{DependencyIDs: &validDependencyIDs}},
+		{name: "valid changed reason", input: UpdateIssueInput{ChangedReason: &changedReason}},
+		{name: "valid changed by with status", input: UpdateIssueInput{Status: &status, ChangedBy: &changedBy}},
 		{name: "empty title", input: UpdateIssueInput{Title: &emptyTitle}, wantErr: true},
 		{name: "title too long", input: UpdateIssueInput{Title: &longTitle}, wantErr: true},
 		{name: "description too long", input: UpdateIssueInput{Description: &longDescription}, wantErr: true},
 		{name: "invalid status", input: UpdateIssueInput{Status: &invalidStatus}, wantErr: true},
+		{name: "changed reason too long", input: UpdateIssueInput{ChangedReason: &longChangedReason}, wantErr: true},
+		{name: "changed by too long", input: UpdateIssueInput{Status: &status, ChangedBy: &longChangedBy}, wantErr: true},
+		{name: "changed by without status", input: UpdateIssueInput{ChangedBy: &changedBy}, wantErr: true},
 		{name: "invalid priority", input: UpdateIssueInput{Priority: &invalidPriority}, wantErr: true},
 		{name: "assignee too long", input: UpdateIssueInput{Assignee: &longAssignee}, wantErr: true},
 		{name: "invalid dependency id", input: UpdateIssueInput{DependencyIDs: &invalidDependencyIDs}, wantErr: true},
