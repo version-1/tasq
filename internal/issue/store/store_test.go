@@ -31,6 +31,9 @@ func TestOpenAppliesIssueTrackerSchema(t *testing.T) {
 		"issue_dependencies_dependency_issue_id_idx",
 		"comments",
 		"comments_issue_id_idx",
+		"change_requests",
+		"change_requests_issue_id_idx",
+		"change_requests_issue_status_idx",
 		"projects",
 		"projects_key_idx",
 		"project_workflows",
@@ -484,6 +487,104 @@ func TestCommentsByIssueIDClampsLimit(t *testing.T) {
 	if len(comments) != 100 {
 		t.Fatalf("comment count = %d, want 100", len(comments))
 	}
+}
+
+func TestChangeRequestLifecycle(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer store.Close()
+
+	project := createTestProject(t, store, "CHANGEREQ")
+	issue, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Change request issue"})
+	if err != nil {
+		t.Fatalf("create issue: %v", err)
+	}
+	created := createChangeRequest(t, store, issue.ID, "Please update docs.")
+	if created.Status != entity.ChangeRequestOpen || created.CreatedAt.IsZero() || created.UpdatedAt.IsZero() {
+		t.Fatalf("created = %+v", created)
+	}
+
+	editedBody := "Please update docs and tests."
+	edited, err := store.UpdateChangeRequest(ctx, created.ID, entity.UpdateChangeRequestInput{Body: &editedBody})
+	if err != nil {
+		t.Fatalf("edit change request: %v", err)
+	}
+	if edited.Body != editedBody || edited.Status != entity.ChangeRequestOpen {
+		t.Fatalf("edited = %+v", edited)
+	}
+
+	inProgress := entity.ChangeRequestInProgress
+	claimed, err := store.UpdateChangeRequest(ctx, created.ID, entity.UpdateChangeRequestInput{Status: &inProgress})
+	if err != nil {
+		t.Fatalf("claim change request: %v", err)
+	}
+	if claimed.Status != entity.ChangeRequestInProgress {
+		t.Fatalf("claimed = %+v", claimed)
+	}
+	if _, err := store.UpdateChangeRequest(ctx, created.ID, entity.UpdateChangeRequestInput{Body: &editedBody}); err == nil {
+		t.Fatal("edit in-progress change request succeeded")
+	}
+
+	comment, err := store.CreateComment(ctx, entity.CreateCommentInput{IssueID: issue.ID, Author: "codex", Type: entity.CommentProgress, Body: "Handled."})
+	if err != nil {
+		t.Fatalf("create result comment: %v", err)
+	}
+	resolved := entity.ChangeRequestResolved
+	runID := "run-123"
+	resolvedRequest, err := store.UpdateChangeRequest(ctx, created.ID, entity.UpdateChangeRequestInput{
+		Status:          &resolved,
+		ResolvedByRunID: &runID,
+		ResultCommentID: &comment.ID,
+	})
+	if err != nil {
+		t.Fatalf("resolve change request: %v", err)
+	}
+	if resolvedRequest.Status != entity.ChangeRequestResolved || resolvedRequest.ResolvedAt == nil || resolvedRequest.ResolvedByRunID == nil || *resolvedRequest.ResolvedByRunID != runID || resolvedRequest.ResultCommentID == nil || *resolvedRequest.ResultCommentID != comment.ID {
+		t.Fatalf("resolved = %+v", resolvedRequest)
+	}
+	if _, err := store.CancelChangeRequest(ctx, created.ID); err == nil {
+		t.Fatal("cancel resolved change request succeeded")
+	}
+}
+
+func TestChangeRequestsByIssueIDFiltersOpenChronologically(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer store.Close()
+
+	project := createTestProject(t, store, "CRLIST")
+	issue, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "List change requests"})
+	if err != nil {
+		t.Fatalf("create issue: %v", err)
+	}
+	first := createChangeRequest(t, store, issue.ID, "first")
+	second := createChangeRequest(t, store, issue.ID, "second")
+	third := createChangeRequest(t, store, issue.ID, "third")
+	inProgress := entity.ChangeRequestInProgress
+	if _, err := store.UpdateChangeRequest(ctx, second.ID, entity.UpdateChangeRequestInput{Status: &inProgress}); err != nil {
+		t.Fatalf("claim second: %v", err)
+	}
+
+	openRequests, err := store.ChangeRequestsByIssueID(ctx, issue.ID, entity.ChangeRequestOpen, 20)
+	if err != nil {
+		t.Fatalf("list open change requests: %v", err)
+	}
+	assertChangeRequestIDs(t, openRequests, []int64{first.ID, third.ID})
+	allRequests, err := store.ChangeRequestsByIssueID(ctx, issue.ID, "", 2)
+	if err != nil {
+		t.Fatalf("list all change requests: %v", err)
+	}
+	assertChangeRequestIDs(t, allRequests, []int64{first.ID, second.ID})
 }
 
 func TestCommentCountsByIssueID(t *testing.T) {
@@ -1666,6 +1767,20 @@ func createComment(t *testing.T, store *Store, issueID int64, body string) entit
 	return comment
 }
 
+func createChangeRequest(t *testing.T, store *Store, issueID int64, body string) entity.ChangeRequest {
+	t.Helper()
+
+	request, err := store.CreateChangeRequest(context.Background(), entity.CreateChangeRequestInput{
+		IssueID: issueID,
+		Author:  "reviewer",
+		Body:    body,
+	})
+	if err != nil {
+		t.Fatalf("create change request: %v", err)
+	}
+	return request
+}
+
 func assertInt64s(t *testing.T, got []int64, want []int64) {
 	t.Helper()
 	if len(got) != len(want) {
@@ -1707,6 +1822,19 @@ func assertCommentIDs(t *testing.T, comments []entity.Comment, want []int64) {
 	for i, comment := range comments {
 		if comment.ID != want[i] {
 			t.Fatalf("comments[%d].id = %d, want %d; comments = %+v", i, comment.ID, want[i], comments)
+		}
+	}
+}
+
+func assertChangeRequestIDs(t *testing.T, requests []entity.ChangeRequest, want []int64) {
+	t.Helper()
+
+	if len(requests) != len(want) {
+		t.Fatalf("change request length = %d, want %d; requests = %+v", len(requests), len(want), requests)
+	}
+	for i, request := range requests {
+		if request.ID != want[i] {
+			t.Fatalf("change_requests[%d].id = %d, want %d; requests = %+v", i, request.ID, want[i], requests)
 		}
 	}
 }

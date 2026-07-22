@@ -133,6 +133,66 @@ func TestNormalizeUpdateProject(t *testing.T) {
 	}
 }
 
+func TestNormalizeCreateChangeRequest(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		input   CreateChangeRequestInput
+		wantErr bool
+	}{
+		{name: "valid", input: CreateChangeRequestInput{IssueID: 1, Author: "reviewer", Body: "Update docs."}},
+		{name: "missing issue", input: CreateChangeRequestInput{Author: "reviewer", Body: "Update docs."}, wantErr: true},
+		{name: "missing author", input: CreateChangeRequestInput{IssueID: 1, Body: "Update docs."}, wantErr: true},
+		{name: "missing body", input: CreateChangeRequestInput{IssueID: 1, Author: "reviewer"}, wantErr: true},
+		{name: "body too long", input: CreateChangeRequestInput{IssueID: 1, Author: "reviewer", Body: strings.Repeat("x", 10001)}, wantErr: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := NormalizeCreateChangeRequest(tt.input)
+			assertErr(t, err, tt.wantErr)
+		})
+	}
+}
+
+func TestNormalizeUpdateChangeRequest(t *testing.T) {
+	t.Parallel()
+
+	body := "Updated body"
+	emptyBody := ""
+	inProgress := ChangeRequestInProgress
+	resolved := ChangeRequestResolved
+	canceled := ChangeRequestCanceled
+	invalidStatus := ChangeRequestStatus("unknown")
+	runID := "run-1"
+	commentID := int64(10)
+	tests := []struct {
+		name          string
+		currentStatus ChangeRequestStatus
+		input         UpdateChangeRequestInput
+		wantErr       bool
+	}{
+		{name: "edit open body", currentStatus: ChangeRequestOpen, input: UpdateChangeRequestInput{Body: &body}},
+		{name: "claim open", currentStatus: ChangeRequestOpen, input: UpdateChangeRequestInput{Status: &inProgress}},
+		{name: "cancel open", currentStatus: ChangeRequestOpen, input: UpdateChangeRequestInput{Status: &canceled}},
+		{name: "resolve in progress", currentStatus: ChangeRequestInProgress, input: UpdateChangeRequestInput{Status: &resolved, ResolvedByRunID: &runID, ResultCommentID: &commentID}},
+		{name: "empty body", currentStatus: ChangeRequestOpen, input: UpdateChangeRequestInput{Body: &emptyBody}, wantErr: true},
+		{name: "edit in progress", currentStatus: ChangeRequestInProgress, input: UpdateChangeRequestInput{Body: &body}, wantErr: true},
+		{name: "invalid status", currentStatus: ChangeRequestOpen, input: UpdateChangeRequestInput{Status: &invalidStatus}, wantErr: true},
+		{name: "open directly resolved", currentStatus: ChangeRequestOpen, input: UpdateChangeRequestInput{Status: &resolved}, wantErr: true},
+		{name: "resolved immutable", currentStatus: ChangeRequestResolved, input: UpdateChangeRequestInput{Body: &body}, wantErr: true},
+		{name: "canceled immutable", currentStatus: ChangeRequestCanceled, input: UpdateChangeRequestInput{Body: &body}, wantErr: true},
+		{name: "run id without resolved", currentStatus: ChangeRequestInProgress, input: UpdateChangeRequestInput{ResolvedByRunID: &runID}, wantErr: true},
+		{name: "comment id without resolved", currentStatus: ChangeRequestInProgress, input: UpdateChangeRequestInput{ResultCommentID: &commentID}, wantErr: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := NormalizeUpdateChangeRequest(tt.currentStatus, tt.input)
+			assertErr(t, err, tt.wantErr)
+		})
+	}
+}
+
 func assertErr(t *testing.T, err error, wantErr bool) {
 	t.Helper()
 	if wantErr && err == nil {

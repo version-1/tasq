@@ -16,6 +16,7 @@ tags:
   - name: Projects
   - name: Issues
   - name: Comments
+  - name: ChangeRequests
   - name: Attachments
   - name: Summary
 paths:
@@ -490,6 +491,116 @@ paths:
           $ref: "#/components/responses/Error"
         "404":
           $ref: "#/components/responses/Error"
+  /api/v1/issues/{issueId}/change-requests:
+    parameters:
+      - $ref: "#/components/parameters/IssueIDPath"
+    get:
+      tags:
+        - ChangeRequests
+      summary: List issue change requests.
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/ChangeRequestStatus"
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+      responses:
+        "200":
+          description: Change request list.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChangeRequestListResponse"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+    post:
+      tags:
+        - ChangeRequests
+      summary: Create an issue change request.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateChangeRequestInput"
+      responses:
+        "201":
+          description: Created change request.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChangeRequestResponse"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+  /api/v1/change-requests/{id}:
+    parameters:
+      - $ref: "#/components/parameters/ChangeRequestID"
+    get:
+      tags:
+        - ChangeRequests
+      summary: Get a change request.
+      responses:
+        "200":
+          description: Change request.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChangeRequestResponse"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+    patch:
+      tags:
+        - ChangeRequests
+      summary: Update a change request.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateChangeRequestInput"
+      responses:
+        "200":
+          description: Updated change request.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChangeRequestResponse"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+  /api/v1/change-requests/{id}/cancel:
+    parameters:
+      - $ref: "#/components/parameters/ChangeRequestID"
+    post:
+      tags:
+        - ChangeRequests
+      summary: Cancel a change request.
+      responses:
+        "200":
+          description: Canceled change request.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChangeRequestResponse"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
   /api/v1/attachments:
     get:
       tags:
@@ -626,6 +737,14 @@ components:
         type: integer
         format: int64
         minimum: 1
+    ChangeRequestID:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
     AttachmentID:
       name: id
       in: path
@@ -746,6 +865,13 @@ components:
         - blocker
         - handoff
         - general
+    ChangeRequestStatus:
+      type: string
+      enum:
+        - open
+        - in_progress
+        - resolved
+        - canceled
     AttachmentEntityType:
       type: string
       enum:
@@ -945,6 +1071,52 @@ components:
         createdAt:
           type: string
           format: date-time
+    ChangeRequest:
+      type: object
+      required:
+        - id
+        - issueId
+        - author
+        - body
+        - status
+        - createdAt
+        - updatedAt
+        - resolvedAt
+        - resolvedByRunId
+        - resultCommentId
+      properties:
+        id:
+          type: integer
+          format: int64
+        issueId:
+          type: integer
+          format: int64
+        author:
+          type: string
+        body:
+          type: string
+        status:
+          $ref: "#/components/schemas/ChangeRequestStatus"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        resolvedAt:
+          oneOf:
+            - type: string
+              format: date-time
+            - type: "null"
+        resolvedByRunId:
+          oneOf:
+            - type: string
+            - type: "null"
+        resultCommentId:
+          oneOf:
+            - type: integer
+              format: int64
+            - type: "null"
     Attachment:
       type: object
       required:
@@ -1001,6 +1173,36 @@ components:
           type: string
           minLength: 1
           maxLength: 10000
+    CreateChangeRequestInput:
+      type: object
+      required:
+        - author
+        - body
+      properties:
+        author:
+          type: string
+          minLength: 1
+        body:
+          type: string
+          minLength: 1
+          maxLength: 10000
+    UpdateChangeRequestInput:
+      type: object
+      properties:
+        body:
+          type: string
+          minLength: 1
+          maxLength: 10000
+        status:
+          $ref: "#/components/schemas/ChangeRequestStatus"
+        resolvedByRunId:
+          type: string
+          minLength: 1
+          maxLength: 200
+        resultCommentId:
+          type: integer
+          format: int64
+          minimum: 1
     CreateIssueInput:
       type: object
       required:
@@ -1264,6 +1466,42 @@ components:
             $ref: "#/components/schemas/Comment"
         meta:
           $ref: "#/components/schemas/CommentListMeta"
+    ChangeRequestListMeta:
+      type: object
+      required:
+        - limit
+        - status
+      properties:
+        limit:
+          type: integer
+        status:
+          oneOf:
+            - $ref: "#/components/schemas/ChangeRequestStatus"
+            - type: string
+              enum:
+                - ""
+    ChangeRequestResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          $ref: "#/components/schemas/ChangeRequest"
+        meta:
+          $ref: "#/components/schemas/ApiMeta"
+    ChangeRequestListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChangeRequest"
+        meta:
+          $ref: "#/components/schemas/ChangeRequestListMeta"
     AttachmentResponse:
       type: object
       required:

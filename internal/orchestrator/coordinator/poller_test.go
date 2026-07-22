@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 	"testing"
@@ -336,19 +337,21 @@ func TestPollFailedDispatchBlocksIssueAndSkipsNextPoll(t *testing.T) {
 }
 
 type fakeTracker struct {
-	mu       sync.Mutex
-	issues   map[int64]entity.Issue
-	projects map[int64]entity.Project
-	comments map[int64][]entity.Comment
-	pending  map[int64]struct{}
+	mu             sync.Mutex
+	issues         map[int64]entity.Issue
+	projects       map[int64]entity.Project
+	comments       map[int64][]entity.Comment
+	changeRequests map[int64]entity.ChangeRequest
+	pending        map[int64]struct{}
 }
 
 func newFakeTracker(issues []entity.Issue) *fakeTracker {
 	tracker := &fakeTracker{
-		issues:   make(map[int64]entity.Issue, len(issues)),
-		projects: make(map[int64]entity.Project),
-		comments: make(map[int64][]entity.Comment),
-		pending:  make(map[int64]struct{}),
+		issues:         make(map[int64]entity.Issue, len(issues)),
+		projects:       make(map[int64]entity.Project),
+		comments:       make(map[int64][]entity.Comment),
+		changeRequests: make(map[int64]entity.ChangeRequest),
+		pending:        make(map[int64]struct{}),
 	}
 	for _, issue := range issues {
 		if issue.ProjectID == 0 {
@@ -484,6 +487,69 @@ func (t *fakeTracker) CreateComment(ctx context.Context, issueID int64, input en
 	}
 	t.comments[issueID] = append(t.comments[issueID], comment)
 	return comment, nil
+}
+
+func (t *fakeTracker) ChangeRequestsByIssueID(ctx context.Context, issueID int64, status entity.ChangeRequestStatus, limit int) ([]entity.ChangeRequest, error) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if _, ok := t.issues[issueID]; !ok {
+		return nil, sql.ErrNoRows
+	}
+	var requests []entity.ChangeRequest
+	for _, request := range t.changeRequests {
+		if request.IssueID != issueID {
+			continue
+		}
+		if status != "" && request.Status != status {
+			continue
+		}
+		requests = append(requests, request)
+	}
+	sort.SliceStable(requests, func(i, j int) bool {
+		if requests[i].CreatedAt.Equal(requests[j].CreatedAt) {
+			return requests[i].ID < requests[j].ID
+		}
+		return requests[i].CreatedAt.Before(requests[j].CreatedAt)
+	})
+	if limit > 0 && len(requests) > limit {
+		requests = requests[:limit]
+	}
+	return requests, nil
+}
+
+func (t *fakeTracker) UpdateChangeRequest(ctx context.Context, id int64, input entity.UpdateChangeRequestInput) (entity.ChangeRequest, error) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	request, ok := t.changeRequests[id]
+	if !ok {
+		return entity.ChangeRequest{}, sql.ErrNoRows
+	}
+	if input.Status != nil {
+		request.Status = *input.Status
+	}
+	if input.Body != nil {
+		request.Body = *input.Body
+	}
+	if input.ResolvedByRunID != nil {
+		request.ResolvedByRunID = input.ResolvedByRunID
+	}
+	if input.ResultCommentID != nil {
+		request.ResultCommentID = input.ResultCommentID
+	}
+	t.changeRequests[id] = request
+	return request, nil
+}
+
+func (t *fakeTracker) addChangeRequest(request entity.ChangeRequest) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if request.ID == 0 {
+		request.ID = int64(len(t.changeRequests) + 1)
+	}
+	if request.Status == "" {
+		request.Status = entity.ChangeRequestOpen
+	}
+	t.changeRequests[request.ID] = request
 }
 
 func (t *fakeTracker) issue(tb testing.TB, id int64) entity.Issue {

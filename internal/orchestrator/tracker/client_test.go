@@ -323,6 +323,61 @@ func TestCreateCommentPostsComment(t *testing.T) {
 	}
 }
 
+func TestChangeRequestsByIssueIDFetchesFilteredRequests(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet || r.URL.Path != "/api/v1/issues/42/change-requests" {
+			t.Fatalf("unexpected request %s %s", r.Method, r.URL.Path)
+		}
+		if r.URL.Query().Get("status") != "open" || r.URL.Query().Get("limit") != "20" {
+			t.Fatalf("query = %s", r.URL.RawQuery)
+		}
+		writeTestData(t, w, []entity.ChangeRequest{{ID: 3, IssueID: 42, Author: "reviewer", Status: entity.ChangeRequestOpen, Body: "Update docs."}})
+	}))
+	defer server.Close()
+
+	requests, err := NewClient(server.URL).ChangeRequestsByIssueID(context.Background(), 42, entity.ChangeRequestOpen, 20)
+	if err != nil {
+		t.Fatalf("list change requests: %v", err)
+	}
+	if len(requests) != 1 || requests[0].ID != 3 || requests[0].Status != entity.ChangeRequestOpen {
+		t.Fatalf("requests = %+v", requests)
+	}
+}
+
+func TestUpdateChangeRequestPatchesRequest(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPatch || r.URL.Path != "/api/v1/change-requests/3" {
+			t.Fatalf("unexpected request %s %s", r.Method, r.URL.Path)
+		}
+		var payload entity.UpdateChangeRequestInput
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			t.Fatalf("decode request: %v", err)
+		}
+		if payload.Status == nil || *payload.Status != entity.ChangeRequestResolved || payload.ResolvedByRunID == nil || *payload.ResolvedByRunID != "run-1" {
+			t.Fatalf("payload = %+v", payload)
+		}
+		writeTestData(t, w, entity.ChangeRequest{ID: 3, IssueID: 42, Author: "reviewer", Status: entity.ChangeRequestResolved, Body: "Update docs.", ResolvedByRunID: payload.ResolvedByRunID})
+	}))
+	defer server.Close()
+
+	status := entity.ChangeRequestResolved
+	runID := "run-1"
+	request, err := NewClient(server.URL).UpdateChangeRequest(context.Background(), 3, entity.UpdateChangeRequestInput{
+		Status:          &status,
+		ResolvedByRunID: &runID,
+	})
+	if err != nil {
+		t.Fatalf("update change request: %v", err)
+	}
+	if request.ID != 3 || request.Status != entity.ChangeRequestResolved || request.ResolvedByRunID == nil || *request.ResolvedByRunID != runID {
+		t.Fatalf("request = %+v", request)
+	}
+}
+
 func writeTestData(t *testing.T, w http.ResponseWriter, data any) {
 	t.Helper()
 	w.Header().Set("Content-Type", "application/json")

@@ -144,6 +144,56 @@ func TestDispatcherPassesLatestResumeThreadIDToRunner(t *testing.T) {
 	}
 }
 
+func TestDispatcherClaimsOpenChangeRequestsForContinuation(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store := openTestStore(t)
+	previousRun, err := store.CreateRun(ctx, runstore.CreateRunInput{
+		IssueID:        42,
+		Workspace:      filepath.Join(t.TempDir(), "issue-42"),
+		ThreadID:       "thread-previous",
+		Attempt:        1,
+		OrchestratorID: "test-orchestrator",
+	})
+	if err != nil {
+		t.Fatalf("create previous run: %v", err)
+	}
+	if _, err := store.UpdateRunStatus(ctx, previousRun.RunID, run.StatusSucceeded, ""); err != nil {
+		t.Fatalf("mark previous succeeded: %v", err)
+	}
+	storedRun, err := store.CreateRun(ctx, runstore.CreateRunInput{
+		IssueID:        42,
+		Workspace:      filepath.Join(t.TempDir(), "issue-42"),
+		Attempt:        2,
+		OrchestratorID: "test-orchestrator",
+	})
+	if err != nil {
+		t.Fatalf("create continuation run: %v", err)
+	}
+	testRunner := &recordingRunner{result: runner.Result{Status: run.StatusSucceeded}}
+	tracker := newFakeTracker([]entity.Issue{{ID: 42, Status: entity.StatusReady, Title: "Run task"}})
+	tracker.addChangeRequest(entity.ChangeRequest{ID: 1, IssueID: 42, Author: "user", Body: "Adjust the docs.", Status: entity.ChangeRequestOpen})
+	dispatcher := newTestDispatcherWithTracker(t, store, testRunner, tracker, 2)
+
+	if err := dispatcher.Dispatch(ctx, []run.Run{storedRun}); err != nil {
+		t.Fatalf("dispatch: %v", err)
+	}
+	shutdownDispatcher(t, dispatcher)
+
+	task := testRunner.firstTask(t)
+	if len(task.ChangeRequests) != 1 || task.ChangeRequests[0].ID != 1 || task.ChangeRequests[0].Status != entity.ChangeRequestInProgress {
+		t.Fatalf("change requests = %+v", task.ChangeRequests)
+	}
+	requests, err := tracker.ChangeRequestsByIssueID(ctx, 42, entity.ChangeRequestInProgress, 20)
+	if err != nil {
+		t.Fatalf("list change requests: %v", err)
+	}
+	if len(requests) != 1 || requests[0].ID != 1 {
+		t.Fatalf("claimed requests = %+v", requests)
+	}
+}
+
 func TestDispatcherResolvesWorkflowForEachRunProject(t *testing.T) {
 	t.Parallel()
 

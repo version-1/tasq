@@ -272,6 +272,10 @@ func (s *Store) DeleteProject(ctx context.Context, id int64) error {
 		   OR dependency_issue_id IN (SELECT id FROM issues WHERE project_id = ?)`, id, id); err != nil {
 		return fmt.Errorf("delete issue dependencies: %w", err)
 	}
+	if _, err := tx.ExecContext(ctx, `DELETE FROM change_requests
+		WHERE issue_id IN (SELECT id FROM issues WHERE project_id = ?)`, id); err != nil {
+		return fmt.Errorf("delete change requests: %w", err)
+	}
 	if _, err := tx.ExecContext(ctx, `DELETE FROM comments
 		WHERE issue_id IN (SELECT id FROM issues WHERE project_id = ?)`, id); err != nil {
 		return fmt.Errorf("delete comments: %w", err)
@@ -847,6 +851,151 @@ func (s *Store) UpdateComment(ctx context.Context, id int64, input entity.Update
 	return s.Comment(ctx, id)
 }
 
+func (s *Store) CreateChangeRequest(ctx context.Context, input entity.CreateChangeRequestInput) (entity.ChangeRequest, error) {
+	normalized, err := entity.NormalizeCreateChangeRequest(input)
+	if err != nil {
+		return entity.ChangeRequest{}, err
+	}
+	if _, err := s.Issue(ctx, normalized.IssueID); err != nil {
+		return entity.ChangeRequest{}, err
+	}
+	now := nowString()
+	result, err := s.db.ExecContext(ctx, `INSERT INTO change_requests (
+		issue_id, author, body, status, created_at, updated_at
+	) VALUES (?, ?, ?, ?, ?, ?)`,
+		normalized.IssueID,
+		normalized.Author,
+		normalized.Body,
+		entity.ChangeRequestOpen,
+		now,
+		now,
+	)
+	if err != nil {
+		return entity.ChangeRequest{}, fmt.Errorf("create change request: %w", err)
+	}
+	id, err := result.LastInsertId()
+	if err != nil {
+		return entity.ChangeRequest{}, fmt.Errorf("read created change request id: %w", err)
+	}
+	return s.ChangeRequest(ctx, id)
+}
+
+func (s *Store) ChangeRequestsByIssueID(ctx context.Context, issueID int64, status entity.ChangeRequestStatus, limit int) ([]entity.ChangeRequest, error) {
+	if issueID <= 0 {
+		return nil, errors.New("issueId is required")
+	}
+	if status != "" && !entity.IsValidChangeRequestStatus(status) {
+		return nil, errors.New("status is invalid")
+	}
+	if _, err := s.Issue(ctx, issueID); err != nil {
+		return nil, err
+	}
+	limit = normalizeChangeRequestLimit(limit)
+	query := `SELECT ` + changeRequestColumns() + ` FROM change_requests WHERE issue_id = ?`
+	args := []any{issueID}
+	if status != "" {
+		query += ` AND status = ?`
+		args = append(args, status)
+	}
+	query += ` ORDER BY created_at ASC, id ASC LIMIT ?`
+	args = append(args, limit)
+	rows, err := s.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("list change requests: %w", err)
+	}
+	defer rows.Close()
+
+	items := []entity.ChangeRequest{}
+	for rows.Next() {
+		item, err := scanChangeRequest(rows)
+		if err != nil {
+			return nil, err
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate change requests: %w", err)
+	}
+	return items, nil
+}
+
+func (s *Store) ChangeRequest(ctx context.Context, id int64) (entity.ChangeRequest, error) {
+	row := s.db.QueryRowContext(ctx, `SELECT `+changeRequestColumns()+` FROM change_requests WHERE id = ?`, id)
+	item, err := scanChangeRequest(row)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return entity.ChangeRequest{}, sql.ErrNoRows
+		}
+		return entity.ChangeRequest{}, fmt.Errorf("read change request: %w", err)
+	}
+	return item, nil
+}
+
+func (s *Store) UpdateChangeRequest(ctx context.Context, id int64, input entity.UpdateChangeRequestInput) (entity.ChangeRequest, error) {
+	current, err := s.ChangeRequest(ctx, id)
+	if err != nil {
+		return entity.ChangeRequest{}, err
+	}
+	normalized, err := entity.NormalizeUpdateChangeRequest(current.Status, input)
+	if err != nil {
+		return entity.ChangeRequest{}, err
+	}
+	if normalized.ResultCommentID != nil {
+		comment, err := s.Comment(ctx, *normalized.ResultCommentID)
+		if err != nil {
+			return entity.ChangeRequest{}, err
+		}
+		if comment.IssueID != current.IssueID {
+			return entity.ChangeRequest{}, errors.New("resultCommentId must reference the same issue")
+		}
+	}
+	body := current.Body
+	if normalized.Body != nil {
+		body = *normalized.Body
+	}
+	status := current.Status
+	if normalized.Status != nil {
+		status = *normalized.Status
+	}
+	resolvedAt := current.ResolvedAt
+	if current.Status != entity.ChangeRequestResolved && status == entity.ChangeRequestResolved {
+		now, err := parseTime(nowString())
+		if err != nil {
+			return entity.ChangeRequest{}, err
+		}
+		resolvedAt = &now
+	}
+	resolvedByRunID := current.ResolvedByRunID
+	if normalized.ResolvedByRunID != nil {
+		resolvedByRunID = normalized.ResolvedByRunID
+	}
+	resultCommentID := current.ResultCommentID
+	if normalized.ResultCommentID != nil {
+		resultCommentID = normalized.ResultCommentID
+	}
+	now := nowString()
+	_, err = s.db.ExecContext(ctx, `UPDATE change_requests
+		SET body = ?, status = ?, updated_at = ?, resolved_at = ?, resolved_by_run_id = ?, result_comment_id = ?
+		WHERE id = ?`,
+		body,
+		status,
+		now,
+		formatOptionalTime(resolvedAt),
+		stringPtrValue(resolvedByRunID),
+		int64PtrValue(resultCommentID),
+		id,
+	)
+	if err != nil {
+		return entity.ChangeRequest{}, fmt.Errorf("update change request: %w", err)
+	}
+	return s.ChangeRequest(ctx, id)
+}
+
+func (s *Store) CancelChangeRequest(ctx context.Context, id int64) (entity.ChangeRequest, error) {
+	status := entity.ChangeRequestCanceled
+	return s.UpdateChangeRequest(ctx, id, entity.UpdateChangeRequestInput{Status: &status})
+}
+
 func (s *Store) Summary(ctx context.Context) (entity.Summary, error) {
 	issues, err := s.Issues(ctx)
 	if err != nil {
@@ -911,6 +1060,10 @@ func commentColumns() string {
 	return `id, issue_id, author, type, body, created_at`
 }
 
+func changeRequestColumns() string {
+	return `id, issue_id, author, body, status, created_at, updated_at, resolved_at, resolved_by_run_id, result_comment_id`
+}
+
 func projectColumns() string {
 	return `id, key, name, description, location, COALESCE((SELECT checksum FROM project_workflows WHERE project_workflows.project_id = projects.id), ''), created_at, updated_at`
 }
@@ -920,6 +1073,16 @@ func projectWorkflowColumns() string {
 }
 
 func normalizeCommentLimit(limit int) int {
+	if limit <= 0 {
+		return 50
+	}
+	if limit > 100 {
+		return 100
+	}
+	return limit
+}
+
+func normalizeChangeRequestLimit(limit int) int {
 	if limit <= 0 {
 		return 50
 	}
@@ -970,6 +1133,45 @@ func scanComment(row rowScanner) (entity.Comment, error) {
 		return entity.Comment{}, err
 	}
 	item.CreatedAt = parsedCreatedAt
+	return item, nil
+}
+
+func scanChangeRequest(row rowScanner) (entity.ChangeRequest, error) {
+	var item entity.ChangeRequest
+	var createdAt string
+	var updatedAt string
+	var resolvedAt sql.NullString
+	var resolvedByRunID sql.NullString
+	var resultCommentID sql.NullInt64
+	err := row.Scan(&item.ID, &item.IssueID, &item.Author, &item.Body, &item.Status, &createdAt, &updatedAt, &resolvedAt, &resolvedByRunID, &resultCommentID)
+	if err != nil {
+		return entity.ChangeRequest{}, err
+	}
+	parsedCreatedAt, err := parseTime(createdAt)
+	if err != nil {
+		return entity.ChangeRequest{}, err
+	}
+	parsedUpdatedAt, err := parseTime(updatedAt)
+	if err != nil {
+		return entity.ChangeRequest{}, err
+	}
+	item.CreatedAt = parsedCreatedAt
+	item.UpdatedAt = parsedUpdatedAt
+	if resolvedAt.Valid {
+		parsedResolvedAt, err := parseTime(resolvedAt.String)
+		if err != nil {
+			return entity.ChangeRequest{}, err
+		}
+		item.ResolvedAt = &parsedResolvedAt
+	}
+	if resolvedByRunID.Valid {
+		value := resolvedByRunID.String
+		item.ResolvedByRunID = &value
+	}
+	if resultCommentID.Valid {
+		value := resultCommentID.Int64
+		item.ResultCommentID = &value
+	}
 	return item, nil
 }
 
@@ -1028,6 +1230,27 @@ func nowString() string {
 
 func formatTime(value time.Time) string {
 	return value.UTC().Format(time.RFC3339Nano)
+}
+
+func formatOptionalTime(value *time.Time) any {
+	if value == nil {
+		return nil
+	}
+	return formatTime(*value)
+}
+
+func stringPtrValue(value *string) any {
+	if value == nil {
+		return nil
+	}
+	return *value
+}
+
+func int64PtrValue(value *int64) any {
+	if value == nil {
+		return nil
+	}
+	return *value
 }
 
 func parseTime(value string) (time.Time, error) {

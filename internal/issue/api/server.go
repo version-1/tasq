@@ -70,6 +70,11 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/v1/issues/{issueId}/comments", s.comments)
 	mux.HandleFunc("POST /api/v1/issues/{issueId}/comments", s.createComment)
 	mux.HandleFunc("PATCH /api/v1/comments/{id}", s.updateComment)
+	mux.HandleFunc("GET /api/v1/issues/{issueId}/change-requests", s.changeRequests)
+	mux.HandleFunc("POST /api/v1/issues/{issueId}/change-requests", s.createChangeRequest)
+	mux.HandleFunc("GET /api/v1/change-requests/{id}", s.changeRequest)
+	mux.HandleFunc("PATCH /api/v1/change-requests/{id}", s.updateChangeRequest)
+	mux.HandleFunc("POST /api/v1/change-requests/{id}/cancel", s.cancelChangeRequest)
 	mux.HandleFunc("GET /api/v1/attachments", s.attachments)
 	mux.HandleFunc("POST /api/v1/attachments", s.createAttachment)
 	mux.HandleFunc("GET /api/v1/attachments/{id}/content", s.attachmentContent)
@@ -674,6 +679,97 @@ func (s *Server) updateComment(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, updated)
 }
 
+func (s *Server) createChangeRequest(w http.ResponseWriter, r *http.Request) {
+	issueID, ok := issueIDPath(w, r, "change_requests.create")
+	if !ok {
+		return
+	}
+	var input entity.CreateChangeRequestInput
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		writeError(w, http.StatusBadRequest, "change_requests.create.invalid_request", err)
+		return
+	}
+	input.IssueID = issueID
+	created, err := s.store.CreateChangeRequest(r.Context(), input)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			writeError(w, http.StatusNotFound, "change_requests.create.issue_not_found", errors.New("issue not found"))
+			return
+		}
+		writeError(w, http.StatusBadRequest, "change_requests.create.invalid_input", err)
+		return
+	}
+	writeJSON(w, http.StatusCreated, created)
+}
+
+func (s *Server) changeRequests(w http.ResponseWriter, r *http.Request) {
+	issueID, ok := issueIDPath(w, r, "change_requests.list")
+	if !ok {
+		return
+	}
+	status, limit, ok := parseChangeRequestListQuery(w, r)
+	if !ok {
+		return
+	}
+	items, err := s.store.ChangeRequestsByIssueID(r.Context(), issueID, status, limit)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			writeError(w, http.StatusNotFound, "change_requests.list.issue_not_found", errors.New("issue not found"))
+			return
+		}
+		writeError(w, http.StatusBadRequest, "change_requests.list.invalid_input", err)
+		return
+	}
+	writeJSONWithMeta(w, http.StatusOK, items, responseMeta{
+		"limit":  limit,
+		"status": status,
+	})
+}
+
+func (s *Server) changeRequest(w http.ResponseWriter, r *http.Request) {
+	id, ok := pathID(w, r, "change request", "change_requests.get")
+	if !ok {
+		return
+	}
+	item, err := s.store.ChangeRequest(r.Context(), id)
+	if err != nil {
+		writeStoreError(w, err, "change_requests.get", "change request")
+		return
+	}
+	writeJSON(w, http.StatusOK, item)
+}
+
+func (s *Server) updateChangeRequest(w http.ResponseWriter, r *http.Request) {
+	id, ok := pathID(w, r, "change request", "change_requests.update")
+	if !ok {
+		return
+	}
+	var input entity.UpdateChangeRequestInput
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		writeError(w, http.StatusBadRequest, "change_requests.update.invalid_request", err)
+		return
+	}
+	updated, err := s.store.UpdateChangeRequest(r.Context(), id, input)
+	if err != nil {
+		writeStoreError(w, err, "change_requests.update", "change request")
+		return
+	}
+	writeJSON(w, http.StatusOK, updated)
+}
+
+func (s *Server) cancelChangeRequest(w http.ResponseWriter, r *http.Request) {
+	id, ok := pathID(w, r, "change request", "change_requests.cancel")
+	if !ok {
+		return
+	}
+	updated, err := s.store.CancelChangeRequest(r.Context(), id)
+	if err != nil {
+		writeStoreError(w, err, "change_requests.cancel", "change request")
+		return
+	}
+	writeJSON(w, http.StatusOK, updated)
+}
+
 func (s *Server) attachments(w http.ResponseWriter, r *http.Request) {
 	entityType := strings.TrimSpace(r.URL.Query().Get("entity_type"))
 	entityID := strings.TrimSpace(r.URL.Query().Get("entity_id"))
@@ -841,6 +937,27 @@ func parseCommentListQuery(w http.ResponseWriter, r *http.Request) (int64, int, 
 		limit = 100
 	}
 	return cursor, limit, true
+}
+
+func parseChangeRequestListQuery(w http.ResponseWriter, r *http.Request) (entity.ChangeRequestStatus, int, bool) {
+	status := entity.ChangeRequestStatus(strings.TrimSpace(r.URL.Query().Get("status")))
+	if status != "" && !entity.IsValidChangeRequestStatus(status) {
+		writeError(w, http.StatusBadRequest, "change_requests.list.invalid_input", errors.New("status is invalid"))
+		return "", 0, false
+	}
+	limit64, err := parseOptionalInt64Query(r, "limit", 50)
+	if err != nil || limit64 < 0 {
+		writeError(w, http.StatusBadRequest, "change_requests.list.invalid_input", errors.New("limit is invalid"))
+		return "", 0, false
+	}
+	limit := int(limit64)
+	if limit <= 0 {
+		limit = 50
+	}
+	if limit > 100 {
+		limit = 100
+	}
+	return status, limit, true
 }
 
 func parseOptionalInt64Query(r *http.Request, name string, fallback int64) (int64, error) {

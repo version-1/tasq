@@ -1365,6 +1365,90 @@ func TestCommentsRejectsInvalidQuery(t *testing.T) {
 	assertErrorCode(t, rec, "comments.list.invalid_input")
 }
 
+func TestCreateListUpdateAndCancelChangeRequest(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer(t)
+	issue := createIssue(t, server, "Change requested issue", entity.StatusBacklog)
+	createReq := httptest.NewRequest(http.MethodPost, "/api/v1/issues/"+stringID(issue.ID)+"/change-requests", bytes.NewBufferString(`{
+		"author": "reviewer",
+		"body": "Please update tests."
+	}`))
+	createRec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(createRec, createReq)
+
+	if createRec.Code != http.StatusCreated {
+		t.Fatalf("create status = %d, body = %s", createRec.Code, createRec.Body.String())
+	}
+	created := decodeData[entity.ChangeRequest](t, createRec)
+	if created.IssueID != issue.ID || created.Author != "reviewer" || created.Status != entity.ChangeRequestOpen || created.Body != "Please update tests." {
+		t.Fatalf("created = %+v", created)
+	}
+
+	listReq := httptest.NewRequest(http.MethodGet, "/api/v1/issues/"+stringID(issue.ID)+"/change-requests?status=open&limit=20", nil)
+	listRec := httptest.NewRecorder()
+	server.Handler().ServeHTTP(listRec, listReq)
+	if listRec.Code != http.StatusOK {
+		t.Fatalf("list status = %d, body = %s", listRec.Code, listRec.Body.String())
+	}
+	var listPayload struct {
+		Data []entity.ChangeRequest `json:"data"`
+	}
+	if err := json.NewDecoder(listRec.Body).Decode(&listPayload); err != nil {
+		t.Fatalf("decode list response: %v", err)
+	}
+	if len(listPayload.Data) != 1 || listPayload.Data[0].ID != created.ID {
+		t.Fatalf("list data = %+v", listPayload.Data)
+	}
+
+	inProgressReq := httptest.NewRequest(http.MethodPatch, "/api/v1/change-requests/"+stringID(created.ID), bytes.NewBufferString(`{"status":"in_progress"}`))
+	inProgressRec := httptest.NewRecorder()
+	server.Handler().ServeHTTP(inProgressRec, inProgressReq)
+	if inProgressRec.Code != http.StatusOK {
+		t.Fatalf("update status = %d, body = %s", inProgressRec.Code, inProgressRec.Body.String())
+	}
+	claimed := decodeData[entity.ChangeRequest](t, inProgressRec)
+	if claimed.Status != entity.ChangeRequestInProgress {
+		t.Fatalf("claimed = %+v", claimed)
+	}
+
+	cancelReq := httptest.NewRequest(http.MethodPost, "/api/v1/change-requests/"+stringID(created.ID)+"/cancel", nil)
+	cancelRec := httptest.NewRecorder()
+	server.Handler().ServeHTTP(cancelRec, cancelReq)
+	if cancelRec.Code != http.StatusOK {
+		t.Fatalf("cancel status = %d, body = %s", cancelRec.Code, cancelRec.Body.String())
+	}
+	canceled := decodeData[entity.ChangeRequest](t, cancelRec)
+	if canceled.Status != entity.ChangeRequestCanceled {
+		t.Fatalf("canceled = %+v", canceled)
+	}
+}
+
+func TestUpdateChangeRequestRejectsBodyEditAfterClaim(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer(t)
+	issue := createIssue(t, server, "Immutable change request", entity.StatusBacklog)
+	request, err := server.store.CreateChangeRequest(context.Background(), entity.CreateChangeRequestInput{IssueID: issue.ID, Author: "reviewer", Body: "Original"})
+	if err != nil {
+		t.Fatalf("create change request: %v", err)
+	}
+	inProgress := entity.ChangeRequestInProgress
+	if _, err := server.store.UpdateChangeRequest(context.Background(), request.ID, entity.UpdateChangeRequestInput{Status: &inProgress}); err != nil {
+		t.Fatalf("claim change request: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodPatch, "/api/v1/change-requests/"+stringID(request.ID), bytes.NewBufferString(`{"body":"Changed"}`))
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	assertErrorCode(t, rec, "change_requests.update.invalid_input")
+}
+
 func TestAttachmentUploadListContentAndDelete(t *testing.T) {
 	t.Parallel()
 
