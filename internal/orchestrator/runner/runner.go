@@ -86,7 +86,7 @@ func (r CodexRunner) Run(ctx context.Context, task Task) Result {
 	if task.Workspace.Path == "" {
 		return Result{Status: run.StatusFailed, Error: "workspace path is required"}
 	}
-	prompt := continuationGuidance
+	prompt := continuationPrompt(task)
 	if task.ResumeThreadID == "" {
 		var err error
 		prompt, err = renderPrompt(task)
@@ -130,7 +130,7 @@ func (r CodexRunner) Run(ctx context.Context, task Task) Result {
 	for turnNumber := 1; turnNumber <= maxTurns; turnNumber++ {
 		turnPrompt := prompt
 		if turnNumber > 1 {
-			turnPrompt = continuationGuidance
+			turnPrompt = continuationPrompt(task)
 		}
 		turnID, err := session.startTurn(ctx, task, threadID, turnPrompt)
 		if err != nil {
@@ -485,7 +485,11 @@ const defaultTaskWorkPrompt = "Use `tq` to keep the issue tracker synchronized:\
 	"Run the installed `tq` binary from `PATH`. Do not use `go run ./cmd/tq` for\n" +
 	"tracker synchronization."
 
-const continuationGuidance = "Continue the same task in this live thread. Do not repeat completed work. Stop when the workflow is ready for handoff."
+const continuationGuidance = "First run `tq issue update %d --status in_progress` to keep the issue tracker synchronized. Then continue the same task in this live thread. Do not repeat completed work. Stop when the workflow is ready for handoff."
+
+func continuationPrompt(task Task) string {
+	return fmt.Sprintf(continuationGuidance, task.Issue.ID)
+}
 
 func renderPrompt(task Task) (string, error) {
 	prompt := task.PromptTemplate
