@@ -73,6 +73,25 @@ queue state はこの table と issue status から導出されます。`queued`
 | Body        | `string`      | yes                | optional (`*string`) | —         | min 1, max 10,000 chars、Markdown attachment refs を含められること |
 | CreatedAt   | `time.Time`   | auto               | —                  | `now()`     | —                                                                  |
 
+### ChangeRequest
+
+change request は、後続の agent run が対応すべきユーザーまたは reviewer からの追加依頼を保存します。workflow state を持つため comments とは分離します。
+
+| Field           | Go Type               | Required (Create) | Required (Update) | Default       | Constraints |
+|-----------------|-----------------------|-------------------|-------------------|---------------|-------------|
+| ID              | `int64`               | auto              | path param        | autoincrement | `> 0` |
+| IssueID         | `int64`               | yes               | —                 | —             | `> 0`、参照先 issue が存在すること |
+| Author          | `string`              | yes               | —                 | —             | min 1 |
+| Body            | `string`              | yes               | optional (`*string`) | —          | min 1, max 10,000 chars、`open` の間だけ編集可能 |
+| Status          | `ChangeRequestStatus` | auto              | optional          | `open`        | enum: `open`, `in_progress`, `resolved`, `canceled` |
+| CreatedAt       | `time.Time`           | auto              | —                 | `now()`       | — |
+| UpdatedAt       | `time.Time`           | auto              | auto              | `now()`       | — |
+| ResolvedAt      | `*time.Time`          | —                 | resolve 時に auto | `NULL`        | status が `resolved` になったときに設定 |
+| ResolvedByRunID | `*string`             | —                 | resolve 時に optional | `NULL`    | max 200 chars、orchestrator run ID |
+| ResultCommentID | `*int64`              | —                 | resolve 時に optional | `NULL`    | 同じ issue の comment を参照すること |
+
+許可される status 遷移は `open -> in_progress`、`open -> canceled`、`in_progress -> resolved`、`in_progress -> canceled` です。`resolved` と `canceled` の request は immutable です。orchestrator は、前回 run を持つ issue を継続するとき、open change requests を時系列で最大 20 件含め、その request を `in_progress` に移します。失敗または中断された session は `in_progress` request を自動で `open` に戻しません。
+
 ### Attachment
 
 | Field       | Go Type    | Required (Create) | Required (Update) | Default | Constraints                                                        |
@@ -100,7 +119,7 @@ queue state はこの table と issue status から導出されます。`queued`
 | CreatedAt   | `time.Time`| auto               | —                  | `now()`     | —                                                                  |
 | UpdatedAt   | `time.Time`| auto               | auto               | `now()`     | —                                                                  |
 
-project を削除すると、issue-tracker が所有する子孫データも cascade 削除されます。対象は issues、その issues を参照する issue dependency edges、comments、attachment records と `$TQ_HOME/system/data/attachments` 配下の attachment files、保存済み project workflow overrides です。所有する issues に紐づく orchestrator runtime の子孫データである runs、runner events、workspace metadata、workspace setup failures も削除します。所有 issue に `running` の orchestrator run が 1 件でもある場合、project 削除は拒否されます。project 削除はディスク上の `Location` や worktrees を削除・変更しません。
+project を削除すると、issue-tracker が所有する子孫データも cascade 削除されます。対象は issues、その issues を参照する issue dependency edges、comments、change requests、attachment records と `$TQ_HOME/system/data/attachments` 配下の attachment files、保存済み project workflow overrides です。所有する issues に紐づく orchestrator runtime の子孫データである runs、runner events、workspace metadata、workspace setup failures も削除します。所有 issue に `running` の orchestrator run が 1 件でもある場合、project 削除は拒否されます。project 削除はディスク上の `Location` や worktrees を削除・変更しません。
 
 ### ProjectWorkflow
 
@@ -219,6 +238,7 @@ API は次の項目について directory の存在を確認しません。
 | Issue.Status     | `backlog`, `ready`, `in_progress`, `review`, `done`, `blocked`, `failed`, `cancelled`, `duplicate` |
 | Issue.Priority   | `low`, `normal`, `high`, `urgent`                                     |
 | Comment.Type     | `progress`, `blocker`, `handoff`, `general`                           |
+| ChangeRequest.Status | `open`, `in_progress`, `resolved`, `canceled`                    |
 | Attachment.EntityType | `issue`, `comment`                                                |
 | Attachment.ContentType | `image/png`, `image/jpeg`, `image/gif`, `image/webp`             |
 | Workspace.Status | `active`, `inactive`, `archived`                                      |

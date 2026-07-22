@@ -63,6 +63,15 @@ const (
 	CommentGeneral  CommentType = "general"
 )
 
+type ChangeRequestStatus string
+
+const (
+	ChangeRequestOpen       ChangeRequestStatus = "open"
+	ChangeRequestInProgress ChangeRequestStatus = "in_progress"
+	ChangeRequestResolved   ChangeRequestStatus = "resolved"
+	ChangeRequestCanceled   ChangeRequestStatus = "canceled"
+)
+
 type Project struct {
 	ID               int64     `json:"id"`
 	Key              string    `json:"key"`
@@ -170,6 +179,32 @@ type CreateCommentInput struct {
 
 type UpdateCommentInput struct {
 	Body *string `json:"body"`
+}
+
+type ChangeRequest struct {
+	ID              int64               `json:"id"`
+	IssueID         int64               `json:"issueId"`
+	Author          string              `json:"author"`
+	Body            string              `json:"body"`
+	Status          ChangeRequestStatus `json:"status"`
+	CreatedAt       time.Time           `json:"createdAt"`
+	UpdatedAt       time.Time           `json:"updatedAt"`
+	ResolvedAt      *time.Time          `json:"resolvedAt"`
+	ResolvedByRunID *string             `json:"resolvedByRunId"`
+	ResultCommentID *int64              `json:"resultCommentId"`
+}
+
+type CreateChangeRequestInput struct {
+	IssueID int64  `json:"issueId"`
+	Author  string `json:"author"`
+	Body    string `json:"body"`
+}
+
+type UpdateChangeRequestInput struct {
+	Body            *string              `json:"body"`
+	Status          *ChangeRequestStatus `json:"status"`
+	ResolvedByRunID *string              `json:"resolvedByRunId"`
+	ResultCommentID *int64               `json:"resultCommentId"`
 }
 
 type IssueStats struct {
@@ -373,6 +408,70 @@ func NormalizeUpdateComment(input UpdateCommentInput) (UpdateCommentInput, error
 	return input, nil
 }
 
+func NormalizeCreateChangeRequest(input CreateChangeRequestInput) (CreateChangeRequestInput, error) {
+	if input.IssueID <= 0 {
+		return input, errors.New("issueId is required")
+	}
+	if input.Author == "" {
+		return input, errors.New("author is required")
+	}
+	if input.Body == "" {
+		return input, errors.New("body is required")
+	}
+	if runeCount(input.Body) > maxDescriptionLength {
+		return input, errors.New("body must be 10000 characters or fewer")
+	}
+	return input, nil
+}
+
+func NormalizeUpdateChangeRequest(currentStatus ChangeRequestStatus, input UpdateChangeRequestInput) (UpdateChangeRequestInput, error) {
+	if !IsValidChangeRequestStatus(currentStatus) {
+		return input, errors.New("current status is invalid")
+	}
+	if currentStatus == ChangeRequestResolved || currentStatus == ChangeRequestCanceled {
+		return input, errors.New("change request is immutable")
+	}
+	if input.Body != nil {
+		if currentStatus != ChangeRequestOpen {
+			return input, errors.New("body can only be updated while open")
+		}
+		if *input.Body == "" {
+			return input, errors.New("body is required")
+		}
+		if runeCount(*input.Body) > maxDescriptionLength {
+			return input, errors.New("body must be 10000 characters or fewer")
+		}
+	}
+	if input.Status != nil {
+		if !IsValidChangeRequestStatus(*input.Status) {
+			return input, errors.New("status is invalid")
+		}
+		if !CanTransitionChangeRequest(currentStatus, *input.Status) {
+			return input, errors.New("status transition is invalid")
+		}
+	}
+	if input.ResolvedByRunID != nil {
+		if *input.ResolvedByRunID == "" {
+			return input, errors.New("resolvedByRunId is required")
+		}
+		if runeCount(*input.ResolvedByRunID) > maxNameLength {
+			return input, errors.New("resolvedByRunId must be 200 characters or fewer")
+		}
+		if input.Status == nil || *input.Status != ChangeRequestResolved {
+			return input, errors.New("resolvedByRunId requires resolved status")
+		}
+	}
+	if input.ResultCommentID != nil {
+		if *input.ResultCommentID <= 0 {
+			return input, errors.New("resultCommentId is invalid")
+		}
+		if input.Status == nil || *input.Status != ChangeRequestResolved {
+			return input, errors.New("resultCommentId requires resolved status")
+		}
+	}
+	return input, nil
+}
+
 func IsValidStatus(status Status) bool {
 	switch status {
 	case StatusBacklog, StatusReady, StatusInProgress, StatusReview, StatusDone, StatusBlocked, StatusFailed, StatusCancelled, StatusDuplicate:
@@ -431,6 +530,29 @@ func IsValidCommentType(commentType CommentType) bool {
 	switch commentType {
 	case CommentProgress, CommentBlocker, CommentHandoff, CommentGeneral:
 		return true
+	default:
+		return false
+	}
+}
+
+func IsValidChangeRequestStatus(status ChangeRequestStatus) bool {
+	switch status {
+	case ChangeRequestOpen, ChangeRequestInProgress, ChangeRequestResolved, ChangeRequestCanceled:
+		return true
+	default:
+		return false
+	}
+}
+
+func CanTransitionChangeRequest(from ChangeRequestStatus, to ChangeRequestStatus) bool {
+	if from == to {
+		return true
+	}
+	switch from {
+	case ChangeRequestOpen:
+		return to == ChangeRequestInProgress || to == ChangeRequestCanceled
+	case ChangeRequestInProgress:
+		return to == ChangeRequestResolved || to == ChangeRequestCanceled
 	default:
 		return false
 	}

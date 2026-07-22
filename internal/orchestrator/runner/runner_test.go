@@ -545,6 +545,56 @@ func TestRenderPromptSkipsTaskWorkPromptWhenDisabled(t *testing.T) {
 	}
 }
 
+func TestRenderPromptIncludesChangeRequests(t *testing.T) {
+	t.Parallel()
+
+	prompt, err := renderPrompt(Task{
+		PromptTemplate: "Work on {{ issue.id }}.",
+		TaskWorkPrompt: boolPtr(false),
+		RunID:          "run-42",
+		Issue:          entity.Issue{ID: 7},
+		ChangeRequests: []entity.ChangeRequest{
+			{ID: 1, Author: "user", Body: "Update the tests."},
+		},
+	})
+	if err != nil {
+		t.Fatalf("render prompt: %v", err)
+	}
+	if !strings.Contains(prompt, "Work on 7.") || !strings.Contains(prompt, "#1 by user: Update the tests.") || !strings.Contains(prompt, "`run-42`") {
+		t.Fatalf("prompt = %q", prompt)
+	}
+}
+
+func TestContinuationGuidanceIncludesChangeRequests(t *testing.T) {
+	t.Parallel()
+
+	prompt := continuationPrompt(Task{
+		RunID: "run-42",
+		Issue: entity.Issue{
+			ID: 7,
+		},
+		ChangeRequests: []entity.ChangeRequest{
+			{ID: 1, Author: "user", Body: "Update the tests."},
+			{ID: 2, Author: "reviewer", Body: "Document the API."},
+		},
+	})
+
+	for _, want := range []string{
+		"tq issue update 7 --status in_progress",
+		"Change requests assigned to this continuation:",
+		"#1 by user: Update the tests.",
+		"#2 by reviewer: Document the API.",
+		"update it to `resolved`",
+		"PATCH /api/v1/change-requests/{id}",
+		"`run-42`",
+		"`resultCommentId`",
+	} {
+		if !strings.Contains(prompt, want) {
+			t.Fatalf("prompt missing %q: %q", want, prompt)
+		}
+	}
+}
+
 func boolPtr(value bool) *bool {
 	return &value
 }

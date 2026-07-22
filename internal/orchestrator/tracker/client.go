@@ -96,6 +96,33 @@ func (c *Client) CreateComment(ctx context.Context, issueID int64, input entity.
 	return output, nil
 }
 
+func (c *Client) ChangeRequestsByIssueID(ctx context.Context, issueID int64, status entity.ChangeRequestStatus, limit int) ([]entity.ChangeRequest, error) {
+	query := url.Values{}
+	if status != "" {
+		query.Set("status", string(status))
+	}
+	if limit > 0 {
+		query.Set("limit", fmt.Sprintf("%d", limit))
+	}
+	path := fmt.Sprintf("/api/v1/issues/%d/change-requests", issueID)
+	if encoded := query.Encode(); encoded != "" {
+		path += "?" + encoded
+	}
+	var output []entity.ChangeRequest
+	if err := c.request(ctx, http.MethodGet, path, nil, &output); err != nil {
+		return nil, err
+	}
+	return output, nil
+}
+
+func (c *Client) UpdateChangeRequest(ctx context.Context, id int64, input entity.UpdateChangeRequestInput) (entity.ChangeRequest, error) {
+	var output entity.ChangeRequest
+	if err := c.request(ctx, http.MethodPatch, fmt.Sprintf("/api/v1/change-requests/%d", id), input, &output); err != nil {
+		return entity.ChangeRequest{}, err
+	}
+	return output, nil
+}
+
 func (c *Client) Issues(ctx context.Context) ([]entity.Issue, error) {
 	var output []entity.Issue
 	if err := c.request(ctx, http.MethodGet, "/api/v1/issues", nil, &output); err != nil {

@@ -33,6 +33,7 @@ type Task struct {
 	PromptTemplate string
 	TaskWorkPrompt *bool
 	ResumeThreadID string
+	ChangeRequests []entity.ChangeRequest
 	MaxTurns       int
 	ContinueTurns  bool
 	Command        string
@@ -488,7 +489,37 @@ const defaultTaskWorkPrompt = "Use `tq` to keep the issue tracker synchronized:\
 const continuationGuidance = "First run `tq issue update %d --status in_progress` to keep the issue tracker synchronized. Then continue the same task in this live thread. Do not repeat completed work. Stop when the workflow is ready for handoff."
 
 func continuationPrompt(task Task) string {
-	return fmt.Sprintf(continuationGuidance, task.Issue.ID)
+	prompt := fmt.Sprintf(continuationGuidance, task.Issue.ID)
+	changeRequestGuidance := changeRequestGuidanceForTask(task)
+	if changeRequestGuidance == "" {
+		return prompt
+	}
+	return prompt + "\n\n" + changeRequestGuidance
+}
+
+func changeRequestGuidanceForTask(task Task) string {
+	if len(task.ChangeRequests) == 0 {
+		return ""
+	}
+	var builder strings.Builder
+	builder.WriteString("Change requests assigned to this continuation:\n")
+	for _, request := range task.ChangeRequests {
+		builder.WriteString("- #")
+		builder.WriteString(strconv.FormatInt(request.ID, 10))
+		builder.WriteString(" by ")
+		builder.WriteString(request.Author)
+		builder.WriteString(": ")
+		builder.WriteString(request.Body)
+		builder.WriteString("\n")
+	}
+	builder.WriteString("\nAfter handling each change request, update it to `resolved` with `resolvedByRunId` set to this run ID")
+	if task.RunID != "" {
+		builder.WriteString(" (`")
+		builder.WriteString(task.RunID)
+		builder.WriteString("`)")
+	}
+	builder.WriteString(". Use `PATCH /api/v1/change-requests/{id}` on the issue-tracker API. Include `resultCommentId` when a result comment is available.")
+	return builder.String()
 }
 
 func renderPrompt(task Task) (string, error) {
@@ -533,6 +564,9 @@ func renderPrompt(task Task) (string, error) {
 	})
 	if renderErr != nil {
 		return "", renderErr
+	}
+	if changeRequestGuidance := changeRequestGuidanceForTask(task); changeRequestGuidance != "" {
+		rendered += "\n\n" + changeRequestGuidance
 	}
 	return rendered, nil
 }

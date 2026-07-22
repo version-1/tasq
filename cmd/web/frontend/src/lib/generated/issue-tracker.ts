@@ -112,6 +112,17 @@ export const CommentType = {
   general: 'general',
 } as const;
 
+export type ChangeRequestStatus = typeof ChangeRequestStatus[keyof typeof ChangeRequestStatus];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ChangeRequestStatus = {
+  open: 'open',
+  in_progress: 'in_progress',
+  resolved: 'resolved',
+  canceled: 'canceled',
+} as const;
+
 export type AttachmentEntityType = typeof AttachmentEntityType[keyof typeof AttachmentEntityType];
 
 
@@ -203,6 +214,25 @@ export interface Comment {
   createdAt: string;
 }
 
+export type ChangeRequestResolvedAt = string | null;
+
+export type ChangeRequestResolvedByRunId = string | null;
+
+export type ChangeRequestResultCommentId = number | null;
+
+export interface ChangeRequest {
+  id: number;
+  issueId: number;
+  author: string;
+  body: string;
+  status: ChangeRequestStatus;
+  createdAt: string;
+  updatedAt: string;
+  resolvedAt: ChangeRequestResolvedAt;
+  resolvedByRunId: ChangeRequestResolvedByRunId;
+  resultCommentId: ChangeRequestResultCommentId;
+}
+
 export type AttachmentContentType = typeof AttachmentContentType[keyof typeof AttachmentContentType];
 
 
@@ -242,6 +272,32 @@ export interface UpdateCommentInput {
    * @maxLength 10000
    */
   body?: string;
+}
+
+export interface CreateChangeRequestInput {
+  /** @minLength 1 */
+  author: string;
+  /**
+   * @minLength 1
+   * @maxLength 10000
+   */
+  body: string;
+}
+
+export interface UpdateChangeRequestInput {
+  /**
+   * @minLength 1
+   * @maxLength 10000
+   */
+  body?: string;
+  status?: ChangeRequestStatus;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  resolvedByRunId?: string;
+  /** @minimum 1 */
+  resultCommentId?: number;
 }
 
 export interface CreateIssueInput {
@@ -367,6 +423,24 @@ export interface CommentListResponse {
   meta: CommentListMeta;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ChangeRequestListMetaStatus = {...ChangeRequestStatus,  '': '',
+} as const
+export interface ChangeRequestListMeta {
+  limit: number;
+  status: typeof ChangeRequestListMetaStatus[keyof typeof ChangeRequestListMetaStatus] ;
+}
+
+export interface ChangeRequestResponse {
+  data: ChangeRequest;
+  meta: ApiMeta;
+}
+
+export interface ChangeRequestListResponse {
+  data: ChangeRequest[];
+  meta: ChangeRequestListMeta;
+}
+
 export interface AttachmentResponse {
   data: Attachment;
   meta: ApiMeta;
@@ -464,6 +538,15 @@ cursor?: number;
 limit?: number;
 };
 
+export type GetApiV1IssuesIssueIdChangeRequestsParams = {
+status?: ChangeRequestStatus;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+limit?: number;
+};
+
 export type GetApiV1AttachmentsParams = {
 entity_type: AttachmentEntityType;
 entity_id: string;
@@ -483,7 +566,7 @@ export type getApiV1HealthResponse200 = {
   data: HealthResponse
   status: 200
 }
-    
+
 export type getApiV1HealthResponseSuccess = (getApiV1HealthResponse200) & {
   headers: Headers;
 };
@@ -494,24 +577,24 @@ export type getApiV1HealthResponse = (getApiV1HealthResponseSuccess)
 export const getGetApiV1HealthUrl = () => {
 
 
-  
+
 
   return `/tracker/api/v1/health`
 }
 
 export const getApiV1Health = async ( options?: RequestInit): Promise<getApiV1HealthResponse> => {
-  
+
   const res = await fetch(getGetApiV1HealthUrl(),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: getApiV1HealthResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as getApiV1HealthResponse
 }
@@ -530,7 +613,7 @@ export type getApiV1SummaryResponse500 = {
   data: ErrorResponse
   status: 500
 }
-    
+
 export type getApiV1SummaryResponseSuccess = (getApiV1SummaryResponse200) & {
   headers: Headers;
 };
@@ -543,24 +626,24 @@ export type getApiV1SummaryResponse = (getApiV1SummaryResponseSuccess | getApiV1
 export const getGetApiV1SummaryUrl = () => {
 
 
-  
+
 
   return `/tracker/api/v1/summary`
 }
 
 export const getApiV1Summary = async ( options?: RequestInit): Promise<getApiV1SummaryResponse> => {
-  
+
   const res = await fetch(getGetApiV1SummaryUrl(),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: getApiV1SummaryResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as getApiV1SummaryResponse
 }
@@ -579,7 +662,7 @@ export type getApiV1ProjectsResponse500 = {
   data: ErrorResponse
   status: 500
 }
-    
+
 export type getApiV1ProjectsResponseSuccess = (getApiV1ProjectsResponse200) & {
   headers: Headers;
 };
@@ -592,24 +675,24 @@ export type getApiV1ProjectsResponse = (getApiV1ProjectsResponseSuccess | getApi
 export const getGetApiV1ProjectsUrl = () => {
 
 
-  
+
 
   return `/tracker/api/v1/projects`
 }
 
 export const getApiV1Projects = async ( options?: RequestInit): Promise<getApiV1ProjectsResponse> => {
-  
+
   const res = await fetch(getGetApiV1ProjectsUrl(),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: getApiV1ProjectsResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as getApiV1ProjectsResponse
 }
@@ -628,7 +711,7 @@ export type postApiV1ProjectsResponse400 = {
   data: ErrorResponse
   status: 400
 }
-    
+
 export type postApiV1ProjectsResponseSuccess = (postApiV1ProjectsResponse201) & {
   headers: Headers;
 };
@@ -641,15 +724,15 @@ export type postApiV1ProjectsResponse = (postApiV1ProjectsResponseSuccess | post
 export const getPostApiV1ProjectsUrl = () => {
 
 
-  
+
 
   return `/tracker/api/v1/projects`
 }
 
 export const postApiV1Projects = async (createProjectInput: CreateProjectInput, options?: RequestInit): Promise<postApiV1ProjectsResponse> => {
-  
+
   const res = await fetch(getPostApiV1ProjectsUrl(),
-  {      
+  {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -659,7 +742,7 @@ export const postApiV1Projects = async (createProjectInput: CreateProjectInput, 
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: postApiV1ProjectsResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as postApiV1ProjectsResponse
 }
@@ -683,7 +766,7 @@ export type getApiV1ProjectsIdResponse404 = {
   data: ErrorResponse
   status: 404
 }
-    
+
 export type getApiV1ProjectsIdResponseSuccess = (getApiV1ProjectsIdResponse200) & {
   headers: Headers;
 };
@@ -696,24 +779,24 @@ export type getApiV1ProjectsIdResponse = (getApiV1ProjectsIdResponseSuccess | ge
 export const getGetApiV1ProjectsIdUrl = (id: number,) => {
 
 
-  
+
 
   return `/tracker/api/v1/projects/${id}`
 }
 
 export const getApiV1ProjectsId = async (id: number, options?: RequestInit): Promise<getApiV1ProjectsIdResponse> => {
-  
+
   const res = await fetch(getGetApiV1ProjectsIdUrl(id),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: getApiV1ProjectsIdResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as getApiV1ProjectsIdResponse
 }
@@ -737,7 +820,7 @@ export type patchApiV1ProjectsIdResponse404 = {
   data: ErrorResponse
   status: 404
 }
-    
+
 export type patchApiV1ProjectsIdResponseSuccess = (patchApiV1ProjectsIdResponse200) & {
   headers: Headers;
 };
@@ -750,16 +833,16 @@ export type patchApiV1ProjectsIdResponse = (patchApiV1ProjectsIdResponseSuccess 
 export const getPatchApiV1ProjectsIdUrl = (id: number,) => {
 
 
-  
+
 
   return `/tracker/api/v1/projects/${id}`
 }
 
 export const patchApiV1ProjectsId = async (id: number,
     updateProjectInput: UpdateProjectInput, options?: RequestInit): Promise<patchApiV1ProjectsIdResponse> => {
-  
+
   const res = await fetch(getPatchApiV1ProjectsIdUrl(id),
-  {      
+  {
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -769,7 +852,7 @@ export const patchApiV1ProjectsId = async (id: number,
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: patchApiV1ProjectsIdResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as patchApiV1ProjectsIdResponse
 }
@@ -799,7 +882,7 @@ export type deleteApiV1ProjectsIdResponse409 = {
   data: ErrorResponse
   status: 409
 }
-    
+
 export type deleteApiV1ProjectsIdResponseSuccess = (deleteApiV1ProjectsIdResponse204) & {
   headers: Headers;
 };
@@ -812,24 +895,24 @@ export type deleteApiV1ProjectsIdResponse = (deleteApiV1ProjectsIdResponseSucces
 export const getDeleteApiV1ProjectsIdUrl = (id: number,) => {
 
 
-  
+
 
   return `/tracker/api/v1/projects/${id}`
 }
 
 export const deleteApiV1ProjectsId = async (id: number, options?: RequestInit): Promise<deleteApiV1ProjectsIdResponse> => {
-  
+
   const res = await fetch(getDeleteApiV1ProjectsIdUrl(id),
-  {      
+  {
     ...options,
     method: 'DELETE'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: deleteApiV1ProjectsIdResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as deleteApiV1ProjectsIdResponse
 }
@@ -853,7 +936,7 @@ export type postApiV1ProjectsIdCheckResponse404 = {
   data: ErrorResponse
   status: 404
 }
-    
+
 export type postApiV1ProjectsIdCheckResponseSuccess = (postApiV1ProjectsIdCheckResponse200) & {
   headers: Headers;
 };
@@ -866,26 +949,26 @@ export type postApiV1ProjectsIdCheckResponse = (postApiV1ProjectsIdCheckResponse
 export const getPostApiV1ProjectsIdCheckUrl = (id: number,) => {
 
 
-  
+
 
   return `/tracker/api/v1/projects/${id}/check`
 }
 
 export const postApiV1ProjectsIdCheck = async (id: number,
     postApiV1ProjectsIdCheckBody: string, options?: RequestInit): Promise<postApiV1ProjectsIdCheckResponse> => {
-  
+
   const res = await fetch(getPostApiV1ProjectsIdCheckUrl(id),
-  {      
+  {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'text/plain', ...options?.headers },
-    body: 
+    body:
       postApiV1ProjectsIdCheckBody,
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: postApiV1ProjectsIdCheckResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as postApiV1ProjectsIdCheckResponse
 }
@@ -909,7 +992,7 @@ export type getApiV1ProjectsIdWorkflowResponse404 = {
   data: ErrorResponse
   status: 404
 }
-    
+
 export type getApiV1ProjectsIdWorkflowResponseSuccess = (getApiV1ProjectsIdWorkflowResponse200) & {
   headers: Headers;
 };
@@ -922,24 +1005,24 @@ export type getApiV1ProjectsIdWorkflowResponse = (getApiV1ProjectsIdWorkflowResp
 export const getGetApiV1ProjectsIdWorkflowUrl = (id: number,) => {
 
 
-  
+
 
   return `/tracker/api/v1/projects/${id}/workflow`
 }
 
 export const getApiV1ProjectsIdWorkflow = async (id: number, options?: RequestInit): Promise<getApiV1ProjectsIdWorkflowResponse> => {
-  
+
   const res = await fetch(getGetApiV1ProjectsIdWorkflowUrl(id),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: getApiV1ProjectsIdWorkflowResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as getApiV1ProjectsIdWorkflowResponse
 }
@@ -963,7 +1046,7 @@ export type putApiV1ProjectsIdWorkflowResponse404 = {
   data: ErrorResponse
   status: 404
 }
-    
+
 export type putApiV1ProjectsIdWorkflowResponseSuccess = (putApiV1ProjectsIdWorkflowResponse200) & {
   headers: Headers;
 };
@@ -976,16 +1059,16 @@ export type putApiV1ProjectsIdWorkflowResponse = (putApiV1ProjectsIdWorkflowResp
 export const getPutApiV1ProjectsIdWorkflowUrl = (id: number,) => {
 
 
-  
+
 
   return `/tracker/api/v1/projects/${id}/workflow`
 }
 
 export const putApiV1ProjectsIdWorkflow = async (id: number,
     upsertProjectWorkflowInput: UpsertProjectWorkflowInput, options?: RequestInit): Promise<putApiV1ProjectsIdWorkflowResponse> => {
-  
+
   const res = await fetch(getPutApiV1ProjectsIdWorkflowUrl(id),
-  {      
+  {
     ...options,
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -995,7 +1078,7 @@ export const putApiV1ProjectsIdWorkflow = async (id: number,
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: putApiV1ProjectsIdWorkflowResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as putApiV1ProjectsIdWorkflowResponse
 }
@@ -1020,7 +1103,7 @@ export type deleteApiV1ProjectsIdWorkflowResponse404 = {
   data: ErrorResponse
   status: 404
 }
-    
+
 export type deleteApiV1ProjectsIdWorkflowResponseSuccess = (deleteApiV1ProjectsIdWorkflowResponse204) & {
   headers: Headers;
 };
@@ -1033,24 +1116,24 @@ export type deleteApiV1ProjectsIdWorkflowResponse = (deleteApiV1ProjectsIdWorkfl
 export const getDeleteApiV1ProjectsIdWorkflowUrl = (id: number,) => {
 
 
-  
+
 
   return `/tracker/api/v1/projects/${id}/workflow`
 }
 
 export const deleteApiV1ProjectsIdWorkflow = async (id: number, options?: RequestInit): Promise<deleteApiV1ProjectsIdWorkflowResponse> => {
-  
+
   const res = await fetch(getDeleteApiV1ProjectsIdWorkflowUrl(id),
-  {      
+  {
     ...options,
     method: 'DELETE'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: deleteApiV1ProjectsIdWorkflowResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as deleteApiV1ProjectsIdWorkflowResponse
 }
@@ -1074,7 +1157,7 @@ export type getApiV1IssuesResponse500 = {
   data: ErrorResponse
   status: 500
 }
-    
+
 export type getApiV1IssuesResponseSuccess = (getApiV1IssuesResponse200) & {
   headers: Headers;
 };
@@ -1088,7 +1171,7 @@ export const getGetApiV1IssuesUrl = (params?: GetApiV1IssuesParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
-    
+
     if (value !== undefined) {
       normalizedParams.append(key, value === null ? 'null' : value.toString())
     }
@@ -1100,18 +1183,18 @@ export const getGetApiV1IssuesUrl = (params?: GetApiV1IssuesParams,) => {
 }
 
 export const getApiV1Issues = async (params?: GetApiV1IssuesParams, options?: RequestInit): Promise<getApiV1IssuesResponse> => {
-  
+
   const res = await fetch(getGetApiV1IssuesUrl(params),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: getApiV1IssuesResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as getApiV1IssuesResponse
 }
@@ -1130,7 +1213,7 @@ export type postApiV1IssuesResponse400 = {
   data: ErrorResponse
   status: 400
 }
-    
+
 export type postApiV1IssuesResponseSuccess = (postApiV1IssuesResponse201) & {
   headers: Headers;
 };
@@ -1143,15 +1226,15 @@ export type postApiV1IssuesResponse = (postApiV1IssuesResponseSuccess | postApiV
 export const getPostApiV1IssuesUrl = () => {
 
 
-  
+
 
   return `/tracker/api/v1/issues`
 }
 
 export const postApiV1Issues = async (createIssueInput: CreateIssueInput, options?: RequestInit): Promise<postApiV1IssuesResponse> => {
-  
+
   const res = await fetch(getPostApiV1IssuesUrl(),
-  {      
+  {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -1161,7 +1244,7 @@ export const postApiV1Issues = async (createIssueInput: CreateIssueInput, option
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: postApiV1IssuesResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as postApiV1IssuesResponse
 }
@@ -1185,7 +1268,7 @@ export type postApiV1IssuesStatesResponse500 = {
   data: ErrorResponse
   status: 500
 }
-    
+
 export type postApiV1IssuesStatesResponseSuccess = (postApiV1IssuesStatesResponse200) & {
   headers: Headers;
 };
@@ -1198,15 +1281,15 @@ export type postApiV1IssuesStatesResponse = (postApiV1IssuesStatesResponseSucces
 export const getPostApiV1IssuesStatesUrl = () => {
 
 
-  
+
 
   return `/tracker/api/v1/issues/states`
 }
 
 export const postApiV1IssuesStates = async (issueStatesInput: IssueStatesInput, options?: RequestInit): Promise<postApiV1IssuesStatesResponse> => {
-  
+
   const res = await fetch(getPostApiV1IssuesStatesUrl(),
-  {      
+  {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -1216,7 +1299,7 @@ export const postApiV1IssuesStates = async (issueStatesInput: IssueStatesInput, 
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: postApiV1IssuesStatesResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as postApiV1IssuesStatesResponse
 }
@@ -1241,7 +1324,7 @@ export type getApiV1QueueResponse500 = {
   data: ErrorResponse
   status: 500
 }
-    
+
 export type getApiV1QueueResponseSuccess = (getApiV1QueueResponse200) & {
   headers: Headers;
 };
@@ -1255,7 +1338,7 @@ export const getGetApiV1QueueUrl = (params?: GetApiV1QueueParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
-    
+
     if (value !== undefined) {
       normalizedParams.append(key, value === null ? 'null' : value.toString())
     }
@@ -1267,18 +1350,18 @@ export const getGetApiV1QueueUrl = (params?: GetApiV1QueueParams,) => {
 }
 
 export const getApiV1Queue = async (params?: GetApiV1QueueParams, options?: RequestInit): Promise<getApiV1QueueResponse> => {
-  
+
   const res = await fetch(getGetApiV1QueueUrl(params),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: getApiV1QueueResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as getApiV1QueueResponse
 }
@@ -1302,7 +1385,7 @@ export type getApiV1IssuesIdResponse404 = {
   data: ErrorResponse
   status: 404
 }
-    
+
 export type getApiV1IssuesIdResponseSuccess = (getApiV1IssuesIdResponse200) & {
   headers: Headers;
 };
@@ -1315,24 +1398,24 @@ export type getApiV1IssuesIdResponse = (getApiV1IssuesIdResponseSuccess | getApi
 export const getGetApiV1IssuesIdUrl = (id: number,) => {
 
 
-  
+
 
   return `/tracker/api/v1/issues/${id}`
 }
 
 export const getApiV1IssuesId = async (id: number, options?: RequestInit): Promise<getApiV1IssuesIdResponse> => {
-  
+
   const res = await fetch(getGetApiV1IssuesIdUrl(id),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: getApiV1IssuesIdResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as getApiV1IssuesIdResponse
 }
@@ -1356,7 +1439,7 @@ export type patchApiV1IssuesIdResponse404 = {
   data: ErrorResponse
   status: 404
 }
-    
+
 export type patchApiV1IssuesIdResponseSuccess = (patchApiV1IssuesIdResponse200) & {
   headers: Headers;
 };
@@ -1369,16 +1452,16 @@ export type patchApiV1IssuesIdResponse = (patchApiV1IssuesIdResponseSuccess | pa
 export const getPatchApiV1IssuesIdUrl = (id: number,) => {
 
 
-  
+
 
   return `/tracker/api/v1/issues/${id}`
 }
 
 export const patchApiV1IssuesId = async (id: number,
     updateIssueInput: UpdateIssueInput, options?: RequestInit): Promise<patchApiV1IssuesIdResponse> => {
-  
+
   const res = await fetch(getPatchApiV1IssuesIdUrl(id),
-  {      
+  {
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -1388,7 +1471,7 @@ export const patchApiV1IssuesId = async (id: number,
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: patchApiV1IssuesIdResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as patchApiV1IssuesIdResponse
 }
@@ -1412,7 +1495,7 @@ export type getApiV1IssuesIssueIdCommentsResponse404 = {
   data: ErrorResponse
   status: 404
 }
-    
+
 export type getApiV1IssuesIssueIdCommentsResponseSuccess = (getApiV1IssuesIssueIdCommentsResponse200) & {
   headers: Headers;
 };
@@ -1427,7 +1510,7 @@ export const getGetApiV1IssuesIssueIdCommentsUrl = (issueId: number,
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
-    
+
     if (value !== undefined) {
       normalizedParams.append(key, value === null ? 'null' : value.toString())
     }
@@ -1440,18 +1523,18 @@ export const getGetApiV1IssuesIssueIdCommentsUrl = (issueId: number,
 
 export const getApiV1IssuesIssueIdComments = async (issueId: number,
     params?: GetApiV1IssuesIssueIdCommentsParams, options?: RequestInit): Promise<getApiV1IssuesIssueIdCommentsResponse> => {
-  
+
   const res = await fetch(getGetApiV1IssuesIssueIdCommentsUrl(issueId,params),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: getApiV1IssuesIssueIdCommentsResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as getApiV1IssuesIssueIdCommentsResponse
 }
@@ -1475,7 +1558,7 @@ export type postApiV1IssuesIssueIdCommentsResponse404 = {
   data: ErrorResponse
   status: 404
 }
-    
+
 export type postApiV1IssuesIssueIdCommentsResponseSuccess = (postApiV1IssuesIssueIdCommentsResponse201) & {
   headers: Headers;
 };
@@ -1488,16 +1571,16 @@ export type postApiV1IssuesIssueIdCommentsResponse = (postApiV1IssuesIssueIdComm
 export const getPostApiV1IssuesIssueIdCommentsUrl = (issueId: number,) => {
 
 
-  
+
 
   return `/tracker/api/v1/issues/${issueId}/comments`
 }
 
 export const postApiV1IssuesIssueIdComments = async (issueId: number,
     createCommentInput: CreateCommentInput, options?: RequestInit): Promise<postApiV1IssuesIssueIdCommentsResponse> => {
-  
+
   const res = await fetch(getPostApiV1IssuesIssueIdCommentsUrl(issueId),
-  {      
+  {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -1507,7 +1590,7 @@ export const postApiV1IssuesIssueIdComments = async (issueId: number,
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: postApiV1IssuesIssueIdCommentsResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as postApiV1IssuesIssueIdCommentsResponse
 }
@@ -1531,7 +1614,7 @@ export type patchApiV1CommentsIdResponse404 = {
   data: ErrorResponse
   status: 404
 }
-    
+
 export type patchApiV1CommentsIdResponseSuccess = (patchApiV1CommentsIdResponse200) & {
   headers: Headers;
 };
@@ -1544,16 +1627,16 @@ export type patchApiV1CommentsIdResponse = (patchApiV1CommentsIdResponseSuccess 
 export const getPatchApiV1CommentsIdUrl = (id: number,) => {
 
 
-  
+
 
   return `/tracker/api/v1/comments/${id}`
 }
 
 export const patchApiV1CommentsId = async (id: number,
     updateCommentInput: UpdateCommentInput, options?: RequestInit): Promise<patchApiV1CommentsIdResponse> => {
-  
+
   const res = await fetch(getPatchApiV1CommentsIdUrl(id),
-  {      
+  {
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -1563,9 +1646,292 @@ export const patchApiV1CommentsId = async (id: number,
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: patchApiV1CommentsIdResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as patchApiV1CommentsIdResponse
+}
+
+
+
+/**
+ * @summary List issue change requests.
+ */
+export type getApiV1IssuesIssueIdChangeRequestsResponse200 = {
+  data: ChangeRequestListResponse
+  status: 200
+}
+
+export type getApiV1IssuesIssueIdChangeRequestsResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type getApiV1IssuesIssueIdChangeRequestsResponse404 = {
+  data: ErrorResponse
+  status: 404
+}
+
+export type getApiV1IssuesIssueIdChangeRequestsResponseSuccess = (getApiV1IssuesIssueIdChangeRequestsResponse200) & {
+  headers: Headers;
+};
+export type getApiV1IssuesIssueIdChangeRequestsResponseError = (getApiV1IssuesIssueIdChangeRequestsResponse400 | getApiV1IssuesIssueIdChangeRequestsResponse404) & {
+  headers: Headers;
+};
+
+export type getApiV1IssuesIssueIdChangeRequestsResponse = (getApiV1IssuesIssueIdChangeRequestsResponseSuccess | getApiV1IssuesIssueIdChangeRequestsResponseError)
+
+export const getGetApiV1IssuesIssueIdChangeRequestsUrl = (issueId: number,
+    params?: GetApiV1IssuesIssueIdChangeRequestsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/tracker/api/v1/issues/${issueId}/change-requests?${stringifiedParams}` : `/tracker/api/v1/issues/${issueId}/change-requests`
+}
+
+export const getApiV1IssuesIssueIdChangeRequests = async (issueId: number,
+    params?: GetApiV1IssuesIssueIdChangeRequestsParams, options?: RequestInit): Promise<getApiV1IssuesIssueIdChangeRequestsResponse> => {
+
+  const res = await fetch(getGetApiV1IssuesIssueIdChangeRequestsUrl(issueId,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getApiV1IssuesIssueIdChangeRequestsResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getApiV1IssuesIssueIdChangeRequestsResponse
+}
+
+
+
+/**
+ * @summary Create an issue change request.
+ */
+export type postApiV1IssuesIssueIdChangeRequestsResponse201 = {
+  data: ChangeRequestResponse
+  status: 201
+}
+
+export type postApiV1IssuesIssueIdChangeRequestsResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type postApiV1IssuesIssueIdChangeRequestsResponse404 = {
+  data: ErrorResponse
+  status: 404
+}
+
+export type postApiV1IssuesIssueIdChangeRequestsResponseSuccess = (postApiV1IssuesIssueIdChangeRequestsResponse201) & {
+  headers: Headers;
+};
+export type postApiV1IssuesIssueIdChangeRequestsResponseError = (postApiV1IssuesIssueIdChangeRequestsResponse400 | postApiV1IssuesIssueIdChangeRequestsResponse404) & {
+  headers: Headers;
+};
+
+export type postApiV1IssuesIssueIdChangeRequestsResponse = (postApiV1IssuesIssueIdChangeRequestsResponseSuccess | postApiV1IssuesIssueIdChangeRequestsResponseError)
+
+export const getPostApiV1IssuesIssueIdChangeRequestsUrl = (issueId: number,) => {
+
+
+
+
+  return `/tracker/api/v1/issues/${issueId}/change-requests`
+}
+
+export const postApiV1IssuesIssueIdChangeRequests = async (issueId: number,
+    createChangeRequestInput: CreateChangeRequestInput, options?: RequestInit): Promise<postApiV1IssuesIssueIdChangeRequestsResponse> => {
+
+  const res = await fetch(getPostApiV1IssuesIssueIdChangeRequestsUrl(issueId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createChangeRequestInput,)
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: postApiV1IssuesIssueIdChangeRequestsResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as postApiV1IssuesIssueIdChangeRequestsResponse
+}
+
+
+
+/**
+ * @summary Get a change request.
+ */
+export type getApiV1ChangeRequestsIdResponse200 = {
+  data: ChangeRequestResponse
+  status: 200
+}
+
+export type getApiV1ChangeRequestsIdResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type getApiV1ChangeRequestsIdResponse404 = {
+  data: ErrorResponse
+  status: 404
+}
+
+export type getApiV1ChangeRequestsIdResponseSuccess = (getApiV1ChangeRequestsIdResponse200) & {
+  headers: Headers;
+};
+export type getApiV1ChangeRequestsIdResponseError = (getApiV1ChangeRequestsIdResponse400 | getApiV1ChangeRequestsIdResponse404) & {
+  headers: Headers;
+};
+
+export type getApiV1ChangeRequestsIdResponse = (getApiV1ChangeRequestsIdResponseSuccess | getApiV1ChangeRequestsIdResponseError)
+
+export const getGetApiV1ChangeRequestsIdUrl = (id: number,) => {
+
+
+
+
+  return `/tracker/api/v1/change-requests/${id}`
+}
+
+export const getApiV1ChangeRequestsId = async (id: number, options?: RequestInit): Promise<getApiV1ChangeRequestsIdResponse> => {
+
+  const res = await fetch(getGetApiV1ChangeRequestsIdUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getApiV1ChangeRequestsIdResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getApiV1ChangeRequestsIdResponse
+}
+
+
+
+/**
+ * @summary Update a change request.
+ */
+export type patchApiV1ChangeRequestsIdResponse200 = {
+  data: ChangeRequestResponse
+  status: 200
+}
+
+export type patchApiV1ChangeRequestsIdResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type patchApiV1ChangeRequestsIdResponse404 = {
+  data: ErrorResponse
+  status: 404
+}
+
+export type patchApiV1ChangeRequestsIdResponseSuccess = (patchApiV1ChangeRequestsIdResponse200) & {
+  headers: Headers;
+};
+export type patchApiV1ChangeRequestsIdResponseError = (patchApiV1ChangeRequestsIdResponse400 | patchApiV1ChangeRequestsIdResponse404) & {
+  headers: Headers;
+};
+
+export type patchApiV1ChangeRequestsIdResponse = (patchApiV1ChangeRequestsIdResponseSuccess | patchApiV1ChangeRequestsIdResponseError)
+
+export const getPatchApiV1ChangeRequestsIdUrl = (id: number,) => {
+
+
+
+
+  return `/tracker/api/v1/change-requests/${id}`
+}
+
+export const patchApiV1ChangeRequestsId = async (id: number,
+    updateChangeRequestInput: UpdateChangeRequestInput, options?: RequestInit): Promise<patchApiV1ChangeRequestsIdResponse> => {
+
+  const res = await fetch(getPatchApiV1ChangeRequestsIdUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateChangeRequestInput,)
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: patchApiV1ChangeRequestsIdResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as patchApiV1ChangeRequestsIdResponse
+}
+
+
+
+/**
+ * @summary Cancel a change request.
+ */
+export type postApiV1ChangeRequestsIdCancelResponse200 = {
+  data: ChangeRequestResponse
+  status: 200
+}
+
+export type postApiV1ChangeRequestsIdCancelResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type postApiV1ChangeRequestsIdCancelResponse404 = {
+  data: ErrorResponse
+  status: 404
+}
+
+export type postApiV1ChangeRequestsIdCancelResponseSuccess = (postApiV1ChangeRequestsIdCancelResponse200) & {
+  headers: Headers;
+};
+export type postApiV1ChangeRequestsIdCancelResponseError = (postApiV1ChangeRequestsIdCancelResponse400 | postApiV1ChangeRequestsIdCancelResponse404) & {
+  headers: Headers;
+};
+
+export type postApiV1ChangeRequestsIdCancelResponse = (postApiV1ChangeRequestsIdCancelResponseSuccess | postApiV1ChangeRequestsIdCancelResponseError)
+
+export const getPostApiV1ChangeRequestsIdCancelUrl = (id: number,) => {
+
+
+
+
+  return `/tracker/api/v1/change-requests/${id}/cancel`
+}
+
+export const postApiV1ChangeRequestsIdCancel = async (id: number, options?: RequestInit): Promise<postApiV1ChangeRequestsIdCancelResponse> => {
+
+  const res = await fetch(getPostApiV1ChangeRequestsIdCancelUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: postApiV1ChangeRequestsIdCancelResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as postApiV1ChangeRequestsIdCancelResponse
 }
 
 
@@ -1582,7 +1948,7 @@ export type getApiV1AttachmentsResponse400 = {
   data: ErrorResponse
   status: 400
 }
-    
+
 export type getApiV1AttachmentsResponseSuccess = (getApiV1AttachmentsResponse200) & {
   headers: Headers;
 };
@@ -1596,7 +1962,7 @@ export const getGetApiV1AttachmentsUrl = (params: GetApiV1AttachmentsParams,) =>
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
-    
+
     if (value !== undefined) {
       normalizedParams.append(key, value === null ? 'null' : value.toString())
     }
@@ -1608,18 +1974,18 @@ export const getGetApiV1AttachmentsUrl = (params: GetApiV1AttachmentsParams,) =>
 }
 
 export const getApiV1Attachments = async (params: GetApiV1AttachmentsParams, options?: RequestInit): Promise<getApiV1AttachmentsResponse> => {
-  
+
   const res = await fetch(getGetApiV1AttachmentsUrl(params),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: getApiV1AttachmentsResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as getApiV1AttachmentsResponse
 }
@@ -1643,7 +2009,7 @@ export type postApiV1AttachmentsResponse404 = {
   data: ErrorResponse
   status: 404
 }
-    
+
 export type postApiV1AttachmentsResponseSuccess = (postApiV1AttachmentsResponse201) & {
   headers: Headers;
 };
@@ -1656,7 +2022,7 @@ export type postApiV1AttachmentsResponse = (postApiV1AttachmentsResponseSuccess 
 export const getPostApiV1AttachmentsUrl = () => {
 
 
-  
+
 
   return `/tracker/api/v1/attachments`
 }
@@ -1668,17 +2034,17 @@ formData.append(`entity_id`, postApiV1AttachmentsBody.entity_id)
 formData.append(`file`, postApiV1AttachmentsBody.file)
 
   const res = await fetch(getPostApiV1AttachmentsUrl(),
-  {      
+  {
     ...options,
     method: 'POST'
     ,
-    body: 
+    body:
       formData,
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: postApiV1AttachmentsResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as postApiV1AttachmentsResponse
 }
@@ -1697,7 +2063,7 @@ export type getApiV1AttachmentsIdContentResponse404 = {
   data: ErrorResponse
   status: 404
 }
-    
+
 export type getApiV1AttachmentsIdContentResponseSuccess = (getApiV1AttachmentsIdContentResponse200) & {
   headers: Headers;
 };
@@ -1710,24 +2076,24 @@ export type getApiV1AttachmentsIdContentResponse = (getApiV1AttachmentsIdContent
 export const getGetApiV1AttachmentsIdContentUrl = (id: string,) => {
 
 
-  
+
 
   return `/tracker/api/v1/attachments/${id}/content`
 }
 
 export const getApiV1AttachmentsIdContent = async (id: string, options?: RequestInit): Promise<getApiV1AttachmentsIdContentResponse> => {
-  
+
   const res = await fetch(getGetApiV1AttachmentsIdContentUrl(id),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: getApiV1AttachmentsIdContentResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as getApiV1AttachmentsIdContentResponse
 }
@@ -1751,7 +2117,7 @@ export type deleteApiV1AttachmentsIdResponse404 = {
   data: ErrorResponse
   status: 404
 }
-    
+
 export type deleteApiV1AttachmentsIdResponseSuccess = (deleteApiV1AttachmentsIdResponse204) & {
   headers: Headers;
 };
@@ -1764,24 +2130,24 @@ export type deleteApiV1AttachmentsIdResponse = (deleteApiV1AttachmentsIdResponse
 export const getDeleteApiV1AttachmentsIdUrl = (id: string,) => {
 
 
-  
+
 
   return `/tracker/api/v1/attachments/${id}`
 }
 
 export const deleteApiV1AttachmentsId = async (id: string, options?: RequestInit): Promise<deleteApiV1AttachmentsIdResponse> => {
-  
+
   const res = await fetch(getDeleteApiV1AttachmentsIdUrl(id),
-  {      
+  {
     ...options,
     method: 'DELETE'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: deleteApiV1AttachmentsIdResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as deleteApiV1AttachmentsIdResponse
 }

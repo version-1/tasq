@@ -21,6 +21,7 @@ import (
 const dispatcherShutdownTimeout = 30 * time.Second
 const maxRunnerEventLogPayloadLength = 2000
 const ignoredRunnerEventTypeAgentMessageDelta = "item/agentMessage/delta"
+const maxContinuationChangeRequests = 20
 
 type IssueReader interface {
 	Issue(ctx context.Context, id int64) (entity.Issue, error)
@@ -29,6 +30,8 @@ type IssueReader interface {
 type IssueUpdater interface {
 	UpdateIssue(ctx context.Context, id int64, input entity.UpdateIssueInput) (entity.Issue, error)
 	CreateComment(ctx context.Context, issueID int64, input entity.CreateCommentInput) (entity.Comment, error)
+	ChangeRequestsByIssueID(ctx context.Context, issueID int64, status entity.ChangeRequestStatus, limit int) ([]entity.ChangeRequest, error)
+	UpdateChangeRequest(ctx context.Context, id int64, input entity.UpdateChangeRequestInput) (entity.ChangeRequest, error)
 }
 
 type IssueTracker interface {
@@ -41,6 +44,7 @@ type DispatchStore interface {
 	UpdateRunThreadID(ctx context.Context, runID string, threadID string) (run.Run, error)
 	RecordRunnerEvent(ctx context.Context, runID string, eventType string, message string, payloadJSON string) error
 	LatestResumeThreadIDByIssueID(ctx context.Context, issueID int64) (string, error)
+	RunsByIssueID(ctx context.Context, issueID int64) ([]run.Run, error)
 }
 
 type WorkflowResolver interface {
@@ -228,6 +232,10 @@ func (d *Dispatcher) taskForRun(ctx context.Context, storedRun run.Run, issue en
 	} else if err != nil {
 		return runner.Task{}, fmt.Errorf("read resume thread id for issue %d run %s: %w", storedRun.IssueID, storedRun.RunID, err)
 	}
+	changeRequests, err := d.claimContinuationChangeRequests(ctx, storedRun)
+	if err != nil {
+		return runner.Task{}, err
+	}
 	return runner.Task{
 		Issue:          issue,
 		Attempt:        storedRun.Attempt,
@@ -236,12 +244,46 @@ func (d *Dispatcher) taskForRun(ctx context.Context, storedRun run.Run, issue en
 		PromptTemplate: definition.PromptTemplate,
 		TaskWorkPrompt: definition.Config.Tasq.TaskWorkPrompt,
 		ResumeThreadID: resumeThreadID,
+		ChangeRequests: changeRequests,
 		MaxTurns:       definition.Config.MaxTurns,
 		ContinueTurns:  definition.Config.ContinuationTurns,
 		Command:        definition.Config.CodexCommand,
 		ReadTimeout:    definition.Config.CodexReadTimeout,
 		TurnTimeout:    definition.Config.CodexTurnTimeout,
 	}, nil
+}
+
+func (d *Dispatcher) claimContinuationChangeRequests(ctx context.Context, storedRun run.Run) ([]entity.ChangeRequest, error) {
+	runs, err := d.store.RunsByIssueID(ctx, storedRun.IssueID)
+	if err != nil {
+		return nil, fmt.Errorf("list runs for issue %d run %s: %w", storedRun.IssueID, storedRun.RunID, err)
+	}
+	if !hasPriorRun(runs, storedRun.RunID) {
+		return nil, nil
+	}
+	openRequests, err := d.tracker.ChangeRequestsByIssueID(ctx, storedRun.IssueID, entity.ChangeRequestOpen, maxContinuationChangeRequests)
+	if err != nil {
+		return nil, fmt.Errorf("list open change requests for issue %d run %s: %w", storedRun.IssueID, storedRun.RunID, err)
+	}
+	claimed := make([]entity.ChangeRequest, 0, len(openRequests))
+	for _, request := range openRequests {
+		status := entity.ChangeRequestInProgress
+		updated, err := d.tracker.UpdateChangeRequest(ctx, request.ID, entity.UpdateChangeRequestInput{Status: &status})
+		if err != nil {
+			return nil, fmt.Errorf("claim change request %d for run %s: %w", request.ID, storedRun.RunID, err)
+		}
+		claimed = append(claimed, updated)
+	}
+	return claimed, nil
+}
+
+func hasPriorRun(runs []run.Run, currentRunID string) bool {
+	for _, storedRun := range runs {
+		if storedRun.RunID != currentRunID {
+			return true
+		}
+	}
+	return false
 }
 
 func (d *Dispatcher) failRun(storedRun run.Run, message string) {

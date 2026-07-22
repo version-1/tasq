@@ -71,6 +71,25 @@ Queue state is derived from this table and issue status. `queued` means the issu
 | Body        | `string`      | yes                | optional (`*string`) | —         | min 1, max 10,000 chars; may contain Markdown attachment refs      |
 | CreatedAt   | `time.Time`   | auto               | —                  | `now()`     | —                                                                  |
 
+### ChangeRequest
+
+Change requests store additional user or reviewer requests that should be handled by a later agent run. They are separate from comments because they have workflow state.
+
+| Field           | Go Type               | Required (Create) | Required (Update) | Default       | Constraints |
+|-----------------|-----------------------|-------------------|-------------------|---------------|-------------|
+| ID              | `int64`               | auto              | path param        | autoincrement | `> 0` |
+| IssueID         | `int64`               | yes               | —                 | —             | `> 0`, referenced issue must exist |
+| Author          | `string`              | yes               | —                 | —             | min 1 |
+| Body            | `string`              | yes               | optional (`*string`) | —          | min 1, max 10,000 chars; editable only while `open` |
+| Status          | `ChangeRequestStatus` | auto              | optional          | `open`        | enum: `open`, `in_progress`, `resolved`, `canceled` |
+| CreatedAt       | `time.Time`           | auto              | —                 | `now()`       | — |
+| UpdatedAt       | `time.Time`           | auto              | auto              | `now()`       | — |
+| ResolvedAt      | `*time.Time`          | —                 | auto on resolve   | `NULL`        | set when status becomes `resolved` |
+| ResolvedByRunID | `*string`             | —                 | optional on resolve | `NULL`      | max 200 chars; orchestrator run ID |
+| ResultCommentID | `*int64`              | —                 | optional on resolve | `NULL`      | must reference a comment on the same issue |
+
+Allowed status transitions are `open -> in_progress`, `open -> canceled`, `in_progress -> resolved`, and `in_progress -> canceled`. `resolved` and `canceled` requests are immutable. The orchestrator includes up to 20 open change requests in chronological order when continuing an issue with a previous run, then marks the included requests `in_progress`. Failed or interrupted sessions do not automatically move `in_progress` requests back to `open`.
+
 ### Attachment
 
 | Field       | Go Type    | Required (Create) | Required (Update) | Default | Constraints                                                        |
@@ -98,7 +117,7 @@ Attachment records live in SQLite, while file bytes are stored under `$TQ_HOME/s
 | CreatedAt   | `time.Time`| auto               | —                  | `now()`     | —                                                                  |
 | UpdatedAt   | `time.Time`| auto               | auto               | `now()`     | —                                                                  |
 
-Deleting a project cascades through issue-tracker-owned descendants: issues, issue dependency edges that reference those issues, comments, attachment records and attachment files under `$TQ_HOME/system/data/attachments`, and stored project workflow overrides. It also deletes orchestrator runtime descendants for the owned issues: runs, runner events, workspace metadata, and workspace setup failures. Project deletion is rejected when any owned issue has a `running` orchestrator run. Project deletion does not delete or modify `Location` on disk or any worktrees.
+Deleting a project cascades through issue-tracker-owned descendants: issues, issue dependency edges that reference those issues, comments, change requests, attachment records and attachment files under `$TQ_HOME/system/data/attachments`, and stored project workflow overrides. It also deletes orchestrator runtime descendants for the owned issues: runs, runner events, workspace metadata, and workspace setup failures. Project deletion is rejected when any owned issue has a `running` orchestrator run. Project deletion does not delete or modify `Location` on disk or any worktrees.
 
 ### ProjectWorkflow
 
@@ -216,6 +235,7 @@ Directory existence is not checked by the API for:
 | Issue.Status     | `backlog`, `ready`, `in_progress`, `review`, `done`, `blocked`, `failed`, `cancelled`, `duplicate` |
 | Issue.Priority   | `low`, `normal`, `high`, `urgent`                                     |
 | Comment.Type     | `progress`, `blocker`, `handoff`, `general`                           |
+| ChangeRequest.Status | `open`, `in_progress`, `resolved`, `canceled`                    |
 | Attachment.EntityType | `issue`, `comment`                                                |
 | Attachment.ContentType | `image/png`, `image/jpeg`, `image/gif`, `image/webp`             |
 | Workspace.Status | `active`, `inactive`, `archived`                                      |
