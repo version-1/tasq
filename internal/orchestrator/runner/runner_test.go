@@ -125,7 +125,7 @@ while IFS= read -r line; do
       ;;
     4)
       case "$line" in
-        *'"method":"turn/start"'*'Continue the same task in this live thread.'*'"threadId":"thread-previous"'*)
+        *'"method":"turn/start"'*'tq issue update 123 --status in_progress'*'continue the same task in this live thread.'*'"threadId":"thread-previous"'*)
           ;;
         *)
           echo "expected resumed continuation turn: $line" >&2
