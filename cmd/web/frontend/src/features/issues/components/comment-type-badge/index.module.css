@@ -1,7 +1,25 @@
 .badge {
-  background: var(--extra-light-gray);
   border-radius: var(--radius-pill);
-  color: var(--muted);
   font-size: 12px;
   padding: 3px 8px;
+}
+
+.progress {
+  background: var(--status-in-progress-bg);
+  color: var(--status-in-progress-text);
+}
+
+.blocker {
+  background: var(--status-blocked-bg);
+  color: var(--status-blocked-text);
+}
+
+.handoff {
+  background: var(--status-review-bg);
+  color: var(--status-review-text);
+}
+
+.general {
+  background: var(--status-muted-bg);
+  color: var(--status-muted-text);
 }

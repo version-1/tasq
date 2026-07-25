@@ -7,5 +7,5 @@ export const commentTypes = ["progress", "blocker", "handoff", "general"] satisf
 export function CommentTypeBadge({ type }: { type: CommentType }) {
   const { t } = useTranslation();
 
-  return <span className={styles.badge}>{t(`comments.types.${type}`)}</span>;
+  return <span className={[styles.badge, styles[type]].join(" ")}>{t(`comments.types.${type}`)}</span>;
 }
