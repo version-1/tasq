@@ -1,8 +1,6 @@
 import { useTranslation } from "react-i18next";
 import type { ChangeRequest } from "@/lib/types";
-import { Markdown } from "@/components/ui/markdown";
-import { ChangeRequestStatusBadge } from "@/features/issues/components/change-request-status-badge";
-import { formatDateTime } from "../format";
+import { ChangeRequestCard } from "../change-request-card";
 import styles from "./index.module.css";
 
 export function ChangeRequestList({
@@ -27,28 +25,7 @@ export function ChangeRequestList({
       ) : null}
       <div className={styles.requestList}>
         {changeRequests.map((changeRequest) => (
-          <article key={changeRequest.id} className={styles.request}>
-            <div className={styles.requestHeader}>
-              <div>
-                <strong>{changeRequest.author}</strong>
-                <ChangeRequestStatusBadge status={changeRequest.status} />
-              </div>
-              <time dateTime={changeRequest.createdAt}>{formatDateTime(changeRequest.createdAt)}</time>
-            </div>
-            <Markdown
-              className={styles.markdown}
-              content={changeRequest.body}
-              emptyText={t("issues.detailPage.emptyChangeRequest")}
-            />
-            {changeRequest.resolvedAt ? (
-              <p className={styles.resolvedMeta}>
-                {t("issues.detailPage.changeRequestResolved", {
-                  runID: changeRequest.resolvedByRunId ?? t("issues.detailPage.noRun"),
-                  time: formatDateTime(changeRequest.resolvedAt),
-                })}
-              </p>
-            ) : null}
-          </article>
+          <ChangeRequestCard key={changeRequest.id} changeRequest={changeRequest} />
         ))}
       </div>
       {error ? <p className={styles.errorText}>{error}</p> : null}
