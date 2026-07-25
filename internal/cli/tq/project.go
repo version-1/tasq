@@ -3,7 +3,6 @@ package tq
 import (
 	"bufio"
 	"context"
-	"crypto/sha256"
 	"errors"
 	"fmt"
 	"io"
@@ -12,9 +11,7 @@ import (
 	"regexp"
 	"strings"
 
-	tqconfig "github.com/version-1/tasq/internal/config"
 	"github.com/version-1/tasq/internal/issue/domain/entity"
-	"gopkg.in/yaml.v3"
 )
 
 const workflowFileName = "WORKFLOW.md"
@@ -32,12 +29,6 @@ type projectCheckItem struct {
 	Name   string `json:"name"`
 	Passed bool   `json:"passed"`
 	Reason string `json:"reason"`
-}
-
-type workflowAddContent struct {
-	Frontmatter map[string]any
-	Body        string
-	Checksum    string
 }
 
 func (a app) projectList(ctx context.Context, args []string, cfg config) error {
@@ -323,208 +314,4 @@ func (a app) ensureProjectAddDoesNotDuplicate(ctx context.Context, key string, l
 	return nil
 }
 
-type localProjectFiles struct {
-	workflowPath    string
-	workflowCreated bool
-	gitignore       fileSnapshot
-}
-
-type fileSnapshot struct {
-	path    string
-	exists  bool
-	content []byte
-	mode    os.FileMode
-}
-
-func prepareProjectFiles(root string) (localProjectFiles, error) {
-	local := localProjectFiles{}
-	workflowPath := filepath.Join(root, workflowFileName)
-	local.workflowPath = workflowPath
-	if _, err := os.Stat(workflowPath); err != nil {
-		if !errors.Is(err, os.ErrNotExist) {
-			return local, err
-		}
-		if err := os.WriteFile(workflowPath, []byte(tqconfig.DefaultWorkflowTemplate()), 0o644); err != nil {
-			return local, err
-		}
-		local.workflowCreated = true
-	}
-
-	gitignorePath := filepath.Join(root, ".gitignore")
-	snapshot, err := snapshotFile(gitignorePath)
-	if err != nil {
-		return local, err
-	}
-	local.gitignore = snapshot
-	if !gitignoreContains(snapshot.content, ".worktrees") {
-		next := append([]byte{}, snapshot.content...)
-		if len(next) > 0 && next[len(next)-1] != '\n' {
-			next = append(next, '\n')
-		}
-		next = append(next, []byte(".worktrees\n")...)
-		if err := os.WriteFile(gitignorePath, next, 0o644); err != nil {
-			return local, err
-		}
-	}
-	return local, nil
-}
-
-func (l localProjectFiles) rollback() {
-	if l.workflowCreated {
-		_ = os.Remove(l.workflowPath)
-	}
-	if l.gitignore.path == "" {
-		return
-	}
-	if l.gitignore.exists {
-		_ = os.WriteFile(l.gitignore.path, l.gitignore.content, l.gitignore.mode)
-		return
-	}
-	_ = os.Remove(l.gitignore.path)
-}
-
-func snapshotFile(path string) (fileSnapshot, error) {
-	snapshot := fileSnapshot{path: path, mode: 0o644}
-	info, err := os.Stat(path)
-	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			return snapshot, nil
-		}
-		return snapshot, err
-	}
-	if info.IsDir() {
-		return snapshot, errors.New(".gitignore must be a file")
-	}
-	content, err := os.ReadFile(path)
-	if err != nil {
-		return snapshot, err
-	}
-	snapshot.exists = true
-	snapshot.content = content
-	snapshot.mode = info.Mode().Perm()
-	return snapshot, nil
-}
-
-func gitignoreContains(content []byte, entry string) bool {
-	for _, line := range strings.Split(string(content), "\n") {
-		if strings.TrimSpace(line) == entry {
-			return true
-		}
-	}
-	return false
-}
-
 var invalidKeyChars = regexp.MustCompile(`[^a-z0-9]+`)
-
-func kebabKey(value string) string {
-	key := strings.ToLower(strings.TrimSpace(value))
-	key = invalidKeyChars.ReplaceAllString(key, "-")
-	key = strings.Trim(key, "-")
-	for strings.Contains(key, "--") {
-		key = strings.ReplaceAll(key, "--", "-")
-	}
-	if len(key) > 64 {
-		key = strings.TrimRight(key[:64], "-")
-	}
-	return key
-}
-
-func samePath(left, right string) bool {
-	return filepath.Clean(left) == filepath.Clean(right)
-}
-
-func checkWorkflowExists(err error) projectCheckItem {
-	if err == nil {
-		return projectCheckItem{Name: "workflow.exists", Passed: true, Reason: "WORKFLOW.md exists"}
-	}
-	return projectCheckItem{Name: "workflow.exists", Passed: false, Reason: "WORKFLOW.md is missing"}
-}
-
-func checkWorkflowFrontMatter(content []byte) projectCheckItem {
-	frontMatter, ok := workflowFrontMatter(string(content))
-	if !ok {
-		return projectCheckItem{Name: "workflow.front_matter", Passed: false, Reason: "WORKFLOW.md front matter is missing"}
-	}
-	var raw map[string]any
-	if err := yaml.Unmarshal([]byte(frontMatter), &raw); err != nil {
-		return projectCheckItem{Name: "workflow.front_matter", Passed: false, Reason: err.Error()}
-	}
-	missing := missingWorkflowFields(raw)
-	if len(missing) > 0 {
-		return projectCheckItem{Name: "workflow.front_matter", Passed: false, Reason: "missing fields: " + strings.Join(missing, ", ")}
-	}
-	return projectCheckItem{Name: "workflow.front_matter", Passed: true, Reason: "required front matter fields are present"}
-}
-
-func parseWorkflowAddContent(content string) (workflowAddContent, error) {
-	frontMatter, body, ok := splitWorkflowContent(content)
-	if !ok {
-		return workflowAddContent{}, usageError("workflow front matter is required")
-	}
-	var parsed map[string]any
-	if err := yaml.Unmarshal([]byte(frontMatter), &parsed); err != nil {
-		return workflowAddContent{}, fmt.Errorf("parse workflow front matter: %w", err)
-	}
-	if parsed == nil {
-		return workflowAddContent{}, usageError("workflow front matter must be a YAML object")
-	}
-	sum := sha256.Sum256([]byte(content))
-	return workflowAddContent{
-		Frontmatter: parsed,
-		Body:        body,
-		Checksum:    fmt.Sprintf("%x", sum),
-	}, nil
-}
-
-func workflowFrontMatter(content string) (string, bool) {
-	frontMatter, _, ok := splitWorkflowContent(content)
-	return frontMatter, ok
-}
-
-func splitWorkflowContent(content string) (string, string, bool) {
-	if !strings.HasPrefix(content, "---\n") {
-		return "", "", false
-	}
-	rest := strings.TrimPrefix(content, "---\n")
-	frontMatter, body, ok := strings.Cut(rest, "\n---\n")
-	return frontMatter, body, ok
-}
-
-func missingWorkflowFields(raw map[string]any) []string {
-	required := []string{
-		"polling.interval_ms",
-		"workspace.root",
-		"agent.max_concurrent_agents",
-		"agent.max_turns",
-		"agent.continuation_turns_enabled",
-		"agent.max_retry_attempts",
-		"agent.max_retry_backoff_ms",
-		"codex.command",
-		"codex.read_timeout_ms",
-		"codex.turn_timeout_ms",
-		"codex.stall_timeout_ms",
-	}
-	missing := []string{}
-	for _, field := range required {
-		if !hasNestedField(raw, strings.Split(field, ".")) {
-			missing = append(missing, field)
-		}
-	}
-	return missing
-}
-
-func hasNestedField(raw map[string]any, path []string) bool {
-	current := any(raw)
-	for _, key := range path {
-		asMap, ok := current.(map[string]any)
-		if !ok {
-			return false
-		}
-		next, ok := asMap[key]
-		if !ok {
-			return false
-		}
-		current = next
-	}
-	return true
-}
