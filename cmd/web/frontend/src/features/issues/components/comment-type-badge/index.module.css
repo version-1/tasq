@@ -1,0 +1,7 @@
+.badge {
+  background: var(--extra-light-gray);
+  border-radius: var(--radius-pill);
+  color: var(--muted);
+  font-size: 12px;
+  padding: 3px 8px;
+}
