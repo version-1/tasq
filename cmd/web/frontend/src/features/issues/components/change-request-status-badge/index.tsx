@@ -15,13 +15,13 @@ export function ChangeRequestStatusBadge({ status }: { status: ChangeRequestStat
 }
 
 function changeRequestStatusBadgeVariant(status: ChangeRequestStatus):
-  | "status-ready"
+  | "status-review"
   | "status-in-progress"
   | "status-done"
   | "status-muted" {
   switch (status) {
     case "open":
-      return "status-ready";
+      return "status-review";
     case "in_progress":
       return "status-in-progress";
     case "resolved":
