@@ -26,7 +26,7 @@
   font-size: 13px;
 }
 
-.commentList {
+.requestList {
   display: grid;
   gap: 12px;
 }
@@ -34,9 +34,6 @@
 .emptyText {
   color: var(--muted);
   font-size: 13px;
-}
-
-.emptyText {
   margin: 0;
 }
 

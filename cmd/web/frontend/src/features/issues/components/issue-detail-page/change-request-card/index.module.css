@@ -1,0 +1,55 @@
+.request {
+  border-top: 1px solid var(--border);
+  display: grid;
+  gap: 10px;
+  padding-top: 12px;
+}
+
+.requestHeader {
+  align-items: start;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.requestHeader div {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.requestHeader time,
+.resolvedMeta {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.resolvedMeta {
+  margin: 0;
+}
+
+.markdown {
+  color: var(--text);
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+
+.markdown p {
+  margin: 0 0 12px;
+}
+
+.markdown p:last-child {
+  margin-bottom: 0;
+}
+
+.markdown a {
+  color: var(--primary-black);
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 640px) {
+  .requestHeader {
+    display: grid;
+  }
+}

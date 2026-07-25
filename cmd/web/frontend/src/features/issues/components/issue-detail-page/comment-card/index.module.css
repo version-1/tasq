@@ -1,0 +1,59 @@
+.comment {
+  border-top: 1px solid var(--border);
+  display: grid;
+  gap: 10px;
+  padding-top: 12px;
+}
+
+.commentHeader {
+  align-items: start;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.commentHeader div {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.commentHeader time {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.markdown {
+  color: var(--text);
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+
+.markdown p {
+  margin: 0 0 12px;
+}
+
+.markdown p:last-child {
+  margin-bottom: 0;
+}
+
+.markdown img {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  display: block;
+  height: auto;
+  margin-top: 8px;
+  max-width: 100%;
+}
+
+.markdown a {
+  color: var(--primary-black);
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 640px) {
+  .commentHeader {
+    display: grid;
+  }
+}

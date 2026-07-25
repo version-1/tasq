@@ -1,7 +1,6 @@
 import { useTranslation } from "react-i18next";
 import type { Comment } from "@/lib/types";
-import { Markdown } from "@/components/ui/markdown";
-import { formatDateTime } from "../format";
+import { CommentCard } from "../comment-card";
 import styles from "./index.module.css";
 
 export function CommentList({
@@ -30,20 +29,7 @@ export function CommentList({
       ) : null}
       <div className={styles.commentList}>
         {comments.map((comment) => (
-          <article key={comment.id} className={styles.comment}>
-            <div className={styles.commentHeader}>
-              <div>
-                <strong>{comment.author}</strong>
-                <span>{t(`comments.types.${comment.type}`)}</span>
-              </div>
-              <time dateTime={comment.createdAt}>{formatDateTime(comment.createdAt)}</time>
-            </div>
-            <Markdown
-              className={styles.markdown}
-              content={comment.body}
-              emptyText={t("issues.detailPage.emptyComment")}
-            />
-          </article>
+          <CommentCard key={comment.id} comment={comment} />
         ))}
       </div>
       {error ? <p className={styles.errorText}>{error}</p> : null}

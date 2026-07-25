@@ -21,6 +21,7 @@ import {
   getOrchestratorConversation,
   getIssue,
   getProjectWorkflow,
+  listChangeRequests,
   listComments,
   listIssueStates,
   listIssues,
@@ -160,6 +161,19 @@ export const handlers = [
     }
 
     return jsonOk(changeRequest, 201);
+  }),
+
+  http.get(`${apiBase}/issues/:issueId/change-requests`, ({ params, request }) => {
+    const issueID = numericParam(params.issueId);
+    const url = new URL(request.url);
+    const limit = optionalNumber(url.searchParams.get("limit")) ?? 100;
+    const response = listChangeRequests(issueID, limit);
+
+    if (!response) {
+      return jsonError("change_requests.list.issue_not_found", `Issue ${issueID} was not found.`, 404);
+    }
+
+    return HttpResponse.json(response);
   }),
 
   http.get(`${orchestratorBase}/:issueIdentifier`, ({ params }) => {
