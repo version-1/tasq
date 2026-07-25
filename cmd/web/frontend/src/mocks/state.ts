@@ -1,6 +1,7 @@
 import type {
   Comment,
   CommentListResponse,
+  ChangeRequest,
   CreateIssueInput,
   CreateProjectInput,
   Issue,
@@ -43,9 +44,11 @@ const workflows = new Map<number, ProjectWorkflow>(
   workflowFixtures.map((workflow) => [workflow.projectId, workflow]),
 );
 let comments = clone(commentFixtures);
+let changeRequests: ChangeRequest[] = [];
 let nextProjectID = nextNumericID(projects);
 let nextIssueID = nextNumericID(issues);
 let nextCommentID = nextNumericID(comments);
+let nextChangeRequestID = 1;
 
 export function listProjects(): Project[] {
   return clone(projects);
@@ -278,6 +281,33 @@ export function createComment(
   nextCommentID += 1;
   comments = [...comments, comment];
   return clone(comment);
+}
+
+export function createChangeRequest(
+  issueID: number,
+  input: { author: string; body: string },
+): ChangeRequest | null {
+  if (!issues.some((issue) => issue.id === issueID) || input.author.trim() === "" || input.body.trim() === "") {
+    return null;
+  }
+
+  const now = new Date().toISOString();
+  const changeRequest: ChangeRequest = {
+    id: nextChangeRequestID,
+    issueId: issueID,
+    author: input.author,
+    body: input.body,
+    status: "open",
+    createdAt: now,
+    updatedAt: now,
+    resolvedAt: null,
+    resolvedByRunId: null,
+    resultCommentId: null,
+  };
+
+  nextChangeRequestID += 1;
+  changeRequests = [...changeRequests, changeRequest];
+  return clone(changeRequest);
 }
 
 export function buildSummary(): Summary {

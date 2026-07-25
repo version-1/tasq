@@ -13,6 +13,7 @@ import { IssueDetailPage } from "./index";
 
 const api = vi.hoisted(() => ({
   attachmentContentURL: vi.fn((id: string) => `/tracker/api/v1/attachments/${id}/content`),
+  createChangeRequest: vi.fn(),
   fetchComments: vi.fn(),
   fetchIssue: vi.fn(),
   fetchIssueAttachments: vi.fn(),
@@ -37,6 +38,7 @@ function renderIssueDetail(initialEntry = "/issues/42") {
 describe("IssueDetailPage", () => {
   beforeEach(() => {
     api.attachmentContentURL.mockClear();
+    api.createChangeRequest.mockReset();
     api.fetchComments.mockReset();
     api.fetchIssue.mockReset();
     api.fetchIssueAttachments.mockReset();
@@ -50,6 +52,7 @@ describe("IssueDetailPage", () => {
     api.fetchOrchestratorIssueRuntime.mockResolvedValue(runtime);
     api.fetchComments.mockResolvedValue(commentsResponse);
     api.fetchOrchestratorConversation.mockResolvedValue(conversation);
+    api.createChangeRequest.mockResolvedValue(changeRequest);
     api.updateIssueDescription.mockResolvedValue({ ...issue, description: "Updated **description**" });
   });
 
@@ -90,6 +93,85 @@ describe("IssueDetailPage", () => {
 
     expect(api.updateIssueStatus).toHaveBeenCalledWith(42, "in_progress");
     expect(screen.getByRole("button", { name: "Change status" })).toHaveTextContent("in_progress");
+  });
+
+  it("rejects a review issue with a change request", async () => {
+    const user = userEvent.setup();
+    api.fetchIssue.mockResolvedValueOnce({ ...issue, status: "review" });
+    api.updateIssueStatus.mockResolvedValueOnce({ ...issue, status: "ready" });
+
+    renderIssueDetail();
+
+    await user.click(await screen.findByRole("button", { name: "Reject" }));
+    const dialog = screen.getByRole("dialog", { name: "Reject #42" });
+    await user.type(screen.getByRole("textbox", { name: "Request" }), "  Please cover the empty state  ");
+    await user.click(within(dialog).getByRole("button", { name: "Reject" }));
+
+    expect(api.createChangeRequest).toHaveBeenCalledWith(42, {
+      author: "reviewer",
+      body: "Please cover the empty state",
+    }, { silent: true });
+    expect(api.updateIssueStatus).toHaveBeenCalledWith(42, "ready", { silent: true });
+    expect(await screen.findByRole("button", { name: "Change status" })).toHaveTextContent("ready");
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog", { name: "Reject #42" })).not.toBeInTheDocument();
+    });
+  });
+
+  it("requires reject request body before creating a change request", async () => {
+    const user = userEvent.setup();
+    api.fetchIssue.mockResolvedValueOnce({ ...issue, status: "review" });
+
+    renderIssueDetail();
+
+    await user.click(await screen.findByRole("button", { name: "Reject" }));
+    const dialog = screen.getByRole("dialog", { name: "Reject #42" });
+    await user.click(within(dialog).getByRole("button", { name: "Reject" }));
+
+    expect(await screen.findByText("Enter a request")).toBeInTheDocument();
+    expect(api.createChangeRequest).not.toHaveBeenCalled();
+    expect(api.updateIssueStatus).not.toHaveBeenCalled();
+  });
+
+  it("does not move the issue when change request creation fails", async () => {
+    const user = userEvent.setup();
+    api.fetchIssue.mockResolvedValueOnce({ ...issue, status: "review" });
+    api.createChangeRequest.mockRejectedValueOnce(new Error("failed to create request"));
+
+    renderIssueDetail();
+
+    await user.click(await screen.findByRole("button", { name: "Reject" }));
+    const dialog = screen.getByRole("dialog", { name: "Reject #42" });
+    await user.type(screen.getByRole("textbox", { name: "Request" }), "Fix the tests");
+    await user.click(within(dialog).getByRole("button", { name: "Reject" }));
+
+    expect(await screen.findByText("failed to create request")).toBeInTheDocument();
+    expect(api.updateIssueStatus).not.toHaveBeenCalled();
+    expect(screen.getByRole("dialog", { name: "Reject #42" })).toBeInTheDocument();
+  });
+
+  it("retries only the ready update when rejecting after a status update failure", async () => {
+    const user = userEvent.setup();
+    api.fetchIssue.mockResolvedValueOnce({ ...issue, status: "review" });
+    api.updateIssueStatus
+      .mockRejectedValueOnce(new Error("failed to update status"))
+      .mockResolvedValueOnce({ ...issue, status: "ready" });
+
+    renderIssueDetail();
+
+    await user.click(await screen.findByRole("button", { name: "Reject" }));
+    const dialog = screen.getByRole("dialog", { name: "Reject #42" });
+    await user.type(screen.getByRole("textbox", { name: "Request" }), "Fix review feedback");
+    await user.click(within(dialog).getByRole("button", { name: "Reject" }));
+    expect(await screen.findByText("failed to update status")).toBeInTheDocument();
+
+    await user.click(within(dialog).getByRole("button", { name: "Reject" }));
+
+    expect(api.createChangeRequest).toHaveBeenCalledTimes(1);
+    expect(api.updateIssueStatus).toHaveBeenCalledTimes(2);
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog", { name: "Reject #42" })).not.toBeInTheDocument();
+    });
   });
 
   it("edits markdown descriptions", async () => {
@@ -229,6 +311,19 @@ const commentsResponse: CommentListResponse = {
     limit: 20,
     nextCursor: null,
   },
+};
+
+const changeRequest = {
+  id: 9,
+  issueId: 42,
+  author: "reviewer",
+  body: "Please cover the empty state",
+  status: "open",
+  createdAt: "2026-06-21T02:30:00.000Z",
+  updatedAt: "2026-06-21T02:30:00.000Z",
+  resolvedAt: null,
+  resolvedByRunId: null,
+  resultCommentId: null,
 };
 
 const runtime: OrchestratorIssueRuntime = {

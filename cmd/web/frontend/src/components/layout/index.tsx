@@ -34,6 +34,7 @@ import type {
 import { AddIssueDialog } from "@/components/dialog/add-issue";
 import { AddProjectDialog } from "@/components/dialog/add-project";
 import { DeleteProjectDialog } from "@/components/dialog/delete-project";
+import { RejectIssueDialog } from "@/features/issues/components/reject-issue-dialog";
 import { Header } from "./header";
 import { Sidebar } from "./sidebar";
 import { useTheme } from "./use-theme";
@@ -57,6 +58,7 @@ export type LayoutData = {
   onLanguageChange: (language: SupportedLanguage) => void;
   onSelectIssue: (issueID: number) => void;
   onAddIssue: (status?: IssueStatus) => void;
+  onRejectIssue: (issueID: number) => void;
   onStatusChange: (id: number, status: IssueStatus) => Promise<void>;
 };
 
@@ -67,12 +69,15 @@ export type LayoutShellData = {
   addIssueInitialStatus: IssueStatus;
   deleteProjectError: string;
   isDeletingProject: boolean;
+  isMovingRejectedIssue: boolean;
   isIssueDetailPage: boolean;
   isProjectIssueScope: boolean;
   issues: IssueSummary[];
   layoutData: LayoutData | null;
   loadState: LoadState;
   projects: Project[];
+  rejectIssue: IssueSummary | null;
+  rejectIssueError: string;
   summary: Summary | null;
   title: string | null;
   onIssueDetailTitleChange: (title: string | null) => void;
@@ -82,6 +87,7 @@ export type LayoutShellData = {
   onCreateIssue: (input: CreateIssueInput) => Promise<void>;
   onDeleteProject: () => void;
   onConfirmDeleteProject: () => Promise<void>;
+  onMoveRejectedIssueReady: () => Promise<void>;
 };
 
 const layoutDataContext = createContext<LayoutData | null>(null);
@@ -115,6 +121,9 @@ function LayoutContent({ children }: { children: ReactNode }) {
   const [addIssueError, setAddIssueError] = useState("");
   const [deleteProjectError, setDeleteProjectError] = useState("");
   const [isDeletingProject, setIsDeletingProject] = useState(false);
+  const [rejectIssueID, setRejectIssueID] = useState<number | null>(null);
+  const [rejectIssueError, setRejectIssueError] = useState("");
+  const [isMovingRejectedIssue, setIsMovingRejectedIssue] = useState(false);
   const [issueDetailTitleOverride, setIssueDetailTitleOverride] = useState<string | null>(null);
   const [refreshIntervalMs, setRefreshIntervalMs] = useState(
     defaultRefreshIntervalMs,
@@ -245,6 +254,29 @@ function LayoutContent({ children }: { children: ReactNode }) {
     modal.openModal(modalIDs.deleteProject);
   }
 
+  function handleRejectIssue(issueID: number) {
+    setRejectIssueID(issueID);
+    setRejectIssueError("");
+    modal.openModal(modalIDs.rejectIssue);
+  }
+
+  async function handleMoveRejectedIssueReady() {
+    if (rejectIssueID === null) return;
+    setIsMovingRejectedIssue(true);
+    setRejectIssueError("");
+    try {
+      await updateIssueStatus(rejectIssueID, "ready", { silent: true });
+      await load({ silent: true });
+      toast.success({ message: t("toast.success.issueRejected") });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : t("layout.failedToRejectIssue");
+      setRejectIssueError(message);
+      throw new Error(message);
+    } finally {
+      setIsMovingRejectedIssue(false);
+    }
+  }
+
   async function handleConfirmDeleteProject() {
     if (!activeProject) return;
     setIsDeletingProject(true);
@@ -269,6 +301,7 @@ function LayoutContent({ children }: { children: ReactNode }) {
   function handleCloseModal() {
     setAddIssueError("");
     setDeleteProjectError("");
+    setRejectIssueError("");
     modal.closeModal();
   }
 
@@ -302,6 +335,7 @@ function LayoutContent({ children }: { children: ReactNode }) {
         onLanguageChange: handleLanguageChange,
         onSelectIssue: setSelectedIssueID,
         onAddIssue: handleAddIssue,
+        onRejectIssue: handleRejectIssue,
         onStatusChange: handleStatusChange,
       }
     : null;
@@ -314,11 +348,14 @@ function LayoutContent({ children }: { children: ReactNode }) {
     deleteProjectError,
     isIssueDetailPage,
     isDeletingProject,
+    isMovingRejectedIssue,
     isProjectIssueScope,
     issues,
     layoutData,
     loadState,
     projects,
+    rejectIssue: issues.find((issue) => issue.id === rejectIssueID) ?? null,
+    rejectIssueError,
     summary,
     title: issueDetailTitleOverride ?? issueDetailTitle ?? issueScopeTitle(
       issueScope,
@@ -332,6 +369,7 @@ function LayoutContent({ children }: { children: ReactNode }) {
     onCreateIssue: handleCreateIssue,
     onDeleteProject: handleDeleteProject,
     onConfirmDeleteProject: handleConfirmDeleteProject,
+    onMoveRejectedIssueReady: handleMoveRejectedIssueReady,
   };
 
   return (
@@ -459,6 +497,20 @@ function LayoutModalContent({ shellData }: { shellData: LayoutShellData }) {
         project={shellData.activeProject}
         onCancel={shellData.onCloseModal}
         onConfirm={shellData.onConfirmDeleteProject}
+      />
+    );
+  }
+
+  if (modal.activeModalID === modalIDs.rejectIssue && shellData.rejectIssue) {
+    return (
+      <RejectIssueDialog
+        error={shellData.rejectIssueError}
+        isMovingIssue={shellData.isMovingRejectedIssue}
+        issueID={shellData.rejectIssue.id}
+        issueTitle={shellData.rejectIssue.title}
+        onCancel={shellData.onCloseModal}
+        onMoveIssueReady={shellData.onMoveRejectedIssueReady}
+        onSuccess={shellData.onCloseModal}
       />
     );
   }

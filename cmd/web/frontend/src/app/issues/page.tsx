@@ -4,7 +4,7 @@ import { useLayoutData, useLayoutShellData } from "@/components/layout";
 import { IssuesView } from "@/features/issues/components/issues-view";
 
 export default function IssuesPage() {
-  const { summary, onAddIssue, onStatusChange } = useLayoutData();
+  const { summary, onAddIssue, onRejectIssue, onStatusChange } = useLayoutData();
   const { isProjectIssueScope } = useLayoutShellData();
 
   return (
@@ -12,6 +12,7 @@ export default function IssuesPage() {
       showFilterSortActions={!isProjectIssueScope}
       summary={summary}
       onAddIssue={onAddIssue}
+      onRejectIssue={onRejectIssue}
       onStatusChange={onStatusChange}
     />
   );

@@ -6,6 +6,7 @@ import { boardColumns } from "./board-columns";
 import styles from "./index.module.css";
 
 type StatusChangeHandler = (id: number, status: IssueStatus) => Promise<void>;
+type RejectIssueHandler = (id: number) => void;
 
 const boardActions = [
   { icon: "filter", titleKey: "issues.board.filter" },
@@ -17,11 +18,13 @@ export function IssueBoard({
   showFilterSortActions = true,
   summary,
   onAddIssue,
+  onRejectIssue,
   onStatusChange,
 }: {
   showFilterSortActions?: boolean;
   summary: Summary;
   onAddIssue: (status?: IssueStatus) => void;
+  onRejectIssue?: RejectIssueHandler;
   onStatusChange: StatusChangeHandler;
 }) {
   const { t } = useTranslation();
@@ -76,6 +79,7 @@ export function IssueBoard({
                     <IssueCard
                       key={issue.id}
                       issue={issue}
+                      onRejectIssue={onRejectIssue}
                       onStatusChange={onStatusChange}
                     />
                   ))

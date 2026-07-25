@@ -15,11 +15,13 @@ export function BasicInfoPanel({
   disabled,
   issue,
   issueOptions = [],
+  onRejectIssue,
   onStatusChange,
 }: {
   disabled: boolean;
   issue: Issue;
   issueOptions?: IssueSummary[];
+  onRejectIssue?: () => void;
   onStatusChange: (status: IssueStatus) => Promise<void>;
 }) {
   const { t } = useTranslation();
@@ -61,6 +63,18 @@ export function BasicInfoPanel({
         <MetaItem label={t("issues.detailPage.createdAt")} value={formatDateTime(issue.createdAt)} />
         <MetaItem label={t("issues.detailPage.updatedAt")} value={formatDateTime(issue.updatedAt)} />
       </dl>
+      {issue.status === "review" && onRejectIssue ? (
+        <div className={styles.panelActions}>
+          <button
+            type="button"
+            className={styles.rejectButton}
+            disabled={disabled}
+            onClick={onRejectIssue}
+          >
+            {t("issues.reject.action")}
+          </button>
+        </div>
+      ) : null}
     </section>
   );
 }

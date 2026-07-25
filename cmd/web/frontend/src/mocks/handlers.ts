@@ -1,5 +1,6 @@
 import { http, HttpResponse } from "msw";
 import type {
+  CreateChangeRequestInput,
   CreateIssueInput,
   CreateProjectInput,
   ErrorResponse as IssueTrackerErrorResponse,
@@ -13,6 +14,7 @@ import {
   buildOrchestratorIssueRuntime,
   buildSummary,
   countIssues,
+  createChangeRequest,
   createComment,
   createIssue,
   createProject,
@@ -146,6 +148,18 @@ export const handlers = [
     }
 
     return jsonOk(comment, 201);
+  }),
+
+  http.post(`${apiBase}/issues/:issueId/change-requests`, async ({ params, request }) => {
+    const issueID = numericParam(params.issueId);
+    const input = await request.json() as CreateChangeRequestInput;
+    const changeRequest = createChangeRequest(issueID, input);
+
+    if (!changeRequest) {
+      return jsonError("change_requests.create.invalid_input", "Change request body, author, and issueId are required.", 400);
+    }
+
+    return jsonOk(changeRequest, 201);
   }),
 
   http.get(`${orchestratorBase}/:issueIdentifier`, ({ params }) => {
