@@ -1,0 +1,103 @@
+.section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-panel);
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+}
+
+.sectionHeader {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.sectionHeader h3 {
+  color: var(--primary-black);
+  font-size: 16px;
+  margin: 0;
+}
+
+.sectionHeader span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.requestList {
+  display: grid;
+  gap: 12px;
+}
+
+.request {
+  border-top: 1px solid var(--border);
+  display: grid;
+  gap: 10px;
+  padding-top: 12px;
+}
+
+.requestHeader {
+  align-items: start;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.requestHeader div {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.requestHeader span {
+  background: var(--extra-light-gray);
+  border-radius: var(--radius-pill);
+  color: var(--muted);
+  font-size: 12px;
+  padding: 3px 8px;
+}
+
+.requestHeader time,
+.emptyText,
+.resolvedMeta {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.emptyText,
+.resolvedMeta {
+  margin: 0;
+}
+
+.markdown {
+  color: var(--text);
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+
+.markdown p {
+  margin: 0 0 12px;
+}
+
+.markdown p:last-child {
+  margin-bottom: 0;
+}
+
+.markdown a {
+  color: var(--primary-black);
+  overflow-wrap: anywhere;
+}
+
+.errorText {
+  color: var(--danger);
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .requestHeader {
+    display: grid;
+  }
+}

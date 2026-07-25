@@ -1,7 +1,8 @@
 import type {
+  ChangeRequest,
+  ChangeRequestListResponse,
   Comment,
   CommentListResponse,
-  ChangeRequest,
   CreateIssueInput,
   CreateProjectInput,
   Issue,
@@ -44,11 +45,36 @@ const workflows = new Map<number, ProjectWorkflow>(
   workflowFixtures.map((workflow) => [workflow.projectId, workflow]),
 );
 let comments = clone(commentFixtures);
-let changeRequests: ChangeRequest[] = [];
+let changeRequests: ChangeRequest[] = [
+  {
+    id: 1,
+    issueId: 1,
+    author: "reviewer",
+    body: "Please add a regression test for the rejected path.",
+    status: "open",
+    createdAt: "2026-06-16T04:15:00.000Z",
+    updatedAt: "2026-06-16T04:15:00.000Z",
+    resolvedAt: null,
+    resolvedByRunId: null,
+    resultCommentId: null,
+  },
+  {
+    id: 2,
+    issueId: 1,
+    author: "reviewer",
+    body: "Document the retry behavior before resolving.",
+    status: "resolved",
+    createdAt: "2026-06-16T05:30:00.000Z",
+    updatedAt: "2026-06-16T06:10:00.000Z",
+    resolvedAt: "2026-06-16T06:10:00.000Z",
+    resolvedByRunId: "run-1-latest",
+    resultCommentId: 1,
+  },
+];
 let nextProjectID = nextNumericID(projects);
 let nextIssueID = nextNumericID(issues);
 let nextCommentID = nextNumericID(comments);
-let nextChangeRequestID = 1;
+let nextChangeRequestID = nextNumericID(changeRequests);
 
 export function listProjects(): Project[] {
   return clone(projects);
@@ -308,6 +334,25 @@ export function createChangeRequest(
   nextChangeRequestID += 1;
   changeRequests = [...changeRequests, changeRequest];
   return clone(changeRequest);
+}
+
+export function listChangeRequests(issueID: number, limit = 100): ChangeRequestListResponse | null {
+  if (!issues.some((issue) => issue.id === issueID)) {
+    return null;
+  }
+
+  const filtered = changeRequests
+    .filter((changeRequest) => changeRequest.issueId === issueID)
+    .sort((left, right) => left.createdAt.localeCompare(right.createdAt))
+    .slice(0, limit);
+
+  return {
+    data: clone(filtered),
+    meta: {
+      limit,
+      status: "",
+    },
+  };
 }
 
 export function buildSummary(): Summary {

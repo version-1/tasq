@@ -4,6 +4,7 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type {
   AttachmentListResponse,
+  ChangeRequestListResponse,
   CommentListResponse,
   Issue,
   OrchestratorConversation,
@@ -14,6 +15,7 @@ import { IssueDetailPage } from "./index";
 const api = vi.hoisted(() => ({
   attachmentContentURL: vi.fn((id: string) => `/tracker/api/v1/attachments/${id}/content`),
   createChangeRequest: vi.fn(),
+  fetchChangeRequests: vi.fn(),
   fetchComments: vi.fn(),
   fetchIssue: vi.fn(),
   fetchIssueAttachments: vi.fn(),
@@ -39,6 +41,7 @@ describe("IssueDetailPage", () => {
   beforeEach(() => {
     api.attachmentContentURL.mockClear();
     api.createChangeRequest.mockReset();
+    api.fetchChangeRequests.mockReset();
     api.fetchComments.mockReset();
     api.fetchIssue.mockReset();
     api.fetchIssueAttachments.mockReset();
@@ -50,6 +53,7 @@ describe("IssueDetailPage", () => {
     api.fetchIssue.mockResolvedValue(issue);
     api.fetchIssueAttachments.mockResolvedValue(attachmentsResponse);
     api.fetchOrchestratorIssueRuntime.mockResolvedValue(runtime);
+    api.fetchChangeRequests.mockResolvedValue(changeRequestsResponse);
     api.fetchComments.mockResolvedValue(commentsResponse);
     api.fetchOrchestratorConversation.mockResolvedValue(conversation);
     api.createChangeRequest.mockResolvedValue(changeRequest);
@@ -67,6 +71,7 @@ describe("IssueDetailPage", () => {
     );
     expect(screen.queryByRole("heading", { name: "Runs" })).not.toBeInTheDocument();
     expect(api.fetchIssueAttachments).toHaveBeenCalledWith(42, { silent: true });
+    expect(api.fetchChangeRequests).not.toHaveBeenCalled();
     expect(api.fetchComments).not.toHaveBeenCalled();
   });
 
@@ -237,8 +242,20 @@ describe("IssueDetailPage", () => {
     renderIssueDetail("/issues/42?tab=comments");
 
     expect(await screen.findByText("Looks good from design review.")).toBeInTheDocument();
+    expect(screen.getByText("Please cover the empty state before resolving.")).toBeInTheDocument();
+    expect(screen.getByText("Open")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Runs" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Refine issue detail" })).not.toBeInTheDocument();
+    expect(api.fetchChangeRequests).toHaveBeenCalledWith(42, 100, { silent: true });
+    expect(api.fetchComments).toHaveBeenCalledWith(42, undefined, 20, { silent: true });
+  });
+
+  it("shows a change request load error without skipping comments", async () => {
+    api.fetchChangeRequests.mockRejectedValueOnce(new Error("failed to load requests"));
+
+    renderIssueDetail("/issues/42?tab=comments");
+
+    expect(await screen.findByText("failed to load requests")).toBeTruthy();
     expect(api.fetchComments).toHaveBeenCalledWith(42, undefined, 20, { silent: true });
   });
 
@@ -324,6 +341,27 @@ const changeRequest = {
   resolvedAt: null,
   resolvedByRunId: null,
   resultCommentId: null,
+};
+
+const changeRequestsResponse: ChangeRequestListResponse = {
+  data: [
+    {
+      id: 9,
+      issueId: 42,
+      author: "reviewer",
+      body: "Please cover the empty state before resolving.",
+      status: "open",
+      createdAt: "2026-06-21T01:30:00.000Z",
+      updatedAt: "2026-06-21T01:30:00.000Z",
+      resolvedAt: null,
+      resolvedByRunId: null,
+      resultCommentId: null,
+    },
+  ],
+  meta: {
+    limit: 100,
+    status: "",
+  },
 };
 
 const runtime: OrchestratorIssueRuntime = {

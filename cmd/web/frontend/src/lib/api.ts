@@ -3,6 +3,7 @@ import {
   deleteApiV1ProjectsId,
   getApiV1Issues,
   getApiV1IssuesId,
+  getApiV1IssuesIssueIdChangeRequests,
   getApiV1IssuesIssueIdComments,
   getGetApiV1AttachmentsIdContentUrl,
   getApiV1Projects,
@@ -14,6 +15,7 @@ import {
   postApiV1Projects,
   type AttachmentListResponse,
   type ChangeRequest,
+  type ChangeRequestListResponse,
   type CommentListResponse,
   type CreateChangeRequestInput,
   type CreateIssueInput,
@@ -108,6 +110,17 @@ export function fetchComments(
 ): Promise<CommentListResponse> {
   return unwrapEnvelope<CommentListResponse>(
     getApiV1IssuesIssueIdComments(issueID, { cursor, limit }, noStore),
+    options,
+  );
+}
+
+export function fetchChangeRequests(
+  issueID: number,
+  limit = 100,
+  options?: ApiRequestOptions,
+): Promise<ChangeRequestListResponse> {
+  return unwrapEnvelope<ChangeRequestListResponse>(
+    getApiV1IssuesIssueIdChangeRequests(issueID, { limit }, noStore),
     options,
   );
 }

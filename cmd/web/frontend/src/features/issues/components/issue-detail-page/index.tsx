@@ -7,6 +7,7 @@ import { toast } from "@/lib/toast";
 import { useOptionalLayoutShellData } from "@/components/layout";
 import { PanelMessage } from "@/components/ui/pannel-message";
 import {
+  fetchChangeRequests,
   fetchComments,
   fetchIssueAttachments,
   fetchIssue,
@@ -17,6 +18,7 @@ import {
 } from "@/lib/api";
 import type {
   Attachment,
+  ChangeRequest,
   Comment,
   Issue,
   IssueStatus,
@@ -24,6 +26,7 @@ import type {
   OrchestratorIssueRun,
 } from "@/lib/types";
 import { AttachmentsSection } from "./attachments-section";
+import { ChangeRequestList } from "./change-request-list";
 import { CommentList } from "./comment-list";
 import { ConversationTab } from "./conversation-tab";
 import { IssueDescription } from "./issue-description";
@@ -60,6 +63,10 @@ export function IssueDetailPage() {
   const [commentsError, setCommentsError] = useState("");
   const [isLoadingComments, setIsLoadingComments] = useState(false);
   const [commentsLoaded, setCommentsLoaded] = useState(false);
+  const [changeRequests, setChangeRequests] = useState<ChangeRequest[]>([]);
+  const [changeRequestsError, setChangeRequestsError] = useState("");
+  const [isLoadingChangeRequests, setIsLoadingChangeRequests] = useState(false);
+  const [changeRequestsLoaded, setChangeRequestsLoaded] = useState(false);
   const [runs, setRuns] = useState<OrchestratorIssueRun[]>([]);
   const [runsError, setRunsError] = useState("");
   const [isLoadingRuns, setIsLoadingRuns] = useState(false);
@@ -146,6 +153,25 @@ export function IssueDetailPage() {
     [issueID, t],
   );
 
+  const loadChangeRequests = useCallback(async () => {
+    if (!issueID) return;
+
+    setIsLoadingChangeRequests(true);
+    setChangeRequestsError("");
+    try {
+      const response = await fetchChangeRequests(issueID, 100, { silent: true });
+      setChangeRequests(Array.isArray(response.data) ? response.data : []);
+      setChangeRequestsLoaded(true);
+    } catch (error) {
+      setChangeRequestsError(
+        error instanceof Error ? error.message : t("issues.detailPage.failedToLoadChangeRequests"),
+      );
+      setChangeRequests([]);
+    } finally {
+      setIsLoadingChangeRequests(false);
+    }
+  }, [issueID, t]);
+
   const loadRuns = useCallback(async () => {
     if (!issueID) return;
 
@@ -182,6 +208,9 @@ export function IssueDetailPage() {
     setNextCursor(null);
     setCommentsError("");
     setCommentsLoaded(false);
+    setChangeRequests([]);
+    setChangeRequestsError("");
+    setChangeRequestsLoaded(false);
   }, [issueID]);
 
   useEffect(() => {
@@ -201,6 +230,12 @@ export function IssueDetailPage() {
       void loadComments();
     }
   }, [activeTab, commentsLoaded, isLoadingComments, loadComments]);
+
+  useEffect(() => {
+    if (activeTab === "comments" && !changeRequestsLoaded && !isLoadingChangeRequests) {
+      void loadChangeRequests();
+    }
+  }, [activeTab, changeRequestsLoaded, isLoadingChangeRequests, loadChangeRequests]);
 
   useEffect(() => {
     if (activeTab !== "conversation" || runs.length === 0) {
@@ -302,6 +337,9 @@ export function IssueDetailPage() {
   const sortedComments = useMemo(() => {
     return [...comments].sort((left, right) => left.id - right.id);
   }, [comments]);
+  const sortedChangeRequests = useMemo(() => {
+    return [...changeRequests].sort((left, right) => left.createdAt.localeCompare(right.createdAt));
+  }, [changeRequests]);
 
   function handleRunChange(runID: string) {
     updateSearchParams({ runId: runID });
@@ -360,6 +398,11 @@ export function IssueDetailPage() {
                 error={runsError}
                 isLoading={isLoadingRuns}
                 runs={runs}
+              />
+              <ChangeRequestList
+                changeRequests={sortedChangeRequests}
+                error={changeRequestsError}
+                isLoading={isLoadingChangeRequests}
               />
               <CommentList
                 comments={sortedComments}
