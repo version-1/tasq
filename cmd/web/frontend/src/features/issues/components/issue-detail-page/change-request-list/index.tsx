@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import type { ChangeRequest } from "@/lib/types";
 import { Markdown } from "@/components/ui/markdown";
+import { ChangeRequestStatusBadge } from "@/features/issues/components/change-request-status-badge";
 import { formatDateTime } from "../format";
 import styles from "./index.module.css";
 
@@ -30,7 +31,7 @@ export function ChangeRequestList({
             <div className={styles.requestHeader}>
               <div>
                 <strong>{changeRequest.author}</strong>
-                <span>{t(`changeRequests.statuses.${changeRequest.status}`)}</span>
+                <ChangeRequestStatusBadge status={changeRequest.status} />
               </div>
               <time dateTime={changeRequest.createdAt}>{formatDateTime(changeRequest.createdAt)}</time>
             </div>
