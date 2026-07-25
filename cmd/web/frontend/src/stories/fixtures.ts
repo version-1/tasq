@@ -94,6 +94,7 @@ export const storyShellData: LayoutShellData = {
   deleteProjectError: "",
   isIssueDetailPage: false,
   isDeletingProject: false,
+  isMovingRejectedIssue: false,
   isProjectIssueScope: false,
   issues: storySummary.columns.flatMap((column) => column.issues),
   layoutData: {
@@ -106,6 +107,7 @@ export const storyShellData: LayoutShellData = {
     onLanguageChange: noop,
     onSelectIssue: noop,
     onAddIssue: noop,
+    onRejectIssue: noop,
     onStatusChange: asyncNoop,
   },
   loadState: {
@@ -114,6 +116,8 @@ export const storyShellData: LayoutShellData = {
     summary: storySummary,
   },
   projects: projectFixtures,
+  rejectIssue: null,
+  rejectIssueError: "",
   summary: storySummary,
   title: "Tasq",
   onIssueDetailTitleChange: noop,
@@ -123,4 +127,5 @@ export const storyShellData: LayoutShellData = {
   onCreateIssue: asyncNoop,
   onDeleteProject: noop,
   onConfirmDeleteProject: asyncNoop,
+  onMoveRejectedIssueReady: asyncNoop,
 };

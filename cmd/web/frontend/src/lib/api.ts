@@ -9,10 +9,13 @@ import {
   getApiV1ProjectsIdWorkflow,
   getApiV1Summary,
   patchApiV1IssuesId,
+  postApiV1IssuesIssueIdChangeRequests,
   postApiV1Issues,
   postApiV1Projects,
   type AttachmentListResponse,
+  type ChangeRequest,
   type CommentListResponse,
+  type CreateChangeRequestInput,
   type CreateIssueInput,
   type CreateProjectInput,
   type ErrorResponse,
@@ -76,6 +79,14 @@ export function fetchSummary(options?: ApiRequestOptions): Promise<Summary> {
 
 export function createIssue(input: CreateIssueInput, options?: ApiRequestOptions): Promise<Issue> {
   return unwrapResponse(postApiV1Issues(input, noStore), options);
+}
+
+export function createChangeRequest(
+  issueID: number,
+  input: CreateChangeRequestInput,
+  options?: ApiRequestOptions,
+): Promise<ChangeRequest> {
+  return unwrapResponse(postApiV1IssuesIssueIdChangeRequests(issueID, input, noStore), options);
 }
 
 export function fetchIssue(id: number, options?: ApiRequestOptions): Promise<Issue> {

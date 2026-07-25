@@ -16,6 +16,7 @@ import { PendingBadge } from "./pending-badge";
 import styles from "./index.module.css";
 
 type IssueStatusChangeHandler = (id: number, status: IssueStatus) => Promise<void>;
+type IssueRejectHandler = (id: number) => void;
 
 type IssueMetric = {
   icon: IconProxyName;
@@ -39,11 +40,13 @@ const quickStatusTargets: Partial<Record<IssueStatus, IssueStatus>> = {
 export function IssueCard({
   issue,
   onStatusChange,
+  onRejectIssue,
   readonly = false,
   runCount,
 }: {
   issue: IssueSummary;
   onStatusChange: IssueStatusChangeHandler;
+  onRejectIssue?: IssueRejectHandler;
   readonly?: boolean;
   runCount?: number;
 }) {
@@ -51,6 +54,7 @@ export function IssueCard({
   const statusOptions = statusOptionsFor(issue.status);
   const canChangeStatus = !readonly && statusOptions.length > 1;
   const quickStatusTarget = readonly ? undefined : quickStatusTargets[issue.status];
+  const canReject = !readonly && issue.status === "review" && onRejectIssue !== undefined;
   const cardRef = useRef<HTMLElement>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuID = `issue-card-menu-${issue.id}`;
@@ -148,19 +152,32 @@ export function IssueCard({
             </span>
           ))}
         </div>
-        {quickStatusTarget ? (
-          <button
-            className={quickActionClassName(quickStatusTarget)}
-            type="button"
-            onClick={() => {
-              void onStatusChange(issue.id, quickStatusTarget);
-            }}
-          >
-            {t(`statuses.${quickStatusTarget}`)}
-            {quickActionShowsIcon(quickStatusTarget) ? (
-              <IconProxy className={styles.quickActionIcon} name="arrow-right" size={14} strokeWidth={2.4} />
+        {quickStatusTarget || canReject ? (
+          <div className={styles.actionGroup}>
+            {canReject ? (
+              <button
+                className={styles.rejectActionButton}
+                type="button"
+                onClick={() => onRejectIssue(issue.id)}
+              >
+                {t("issues.reject.action")}
+              </button>
             ) : null}
-          </button>
+            {quickStatusTarget ? (
+              <button
+                className={quickActionClassName(quickStatusTarget)}
+                type="button"
+                onClick={() => {
+                  void onStatusChange(issue.id, quickStatusTarget);
+                }}
+              >
+                {t(`statuses.${quickStatusTarget}`)}
+                {quickActionShowsIcon(quickStatusTarget) ? (
+                  <IconProxy className={styles.quickActionIcon} name="arrow-right" size={14} strokeWidth={2.4} />
+                ) : null}
+              </button>
+            ) : null}
+          </div>
         ) : null}
       </div>
     </article>

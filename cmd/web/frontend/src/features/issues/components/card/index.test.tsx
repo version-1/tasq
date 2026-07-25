@@ -35,17 +35,19 @@ function issueWithCommentCount(commentCount: number): IssueSummary {
 }
 
 function renderCard(props: Partial<Parameters<typeof IssueCard>[0]> = {}) {
+  const onRejectIssue = vi.fn();
   const onStatusChange = vi.fn(async () => undefined);
   render(
     <MemoryRouter>
       <IssueCard
         issue={issue}
+        onRejectIssue={onRejectIssue}
         onStatusChange={onStatusChange}
         {...props}
       />
     </MemoryRouter>,
   );
-  return { onStatusChange };
+  return { onRejectIssue, onStatusChange };
 }
 
 describe("IssueCard", () => {
@@ -185,6 +187,26 @@ describe("IssueCard", () => {
     expect(onStatusChange).toHaveBeenCalledWith(24, "done");
   });
 
+  it("renders a reject action for review issues", async () => {
+    const user = userEvent.setup();
+    const { onRejectIssue } = renderCard({
+      issue: {
+        ...issue,
+        status: "review",
+      },
+    });
+
+    await user.click(screen.getByRole("button", { name: "Reject" }));
+
+    expect(onRejectIssue).toHaveBeenCalledWith(24);
+  });
+
+  it("hides the reject action for non-review issues", () => {
+    renderCard();
+
+    expect(screen.queryByRole("button", { name: "Reject" })).not.toBeInTheDocument();
+  });
+
   it("hides quick status actions for readonly issues", () => {
     renderCard({
       issue: {
@@ -195,6 +217,7 @@ describe("IssueCard", () => {
     });
 
     expect(screen.queryByRole("button", { name: "Ready" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Reject" })).not.toBeInTheDocument();
   });
 
   it("closes the action menu when clicking outside the card", async () => {
