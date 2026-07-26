@@ -5,7 +5,7 @@ builds:
     binary: tq
     id: tq
     ldflags:
-      - -s -w -X github.com/version-1/tasq/internal/cli/tq.buildVersion={{.Version}} -X github.com/version-1/tasq/internal/cli/tq.buildCommit={{.ShortCommit}}
+      - -s -w -X github.com/version-1/tasq/internal/cli/tq.buildVersion={{.Version}} -X github.com/version-1/tasq/internal/cli/tq.buildCommit={{.ShortCommit}} -X github.com/version-1/tasq/internal/config.defaultHomeProfile={{.Env.TQ_BUILD_PROFILE}}
     env:
       - CGO_ENABLED=0
     goos:
@@ -17,6 +17,8 @@ builds:
   - main: ./cmd/issue-tracker
     binary: issue-tracker
     id: issue-tracker
+    ldflags:
+      - -s -w -X github.com/version-1/tasq/internal/config.defaultHomeProfile={{.Env.TQ_BUILD_PROFILE}}
     env:
       - CGO_ENABLED=0
     goos:
@@ -28,6 +30,8 @@ builds:
   - main: ./cmd/orchestrator
     binary: orchestrator
     id: orchestrator
+    ldflags:
+      - -s -w -X github.com/version-1/tasq/internal/config.defaultHomeProfile={{.Env.TQ_BUILD_PROFILE}}
     env:
       - CGO_ENABLED=0
     goos:
@@ -39,6 +43,8 @@ builds:
   - main: ./cmd/web
     binary: web
     id: web
+    ldflags:
+      - -s -w -X github.com/version-1/tasq/internal/config.defaultHomeProfile={{.Env.TQ_BUILD_PROFILE}}
     env:
       - CGO_ENABLED=0
     goos:

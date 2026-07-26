@@ -39,6 +39,57 @@ func TestVersion(t *testing.T) {
 	}
 }
 
+func TestConfigShowsResolvedSettings(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv(tqconfig.EnvHome, home)
+	if err := os.MkdirAll(tqconfig.ConfigDir(home), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(tqconfig.ConfigPath(home), []byte("author: config-author\nmax_concurrent_agents: 4\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	stdout, stderr, code := runCLI(t, []string{"config"})
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr)
+	}
+	for _, want := range []string{
+		"Profile: default",
+		"TQ_HOME: " + home,
+		"Home: " + home,
+		"Config path: " + tqconfig.ConfigPath(home),
+		"Author: config-author",
+		"Max concurrent agents: 4",
+	} {
+		if !strings.Contains(stdout, want) {
+			t.Fatalf("stdout missing %q: %s", want, stdout)
+		}
+	}
+}
+
+func TestConfigWritesJSON(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv(tqconfig.EnvHome, home)
+
+	stdout, stderr, code := runCLI(t, []string{"--output", "json", "config"})
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr)
+	}
+	var info configInfo
+	if err := json.Unmarshal([]byte(stdout), &info); err != nil {
+		t.Fatalf("unmarshal config: %v", err)
+	}
+	if info.TQHome == nil || *info.TQHome != home {
+		t.Fatalf("TQHome=%v, want %q", info.TQHome, home)
+	}
+	if info.Home != home {
+		t.Fatalf("Home=%q, want %q", info.Home, home)
+	}
+	if info.ConfigPath != tqconfig.ConfigPath(home) {
+		t.Fatalf("ConfigPath=%q", info.ConfigPath)
+	}
+}
+
 func TestIsPseudoVersion(t *testing.T) {
 	tests := []struct {
 		version string
@@ -119,6 +170,16 @@ func TestUpdateRunsConfirmedFlowWithTag(t *testing.T) {
 		if !strings.Contains(stdout, want) {
 			t.Fatalf("stdout missing %q: %s", want, stdout)
 		}
+	}
+}
+
+func TestUpdateProfileAllowed(t *testing.T) {
+	if err := updateProfileAllowed(""); err != nil {
+		t.Fatalf("default profile: %v", err)
+	}
+	err := updateProfileAllowed("dev")
+	if err == nil || !strings.Contains(err.Error(), "dev") {
+		t.Fatalf("profile error=%v", err)
 	}
 }
 

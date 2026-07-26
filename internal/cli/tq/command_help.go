@@ -17,8 +17,15 @@ func printRootHelp(w io.Writer) {
 	fmt.Fprintln(w, "  web      open the running Web UI in the default browser")
 	fmt.Fprintln(w, "  service  start, stop, and inspect local services")
 	fmt.Fprintln(w, "  logs     show and follow service logs")
+	fmt.Fprintln(w, "  config   show resolved local configuration")
 	fmt.Fprintln(w, "  version  show version information")
 	fmt.Fprintln(w, "  update   update tq from a GitHub Release and restart services")
+}
+
+func printConfigHelp(w io.Writer) {
+	fmt.Fprintln(w, "Usage: tq config")
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, "Show the build profile, TQ_HOME override, resolved home, and local configuration.")
 }
 
 func printIssueHelp(w io.Writer) {

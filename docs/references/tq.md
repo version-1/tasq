@@ -39,6 +39,7 @@ tq [--api-url URL] [--output text|json] <resource|command> <action> [flags]
 | `workflow` | `add`, `remove`, `show` |
 | `migrate` | apply pending migrations, `down`, `status` |
 | `service` | `start`, `stop`, `status` |
+| `config` | show build, home, and resolved configuration information |
 | `update` | install a release and restart services |
 | `version` | show version information |
 
@@ -51,6 +52,10 @@ tq version
 ```
 
 Release builds installed from a versioned module or GitHub Release print the tag version when Go build metadata includes it. Local builds fall back to `dev`.
+
+## Configuration
+
+`tq config` reports the version, build profile, `TQ_HOME` override, resolved home directory, configuration file path, and resolved configuration values. Pass `--output json` for machine-readable output. It does not print the configuration file's raw YAML.
 
 ## Update
 
@@ -67,6 +72,8 @@ tq update -y
 ```
 
 By default, `tq update` installs the latest formal release. Pass `--tag` to install a specific release or prerelease tag.
+
+`tq update` is unavailable for binaries with a non-empty build profile because generic release artifacts do not retain that profile.
 
 ```sh
 tq update --tag v0.2.0-rc.1

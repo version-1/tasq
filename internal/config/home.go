@@ -12,15 +12,38 @@ const (
 	EnvHome = "TQ_HOME"
 )
 
+var defaultHomeProfile = ""
+
+func DefaultHomeProfile() (string, error) {
+	profile := strings.TrimSpace(defaultHomeProfile)
+	if profile == "" {
+		return "", nil
+	}
+	for _, char := range profile {
+		if (char < 'a' || char > 'z') && (char < '0' || char > '9') && char != '-' {
+			return "", fmt.Errorf("invalid default home profile %q", profile)
+		}
+	}
+	return profile, nil
+}
+
 func Home() (string, error) {
 	if value := strings.TrimSpace(os.Getenv(EnvHome)); value != "" {
 		return filepath.Abs(value)
+	}
+	profile, err := DefaultHomeProfile()
+	if err != nil {
+		return "", err
 	}
 	userHome, err := os.UserHomeDir()
 	if err != nil {
 		return "", fmt.Errorf("resolve user home: %w", err)
 	}
-	return filepath.Join(userHome, ".tasq"), nil
+	dirName := ".tasq"
+	if profile != "" {
+		dirName += "-" + profile
+	}
+	return filepath.Join(userHome, dirName), nil
 }
 
 func EnsureHome() (string, error) {

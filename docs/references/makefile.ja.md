@@ -22,6 +22,7 @@
 | `TQ_INSTALL_DIR` | `$HOME/.local/bin` | リリース用インストールターゲットが `tq` バイナリを配置するディレクトリ。 |
 | `TQ_INSTALL_NAME` | `tq` | リリース版 `tq` バイナリとしてインストールするコマンド名。管理対象サービスの実行ファイルは、固定名で同じ場所にインストールされます。 |
 | `TQ_BUILD_COMMIT` | current short Git commit | ホスト用 `tq` ビルドに ldflags 経由で注入するコミット値。 |
+| `TQ_BUILD_PROFILE` | empty | local `tq` binary に注入し、既定の `TQ_HOME` を選ぶ build profile。 |
 | `TQ_BUILD_LDFLAGS` | `buildCommit` ldflags assignment | `make build-tq` が使う Go linker flags。 |
 | `AIR_VERSION` | `v1.52.3` | Go サービスを watch mode で動かすために使う Air のバージョン。 |
 
