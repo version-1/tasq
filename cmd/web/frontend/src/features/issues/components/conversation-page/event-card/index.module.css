@@ -8,11 +8,6 @@
   padding: 16px;
 }
 
-.approval {
-  border-color: var(--info-border);
-  box-shadow: inset 3px 0 0 var(--info-accent), var(--shadow-panel);
-}
-
 .header {
   align-items: start;
   display: grid;
@@ -79,14 +74,6 @@
   font-size: 14px;
   font-weight: 700;
   gap: 8px;
-}
-
-.approvalBadge {
-  background: var(--info-bg);
-  border: 1px solid var(--info-border);
-  border-radius: var(--radius-pill);
-  color: var(--info-text);
-  padding: 3px 10px;
 }
 
 .time {
@@ -164,53 +151,6 @@
 .markdown a {
   color: var(--primary-black);
   overflow-wrap: anywhere;
-}
-
-.approvalRequest {
-  display: grid;
-  gap: 12px;
-}
-
-.approvalTop {
-  background: var(--info-bg);
-  border: 1px solid var(--info-border);
-  border-radius: var(--radius-sm);
-  padding: 12px;
-}
-
-.approvalReasonBlock {
-  background: var(--surface);
-  border: 1px solid var(--info-border);
-  border-radius: var(--radius-sm);
-  display: grid;
-  gap: 5px;
-  padding: 10px;
-}
-
-.approvalLabel {
-  color: var(--info-text);
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.approvalReason {
-  color: var(--text);
-  font-size: 14px;
-  line-height: 1.5;
-  margin: 0;
-  overflow-wrap: anywhere;
-}
-
-.approvalCommandMarkdown {
-  --markdown-code-bg: var(--surface);
-
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-.approvalCommandMarkdown pre {
-  border-color: var(--info-border);
-  margin: 0;
 }
 
 .metrics {

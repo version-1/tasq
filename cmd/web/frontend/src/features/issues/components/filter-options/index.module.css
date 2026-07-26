@@ -146,6 +146,24 @@
   padding: 9px var(--space-0);
 }
 
+.optionGroup {
+  border-bottom: 1px solid var(--ledger-rule, var(--border));
+}
+
+.groupRow {
+  border-bottom: 0;
+  font-weight: 700;
+}
+
+.optionChildren {
+  display: grid;
+  padding-inline-start: var(--space-6);
+}
+
+.nestedOptionRow {
+  min-block-size: 44px;
+}
+
 .optionRow input {
   accent-color: var(--control-strong);
   block-size: 18px;

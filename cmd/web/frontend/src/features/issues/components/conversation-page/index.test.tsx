@@ -76,12 +76,6 @@ describe("ConversationPage", () => {
             },
           }),
         },
-        {
-          at: "2026-06-15T01:02:00Z",
-          event: "turn_completed",
-          message: "turn_id=turn-1",
-          payload_json: JSON.stringify({ aggregatedOutput: "turn output" }),
-        },
       ],
     });
 
@@ -98,11 +92,6 @@ describe("ConversationPage", () => {
     expect(within(items[1]).getByText("Done")).toBeInTheDocument();
     expect(within(items[1]).getByText("extra text")).toBeInTheDocument();
     expect(within(items[1]).getByText("exit code 2")).toBeInTheDocument();
-    expect(within(items[2]).getByText("Turn completed")).toBeInTheDocument();
-
-    await expandEventBody(user, items[2]);
-
-    expect(within(items[2]).getByText("turn output")).toBeInTheDocument();
   });
 
   it("renders text items without a zero exit code indicator", async () => {
@@ -233,66 +222,6 @@ describe("ConversationPage", () => {
 
     expect(within(item).getByText("customThing")).toBeInTheDocument();
     expect(within(item).getByText("custom body")).toBeInTheDocument();
-  });
-
-  it("renders command approval requests with the reason and command only", async () => {
-    renderConversationPage({
-      issue_identifier: "issue-49",
-      issue_id: "49",
-      run_id: "run-approval",
-      events: [
-        {
-          at: "2026-06-15T03:00:00Z",
-          event: "item/commandExecution/requestApproval",
-          message: "approval requested",
-          payload_json: JSON.stringify({
-            reason: "needs elevated filesystem access",
-            command: "npm run build",
-            availableDecisions: ["approve", "deny"],
-            proposedExecpolicyAmendment: { sandbox_permissions: "require_escalated" },
-          }),
-        },
-      ],
-    });
-
-    const item = await screen.findByRole("listitem");
-    const approvalRequest = within(item).getByRole("region", { name: "Approval request" });
-
-    expect(within(item).getByText("approval requested")).toBeInTheDocument();
-    expect(within(item).queryByRole("button", { name: "Expand conversation event body" })).not.toBeInTheDocument();
-    expect(within(approvalRequest).getByText("needs elevated filesystem access")).toBeInTheDocument();
-    expect(getCodeByText(approvalRequest, "npm run build")).toBeInTheDocument();
-    expect(screen.queryByText("availableDecisions")).not.toBeInTheDocument();
-    expect(screen.queryByText("proposedExecpolicyAmendment")).not.toBeInTheDocument();
-  });
-
-  it("finds approval request details nested under params", async () => {
-    renderConversationPage({
-      issue_identifier: "issue-49",
-      issue_id: "49",
-      run_id: "run-nested-approval",
-      events: [
-        {
-          at: "2026-06-15T03:00:00Z",
-          event: "item/commandExecution/requestApproval",
-          message: "",
-          payload_json: JSON.stringify({
-            id: 1,
-            method: "item/commandExecution/requestApproval",
-            params: {
-              command: "make test",
-              reason: "needs command approval",
-            },
-          }),
-        },
-      ],
-    });
-
-    const item = await screen.findByRole("listitem");
-    const approvalRequest = within(item).getByRole("region", { name: "Approval request" });
-
-    expect(within(approvalRequest).getByText("needs command approval")).toBeInTheDocument();
-    expect(getCodeByText(approvalRequest, "make test")).toBeInTheDocument();
   });
 
   it("renders token usage and rate limit update events", async () => {

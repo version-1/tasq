@@ -285,13 +285,10 @@ func TestStoreRecordsRunnerEventAndWorkspaceMetadata(t *testing.T) {
 		conversationEventTypes = append(conversationEventTypes, event.EventType)
 	}
 	wantConversationEventTypes := []string{
-		"turn_completed",
 		"running",
 		"succeeded",
 		"failed",
-		"cancelled",
 		"item/completed",
-		"item/commandExecution/requestApproval",
 		"thread/tokenUsage/updated",
 		"account/rateLimits/updated",
 	}

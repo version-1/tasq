@@ -3,8 +3,9 @@ import { IconProxy } from "@/components/ui/icon-proxy";
 import styles from "./index.module.css";
 
 type FilterOption<T extends string | number> = {
+  children?: FilterOption<T>[];
   label: string;
-  value: T;
+  value?: T;
 };
 
 type FilterValue = string | number;
@@ -33,7 +34,9 @@ export function IssueFilterOptions({
   const [isOpen, setIsOpen] = useState(false);
   const [draftValues, setDraftValues] = useState<FilterValue[]>(selectedValues);
   const rootRef = useRef<HTMLDivElement>(null);
-  const selectedOptions = options.filter((option) => selectedValues.includes(option.value));
+  const selectedOptions = selectableOptions(options).filter((option) => (
+    option.value !== undefined && selectedValues.includes(option.value)
+  ));
   const draftSelectedCount = draftValues.length;
 
   useEffect(() => {
@@ -67,11 +70,11 @@ export function IssueFilterOptions({
     }
   }, [isOpen, selectedValues]);
 
-  function handleToggle(value: FilterValue) {
+  function handleToggle(values: FilterValue[]) {
     setDraftValues((current) => (
-      current.includes(value)
-        ? current.filter((item) => item !== value)
-        : [...current, value]
+      values.every((value) => current.includes(value))
+        ? current.filter((item) => !values.includes(item))
+        : [...new Set([...current, ...values])]
     ));
   }
 
@@ -118,14 +121,13 @@ export function IssueFilterOptions({
             </div>
             <div className={styles.optionList}>
               {options.map((option) => (
-                <label key={option.value} className={styles.optionRow}>
-                  <input
-                    checked={draftValues.includes(option.value)}
-                    type="checkbox"
-                    onChange={() => handleToggle(option.value)}
-                  />
-                  <span>{option.label}</span>
-                </label>
+                <FilterOptionRow
+                  draftValues={draftValues}
+                  key={option.label}
+                  isNested={false}
+                  onToggle={handleToggle}
+                  option={option}
+                />
               ))}
             </div>
             <div className={styles.optionActions}>
@@ -141,4 +143,65 @@ export function IssueFilterOptions({
       </div>
     </div>
   );
+}
+
+function FilterOptionRow({
+  draftValues,
+  isNested,
+  onToggle,
+  option,
+}: {
+  draftValues: FilterValue[];
+  isNested: boolean;
+  onToggle: (values: FilterValue[]) => void;
+  option: FilterOption<FilterValue>;
+}) {
+  const checkboxRef = useRef<HTMLInputElement>(null);
+  const values = selectableOptions([option]).flatMap((item) => item.value === undefined ? [] : [item.value]);
+  const selectedCount = values.filter((value) => draftValues.includes(value)).length;
+  const isChecked = values.length > 0 && selectedCount === values.length;
+  const isIndeterminate = selectedCount > 0 && !isChecked;
+
+  useEffect(() => {
+    if (checkboxRef.current) {
+      checkboxRef.current.indeterminate = isIndeterminate;
+    }
+  }, [isIndeterminate]);
+
+  return (
+    <div className={option.children?.length ? styles.optionGroup : undefined}>
+      <label className={[
+        styles.optionRow,
+        option.children?.length ? styles.groupRow : "",
+        isNested ? styles.nestedOptionRow : "",
+      ].join(" ")}>
+        <input
+          checked={isChecked}
+          ref={checkboxRef}
+          type="checkbox"
+          onChange={() => onToggle(values)}
+        />
+        <span>{option.label}</span>
+      </label>
+      {option.children?.length ? (
+        <div className={styles.optionChildren}>
+          {option.children.map((child) => (
+            <FilterOptionRow
+              draftValues={draftValues}
+              isNested={true}
+              key={child.value ?? child.label}
+              onToggle={onToggle}
+              option={child}
+            />
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function selectableOptions(options: FilterOption<FilterValue>[]): FilterOption<FilterValue>[] {
+  return options.flatMap((option) => (
+    option.children?.length ? selectableOptions(option.children) : [option]
+  ));
 }

@@ -28,7 +28,7 @@ import type {
 import { AttachmentsSection } from "./attachments-section";
 import { ChangeRequestList } from "./change-request-list";
 import { CommentList } from "./comment-list";
-import { ConversationTab } from "./conversation-tab";
+import { ConversationTab, defaultConversationMessageTypes } from "./conversation-tab";
 import { IssueDescription } from "./issue-description";
 import { BasicInfoPanel } from "./basic-info-panel";
 import { RunsSection } from "./runs-section";
@@ -346,7 +346,7 @@ export function IssueDetailPage() {
   }
 
   function handleMessageTypesChange(types: string[]) {
-    updateSearchParams({ messageTypes: types.length === 0 ? null : types.join(",") });
+    updateSearchParams({ messageTypes: types.length === 0 ? "all" : types.join(",") });
   }
 
   return (
@@ -460,7 +460,10 @@ function parseTab(value: string | null): IssueDetailTab {
 }
 
 function parseMessageTypes(value: string | null): string[] {
-  if (!value) {
+  if (value === null) {
+    return [...defaultConversationMessageTypes];
+  }
+  if (value === "all") {
     return [];
   }
   return value.split(",").map((item) => item.trim()).filter(Boolean);
