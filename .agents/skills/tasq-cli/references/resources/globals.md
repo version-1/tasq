@@ -38,4 +38,4 @@ Global flags must appear *before* the resource.
 | `1` | Runtime error (API failure, validation rejected by server, etc.) |
 | `2` | Usage error (bad flag, missing required argument) |
 
-Errors are written to stderr as `{"error":"<message>"}` so they parse with the JSON output mode.
+Text-mode errors are written to stderr as colored `Error: <message>`. With `--output json`, errors remain `{"error":"<message>"}` so scripts can parse them without ANSI escape sequences.

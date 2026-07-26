@@ -34,7 +34,7 @@ STATUS=$(jq -r '.status' <<<"$ISSUE_JSON")
 
 ## Errors
 
-`tq` writes failures to **stderr** as `{"error":"<message>"}` and exits non-zero (`1` for runtime errors, `2` for usage errors). The success channel on stdout stays clean JSON, so a pipeline does not need to filter the error envelope out:
+With `--output json`, `tq` writes failures to **stderr** as `{"error":"<message>"}` and exits non-zero (`1` for runtime errors, `2` for usage errors). The success channel on stdout stays clean JSON, so a pipeline does not need to filter the error envelope out. Text output instead renders a colored `Error: <message>` for interactive use:
 
 ```bash
 if ! ISSUE=$(tq issue get 42 --output json 2>/tmp/tq.err); then
