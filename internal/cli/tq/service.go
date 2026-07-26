@@ -384,7 +384,7 @@ func (a app) serviceStatus(ctx context.Context, args []string, cfg config) error
 }
 
 func startManagedService(ctx context.Context, home string, service managedService) (int, error) {
-	cmd, err := commandForService(ctx, service)
+	cmd, err := commandForService(ctx, home, service)
 	if err != nil {
 		return 0, err
 	}
@@ -403,15 +403,29 @@ func startManagedService(ctx context.Context, home string, service managedServic
 	return cmd.Process.Pid, nil
 }
 
-func commandForService(ctx context.Context, service managedService) (*exec.Cmd, error) {
+func commandForService(ctx context.Context, home string, service managedService) (*exec.Cmd, error) {
+	var command *exec.Cmd
 	if executable, ok := siblingServiceExecutable(service.name); ok {
-		return exec.CommandContext(ctx, executable, service.args...), nil
+		command = exec.CommandContext(ctx, executable, service.args...)
+	} else {
+		if _, err := os.Stat(filepath.Join("cmd", string(service.name), "main.go")); err != nil {
+			return nil, fmt.Errorf("%s executable not found next to tq and ./cmd/%s is unavailable", service.name, service.name)
+		}
+		args := append([]string{"run", "./cmd/" + string(service.name)}, service.args...)
+		command = exec.CommandContext(ctx, "go", args...)
 	}
-	if _, err := os.Stat(filepath.Join("cmd", string(service.name), "main.go")); err != nil {
-		return nil, fmt.Errorf("%s executable not found next to tq and ./cmd/%s is unavailable", service.name, service.name)
+	command.Env = serviceCommandEnv(home, os.Environ())
+	return command, nil
+}
+
+func serviceCommandEnv(home string, environment []string) []string {
+	filtered := make([]string, 0, len(environment)+1)
+	for _, entry := range environment {
+		if !strings.HasPrefix(entry, tqconfig.EnvHome+"=") {
+			filtered = append(filtered, entry)
+		}
 	}
-	args := append([]string{"run", "./cmd/" + string(service.name)}, service.args...)
-	return exec.CommandContext(ctx, "go", args...), nil
+	return append(filtered, tqconfig.EnvHome+"="+home)
 }
 
 func siblingServiceExecutable(name serviceName) (string, bool) {

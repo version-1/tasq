@@ -57,6 +57,61 @@ func TestServiceStartAddressesUsesFallbackWhenDefaultPortIsUnavailable(t *testin
 	}
 }
 
+func TestServiceCommandEnvReplacesTQHome(t *testing.T) {
+	home := t.TempDir()
+	environment := serviceCommandEnv(home, []string{
+		"PATH=/usr/bin",
+		"TQ_HOME=/other/home",
+		"TQ_HOME_SUFFIX=preserved",
+		"TQ_HOME=/another/home",
+	})
+
+	var homes []string
+	for _, entry := range environment {
+		if strings.HasPrefix(entry, tqconfig.EnvHome+"=") {
+			homes = append(homes, entry)
+		}
+	}
+	if len(homes) != 1 || homes[0] != tqconfig.EnvHome+"="+home {
+		t.Fatalf("TQ_HOME entries = %v, want exactly %s=%s", homes, tqconfig.EnvHome, home)
+	}
+	if !containsString(environment, "TQ_HOME_SUFFIX=preserved") {
+		t.Fatalf("environment = %v, want TQ_HOME_SUFFIX preserved", environment)
+	}
+}
+
+func TestCommandForServiceSetsResolvedHomeForGoRunFallback(t *testing.T) {
+	home := t.TempDir()
+	workingDir, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("get working directory: %v", err)
+	}
+	if err := os.Chdir(filepath.Join(workingDir, "../../..")); err != nil {
+		t.Fatalf("change to repository root: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := os.Chdir(workingDir); err != nil {
+			t.Errorf("restore working directory: %v", err)
+		}
+	})
+	command, err := commandForService(context.Background(), home, managedService{name: serviceIssueTracker})
+	if err != nil {
+		t.Fatalf("command for service: %v", err)
+	}
+	if !containsString(command.Env, tqconfig.EnvHome+"="+home) {
+		t.Fatalf("command environment does not contain resolved home: %v", command.Env)
+	}
+}
+
+func containsString(values []string, want string) bool {
+	for _, value := range values {
+		if value == want {
+			return true
+		}
+	}
+	return false
+}
+
 func TestConfirmServicePortsAvailableFailsWhenCandidateIsTaken(t *testing.T) {
 	addresses, err := allocateServiceAddresses()
 	if err != nil {
