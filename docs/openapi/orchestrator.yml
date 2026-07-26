@@ -86,10 +86,9 @@ paths:
         - Runtime Debug
       summary: Get conversation events for one run.
       description: |
-        Returns chronological run status transition events, `turn_completed`,
-        `item/completed`, `item/commandExecution/requestApproval`,
-        `thread/tokenUsage/updated`, and `account/rateLimits/updated` events for
-        a run that belongs to the requested issue identifier.
+        Returns chronological `running`, `succeeded`, `failed`, `item/completed`,
+        `thread/tokenUsage/updated`, and `account/rateLimits/updated` events for a
+        run that belongs to the requested issue identifier.
       responses:
         "200":
           description: Conversation events for the run.
@@ -409,13 +408,10 @@ components:
         event:
           type: string
           enum:
-            - turn_completed
             - running
             - succeeded
             - failed
-            - cancelled
             - item/completed
-            - item/commandExecution/requestApproval
             - thread/tokenUsage/updated
             - account/rateLimits/updated
         message:
@@ -423,7 +419,7 @@ components:
           example: turn_id=turn-1
         payload_json:
           type: string
-          description: Raw JSON payload from the runner event. `turn_completed` payloads may contain aggregatedOutput.
+          description: Raw JSON payload from the runner event.
     ConversationResponse:
       type: object
       required:

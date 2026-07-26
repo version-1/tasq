@@ -2,8 +2,6 @@ import { useTranslation } from "react-i18next";
 import type { OrchestratorConversationEvent } from "@/lib/types";
 import styles from "../../index.module.css";
 import {
-  extractAggregatedOutput,
-  extractApprovalRequestDetails,
   formatNumber,
   itemCompletedView,
   rateLimitsView,
@@ -23,19 +21,10 @@ function eventPreviewText(
   event: OrchestratorConversationEvent,
   t: (key: string, options?: Record<string, unknown>) => string,
 ): string {
-  if (event.event === "turn_completed") {
-    return extractAggregatedOutput(event.payload_json) || event.message || t("issues.detailPage.emptyConversationEvent");
-  }
-
   if (event.event === "item/completed") {
     const item = itemCompletedView(event.payload_json);
     return [item.aggregatedOutput, item.text, event.message].find((value) => value.trim() !== "")
       ?? t("issues.detailPage.emptyConversationEvent");
-  }
-
-  if (event.event === "item/commandExecution/requestApproval") {
-    const details = extractApprovalRequestDetails(event.payload_json);
-    return [details.reason, details.command, event.message].filter(Boolean).join(" ");
   }
 
   if (event.event === "thread/tokenUsage/updated") {

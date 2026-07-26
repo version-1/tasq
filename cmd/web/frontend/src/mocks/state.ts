@@ -464,7 +464,7 @@ export function getOrchestratorConversation(
       },
       {
         at: issue.updatedAt,
-        event: "turn_completed",
+        event: "item/completed",
         message: "turn_id=mock-turn-1",
         payload_json: JSON.stringify({
           aggregatedOutput: `## ${issue.title}\n\nMock conversation output for ${runID}.`,
@@ -529,7 +529,7 @@ function buildIssueOneConversation(issue: Issue, runID: string): ConversationRes
       },
       {
         at: "2026-06-01T08:02:21.000Z",
-        event: "turn_completed",
+        event: "item/completed",
         message: "turn_id=mock-turn-1",
         payload_json: JSON.stringify({
           aggregatedOutput: `## Investigation summary
@@ -574,7 +574,7 @@ Issue **#${issue.id}** uses the mock state module as the source of truth for con
       },
       {
         at: "2026-06-01T08:04:30.000Z",
-        event: "item/commandExecution/requestApproval",
+        event: "item/completed",
         message: "approval requested",
         payload_json: JSON.stringify({
           reason: "Need to run the frontend typechecker after changing generated-shape mock data.",
@@ -595,7 +595,7 @@ Issue **#${issue.id}** uses the mock state module as the source of truth for con
             aggregatedOutput: `### Patch notes
 
 - Added an issue-specific conversation builder for issue 1.
-- Covered \`running\`, \`item/completed\`, \`turn_completed\`, approval, failure, and final success events.
+- Covered \`running\`, \`item/completed\`, failure, and final success events.
 - Kept every event inside the generated payload shape.
 
 \`\`\`ts
@@ -703,7 +703,7 @@ function buildIssueOneConversation(issue: Issue, runID: string): ConversationRes
       },
       {
         at: "2026-06-01T08:08:44.000Z",
-        event: "turn_completed",
+        event: "item/completed",
         message: "turn_id=mock-turn-2",
         payload_json: JSON.stringify({
           response: {

@@ -153,13 +153,10 @@ export type ConversationEventEvent = typeof ConversationEventEvent[keyof typeof 
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const ConversationEventEvent = {
-  turn_completed: 'turn_completed',
   running: 'running',
   succeeded: 'succeeded',
   failed: 'failed',
-  cancelled: 'cancelled',
   'item/completed': 'item/completed',
-  'item/commandExecution/requestApproval': 'item/commandExecution/requestApproval',
   'thread/tokenUsage/updated': 'thread/tokenUsage/updated',
   'account/rateLimits/updated': 'account/rateLimits/updated',
 } as const;
@@ -168,7 +165,7 @@ export interface ConversationEvent {
   at: string;
   event: ConversationEventEvent;
   message: string;
-  /** Raw JSON payload from the runner event. `turn_completed` payloads may contain aggregatedOutput. */
+  /** Raw JSON payload from the runner event. */
   payload_json: string;
 }
 
@@ -365,10 +362,9 @@ export const getApiV1IssueIdentifier = async (issueIdentifier: string, options?:
 
 
 /**
- * Returns chronological run status transition events, `turn_completed`,
-`item/completed`, `item/commandExecution/requestApproval`,
-`thread/tokenUsage/updated`, and `account/rateLimits/updated` events for
-a run that belongs to the requested issue identifier.
+ * Returns chronological `running`, `succeeded`, `failed`, `item/completed`,
+`thread/tokenUsage/updated`, and `account/rateLimits/updated` events for a
+run that belongs to the requested issue identifier.
 
  * @summary Get conversation events for one run.
  */

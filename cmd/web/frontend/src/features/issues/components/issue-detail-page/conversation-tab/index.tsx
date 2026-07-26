@@ -1,12 +1,23 @@
 import { useTranslation } from "react-i18next";
 import { IssueFilterOptions } from "@/features/issues/components/filter-options";
 import { ConversationEvents } from "@/features/issues/components/conversation-page";
+import { itemCompletedView } from "@/features/issues/components/conversation-page/event-card/payload";
 import type {
   OrchestratorConversation,
   OrchestratorConversationEvent,
   OrchestratorIssueRun,
 } from "@/lib/types";
 import styles from "./index.module.css";
+
+export const defaultConversationMessageTypes = [
+  "running",
+  "succeeded",
+  "failed",
+  "item/completed:agentMessage",
+  "item/completed:commandExecution",
+] as const;
+
+const itemCompletedPrefix = "item/completed:";
 
 type ConversationTabProps = {
   conversation: OrchestratorConversation | null;
@@ -104,17 +115,39 @@ function filterEvents(
   if (selectedTypes.length === 0) {
     return events;
   }
-  return events.filter((event) => selectedTypes.includes(event.event));
+  return events.filter((event) => {
+    if (event.event !== "item/completed") {
+      return selectedTypes.includes(event.event);
+    }
+
+    const itemType = itemCompletedView(event.payload_json).type;
+    return selectedTypes.includes("item/completed")
+      || selectedTypes.includes(`${itemCompletedPrefix}${itemType}`);
+  });
 }
 
 function eventTypeOptions(
   events: OrchestratorConversationEvent[],
   t: (key: string) => string,
 ) {
-  return Array.from(new Set(events.map((event) => event.event))).map((eventType) => ({
-    label: eventType === "turn_completed"
-      ? t("issues.detailPage.turnCompleted")
-      : t(`runStatuses.${eventType}`),
-    value: eventType,
-  }));
+  const itemTypes = Array.from(new Set(
+    events
+      .filter((event) => event.event === "item/completed")
+      .map((event) => itemCompletedView(event.payload_json).type),
+  ));
+
+  return [
+    { label: t("issues.detailPage.messageTypeRunning"), value: "running" },
+    { label: t("issues.detailPage.messageTypeSucceeded"), value: "succeeded" },
+    { label: t("issues.detailPage.messageTypeFailed"), value: "failed" },
+    {
+      label: t("issues.detailPage.messageTypeItemCompleted"),
+      children: itemTypes.map((itemType) => ({
+        label: itemType,
+        value: `${itemCompletedPrefix}${itemType}`,
+      })),
+    },
+    { label: t("issues.detailPage.messageTypeTokenUsageUpdated"), value: "thread/tokenUsage/updated" },
+    { label: t("issues.detailPage.messageTypeRateLimitsUpdated"), value: "account/rateLimits/updated" },
+  ];
 }

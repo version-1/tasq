@@ -259,7 +259,7 @@ describe("IssueDetailPage", () => {
     expect(api.fetchComments).toHaveBeenCalledWith(42, undefined, 20, { silent: true });
   });
 
-  it("loads the latest run conversation and filters message types", async () => {
+  it("uses the default nested message types and filters item completions by type", async () => {
     const user = userEvent.setup();
     renderIssueDetail("/issues/42?tab=conversation");
 
@@ -271,14 +271,31 @@ describe("IssueDetailPage", () => {
     expect(screen.queryByRole("heading", { name: "Refine issue detail" })).not.toBeInTheDocument();
     expect(await screen.findByText("runner started")).toBeInTheDocument();
     expect(screen.getByText("run failed")).toBeInTheDocument();
+    expect(screen.getByText("agent reply")).toBeInTheDocument();
+    expect(screen.getAllByRole("listitem")).toHaveLength(4);
+    expect(screen.queryByText("token usage updated")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Collapse conversation event body" })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
 
     await user.click(screen.getByRole("button", { name: /Message types:/ }));
-    await user.click(screen.getByLabelText("running"));
+    expect(screen.getByLabelText("Item/Completed")).toBeChecked();
+    await user.click(screen.getByRole("button", { name: "Clear all" }));
+    await user.click(screen.getByLabelText("Item/Completed"));
+    await user.click(screen.getByRole("button", { name: "Apply" }));
+
+    expect(screen.getAllByRole("listitem")).toHaveLength(2);
+    expect(screen.getByText("agent reply")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /Message types:/ }));
+    await user.click(screen.getByRole("button", { name: "Clear all" }));
+    await user.click(screen.getByLabelText("agentMessage"));
     await user.click(screen.getByRole("button", { name: "Apply" }));
 
     const items = screen.getAllByRole("listitem");
     expect(items).toHaveLength(1);
-    expect(within(items[0]).getByText("runner started")).toBeInTheDocument();
+    expect(within(items[0]).getByText("agent reply")).toBeInTheDocument();
     expect(screen.queryByText("run failed")).not.toBeInTheDocument();
   });
 });
@@ -409,6 +426,35 @@ const conversation: OrchestratorConversation = {
       at: "2026-06-21T03:10:00.000Z",
       event: "failed",
       message: "run failed",
+      payload_json: "",
+    },
+    {
+      at: "2026-06-21T03:11:00.000Z",
+      event: "item/completed",
+      message: "agent message completed",
+      payload_json: JSON.stringify({
+        item: {
+          type: "agentMessage",
+          text: "agent reply",
+        },
+      }),
+    },
+    {
+      at: "2026-06-21T03:12:00.000Z",
+      event: "item/completed",
+      message: "command completed",
+      payload_json: JSON.stringify({
+        item: {
+          type: "commandExecution",
+          command: "npm test",
+          aggregatedOutput: "passed",
+        },
+      }),
+    },
+    {
+      at: "2026-06-21T03:13:00.000Z",
+      event: "thread/tokenUsage/updated",
+      message: "token usage updated",
       payload_json: "",
     },
   ],

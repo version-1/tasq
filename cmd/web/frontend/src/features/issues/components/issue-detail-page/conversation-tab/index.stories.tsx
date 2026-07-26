@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { OrchestratorConversation, OrchestratorIssueRun } from "@/lib/types";
-import { ConversationTab } from "./index";
+import { ConversationTab, defaultConversationMessageTypes } from "./index";
 
 const runs: OrchestratorIssueRun[] = [
   {
@@ -44,12 +44,6 @@ const conversation: OrchestratorConversation = {
         },
       }),
     },
-    {
-      at: "2026-06-21T03:10:00.000Z",
-      event: "turn_completed",
-      message: "turn completed",
-      payload_json: JSON.stringify({ aggregatedOutput: "Implemented the requested tabs." }),
-    },
   ],
 };
 
@@ -60,7 +54,7 @@ const meta = {
     conversation,
     error: "",
     isLoading: false,
-    messageTypes: [],
+    messageTypes: [...defaultConversationMessageTypes],
     onMessageTypesChange: () => undefined,
     onRunChange: () => undefined,
     runs,

@@ -63,17 +63,6 @@ function headerTitle(
   event: OrchestratorConversationEvent,
   t: Translator,
 ): { label: ReactNode; command: string } {
-  if (event.event === "item/commandExecution/requestApproval") {
-    return {
-      label: (
-        <span className={[styles.type, styles.approvalBadge].join(" ")}>
-          {eventLabel(event.event, t)}
-        </span>
-      ),
-      command: "",
-    };
-  }
-
   if (event.event !== "item/completed") {
     return {
       label: <span className={styles.type}>{eventLabel(event.event, t)}</span>,
@@ -89,9 +78,6 @@ function headerTitle(
 }
 
 function eventLabel(event: OrchestratorConversationEvent["event"], t: Translator): string {
-  if (event === "turn_completed") {
-    return t("issues.detailPage.turnCompleted");
-  }
   return t(`runStatuses.${event}`);
 }
 

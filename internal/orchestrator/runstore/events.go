@@ -61,12 +61,9 @@ func (s *Store) ConversationEvents(ctx context.Context, runID string) ([]run.Run
 		WHERE run_id = ?
 			AND event_type IN (
 				'running',
-				'turn_completed',
 				'succeeded',
 				'failed',
-				'cancelled',
 				'item/completed',
-				'item/commandExecution/requestApproval',
 				'thread/tokenUsage/updated',
 				'account/rateLimits/updated'
 			)
