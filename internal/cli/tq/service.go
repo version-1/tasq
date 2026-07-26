@@ -373,14 +373,7 @@ func (a app) serviceStatus(ctx context.Context, args []string, cfg config) error
 	if cfg.output == "json" {
 		return writeJSON(a.stdout, statuses)
 	}
-	for _, status := range statuses {
-		if status.State == "running" {
-			fmt.Fprintf(a.stdout, "%s\trunning\tpid=%d\tport=%d\tuptime=%s\n", status.Name, status.PID, status.Port, status.Uptime)
-			continue
-		}
-		fmt.Fprintf(a.stdout, "%s\tstopped\n", status.Name)
-	}
-	return nil
+	return writeServiceStatuses(a.stdout, statuses)
 }
 
 func startManagedService(ctx context.Context, home string, service managedService) (int, error) {

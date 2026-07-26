@@ -11,8 +11,12 @@ type cliError struct {
 	code    int
 }
 
-func writeCLIError(w io.Writer, message string, code int) int {
-	_ = json.NewEncoder(w).Encode(map[string]string{"error": message})
+func writeCLIErrorForFormat(w io.Writer, format string, message string, code int) int {
+	if format == "json" {
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": message})
+		return code
+	}
+	_, _ = fmt.Fprintf(w, "%sError:%s %s\n", ansiRed, ansiReset, message)
 	return code
 }
 

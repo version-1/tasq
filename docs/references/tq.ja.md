@@ -29,6 +29,24 @@ tq [--api-url URL] [--output text|json] <resource|command> <action> [flags]
 | `--api-url URL` | `TQ_API_URL`、その後 `$TQ_HOME/system/state.json`、その後 `http://localhost:37651` | issue-tracker API のベース URL。 |
 | `--output text\|json` | `text` | 出力形式。JSON 出力はスクリプトやエージェント向けです。 |
 
+## 出力とエラー
+
+テキスト出力では、識別子、成功、状態、警告、失敗を区別するために ANSI 色を使います。色に加えてテキストのラベルも残します。text mode の失敗は stderr に `Error: <message>` として出力し、実行時エラーでは終了コード `1`、usage error では `2` を返します。
+
+スクリプトやエージェントが出力を読む場合は `--output json` を指定します。構造化された成功出力を維持し、失敗は ANSI エスケープシーケンスを含まない `{"error":"<message>"}` として stderr に出力します。
+
+## 出力ストーリー
+
+サービスの起動や API への接続をせずに、各表示パターンを固定データで確認できます。
+
+```sh
+go run ./cmd/tqstory tq_service_start_fail
+go run ./cmd/tqstory tq_issue_list
+go run ./cmd/tqstory all
+```
+
+issue の一覧・詳細・操作、project の一覧・チェック、service status、migration status、空、警告、テキストエラー、JSON 成功、JSON エラーを確認できます。失敗を表すストーリーはプレビュー用途のため、正常終了します。
+
 ## リソース
 
 | Resource | Actions |

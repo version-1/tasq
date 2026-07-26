@@ -29,6 +29,24 @@ tq [--api-url URL] [--output text|json] <resource|command> <action> [flags]
 | `--api-url URL` | `TQ_API_URL`, then `$TQ_HOME/system/state.json`, then `http://localhost:37651` | Issue-tracker API base URL. |
 | `--output text\|json` | `text` | Output format. JSON output is intended for scripts and agents. |
 
+## Output and errors
+
+Text output uses ANSI colors to distinguish identifiers, success, state, warning, and failure while retaining the textual labels. Text-mode failures are written to stderr as `Error: <message>` and use exit code `1` for runtime failures or `2` for usage failures.
+
+Pass `--output json` when a script or agent consumes output. It preserves structured success output and writes failures to stderr as `{"error":"<message>"}` without ANSI escape sequences.
+
+## Output stories
+
+Use deterministic stories to inspect each visual output pattern without starting services or contacting the API:
+
+```sh
+go run ./cmd/tqstory tq_service_start_fail
+go run ./cmd/tqstory tq_issue_list
+go run ./cmd/tqstory all
+```
+
+Available scenarios cover issue list/detail/action, project list/check, service status, migration status, empty, warning, text error, JSON success, and JSON error. Story failures are previews and therefore exit successfully.
+
 ## Resources
 
 | Resource | Actions |

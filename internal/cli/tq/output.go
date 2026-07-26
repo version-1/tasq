@@ -29,7 +29,7 @@ func writeIssues(w io.Writer, format string, issues []entity.Issue) error {
 		return writeJSON(w, issues)
 	}
 	for _, issue := range issues {
-		fmt.Fprintf(w, "#%d\t[%s]\t%s\t%s\n", issue.ID, issue.ProjectKey, issue.Status, issue.Title)
+		fmt.Fprintf(w, "%s#%d%s\t[%s%s%s]\t%s\t%s\n", ansiBold, issue.ID, ansiReset, ansiCyan, issue.ProjectKey, ansiReset, colorValue(string(issue.Status), statusColor(issue.Status)), issue.Title)
 	}
 	return nil
 }
@@ -157,11 +157,26 @@ func writeProjectCheckItems(w io.Writer, format string, items []projectCheckItem
 		return writeJSON(w, items)
 	}
 	for _, item := range items {
-		status := "PASS"
+		status := colorValue("PASS", ansiGreen)
 		if !item.Passed {
-			status = "FAIL"
+			status = colorValue("FAIL", ansiRed)
 		}
 		fmt.Fprintf(w, "%s\t%s\t%s\n", status, item.Name, item.Reason)
+	}
+	return nil
+}
+
+func writeServiceStatuses(w io.Writer, statuses []serviceStatus) error {
+	for _, status := range statuses {
+		if status.State == "running" {
+			if _, err := fmt.Fprintf(w, "%s%s%s\t%s\tpid=%d\tport=%d\tuptime=%s\n", ansiCyan, status.Name, ansiReset, colorValue("running", ansiGreen), status.PID, status.Port, status.Uptime); err != nil {
+				return err
+			}
+			continue
+		}
+		if _, err := fmt.Fprintf(w, "%s%s%s\t%s\n", ansiCyan, status.Name, ansiReset, colorValue("stopped", ansiFaint)); err != nil {
+			return err
+		}
 	}
 	return nil
 }

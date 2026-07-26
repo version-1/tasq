@@ -66,3 +66,27 @@ func TestWriteIssueJSONKeepsDependencyIDs(t *testing.T) {
 		}
 	}
 }
+
+func TestWriteIssuesTextUsesSemanticColors(t *testing.T) {
+	var buf bytes.Buffer
+	if err := writeIssues(&buf, "text", []entity.Issue{{ID: 7, ProjectKey: "tasq", Title: "Ready work", Status: entity.StatusReady}}); err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{ansiBold + "#7" + ansiReset, ansiCyan + "tasq" + ansiReset, ansiCyan + "ready" + ansiReset} {
+		if !strings.Contains(buf.String(), want) {
+			t.Fatalf("output does not contain %q: %s", want, buf.String())
+		}
+	}
+}
+
+func TestWriteProjectCheckItemsTextUsesPassFailColors(t *testing.T) {
+	var buf bytes.Buffer
+	if err := writeProjectCheckItems(&buf, "text", []projectCheckItem{{Name: "valid", Passed: true}, {Name: "invalid", Passed: false}}); err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{ansiGreen + "PASS" + ansiReset, ansiRed + "FAIL" + ansiReset} {
+		if !strings.Contains(buf.String(), want) {
+			t.Fatalf("output does not contain %q: %s", want, buf.String())
+		}
+	}
+}
