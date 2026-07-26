@@ -206,6 +206,8 @@ TQ_HOME=./.tasq go run ./cmd/tq service start
 | orchestrator | `37652` | `$TQ_HOME/system/log/orchestrator.log` |
 | web | `37653` | `$TQ_HOME/system/log/web.log` |
 
+既定ポートのいずれかが使用中の場合、`tq service start` は全サービスに異なる OS 選択の loopback ポートを提案し、確認を求めます。`y` または `yes` を入力すると続行し、拒否または非対話入力ではサービスを起動しません。確認を省略して提案ポートを受け入れるには `tq service start -y` を使います。Tasq は確認後に提案ポートを再確認し、ポートが取得されていた場合は別の組を選ばず失敗します。
+
 ### `service status`
 
 サービスの状態、PID、ポート、稼働時間を表示します。スクリプト向けに JSON 出力も使えます。

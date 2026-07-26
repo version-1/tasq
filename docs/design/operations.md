@@ -6,7 +6,7 @@ This document covers the local development environment, verification commands, a
 
 Docker Compose keeps local development in one long-lived `dev` container and a standalone OpenAPI UI container. The issue-tracker listens on container port `8080`, the orchestrator listens on container port `8081`, and the Go Web server listens on container port `3000` inside `dev`.
 
-For host-only operation on a personal machine, `tq service start` runs issue-tracker, orchestrator, and web as background processes. It uses fixed local ports `37651`, `37652`, and `37653`, writes discovery state to `$TQ_HOME/system/state.json`, and appends logs under `$TQ_HOME/system/log/`.
+For host-only operation on a personal machine, `tq service start` runs issue-tracker, orchestrator, and web as background processes. It prefers fixed local ports `37651`, `37652`, and `37653`; when any is occupied, it proposes one OS-selected loopback port for each service and starts only after interactive confirmation (or `-y`). It rechecks the proposed ports after confirmation and fails rather than reselecting if one was claimed. The selected addresses are written to `$TQ_HOME/system/state.json`, and logs are appended under `$TQ_HOME/system/log/`.
 
 Run `tq migrate` before starting services when a database is new or migrations are pending. `tq service start` checks the issue-tracker and orchestrator databases before launching any service process and exits with guidance to run `tq migrate` if pending migrations exist. The services also fail fast with the same guidance instead of applying schema changes automatically.
 

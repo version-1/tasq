@@ -1,10 +1,12 @@
 package tq
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"os/exec"
@@ -47,6 +49,16 @@ type managedService struct {
 	args    []string
 }
 
+type serviceAddresses struct {
+	issueTracker string
+	orchestrator string
+	web          string
+}
+
+type serviceStartLock struct {
+	file *os.File
+}
+
 func (a app) routeService(ctx context.Context, args []string, cfg config) error {
 	if len(args) == 0 || args[0] == "help" || args[0] == "-help" || args[0] == "--help" {
 		printServiceHelp(a.stdout)
@@ -66,13 +78,23 @@ func (a app) routeService(ctx context.Context, args []string, cfg config) error 
 }
 
 func (a app) serviceStart(ctx context.Context, args []string, cfg config) error {
-	if len(args) != 0 {
-		return usageError("service start does not accept positional arguments")
+	fs := newFlagSet("service start")
+	yes := fs.Bool("y", false, "start without confirmation")
+	if err := fs.Parse(args); err != nil {
+		return usageError(err.Error())
+	}
+	if fs.NArg() != 0 {
+		return usageError("usage: tq service start [-y]")
 	}
 	home, err := tqconfig.EnsureHome()
 	if err != nil {
 		return err
 	}
+	lock, err := acquireServiceStartLock(home)
+	if err != nil {
+		return err
+	}
+	defer lock.Close()
 	if err := cleanupStaleServices(); err != nil {
 		return err
 	}
@@ -93,9 +115,27 @@ func (a app) serviceStart(ctx context.Context, args []string, cfg config) error 
 		return fmt.Errorf("migration pre-flight check failed: %w", err)
 	}
 
-	issueAddr := "127.0.0.1:" + strconv.Itoa(tqconfig.DefaultIssueTrackerPort)
-	orchestratorAddr := "127.0.0.1:" + strconv.Itoa(tqconfig.DefaultOrchestratorPort)
-	webAddr := "127.0.0.1:" + strconv.Itoa(tqconfig.DefaultWebPort)
+	addresses, fallback, err := serviceStartAddresses()
+	if err != nil {
+		return err
+	}
+	if fallback {
+		if !*yes {
+			confirmed, err := a.confirmServicePortFallback(addresses)
+			if err != nil {
+				return err
+			}
+			if !confirmed {
+				return errors.New("service start cancelled")
+			}
+		}
+		if err := confirmServicePortsAvailable(addresses); err != nil {
+			return err
+		}
+	}
+	issueAddr := addresses.issueTracker
+	orchestratorAddr := addresses.orchestrator
+	webAddr := addresses.web
 	issueDB := tqconfig.IssueTrackerDBPath(home)
 	orchestratorDB := tqconfig.OrchestratorDBPath(home)
 
@@ -121,7 +161,7 @@ func (a app) serviceStart(ctx context.Context, args []string, cfg config) error 
 		args: []string{
 			"-db", orchestratorDB,
 			"-issue-tracker", "http://" + issueAddr,
-			"-port", strconv.Itoa(tqconfig.DefaultOrchestratorPort),
+			"-port", strconv.Itoa(servicePort(orchestratorAddr)),
 		},
 	}
 	if _, err := startManagedService(ctx, home, orchestratorService); err != nil {
@@ -160,6 +200,129 @@ func (a app) serviceStart(ctx context.Context, args []string, cfg config) error 
 	}
 	_, err = fmt.Fprintf(a.stdout, "%s✓%s Services started\n", ansiGreen, ansiReset)
 	return err
+}
+
+func acquireServiceStartLock(home string) (*serviceStartLock, error) {
+	path := filepath.Join(tqconfig.SystemDir(home), "service-start.lock")
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0o644)
+	if err != nil {
+		return nil, fmt.Errorf("open service start lock: %w", err)
+	}
+	if err := syscall.Flock(int(file.Fd()), syscall.LOCK_EX|syscall.LOCK_NB); err != nil {
+		_ = file.Close()
+		if errors.Is(err, syscall.EWOULDBLOCK) || errors.Is(err, syscall.EAGAIN) {
+			return nil, errors.New("service start is already in progress")
+		}
+		return nil, fmt.Errorf("lock service start: %w", err)
+	}
+	return &serviceStartLock{file: file}, nil
+}
+
+func (lock *serviceStartLock) Close() error {
+	if lock == nil || lock.file == nil {
+		return nil
+	}
+	unlockErr := syscall.Flock(int(lock.file.Fd()), syscall.LOCK_UN)
+	closeErr := lock.file.Close()
+	if unlockErr != nil {
+		return fmt.Errorf("unlock service start: %w", unlockErr)
+	}
+	if closeErr != nil {
+		return fmt.Errorf("close service start lock: %w", closeErr)
+	}
+	return nil
+}
+
+func defaultServiceAddresses() serviceAddresses {
+	return serviceAddresses{
+		issueTracker: "127.0.0.1:" + strconv.Itoa(tqconfig.DefaultIssueTrackerPort),
+		orchestrator: "127.0.0.1:" + strconv.Itoa(tqconfig.DefaultOrchestratorPort),
+		web:          "127.0.0.1:" + strconv.Itoa(tqconfig.DefaultWebPort),
+	}
+}
+
+func serviceStartAddresses() (serviceAddresses, bool, error) {
+	addresses := defaultServiceAddresses()
+	if err := confirmServicePortsAvailable(addresses); err == nil {
+		return addresses, false, nil
+	}
+
+	fallback, err := allocateServiceAddresses()
+	if err != nil {
+		return serviceAddresses{}, false, fmt.Errorf("allocate fallback service ports: %w", err)
+	}
+	return fallback, true, nil
+}
+
+func allocateServiceAddresses() (serviceAddresses, error) {
+	listeners := make([]net.Listener, 0, 3)
+	for range 3 {
+		listener, err := net.Listen("tcp", "127.0.0.1:0")
+		if err != nil {
+			for _, openListener := range listeners {
+				_ = openListener.Close()
+			}
+			return serviceAddresses{}, err
+		}
+		listeners = append(listeners, listener)
+	}
+	addresses := serviceAddresses{
+		issueTracker: listeners[0].Addr().String(),
+		orchestrator: listeners[1].Addr().String(),
+		web:          listeners[2].Addr().String(),
+	}
+	for _, listener := range listeners {
+		if err := listener.Close(); err != nil {
+			return serviceAddresses{}, err
+		}
+	}
+	return addresses, nil
+}
+
+func confirmServicePortsAvailable(addresses serviceAddresses) error {
+	listeners := make([]net.Listener, 0, 3)
+	for _, address := range []string{addresses.issueTracker, addresses.orchestrator, addresses.web} {
+		listener, err := net.Listen("tcp", address)
+		if err != nil {
+			for _, openListener := range listeners {
+				_ = openListener.Close()
+			}
+			return fmt.Errorf("service port %s is unavailable: %w", address, err)
+		}
+		listeners = append(listeners, listener)
+	}
+	for index, listener := range listeners {
+		if err := listener.Close(); err != nil {
+			return fmt.Errorf("release service port %d: %w", index, err)
+		}
+	}
+	return nil
+}
+
+func (a app) confirmServicePortFallback(addresses serviceAddresses) (bool, error) {
+	if !interactiveInput(a.stdin) {
+		return false, errors.New("service port fallback requires interactive confirmation; rerun with -y to continue")
+	}
+	fmt.Fprintln(a.stdout, "Default service ports are in use. The following loopback ports will be used:")
+	fmt.Fprintf(a.stdout, "  issue-tracker: %s\n", addresses.issueTracker)
+	fmt.Fprintf(a.stdout, "  orchestrator:  %s\n", addresses.orchestrator)
+	fmt.Fprintf(a.stdout, "  web:           %s\n", addresses.web)
+	fmt.Fprint(a.stdout, "Start services with these ports? [y/N] ")
+	line, err := bufio.NewReader(a.stdin).ReadString('\n')
+	if err != nil && !errors.Is(err, io.EOF) {
+		return false, fmt.Errorf("read confirmation: %w", err)
+	}
+	answer := strings.ToLower(strings.TrimSpace(line))
+	return answer == "y" || answer == "yes", nil
+}
+
+func interactiveInput(input io.Reader) bool {
+	file, ok := input.(*os.File)
+	if !ok {
+		return false
+	}
+	info, err := file.Stat()
+	return err == nil && info.Mode()&os.ModeCharDevice != 0
 }
 
 func (a app) serviceStop(ctx context.Context, args []string, cfg config) error {
@@ -221,7 +384,7 @@ func (a app) serviceStatus(ctx context.Context, args []string, cfg config) error
 }
 
 func startManagedService(ctx context.Context, home string, service managedService) (int, error) {
-	cmd, err := commandForService(ctx, service)
+	cmd, err := commandForService(ctx, home, service)
 	if err != nil {
 		return 0, err
 	}
@@ -240,15 +403,29 @@ func startManagedService(ctx context.Context, home string, service managedServic
 	return cmd.Process.Pid, nil
 }
 
-func commandForService(ctx context.Context, service managedService) (*exec.Cmd, error) {
+func commandForService(ctx context.Context, home string, service managedService) (*exec.Cmd, error) {
+	var command *exec.Cmd
 	if executable, ok := siblingServiceExecutable(service.name); ok {
-		return exec.CommandContext(ctx, executable, service.args...), nil
+		command = exec.CommandContext(ctx, executable, service.args...)
+	} else {
+		if _, err := os.Stat(filepath.Join("cmd", string(service.name), "main.go")); err != nil {
+			return nil, fmt.Errorf("%s executable not found next to tq and ./cmd/%s is unavailable", service.name, service.name)
+		}
+		args := append([]string{"run", "./cmd/" + string(service.name)}, service.args...)
+		command = exec.CommandContext(ctx, "go", args...)
 	}
-	if _, err := os.Stat(filepath.Join("cmd", string(service.name), "main.go")); err != nil {
-		return nil, fmt.Errorf("%s executable not found next to tq and ./cmd/%s is unavailable", service.name, service.name)
+	command.Env = serviceCommandEnv(home, os.Environ())
+	return command, nil
+}
+
+func serviceCommandEnv(home string, environment []string) []string {
+	filtered := make([]string, 0, len(environment)+1)
+	for _, entry := range environment {
+		if !strings.HasPrefix(entry, tqconfig.EnvHome+"=") {
+			filtered = append(filtered, entry)
+		}
 	}
-	args := append([]string{"run", "./cmd/" + string(service.name)}, service.args...)
-	return exec.CommandContext(ctx, "go", args...), nil
+	return append(filtered, tqconfig.EnvHome+"="+home)
 }
 
 func siblingServiceExecutable(name serviceName) (string, bool) {
@@ -480,7 +657,7 @@ func printServiceHelp(w io.Writer) {
 	fmt.Fprintln(w, "Usage: tq service <action>")
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "Actions:")
-	fmt.Fprintln(w, "  start    Start issue-tracker, orchestrator, and web")
+	fmt.Fprintln(w, "  start    Start issue-tracker, orchestrator, and web (-y skips fallback port confirmation)")
 	fmt.Fprintln(w, "  stop     Stop web, orchestrator, and issue-tracker")
 	fmt.Fprintln(w, "  status   Show service status")
 }

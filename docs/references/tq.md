@@ -206,6 +206,8 @@ Default service ports:
 | orchestrator | `37652` | `$TQ_HOME/system/log/orchestrator.log` |
 | web | `37653` | `$TQ_HOME/system/log/web.log` |
 
+If any default port is already in use, `tq service start` proposes a distinct OS-selected loopback port for every service and asks for confirmation. Enter `y` or `yes` to continue; declined or non-interactive confirmation leaves services stopped. Use `tq service start -y` to accept the proposed ports without a prompt. Tasq rechecks the proposed ports after confirmation and fails rather than choosing another set if a port was claimed.
+
 ### `service status`
 
 Show service state, PID, port, and uptime. JSON output is available for scripts.
