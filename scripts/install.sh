@@ -6,6 +6,7 @@ version="${TASQ_VERSION:-}"
 release_channel="${TASQ_RELEASE_CHANNEL:-release}"
 install_dir="${TASQ_INSTALL_DIR:-$HOME/.local/bin}"
 install_name="${TASQ_INSTALL_NAME:-tq}"
+download_method="${TASQ_DOWNLOAD_METHOD:-curl}"
 required_bins="tq issue-tracker orchestrator web"
 
 require_command() {
@@ -20,6 +21,16 @@ validate_release_channel() {
 		release|prerelease) ;;
 		*)
 			echo "unsupported release channel: $release_channel (expected release or prerelease)" >&2
+			exit 1
+			;;
+	esac
+}
+
+validate_download_method() {
+	case "$download_method" in
+		curl|gh) ;;
+		*)
+			echo "unsupported download method: $download_method (expected curl or gh)" >&2
 			exit 1
 			;;
 	esac
@@ -109,6 +120,19 @@ verify_installed_binary() {
 	fi
 }
 
+download_release_assets() {
+	case "$download_method" in
+		curl)
+			curl -fsSL "$base_url/$archive" -o "$tmp_dir/$archive"
+			curl -fsSL "$base_url/checksums.txt" -o "$tmp_dir/checksums.txt"
+			;;
+		gh)
+			require_command gh
+			GH_PROMPT_DISABLED=1 gh release download "$tag" --repo "$repo" --pattern "$archive" --pattern checksums.txt --dir "$tmp_dir" --clobber
+			;;
+	esac
+}
+
 require_command awk
 require_command chmod
 require_command cp
@@ -122,6 +146,7 @@ require_command tr
 require_command uname
 
 validate_release_channel
+validate_download_method
 platform="$(resolve_platform)"
 tag="$(resolve_version)"
 
@@ -136,8 +161,7 @@ base_url="https://github.com/$repo/releases/download/$tag"
 tmp_dir="$(mktemp -d)"
 trap 'rm -rf "$tmp_dir"' EXIT INT TERM
 
-curl -fsSL "$base_url/$archive" -o "$tmp_dir/$archive"
-curl -fsSL "$base_url/checksums.txt" -o "$tmp_dir/checksums.txt"
+download_release_assets
 verify_checksum "$archive" "$tmp_dir/$archive" "$tmp_dir/checksums.txt"
 
 extract_dir="$tmp_dir/extracted"

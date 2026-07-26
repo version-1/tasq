@@ -110,9 +110,9 @@ make run-logs
 | `make prerelease` | `scripts/release.sh` 経由で prerelease タグを作成して push します。 |
 | `make prerelease version=v0.3.0` | 特定の正式バージョンを基にした prerelease タグを作成して push します。 |
 | `make release version=v0.1.1` | `scripts/release.sh` 経由で正式リリースタグを作成して push します。 |
-| `make install-tq` | 最新の正式リリースから `tq` と管理対象サービスの実行ファイルを `$HOME/.local/bin` にインストールします。 |
+| `make install-tq` | 最新の正式リリースから `tq` と管理対象サービスの実行ファイルを `$HOME/.local/bin` にインストールします。`gh` が必要です。 |
 | `make install-tq version=v0.1.0` | 特定のリリースタグから `tq` と管理対象サービスの実行ファイルをインストールします。 |
-| `make install-tq-prerelease` | 最新の prerelease から `tq` と管理対象サービスの実行ファイルをインストールします。バージョンを指定しない場合は `gh` が必要です。 |
+| `make install-tq-prerelease` | 最新の prerelease から `tq` と管理対象サービスの実行ファイルをインストールします。`gh` が必要です。 |
 | `make install-tq-prerelease version=v0.1.0-pre.1` | 特定の prerelease タグから `tq` と管理対象サービスの実行ファイルをインストールします。 |
 
 タグ、GitHub Actions、GoReleaser を含む全体の流れは [Deployment Flow](../design/deployment.ja.md) を参照してください。

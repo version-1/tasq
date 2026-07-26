@@ -68,7 +68,7 @@ Makefile は release 用に次の variables を公開します。
 binary は `cmd/web/frontend/dist` を embed するため、Release workflow は GoReleaser の前に frontend production
 build を実行する必要があります。
 
-`make install-tq` と `make install-tq-prerelease` はどちらも `scripts/install.sh` に委譲し、`TQ_INSTALL_NAME` を使って `tq` を install します。サービス実行ファイルは固定名で同じ directory に install します。最新の prerelease の解決には `gh` が必要ですが、release tag を指定した場合は不要です。`tq service start` は source-based な `go run`
+`make install-tq` と `make install-tq-prerelease` はどちらも `scripts/install.sh` に委譲し、`TQ_INSTALL_NAME` を使って `tq` を install します。サービス実行ファイルは固定名で同じ directory に install します。Make target は認証済み download を維持するために `gh` を使い、standalone installer は既定で curl を使います。`tq service start` は source-based な `go run`
 service startup に fallback する前に、これらの sibling executables を探します。
 
 インストール済みのユーザーは `tq update` を実行すると、最新の formal release を固定のユーザーインストール先へ
