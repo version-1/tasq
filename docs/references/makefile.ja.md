@@ -115,6 +115,7 @@ make run-logs
 | `make install-tq version=v0.1.0` | 特定のリリースタグから `tq` と管理対象サービスの実行ファイルをインストールします。 |
 | `make install-tq-prerelease` | 最新の prerelease から `tq` と管理対象サービスの実行ファイルをインストールします。`gh` が必要です。 |
 | `make install-tq-prerelease version=v0.1.0-pre.1` | 特定の prerelease タグから `tq` と管理対象サービスの実行ファイルをインストールします。 |
+| `make build-tq-dev` | `dev` profile を埋め込んだ `tq-dev` バイナリをカレントディレクトリに build します。 |
 
 タグ、GitHub Actions、GoReleaser を含む全体の流れは [Deployment Flow](../design/deployment.ja.md) を参照してください。
 

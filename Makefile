@@ -64,6 +64,10 @@ build-tq: ## Build tq for the host into ./bin/tq.
 	@mkdir -p bin
 	go build -ldflags "$(TQ_BUILD_LDFLAGS)" -o ./bin/tq ./cmd/tq
 
+.PHONY: build-tq-dev
+build-tq-dev: ## Build tq with the dev profile into ./tq-dev.
+	go build -ldflags "-X github.com/version-1/tasq/internal/cli/tq.buildCommit=$(TQ_BUILD_COMMIT) -X github.com/version-1/tasq/internal/config.defaultHomeProfile=dev" -o ./tq-dev ./cmd/tq
+
 .PHONY: dev-check
 dev-check:
 	@command -v docker >/dev/null 2>&1 || { \
