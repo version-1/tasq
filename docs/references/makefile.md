@@ -115,7 +115,7 @@ make run-logs
 | `make install-tq version=v0.1.0` | Install `tq` and its managed service executables from a specific release tag. |
 | `make install-tq-prerelease` | Install `tq` and its managed service executables from the latest prerelease. Requires `gh`. |
 | `make install-tq-prerelease version=v0.1.0-pre.1` | Install `tq` and its managed service executables from a specific prerelease tag. |
-| `make build-tq-dev` | Build a `tq-dev` binary with the `dev` profile in the current directory. |
+| `make build-tq-dev` | Build a `tqdev` binary with the `dev` profile in the current directory. |
 
 See [Deployment Flow](../design/deployment.md) for the full tag, GitHub Actions, and GoReleaser flow.
 
