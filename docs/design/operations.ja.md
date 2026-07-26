@@ -6,7 +6,7 @@
 
 Docker Compose は、ローカル開発環境を長時間起動する `dev` container と standalone OpenAPI UI container に集約します。`dev` container 内では issue-tracker が container port `8080`、orchestrator が container port `8081`、Go Web サーバーが container port `3000` で待ち受けます。
 
-個人マシンでホストのみの運用を行う場合、`tq service start` は issue-tracker、orchestrator、web をバックグラウンドプロセスとして起動します。固定ローカルポート `37651`、`37652`、`37653` を使い、検出用状態を `$TQ_HOME/system/state.json` に書き込み、ログを `$TQ_HOME/system/log/` 配下へ追記します。
+個人マシンでホストのみの運用を行う場合、`tq service start` は issue-tracker、orchestrator、web をバックグラウンドプロセスとして起動します。固定ローカルポート `37651`、`37652`、`37653` を優先し、いずれかが使用中なら全サービスに OS 選択の loopback ポートを 1 つずつ提案して、対話確認（または `-y`）後に起動します。確認後に提案ポートを再確認し、取得されていた場合は別の組を選ばず失敗します。選択したアドレスは検出用状態として `$TQ_HOME/system/state.json` に書き込み、ログを `$TQ_HOME/system/log/` 配下へ追記します。
 
 データベースが新規の場合、または未適用のマイグレーションがある場合は、サービス起動前に `tq migrate` を実行します。`tq service start` はサービスプロセスを起動する前に issue-tracker と orchestrator のデータベースを確認し、未適用のマイグレーションがあれば `tq migrate` の実行を案内して終了します。サービス側もスキーマ変更を自動適用せず、同じ案内を出して fail fast します。
 
