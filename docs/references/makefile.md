@@ -112,7 +112,7 @@ make run-logs
 | `make release version=v0.1.1` | Create and push a formal release tag through `scripts/release.sh`. |
 | `make install-tq` | Install `tq` and its managed service executables from the latest formal release into `$HOME/.local/bin`. |
 | `make install-tq version=v0.1.0` | Install `tq` and its managed service executables from a specific release tag. |
-| `make install-tq-prerelease` | Install `tq` and its managed service executables from the latest prerelease. |
+| `make install-tq-prerelease` | Install `tq` and its managed service executables from the latest prerelease. Requires `gh` when no version is specified. |
 | `make install-tq-prerelease version=v0.1.0-pre.1` | Install `tq` and its managed service executables from a specific prerelease tag. |
 
 See [Deployment Flow](../design/deployment.md) for the full tag, GitHub Actions, and GoReleaser flow.

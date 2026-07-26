@@ -68,8 +68,9 @@ Each platform archive contains `tq`, `issue-tracker`, `orchestrator`, and `web`.
 binary embeds `cmd/web/frontend/dist`, so the Release workflow must run the frontend production
 build before GoReleaser.
 
-`make install-tq` and `make install-tq-prerelease` install `tq` using `TQ_INSTALL_NAME`, and install
-the service executables next to it with their fixed names. `tq service start` looks for those sibling
+`make install-tq` and `make install-tq-prerelease` both delegate to `scripts/install.sh`. They install `tq` using
+`TQ_INSTALL_NAME`, and install the service executables next to it with their fixed names. Resolving the latest
+prerelease requires `gh`; specifying a release tag does not. `tq service start` looks for those sibling
 executables before falling back to source-based `go run` service startup.
 
 Installed users can run `tq update` to install the latest formal release into the fixed user install

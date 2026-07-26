@@ -52,11 +52,11 @@ release: ## Create and push a formal release tag. Usage: make release version=v0
 
 .PHONY: install-tq
 install-tq: ## Install tq from the latest formal release, or a specific tag. Usage: make install-tq version=v0.1.0
-	@TQ_RELEASE_REPO="$(RELEASE_REPO)" TQ_INSTALL_DIR="$(TQ_INSTALL_DIR)" TQ_INSTALL_NAME="$(TQ_INSTALL_NAME)" sh scripts/install-tq-release.sh release "$(version)"
+	@TASQ_REPO="$(RELEASE_REPO)" TASQ_RELEASE_CHANNEL=release TASQ_VERSION="$(version)" TASQ_INSTALL_DIR="$(TQ_INSTALL_DIR)" TASQ_INSTALL_NAME="$(TQ_INSTALL_NAME)" sh scripts/install.sh
 
 .PHONY: install-tq-prerelease
 install-tq-prerelease: ## Install tq from the latest prerelease, or a specific tag. Usage: make install-tq-prerelease version=v0.1.0-pre.1
-	@TQ_RELEASE_REPO="$(RELEASE_REPO)" TQ_INSTALL_DIR="$(TQ_INSTALL_DIR)" TQ_INSTALL_NAME="$(TQ_INSTALL_NAME)" sh scripts/install-tq-release.sh prerelease "$(version)"
+	@TASQ_REPO="$(RELEASE_REPO)" TASQ_RELEASE_CHANNEL=prerelease TASQ_VERSION="$(version)" TASQ_INSTALL_DIR="$(TQ_INSTALL_DIR)" TASQ_INSTALL_NAME="$(TQ_INSTALL_NAME)" sh scripts/install.sh
 
 .PHONY: build-tq
 build-tq: ## Build tq for the host into ./bin/tq.

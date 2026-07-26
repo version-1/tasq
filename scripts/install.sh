@@ -3,7 +3,9 @@ set -eu
 
 repo="${TASQ_REPO:-version-1/tasq}"
 version="${TASQ_VERSION:-}"
+release_channel="${TASQ_RELEASE_CHANNEL:-release}"
 install_dir="${TASQ_INSTALL_DIR:-$HOME/.local/bin}"
+install_name="${TASQ_INSTALL_NAME:-tq}"
 required_bins="tq issue-tracker orchestrator web"
 
 require_command() {
@@ -11,6 +13,16 @@ require_command() {
 		echo "$1 is required" >&2
 		exit 1
 	fi
+}
+
+validate_release_channel() {
+	case "$release_channel" in
+		release|prerelease) ;;
+		*)
+			echo "unsupported release channel: $release_channel (expected release or prerelease)" >&2
+			exit 1
+			;;
+	esac
 }
 
 resolve_platform() {
@@ -37,7 +49,15 @@ resolve_version() {
 		return
 	fi
 
-	curl -fsSLI -o /dev/null -w '%{url_effective}' "https://github.com/$repo/releases/latest" | sed 's#.*/##'
+	case "$release_channel" in
+		release)
+			curl -fsSLI -o /dev/null -w '%{url_effective}' "https://github.com/$repo/releases/latest" | sed 's#.*/##'
+			;;
+		prerelease)
+			require_command gh
+			GH_PROMPT_DISABLED=1 gh release list --repo "$repo" --exclude-drafts --limit 100 --json tagName,isPrerelease --jq 'map(select(.isPrerelease)) | .[0].tagName // ""'
+			;;
+	esac
 }
 
 sha256_file() {
@@ -75,8 +95,9 @@ verify_checksum() {
 
 verify_installed_binary() {
 	bin="$1"
+	installed_name="$2"
 	source_path="$extract_dir/$bin"
-	installed_path="$install_dir/$bin"
+	installed_path="$install_dir/$installed_name"
 	expected_sha="$(sha256_file "$source_path")"
 	actual_sha="$(sha256_file "$installed_path")"
 
@@ -100,6 +121,7 @@ require_command tar
 require_command tr
 require_command uname
 
+validate_release_channel
 platform="$(resolve_platform)"
 tag="$(resolve_version)"
 
@@ -130,11 +152,15 @@ for bin in $required_bins; do
 done
 
 mkdir -p "$install_dir"
-for bin in $required_bins; do
+cp "$extract_dir/tq" "$install_dir/$install_name"
+chmod 0755 "$install_dir/$install_name"
+verify_installed_binary "tq" "$install_name"
+
+for bin in issue-tracker orchestrator web; do
 	cp "$extract_dir/$bin" "$install_dir/$bin"
 	chmod 0755 "$install_dir/$bin"
-	verify_installed_binary "$bin"
+	verify_installed_binary "$bin" "$bin"
 done
 
 echo "installed tasq $tag binaries to $install_dir"
-printf "verified installed tq sha256: %s\n" "$(sha256_file "$install_dir/tq")"
+printf "verified installed %s sha256: %s\n" "$install_name" "$(sha256_file "$install_dir/$install_name")"

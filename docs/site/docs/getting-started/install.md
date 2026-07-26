@@ -23,6 +23,22 @@ tq version
 Review the installer before running it. The release archive installs the `tq`
 CLI plus the local `issue-tracker`, `orchestrator`, and `web` service binaries.
 
+## Install a Prerelease
+
+After downloading the installer, install the latest prerelease with:
+
+```sh
+TASQ_RELEASE_CHANNEL=prerelease sh install.sh
+```
+
+This requires the GitHub CLI (`gh`) to select the latest prerelease. To install
+a specific formal release or prerelease tag, set `TASQ_VERSION`; this does not
+require `gh`:
+
+```sh
+TASQ_VERSION=v0.4.0-rc.1 sh install.sh
+```
+
 ## Start Local Services
 
 Tasq stores machine-local runtime data under `TQ_HOME`. If `TQ_HOME` is not set,
