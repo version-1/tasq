@@ -10,6 +10,12 @@ By default, `TQ_HOME` resolves to `~/.tasq`. For development, set it to a reposi
 TQ_HOME=./.tasq
 ```
 
+## Build Profiles
+
+Development binaries can embed a build profile. An empty profile keeps the default home at `~/.tasq`; a profile such as `dev` resolves to `~/.tasq-dev`. Profiles contain only lowercase letters, digits, and hyphens. An explicitly set `TQ_HOME` always overrides the build profile.
+
+The same profile must be embedded in `tq`, `issue-tracker`, `orchestrator`, and `web` so direct service invocation and managed startup use the same runtime state. Profile isolation does not provide concurrent service startup because service ports remain shared.
+
 The default Compose development workflow runs tools inside the `dev` container with
 `TQ_HOME=/workspace/.tasq`. `tq`, TUI, issue-tracker, and orchestrator all read the same runtime
 state in that container.

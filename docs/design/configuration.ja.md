@@ -10,6 +10,12 @@ Tasq は、マシン単位の設定、実行時状態、サービスデータを
 TQ_HOME=./.tasq
 ```
 
+## Build Profile
+
+開発用バイナリには build profile を埋め込めます。profile が空の場合は既定の home として `~/.tasq` を使い、`dev` のような profile は `~/.tasq-dev` に解決されます。profile は英小文字、数字、ハイフンだけで構成します。明示的に設定した `TQ_HOME` は常に build profile より優先されます。
+
+直接サービスを起動する場合と managed startup で同じ runtime state を使うため、`tq`、`issue-tracker`、`orchestrator`、`web` には同じ profile を埋め込む必要があります。service port は共有のままなので、profile 分離によってサービスを同時起動できるようにはなりません。
+
 既定の Compose 開発ワークフローでは、`dev` container 内でツールを実行し、
 `TQ_HOME=/workspace/.tasq` を使います。`tq`、TUI、issue-tracker、orchestrator はすべて、その container 内の同じ実行時状態を読みます。
 

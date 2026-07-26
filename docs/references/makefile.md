@@ -22,6 +22,7 @@ Use `make help` to print the prefix guide and sectioned target list generated fr
 | `TQ_INSTALL_DIR` | `$HOME/.local/bin` | Directory where release install targets place the `tq` binary. |
 | `TQ_INSTALL_NAME` | `tq` | Installed command name for the release `tq` binary. Managed service executables are installed next to it with fixed names. |
 | `TQ_BUILD_COMMIT` | current short Git commit | Commit value injected into host `tq` builds through ldflags. |
+| `TQ_BUILD_PROFILE` | empty | Build profile injected into the local `tq` binary to select its default `TQ_HOME`. |
 | `TQ_BUILD_LDFLAGS` | `buildCommit` ldflags assignment | Go linker flags used by `make build-tq`. |
 | `AIR_VERSION` | `v1.52.3` | Air version used to run Go services in watch mode. |
 
@@ -114,6 +115,7 @@ make run-logs
 | `make install-tq version=v0.1.0` | Install `tq` and its managed service executables from a specific release tag. |
 | `make install-tq-prerelease` | Install `tq` and its managed service executables from the latest prerelease. Requires `gh`. |
 | `make install-tq-prerelease version=v0.1.0-pre.1` | Install `tq` and its managed service executables from a specific prerelease tag. |
+| `make build-tq-dev` | Build a `tq-dev` binary with the `dev` profile in the current directory. |
 
 See [Deployment Flow](../design/deployment.md) for the full tag, GitHub Actions, and GoReleaser flow.
 

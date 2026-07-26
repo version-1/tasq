@@ -14,6 +14,8 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	tqconfig "github.com/version-1/tasq/internal/config"
 )
 
 const (
@@ -50,6 +52,13 @@ func (a app) update(ctx context.Context, args []string, cfg config) error {
 	}
 	if fs.NArg() != 0 {
 		return usageError("update does not accept positional arguments")
+	}
+	profile, err := tqconfig.DefaultHomeProfile()
+	if err != nil {
+		return err
+	}
+	if err := updateProfileAllowed(profile); err != nil {
+		return err
 	}
 
 	runner := newUpdateRunner(a, cfg)
@@ -103,6 +112,13 @@ func (a app) update(ctx context.Context, args []string, cfg config) error {
 	}
 	fmt.Fprintln(a.stdout, "tq update complete")
 	return nil
+}
+
+func updateProfileAllowed(profile string) error {
+	if profile == "" {
+		return nil
+	}
+	return fmt.Errorf("tq update is unavailable for build profile %q; install a matching profile build instead", profile)
 }
 
 func runUpdateStep(w io.Writer, label string, fn func() error) error {

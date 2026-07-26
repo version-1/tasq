@@ -66,6 +66,8 @@ func (a app) route(ctx context.Context, args []string, cfg config) error {
 	case "version":
 		printVersion(a.stdout)
 		return nil
+	case "config":
+		return a.config(args[1:], cfg)
 	case "update":
 		return a.update(ctx, args[1:], cfg)
 	case "issue":

@@ -16,7 +16,8 @@ RELEASE_REPO ?= version-1/tasq
 TQ_INSTALL_DIR ?= $(HOME)/.local/bin
 TQ_INSTALL_NAME ?= tq
 TQ_BUILD_COMMIT ?= $(shell git rev-parse --short HEAD 2>/dev/null || printf unknown)
-TQ_BUILD_LDFLAGS ?= -X github.com/version-1/tasq/internal/cli/tq.buildCommit=$(TQ_BUILD_COMMIT)
+TQ_BUILD_PROFILE ?=
+TQ_BUILD_LDFLAGS ?= -X github.com/version-1/tasq/internal/cli/tq.buildCommit=$(TQ_BUILD_COMMIT) -X github.com/version-1/tasq/internal/config.defaultHomeProfile=$(TQ_BUILD_PROFILE)
 
 export TQ_HOME
 
@@ -62,6 +63,10 @@ install-tq-prerelease: ## Install tq from the latest prerelease, or a specific t
 build-tq: ## Build tq for the host into ./bin/tq.
 	@mkdir -p bin
 	go build -ldflags "$(TQ_BUILD_LDFLAGS)" -o ./bin/tq ./cmd/tq
+
+.PHONY: build-tq-dev
+build-tq-dev: ## Build tq with the dev profile into ./tq-dev.
+	go build -ldflags "-X github.com/version-1/tasq/internal/cli/tq.buildCommit=$(TQ_BUILD_COMMIT) -X github.com/version-1/tasq/internal/config.defaultHomeProfile=dev" -o ./tq-dev ./cmd/tq
 
 .PHONY: dev-check
 dev-check:

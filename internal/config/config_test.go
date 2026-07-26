@@ -8,6 +8,9 @@ import (
 )
 
 func TestHomeUsesTQHome(t *testing.T) {
+	originalProfile := defaultHomeProfile
+	defaultHomeProfile = "preview"
+	t.Cleanup(func() { defaultHomeProfile = originalProfile })
 	dir := t.TempDir()
 	t.Setenv(EnvHome, filepath.Join(dir, "relative"))
 	home, err := Home()
@@ -19,6 +22,35 @@ func TestHomeUsesTQHome(t *testing.T) {
 	}
 	if home != filepath.Join(dir, "relative") {
 		t.Fatalf("home=%q", home)
+	}
+}
+
+func TestHomeUsesDefaultProfile(t *testing.T) {
+	originalProfile := defaultHomeProfile
+	defaultHomeProfile = "preview"
+	t.Cleanup(func() { defaultHomeProfile = originalProfile })
+	t.Setenv(EnvHome, "")
+
+	home, err := Home()
+	if err != nil {
+		t.Fatalf("home: %v", err)
+	}
+	userHome, err := os.UserHomeDir()
+	if err != nil {
+		t.Fatalf("user home: %v", err)
+	}
+	if want := filepath.Join(userHome, ".tasq-preview"); home != want {
+		t.Fatalf("home=%q, want %q", home, want)
+	}
+}
+
+func TestDefaultHomeProfileRejectsInvalidValue(t *testing.T) {
+	originalProfile := defaultHomeProfile
+	defaultHomeProfile = "Preview"
+	t.Cleanup(func() { defaultHomeProfile = originalProfile })
+
+	if _, err := DefaultHomeProfile(); err == nil {
+		t.Fatal("DefaultHomeProfile() error = nil")
 	}
 }
 

@@ -39,6 +39,7 @@ tq [--api-url URL] [--output text|json] <resource|command> <action> [flags]
 | `workflow` | `add`, `remove`, `show` |
 | `migrate` | 保留中のマイグレーションを適用、`down`、`status` |
 | `service` | `start`, `stop`, `status` |
+| `config` | build、home、解決済み設定情報を表示 |
 | `update` | リリースをインストールしてサービスを再起動 |
 | `version` | バージョン情報を表示 |
 
@@ -51,6 +52,10 @@ tq version
 ```
 
 バージョン付きモジュールまたは GitHub Release からインストールしたリリースビルドは、Go のビルドメタデータに含まれるタグバージョンを表示します。ローカルビルドでは `dev` にフォールバックします。
+
+## 設定
+
+`tq config` は、バージョン、build profile、`TQ_HOME` override、解決済みの home directory、設定ファイルのパス、解決済み設定値を表示します。機械可読な出力には `--output json` を指定します。設定ファイルの生 YAML は表示しません。
 
 ## 更新
 
@@ -67,6 +72,8 @@ tq update -y
 ```
 
 既定では最新の正式リリースをインストールします。特定の正式リリースまたは prerelease tag をインストールする場合は `--tag` を渡します。
+
+non-empty の build profile を持つバイナリでは、generic release artifact がその profile を保持しないため、`tq update` は利用できません。
 
 ```sh
 tq update --tag v0.2.0-rc.1
