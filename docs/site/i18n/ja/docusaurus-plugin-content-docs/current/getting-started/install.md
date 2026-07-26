@@ -22,20 +22,6 @@ tq version
 
 実行前にインストーラーの内容を確認してください。リリースアーカイブには `tq` CLI と、ローカルの `issue-tracker`、`orchestrator`、`web` サービスのバイナリが含まれます。
 
-## プレリリースをインストールする
-
-インストーラーをダウンロードした後、最新のプレリリースをインストールするには次を実行します。
-
-```sh
-TASQ_RELEASE_CHANNEL=prerelease sh install.sh
-```
-
-最新のプレリリースを選択するには GitHub CLI（`gh`）が必要です。特定の正式リリースまたはプレリリースのタグをインストールする場合は `TASQ_VERSION` を指定します。この場合 `gh` は不要です。
-
-```sh
-TASQ_VERSION=v0.4.0-rc.1 sh install.sh
-```
-
 ## ローカルサービスを起動する
 
 Tasq はマシンローカルの実行時データを `TQ_HOME` 配下に保存します。未設定の場合は `~/.tasq` を使います。
