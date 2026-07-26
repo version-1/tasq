@@ -3,7 +3,10 @@ set -eu
 
 repo="${TASQ_REPO:-version-1/tasq}"
 version="${TASQ_VERSION:-}"
+release_channel="${TASQ_RELEASE_CHANNEL:-release}"
 install_dir="${TASQ_INSTALL_DIR:-$HOME/.local/bin}"
+install_name="${TASQ_INSTALL_NAME:-tq}"
+download_method="${TASQ_DOWNLOAD_METHOD:-curl}"
 required_bins="tq issue-tracker orchestrator web"
 
 require_command() {
@@ -11,6 +14,26 @@ require_command() {
 		echo "$1 is required" >&2
 		exit 1
 	fi
+}
+
+validate_release_channel() {
+	case "$release_channel" in
+		release|prerelease) ;;
+		*)
+			echo "unsupported release channel: $release_channel (expected release or prerelease)" >&2
+			exit 1
+			;;
+	esac
+}
+
+validate_download_method() {
+	case "$download_method" in
+		curl|gh) ;;
+		*)
+			echo "unsupported download method: $download_method (expected curl or gh)" >&2
+			exit 1
+			;;
+	esac
 }
 
 resolve_platform() {
@@ -37,7 +60,15 @@ resolve_version() {
 		return
 	fi
 
-	curl -fsSLI -o /dev/null -w '%{url_effective}' "https://github.com/$repo/releases/latest" | sed 's#.*/##'
+	case "$release_channel" in
+		release)
+			curl -fsSLI -o /dev/null -w '%{url_effective}' "https://github.com/$repo/releases/latest" | sed 's#.*/##'
+			;;
+		prerelease)
+			require_command gh
+			GH_PROMPT_DISABLED=1 gh release list --repo "$repo" --exclude-drafts --limit 100 --json tagName,isPrerelease --jq 'map(select(.isPrerelease)) | .[0].tagName // ""'
+			;;
+	esac
 }
 
 sha256_file() {
@@ -75,8 +106,9 @@ verify_checksum() {
 
 verify_installed_binary() {
 	bin="$1"
+	installed_name="$2"
 	source_path="$extract_dir/$bin"
-	installed_path="$install_dir/$bin"
+	installed_path="$install_dir/$installed_name"
 	expected_sha="$(sha256_file "$source_path")"
 	actual_sha="$(sha256_file "$installed_path")"
 
@@ -86,6 +118,19 @@ verify_installed_binary() {
 		echo "actual:   $actual_sha" >&2
 		exit 1
 	fi
+}
+
+download_release_assets() {
+	case "$download_method" in
+		curl)
+			curl -fsSL "$base_url/$archive" -o "$tmp_dir/$archive"
+			curl -fsSL "$base_url/checksums.txt" -o "$tmp_dir/checksums.txt"
+			;;
+		gh)
+			require_command gh
+			GH_PROMPT_DISABLED=1 gh release download "$tag" --repo "$repo" --pattern "$archive" --pattern checksums.txt --dir "$tmp_dir" --clobber
+			;;
+	esac
 }
 
 require_command awk
@@ -100,6 +145,8 @@ require_command tar
 require_command tr
 require_command uname
 
+validate_release_channel
+validate_download_method
 platform="$(resolve_platform)"
 tag="$(resolve_version)"
 
@@ -114,8 +161,7 @@ base_url="https://github.com/$repo/releases/download/$tag"
 tmp_dir="$(mktemp -d)"
 trap 'rm -rf "$tmp_dir"' EXIT INT TERM
 
-curl -fsSL "$base_url/$archive" -o "$tmp_dir/$archive"
-curl -fsSL "$base_url/checksums.txt" -o "$tmp_dir/checksums.txt"
+download_release_assets
 verify_checksum "$archive" "$tmp_dir/$archive" "$tmp_dir/checksums.txt"
 
 extract_dir="$tmp_dir/extracted"
@@ -130,11 +176,15 @@ for bin in $required_bins; do
 done
 
 mkdir -p "$install_dir"
-for bin in $required_bins; do
+cp "$extract_dir/tq" "$install_dir/$install_name"
+chmod 0755 "$install_dir/$install_name"
+verify_installed_binary "tq" "$install_name"
+
+for bin in issue-tracker orchestrator web; do
 	cp "$extract_dir/$bin" "$install_dir/$bin"
 	chmod 0755 "$install_dir/$bin"
-	verify_installed_binary "$bin"
+	verify_installed_binary "$bin" "$bin"
 done
 
 echo "installed tasq $tag binaries to $install_dir"
-printf "verified installed tq sha256: %s\n" "$(sha256_file "$install_dir/tq")"
+printf "verified installed %s sha256: %s\n" "$install_name" "$(sha256_file "$install_dir/$install_name")"
