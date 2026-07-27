@@ -28,6 +28,7 @@ const sidebars: SidebarsConfig = {
       label: 'Guides',
       items: [
         'guides/codex-autonomy-setup',
+        'guides/tq-output-stories',
         'guides/recover-blocked-session',
         'guides/workflow-configuration',
         'guides/web-ui-operations',
