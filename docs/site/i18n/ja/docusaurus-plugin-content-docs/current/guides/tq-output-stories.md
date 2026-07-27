@@ -16,6 +16,30 @@ go run ./cmd/tqstory <scenario>
 
 Go module では、`go run` に `./` を付けてパッケージを指定する必要があります。
 
+## シナリオ一覧
+
+| シナリオ | 確認できる出力 |
+| --- | --- |
+| `tq_issue_list` | project と status に色を付けた issue 一覧。 |
+| `tq_issue_detail` | issue の詳細フィールド。 |
+| `tq_issue_action` | 成功した issue 操作と、その後の issue 詳細。 |
+| `tq_project_list` | project の表と識別子の色。 |
+| `tq_empty` | project 一覧が空の場合のメッセージ。 |
+| `tq_project_check` | PASS と FAIL の project チェック。 |
+| `tq_service_status` | running と stopped の service state。 |
+| `tq_migration_status` | applied と pending の migration state。 |
+| `tq_service_start_success` | service start 成功時の結果。 |
+| `tq_service_stop_success` | service stop 成功時の結果。 |
+| `tq_project_remove_success` | project 削除成功時の結果。 |
+| `tq_workflow_remove_success` | workflow override 削除成功時の結果。 |
+| `tq_project_remove_cancelled` | project 削除をキャンセルしたときの結果。 |
+| `tq_project_remove_confirmation` | project 削除の警告と確認プロンプト。 |
+| `tq_warning` | 破壊的操作の警告。 |
+| `tq_service_start_fail` | text mode の service start 失敗。 |
+| `tq_json_success` | ANSI エスケープシーケンスを含まない成功 JSON。 |
+| `tq_json_error` | ANSI エスケープシーケンスを含まない JSON エラー。 |
+| `all` | 各結果の前に見出しを付けた全シナリオ。 |
+
 ## コマンド結果を確認する
 
 成功、キャンセル、確認表示を確認するには、次のシナリオを使います。

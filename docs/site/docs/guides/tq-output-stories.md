@@ -16,6 +16,30 @@ go run ./cmd/tqstory <scenario>
 
 `go run` requires the `./` package prefix in a Go module.
 
+## Scenarios
+
+| Scenario | Output to review |
+| --- | --- |
+| `tq_issue_list` | Issue list with project and status colors. |
+| `tq_issue_detail` | Full issue detail fields. |
+| `tq_issue_action` | Successful issue action followed by issue detail. |
+| `tq_project_list` | Project table and identifier colors. |
+| `tq_empty` | Empty project-list message. |
+| `tq_project_check` | PASS and FAIL project checks. |
+| `tq_service_status` | Running and stopped service states. |
+| `tq_migration_status` | Applied and pending migration states. |
+| `tq_service_start_success` | Successful service-start result. |
+| `tq_service_stop_success` | Successful service-stop result. |
+| `tq_project_remove_success` | Successful project-removal result. |
+| `tq_workflow_remove_success` | Successful workflow-override removal result. |
+| `tq_project_remove_cancelled` | Cancelled project-removal result. |
+| `tq_project_remove_confirmation` | Project-removal warning and confirmation prompt. |
+| `tq_warning` | Destructive-operation warning. |
+| `tq_service_start_fail` | Text-mode service-start failure. |
+| `tq_json_success` | Successful JSON output without ANSI escape sequences. |
+| `tq_json_error` | JSON error output without ANSI escape sequences. |
+| `all` | Every scenario, with a heading before each result. |
+
 ## Check Command Results
 
 Use these scenarios when reviewing success, cancellation, and confirmation output from commands:
