@@ -57,7 +57,7 @@ Responsibilities:
 - Support human-readable output by default and JSON output for tool use.
 - Resolve the issue-tracker API URL from `--api-url`, `TQ_API_URL`, `$TQ_HOME/system/state.json`, or `http://localhost:37651`.
 - Manage host-local issue-tracker and orchestrator processes through `tq service`.
-- Return machine-readable JSON errors on stderr and a non-zero exit code when a command fails.
+- Render text errors as colored `Error: <message>` on stderr by default; preserve the machine-readable `{"error":"<message>"}` envelope when `--output json` is selected, always with a non-zero exit code.
 - Avoid direct calls to the orchestrator.
 
 ### issue-tracker

@@ -29,7 +29,7 @@ func writeIssues(w io.Writer, format string, issues []entity.Issue) error {
 		return writeJSON(w, issues)
 	}
 	for _, issue := range issues {
-		fmt.Fprintf(w, "#%d\t[%s]\t%s\t%s\n", issue.ID, issue.ProjectKey, issue.Status, issue.Title)
+		fmt.Fprintf(w, "%s#%d%s\t[%s%s%s]\t%s\t%s\n", ansiBold, issue.ID, ansiReset, ansiCyan, issue.ProjectKey, ansiReset, colorValue(string(issue.Status), statusColor(issue.Status)), issue.Title)
 	}
 	return nil
 }
@@ -59,6 +59,46 @@ func writeIssueAction(w io.Writer, format string, issue entity.Issue, message st
 		return err
 	}
 	return writeIssue(w, format, issue)
+}
+
+func writeSuccess(w io.Writer, message string) error {
+	_, err := fmt.Fprintf(w, "%s✓%s %s\n", ansiGreen, ansiReset, message)
+	return err
+}
+
+func writeFaintMessage(w io.Writer, message string) error {
+	_, err := fmt.Fprintf(w, "%s%s%s\n", ansiFaint, message, ansiReset)
+	return err
+}
+
+func writeProjectRemovalConfirmation(w io.Writer, project entity.Project) error {
+	if _, err := fmt.Fprintf(w, "%sWARNING:%s This operation cannot be undone.\n", ansiRed, ansiReset); err != nil {
+		return err
+	}
+	if _, err := fmt.Fprintf(w, "Project to remove: %s (%s)\n", project.Key, project.Name); err != nil {
+		return err
+	}
+	if _, err := fmt.Fprintln(w, "This deletes the project and descendant data, including issues, comments, attachments, workflow overrides, and run data."); err != nil {
+		return err
+	}
+	_, err := fmt.Fprint(w, "Type the project key to confirm: ")
+	return err
+}
+
+func writeProjectRemoved(w io.Writer, projectKey string) error {
+	return writeSuccess(w, "Removed project "+colorValue(projectKey, ansiCyan))
+}
+
+func writeWorkflowOverrideRemoved(w io.Writer, projectKey string) error {
+	return writeSuccess(w, "Removed workflow override for project "+colorValue(projectKey, ansiCyan))
+}
+
+func writeServicesStarted(w io.Writer) error {
+	return writeSuccess(w, "Services started")
+}
+
+func writeServicesStopped(w io.Writer) error {
+	return writeSuccess(w, "Services stopped")
 }
 
 func colorValue(value string, color string) string {
@@ -157,11 +197,26 @@ func writeProjectCheckItems(w io.Writer, format string, items []projectCheckItem
 		return writeJSON(w, items)
 	}
 	for _, item := range items {
-		status := "PASS"
+		status := colorValue("PASS", ansiGreen)
 		if !item.Passed {
-			status = "FAIL"
+			status = colorValue("FAIL", ansiRed)
 		}
 		fmt.Fprintf(w, "%s\t%s\t%s\n", status, item.Name, item.Reason)
+	}
+	return nil
+}
+
+func writeServiceStatuses(w io.Writer, statuses []serviceStatus) error {
+	for _, status := range statuses {
+		if status.State == "running" {
+			if _, err := fmt.Fprintf(w, "%s%s%s\t%s\tpid=%d\tport=%d\tuptime=%s\n", ansiCyan, status.Name, ansiReset, colorValue("running", ansiGreen), status.PID, status.Port, status.Uptime); err != nil {
+				return err
+			}
+			continue
+		}
+		if _, err := fmt.Fprintf(w, "%s%s%s\t%s\n", ansiCyan, status.Name, ansiReset, colorValue("stopped", ansiFaint)); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -202,6 +257,51 @@ func writeJSON(w io.Writer, value any) error {
 	encoder := json.NewEncoder(w)
 	encoder.SetIndent("", "  ")
 	return encoder.Encode(value)
+}
+
+func writeCLIErrorForFormat(w io.Writer, format string, message string, code int) int {
+	if format == "json" {
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": message})
+		return code
+	}
+	_, _ = fmt.Fprintf(w, "%sError:%s %s\n", ansiRed, ansiReset, message)
+	return code
+}
+
+func writeMigrateResults(w io.Writer, format string, heading string, results []migrateResult) error {
+	if format == "json" {
+		return writeJSON(w, results)
+	}
+	fmt.Fprintln(w, ansiBold+heading+ansiReset)
+	for _, result := range results {
+		fmt.Fprintf(w, "%s%s%s\t%s\n", ansiCyan, result.Database, ansiReset, result.Path)
+		switch {
+		case result.Statuses != nil:
+			for _, status := range result.Statuses {
+				state := "pending"
+				if status.Applied {
+					state = "applied"
+				}
+				fmt.Fprintf(w, "  %s_%s\t%s\n", status.Version, status.Name, colorValue(state, migrationStateColor(status.Applied)))
+			}
+		case result.RolledBack != "":
+			fmt.Fprintf(w, "  %srolled back%s %s\n", ansiYellow, ansiReset, result.RolledBack)
+		case len(result.Applied) > 0:
+			for _, item := range result.Applied {
+				fmt.Fprintf(w, "  %sapplied%s %s\n", ansiGreen, ansiReset, item)
+			}
+		default:
+			fmt.Fprintf(w, "  %sno changes%s\n", ansiFaint, ansiReset)
+		}
+	}
+	return nil
+}
+
+func migrationStateColor(applied bool) string {
+	if applied {
+		return ansiGreen
+	}
+	return ansiYellow
 }
 
 func valueOrDefault(value, fallback string) string {

@@ -33,12 +33,12 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 func run(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	cfg, remaining, err := parseCommon(args)
 	if err != nil {
-		return writeCLIError(stderr, err.Error(), 2)
+		return writeCLIErrorForFormat(stderr, cfg.output, err.Error(), 2)
 	}
 
 	client, err := newAPIClient(cfg.apiURL)
 	if err != nil {
-		return writeCLIError(stderr, err.Error(), 2)
+		return writeCLIErrorForFormat(stderr, cfg.output, err.Error(), 2)
 	}
 
 	application := app{
@@ -49,9 +49,9 @@ func run(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.
 	if err := application.route(ctx, remaining, cfg); err != nil {
 		var ce cliError
 		if errors.As(err, &ce) {
-			return writeCLIError(stderr, ce.message, ce.code)
+			return writeCLIErrorForFormat(stderr, cfg.output, ce.message, ce.code)
 		}
-		return writeCLIError(stderr, err.Error(), 1)
+		return writeCLIErrorForFormat(stderr, cfg.output, err.Error(), 1)
 	}
 	return 0
 }

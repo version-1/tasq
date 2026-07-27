@@ -816,13 +816,13 @@ func TestServiceStatusStopped(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("code=%d stderr=%s", code, stderr)
 	}
-	if !strings.Contains(stdout, "issue-tracker\tstopped") {
+	if !strings.Contains(stripANSI(stdout), "issue-tracker\tstopped") {
 		t.Fatalf("stdout missing issue-tracker stopped status: %s", stdout)
 	}
-	if !strings.Contains(stdout, "orchestrator\tstopped") {
+	if !strings.Contains(stripANSI(stdout), "orchestrator\tstopped") {
 		t.Fatalf("stdout missing orchestrator stopped status: %s", stdout)
 	}
-	if !strings.Contains(stdout, "web\tstopped") {
+	if !strings.Contains(stripANSI(stdout), "web\tstopped") {
 		t.Fatalf("stdout missing web stopped status: %s", stdout)
 	}
 }
@@ -888,7 +888,7 @@ func TestMigrateAppliesLocalDatabases(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("migrate code=%d stderr=%s", code, stderr)
 	}
-	if !strings.Contains(stdout, "applied 20260615000000_init") {
+	if !strings.Contains(stripANSI(stdout), "applied 20260615000000_init") {
 		t.Fatalf("migrate stdout missing init apply: %s", stdout)
 	}
 
@@ -979,7 +979,7 @@ func TestServiceStatusCleansStaleState(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("code=%d stderr=%s", code, stderr)
 	}
-	if !strings.Contains(stdout, "issue-tracker\tstopped") {
+	if !strings.Contains(stripANSI(stdout), "issue-tracker\tstopped") {
 		t.Fatalf("unexpected stdout: %s", stdout)
 	}
 	state, err := tqconfig.ReadState()
@@ -1279,7 +1279,7 @@ func TestProjectAddCheckRemoveAgainstIssueTrackerAPI(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("check code=%d stderr=%s stdout=%s", code, stderr, stdout)
 	}
-	if !strings.Contains(stdout, "PASS\tapi.tq_usage") {
+	if !strings.Contains(stripANSI(stdout), "PASS\tapi.tq_usage") {
 		t.Fatalf("unexpected check stdout: %s", stdout)
 	}
 
@@ -1305,7 +1305,7 @@ func TestProjectAddCheckRemoveAgainstIssueTrackerAPI(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("remove code=%d stderr=%s", code, stderr)
 	}
-	if !strings.Contains(stdout, "Removed project demo-project") {
+	if !strings.Contains(stripANSI(stdout), "Removed project demo-project") {
 		t.Fatalf("unexpected remove stdout: %s", stdout)
 	}
 	projects, err := issueStore.Projects(ctx)
@@ -1341,9 +1341,10 @@ func TestProjectRemoveRequiresMatchingKeyConfirmation(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("code=%d stderr=%s", code, stderr)
 	}
-	if !strings.Contains(stdout, "WARNING: This operation cannot be undone.") ||
-		!strings.Contains(stdout, "issues, comments, attachments, workflow overrides, and run data") ||
-		!strings.Contains(stdout, "Removed project demo-project") {
+	plain := stripANSI(stdout)
+	if !strings.Contains(plain, "WARNING: This operation cannot be undone.") ||
+		!strings.Contains(plain, "issues, comments, attachments, workflow overrides, and run data") ||
+		!strings.Contains(plain, "Removed project demo-project") {
 		t.Fatalf("unexpected stdout: %s", stdout)
 	}
 	assertStringSlice(t, requests, []string{"GET /api/v1/projects", "DELETE /api/v1/projects/7"})
@@ -1411,7 +1412,7 @@ func TestProjectRemoveYesSkipsConfirmation(t *testing.T) {
 	if strings.Contains(stdout, "Type the project key to confirm") {
 		t.Fatalf("confirmation prompt was shown: %s", stdout)
 	}
-	if !strings.Contains(stdout, "Removed project demo-project") {
+	if !strings.Contains(stripANSI(stdout), "Removed project demo-project") {
 		t.Fatalf("unexpected stdout: %s", stdout)
 	}
 	assertStringSlice(t, requests, []string{"GET /api/v1/projects", "DELETE /api/v1/projects/7"})
@@ -1508,7 +1509,7 @@ func TestWorkflowRemoveDeletesProjectWorkflow(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("code=%d stderr=%s", code, stderr)
 	}
-	if !strings.Contains(stdout, "Removed workflow override for project demo-project") {
+	if !strings.Contains(stripANSI(stdout), "Removed workflow override for project demo-project") {
 		t.Fatalf("unexpected stdout: %s", stdout)
 	}
 	want := []string{"GET /api/v1/projects", "DELETE /api/v1/projects/7/workflow"}
@@ -1814,7 +1815,7 @@ func TestIssueGetAPIError(t *testing.T) {
 	if stdout != "" {
 		t.Fatalf("expected empty stdout: %s", stdout)
 	}
-	if strings.TrimSpace(stderr) != `{"error":"issue not found"}` {
+	if strings.TrimSpace(stderr) != "Error: issue not found" {
 		t.Fatalf("unexpected stderr: %s", stderr)
 	}
 }
@@ -1827,7 +1828,7 @@ func TestCreateRequiresTitle(t *testing.T) {
 	if stdout != "" {
 		t.Fatalf("expected empty stdout: %s", stdout)
 	}
-	if strings.TrimSpace(stderr) != `{"error":"title is required"}` {
+	if strings.TrimSpace(stderr) != "Error: title is required" {
 		t.Fatalf("unexpected stderr: %s", stderr)
 	}
 }
@@ -1840,7 +1841,7 @@ func TestFlagParseErrorWritesOnlyJSON(t *testing.T) {
 	if stdout != "" {
 		t.Fatalf("expected empty stdout: %s", stdout)
 	}
-	if strings.TrimSpace(stderr) != `{"error":"flag provided but not defined: -unknown"}` {
+	if strings.TrimSpace(stderr) != "Error: flag provided but not defined: -unknown" {
 		t.Fatalf("unexpected stderr: %s", stderr)
 	}
 }
@@ -1999,6 +2000,10 @@ func assertInt64s(t *testing.T, got []int64, want []int64) {
 
 func decodeCLIError(t *testing.T, stderr string) string {
 	t.Helper()
+	stderr = strings.TrimSpace(stripANSI(stderr))
+	if strings.HasPrefix(stderr, "Error: ") {
+		return strings.TrimPrefix(stderr, "Error: ")
+	}
 	var payload struct {
 		Error string `json:"error"`
 	}
@@ -2013,7 +2018,7 @@ func runCLI(t *testing.T, args []string) (string, string, int) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	code := Run(context.Background(), args, &stdout, &stderr)
-	return stdout.String(), stderr.String(), code
+	return stdout.String(), stripANSI(stderr.String()), code
 }
 
 func runCLIWithStdin(t *testing.T, args []string, stdin string) (string, string, int) {
@@ -2021,7 +2026,14 @@ func runCLIWithStdin(t *testing.T, args []string, stdin string) (string, string,
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	code := run(context.Background(), args, strings.NewReader(stdin), &stdout, &stderr)
-	return stdout.String(), stderr.String(), code
+	return stdout.String(), stripANSI(stderr.String()), code
+}
+
+func stripANSI(value string) string {
+	for _, code := range []string{ansiBold, ansiGreen, ansiYellow, ansiRed, ansiMagenta, ansiCyan, ansiFaint, ansiReset} {
+		value = strings.ReplaceAll(value, code, "")
+	}
+	return value
 }
 
 func runCLIWithUpdateRunner(t *testing.T, args []string, stdin string, runner *fakeUpdateRunner) (string, string, int) {

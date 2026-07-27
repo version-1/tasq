@@ -57,7 +57,7 @@ Responsibilities:
 - 既定では人が読みやすい出力を使い、ツール利用向けに JSON 出力をサポートする。
 - issue-tracker API URL を `--api-url`、`TQ_API_URL`、`$TQ_HOME/system/state.json`、または `http://localhost:37651` から解決する。
 - `tq service` でホストローカルの issue-tracker と orchestrator のプロセスを管理する。
-- コマンドが失敗した場合は、stderr に機械判読可能な JSON エラーを出力し、ゼロ以外の終了コードを返す。
+- コマンドが失敗した場合は、既定で stderr に色付きの `Error: <message>` を出力する。`--output json` 指定時は機械判読可能な `{"error":"<message>"}` envelope を維持し、いずれもゼロ以外の終了コードを返す。
 - orchestrator を直接呼び出さない。
 
 ### issue-tracker

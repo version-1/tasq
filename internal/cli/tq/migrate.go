@@ -170,35 +170,6 @@ func checkMigrationTargetsNoPending(ctx context.Context) error {
 	return nil
 }
 
-func writeMigrateResults(w io.Writer, format string, heading string, results []migrateResult) error {
-	if format == "json" {
-		return writeJSON(w, results)
-	}
-	fmt.Fprintln(w, heading)
-	for _, result := range results {
-		fmt.Fprintf(w, "%s\t%s\n", result.Database, result.Path)
-		switch {
-		case result.Statuses != nil:
-			for _, status := range result.Statuses {
-				state := "pending"
-				if status.Applied {
-					state = "applied"
-				}
-				fmt.Fprintf(w, "  %s_%s\t%s\n", status.Version, status.Name, state)
-			}
-		case result.RolledBack != "":
-			fmt.Fprintf(w, "  rolled back %s\n", result.RolledBack)
-		case len(result.Applied) > 0:
-			for _, item := range result.Applied {
-				fmt.Fprintf(w, "  applied %s\n", item)
-			}
-		default:
-			fmt.Fprintln(w, "  no changes")
-		}
-	}
-	return nil
-}
-
 func migrationLabel(version string, name string) string {
 	return version + "_" + name
 }

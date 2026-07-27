@@ -66,3 +66,65 @@ func TestWriteIssueJSONKeepsDependencyIDs(t *testing.T) {
 		}
 	}
 }
+
+func TestWriteIssuesTextUsesSemanticColors(t *testing.T) {
+	var buf bytes.Buffer
+	if err := writeIssues(&buf, "text", []entity.Issue{{ID: 7, ProjectKey: "tasq", Title: "Ready work", Status: entity.StatusReady}}); err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{ansiBold + "#7" + ansiReset, ansiCyan + "tasq" + ansiReset, ansiCyan + "ready" + ansiReset} {
+		if !strings.Contains(buf.String(), want) {
+			t.Fatalf("output does not contain %q: %s", want, buf.String())
+		}
+	}
+}
+
+func TestWriteProjectCheckItemsTextUsesPassFailColors(t *testing.T) {
+	var buf bytes.Buffer
+	if err := writeProjectCheckItems(&buf, "text", []projectCheckItem{{Name: "valid", Passed: true}, {Name: "invalid", Passed: false}}); err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{ansiGreen + "PASS" + ansiReset, ansiRed + "FAIL" + ansiReset} {
+		if !strings.Contains(buf.String(), want) {
+			t.Fatalf("output does not contain %q: %s", want, buf.String())
+		}
+	}
+}
+
+func TestWriteServiceStatusesTextUsesStateColors(t *testing.T) {
+	var buf bytes.Buffer
+	if err := writeServiceStatuses(&buf, []serviceStatus{
+		{Name: "issue-tracker", State: "running", PID: 42, Port: 37651, Uptime: "1m"},
+		{Name: "web", State: "stopped"},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{
+		ansiCyan + "issue-tracker" + ansiReset,
+		ansiGreen + "running" + ansiReset,
+		ansiCyan + "web" + ansiReset,
+		ansiFaint + "stopped" + ansiReset,
+	} {
+		if !strings.Contains(buf.String(), want) {
+			t.Fatalf("output does not contain %q: %s", want, buf.String())
+		}
+	}
+}
+
+func TestWriteMigrateResultsDistinguishesStatusAndNoChanges(t *testing.T) {
+	var status bytes.Buffer
+	if err := writeMigrateResults(&status, "text", "Migration status", []migrateResult{{Database: "issue-tracker", Statuses: []migrateStatus{}}}); err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(status.String(), "no changes") {
+		t.Fatalf("status output must not render no changes: %s", status.String())
+	}
+
+	var noChanges bytes.Buffer
+	if err := writeMigrateResults(&noChanges, "text", "Applied migrations", []migrateResult{{Database: "issue-tracker"}}); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(noChanges.String(), ansiFaint+"no changes"+ansiReset) {
+		t.Fatalf("output does not contain no changes: %s", noChanges.String())
+	}
+}
