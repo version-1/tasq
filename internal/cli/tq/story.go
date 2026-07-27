@@ -55,6 +55,14 @@ func outputStories() []outputStory {
 		{name: "tq_migration_status", run: func(w io.Writer) error {
 			return writeMigrateResults(w, "text", "Migration status", []migrateResult{{Database: "issue-tracker", Path: "/workspace/.tasq/issues.sqlite", Statuses: []migrateStatus{{Version: "20260615000000", Name: "init", Applied: true}, {Version: "20260701000000", Name: "add_runs", Applied: false}}}, {Database: "orchestrator", Path: "/workspace/.tasq/orchestrator.sqlite"}})
 		}},
+		{name: "tq_service_start_success", run: writeServicesStarted},
+		{name: "tq_service_stop_success", run: writeServicesStopped},
+		{name: "tq_project_remove_success", run: func(w io.Writer) error { return writeProjectRemoved(w, "tasq") }},
+		{name: "tq_workflow_remove_success", run: func(w io.Writer) error { return writeWorkflowOverrideRemoved(w, "tasq") }},
+		{name: "tq_project_remove_cancelled", run: func(w io.Writer) error { return writeFaintMessage(w, "Project removal cancelled") }},
+		{name: "tq_project_remove_confirmation", run: func(w io.Writer) error {
+			return writeProjectRemovalConfirmation(w, entity.Project{Key: "tasq", Name: "Tasq"})
+		}},
 		{name: "tq_warning", run: writeStoryWarning},
 		{name: "tq_service_start_fail", run: func(w io.Writer) error {
 			writeCLIErrorForFormat(w, "text", "issue-tracker health check failed: connection refused", 1)

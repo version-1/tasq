@@ -46,3 +46,29 @@ func TestRunStoryJSONScenariosContainNoANSI(t *testing.T) {
 		})
 	}
 }
+
+func TestRunStoryCommandResultsUseSharedRenderers(t *testing.T) {
+	tests := []struct {
+		name string
+		want string
+	}{
+		{name: "tq_service_start_success", want: "Services started"},
+		{name: "tq_service_stop_success", want: "Services stopped"},
+		{name: "tq_project_remove_success", want: "Removed project"},
+		{name: "tq_workflow_remove_success", want: "Removed workflow override"},
+		{name: "tq_project_remove_cancelled", want: "Project removal cancelled"},
+		{name: "tq_project_remove_confirmation", want: "Type the project key to confirm"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+			if code := RunStory([]string{test.name}, &stdout, &stderr); code != 0 {
+				t.Fatalf("code=%d stderr=%s", code, stderr.String())
+			}
+			if !strings.Contains(stdout.String(), test.want) {
+				t.Fatalf("output does not contain %q: %s", test.want, stdout.String())
+			}
+		})
+	}
+}
