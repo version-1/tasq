@@ -170,42 +170,6 @@ func checkMigrationTargetsNoPending(ctx context.Context) error {
 	return nil
 }
 
-func writeMigrateResults(w io.Writer, format string, heading string, results []migrateResult) error {
-	if format == "json" {
-		return writeJSON(w, results)
-	}
-	fmt.Fprintln(w, ansiBold+heading+ansiReset)
-	for _, result := range results {
-		fmt.Fprintf(w, "%s%s%s\t%s\n", ansiCyan, result.Database, ansiReset, result.Path)
-		switch {
-		case result.Statuses != nil:
-			for _, status := range result.Statuses {
-				state := "pending"
-				if status.Applied {
-					state = "applied"
-				}
-				fmt.Fprintf(w, "  %s_%s\t%s\n", status.Version, status.Name, colorValue(state, migrationStateColor(status.Applied)))
-			}
-		case result.RolledBack != "":
-			fmt.Fprintf(w, "  %srolled back%s %s\n", ansiYellow, ansiReset, result.RolledBack)
-		case len(result.Applied) > 0:
-			for _, item := range result.Applied {
-				fmt.Fprintf(w, "  %sapplied%s %s\n", ansiGreen, ansiReset, item)
-			}
-		default:
-			fmt.Fprintf(w, "  %sno changes%s\n", ansiFaint, ansiReset)
-		}
-	}
-	return nil
-}
-
-func migrationStateColor(applied bool) string {
-	if applied {
-		return ansiGreen
-	}
-	return ansiYellow
-}
-
 func migrationLabel(version string, name string) string {
 	return version + "_" + name
 }

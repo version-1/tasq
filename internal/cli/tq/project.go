@@ -65,8 +65,7 @@ func (a app) projectRemove(ctx context.Context, args []string, cfg config) error
 			return err
 		}
 		if !ok {
-			fmt.Fprintf(a.stdout, "%sProject removal cancelled%s\n", ansiFaint, ansiReset)
-			return nil
+			return writeFaintMessage(a.stdout, "Project removal cancelled")
 		}
 	}
 	if err := a.client.deleteProject(ctx, project.ID); err != nil {
@@ -75,15 +74,13 @@ func (a app) projectRemove(ctx context.Context, args []string, cfg config) error
 	if cfg.output == "json" {
 		return writeJSON(a.stdout, map[string]any{"removed": true, "project": project})
 	}
-	fmt.Fprintf(a.stdout, "%s✓%s Removed project %s%s%s\n", ansiGreen, ansiReset, ansiCyan, project.Key, ansiReset)
-	return nil
+	return writeProjectRemoved(a.stdout, project.Key)
 }
 
 func (a app) confirmProjectRemoval(project entity.Project) (bool, error) {
-	fmt.Fprintf(a.stdout, "%sWARNING:%s This operation cannot be undone.\n", ansiRed, ansiReset)
-	fmt.Fprintf(a.stdout, "Project to remove: %s (%s)\n", project.Key, project.Name)
-	fmt.Fprintln(a.stdout, "This deletes the project and descendant data, including issues, comments, attachments, workflow overrides, and run data.")
-	fmt.Fprintf(a.stdout, "Type the project key to confirm: ")
+	if err := writeProjectRemovalConfirmation(a.stdout, project); err != nil {
+		return false, err
+	}
 	line, err := bufio.NewReader(a.stdin).ReadString('\n')
 	if err != nil && !errors.Is(err, io.EOF) {
 		return false, fmt.Errorf("read confirmation: %w", err)
@@ -113,8 +110,7 @@ func (a app) workflowRemove(ctx context.Context, args []string, cfg config) erro
 	if cfg.output == "json" {
 		return writeJSON(a.stdout, map[string]any{"removed": true, "project": project})
 	}
-	fmt.Fprintf(a.stdout, "%s✓%s Removed workflow override for project %s%s%s\n", ansiGreen, ansiReset, ansiCyan, project.Key, ansiReset)
-	return nil
+	return writeWorkflowOverrideRemoved(a.stdout, project.Key)
 }
 
 func (a app) workflowAdd(ctx context.Context, args []string, cfg config) error {

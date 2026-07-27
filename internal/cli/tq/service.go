@@ -198,8 +198,7 @@ func (a app) serviceStart(ctx context.Context, args []string, cfg config) error 
 	if cfg.output == "json" {
 		return a.serviceStatus(ctx, nil, cfg)
 	}
-	_, err = fmt.Fprintf(a.stdout, "%s✓%s Services started\n", ansiGreen, ansiReset)
-	return err
+	return writeServicesStarted(a.stdout)
 }
 
 func acquireServiceStartLock(home string) (*serviceStartLock, error) {
@@ -350,8 +349,7 @@ func (a app) serviceStop(ctx context.Context, args []string, cfg config) error {
 	if cfg.output == "json" {
 		return a.serviceStatus(ctx, nil, cfg)
 	}
-	_, err := fmt.Fprintf(a.stdout, "%s✓%s Services stopped\n", ansiGreen, ansiReset)
-	return err
+	return writeServicesStopped(a.stdout)
 }
 
 func (a app) serviceStatus(ctx context.Context, args []string, cfg config) error {
