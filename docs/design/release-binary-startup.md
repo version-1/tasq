@@ -4,7 +4,7 @@ Japanese counterpart: [release-binary-startup.ja.md](release-binary-startup.ja.m
 
 This note records the binary-only startup requirements for the README Getting Started flow.
 
-The full release-binary path is reproducible without Docker when the release archive contains `tq`, `issue-tracker`, `orchestrator`, and `web` in the same directory, and the local databases have had migrations applied.
+The full release-binary path is reproducible without Docker when the release archive contains `tq`, `issue-tracker`, `orchestrator`, and `web`, the installer has placed the service binaries under `TQ_HOME`, and the local databases have had migrations applied.
 
 ## Release Artifact Shape
 
@@ -28,6 +28,7 @@ The relevant files are:
 - `$TQ_HOME/system/data/issues.sqlite`: issue-tracker database.
 - `$TQ_HOME/system/data/orchestrator.sqlite`: orchestrator database.
 - `$TQ_HOME/system/log/*.log`: logs written by `tq service start`.
+- `$TQ_HOME/system/bin/{issue-tracker,orchestrator,web}`: private binaries launched by `tq service start`.
 
 Fresh databases must be migrated before services can start:
 
@@ -69,13 +70,13 @@ tq web
 | `orchestrator` | `37652` | `$TQ_HOME/system/data/orchestrator.sqlite` |
 | `web` | `37653` | static assets embedded in the `web` binary |
 
-`tq service start` first looks for `issue-tracker`, `orchestrator`, and `web` next to the running `tq` executable. If a service binary is missing and the current directory contains the matching `cmd/<service>/main.go`, it falls back to `go run ./cmd/<service>`. README release-binary instructions should state that users should run from an extracted release archive with all four binaries present, so the flow remains binary-only.
+`tq service start` only starts `issue-tracker`, `orchestrator`, and `web` from `$TQ_HOME/system/bin`. It does not search next to the running `tq`, in `PATH`, or in the source tree. If any managed binary is missing or not executable, it reports every invalid path before starting a service and directs the user to reinstall with the same `TQ_HOME`.
 
 `tq service start` does not expose flags for custom ports. If one of the default ports is already in use, the binary-only README should direct users to stop the conflicting process or use manual startup.
 
 ## Manual Startup
 
-Manual startup is useful for custom ports or for documenting each binary's flags.
+Manual startup is useful for custom ports or for documenting each binary's flags. It is a developer workflow; direct service binary execution is not a supported distribution interface.
 
 ```sh
 export TQ_HOME="$(pwd)/.tasq"
@@ -117,7 +118,7 @@ The binary-only flow was verified in `.tmp/issue-161` with an isolated `TQ_HOME`
 The README can present the full binary experience as supported, with these constraints:
 
 - Include `tq migrate` before `tq service start`.
-- Say that `tq`, `issue-tracker`, `orchestrator`, and `web` must be extracted into the same directory.
+- Say that the installer keeps `tq` in the public install directory and installs the three managed services under `$TQ_HOME/system/bin`.
 - State the default ports `37651`, `37652`, and `37653`.
 - Explain that custom ports require manual service startup.
 - Keep Node.js out of the runtime requirements for downloaded releases because `web` embeds the built frontend.
