@@ -13,6 +13,10 @@ Tasq deploys release artifacts by pushing version tags. The local operator creat
 5. The workflow builds the Web frontend, runs Go tests, and then runs GoReleaser.
 6. GoReleaser builds `tq` plus the managed service executables, packages them into archives, checksums them, and creates or updates the GitHub Release.
 
+Release artifacts use an empty `TQ_BUILD_PROFILE`. The workflow defines the
+variable explicitly because GoReleaser requires every environment variable
+referenced by its templates to exist, even when the intended value is empty.
+
 ## Prerelease
 
 Use prereleases for validation builds that should not be treated as formal stable releases.

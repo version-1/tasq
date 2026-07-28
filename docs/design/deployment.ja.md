@@ -13,6 +13,10 @@ Tasq は version tag の push を起点にリリース成果物をデプロイ�
 5. workflow が Web frontend を build し、Go tests を実行し、その後 GoReleaser を実行します。
 6. GoReleaser が `tq` と管理対象サービスの実行ファイルを build して archives にまとめ、checksums を作成し、GitHub Release を作成または更新します。
 
+Release artifact では空の `TQ_BUILD_PROFILE` を使用します。GoReleaser は
+template から参照する環境変数について、意図する値が空の場合でも変数自体が
+存在することを要求するため、workflow で明示的に定義します。
+
 ## Prerelease
 
 Prerelease は、正式な安定版 release として扱わない検証用 build に使います。
