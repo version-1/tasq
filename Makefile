@@ -68,11 +68,11 @@ build-tq: ## Build tq for the host into ./bin/tq.
 .PHONY: build-tq-dev
 build-tq-dev: ## Build tq and service binaries with the dev profile.
 	cd cmd/web/frontend && npm ci && npm run build
-	mkdir -p ./.tasq-dev/system/bin
-	go build -ldflags "-X github.com/version-1/tasq/internal/cli/tq.buildCommit=$(TQ_BUILD_COMMIT) -X github.com/version-1/tasq/internal/config.defaultHomeProfile=dev -X github.com/version-1/tasq/internal/config.defaultHomePath=$(CURDIR)/.tasq-dev" -o ./tqdev ./cmd/tq
-	go build -o ./.tasq-dev/system/bin/issue-tracker ./cmd/issue-tracker
-	go build -o ./.tasq-dev/system/bin/orchestrator ./cmd/orchestrator
-	go build -o ./.tasq-dev/system/bin/web ./cmd/web
+	mkdir -p $(HOME)/.tasq-dev/system/bin
+	go build -ldflags "-X github.com/version-1/tasq/internal/cli/tq.buildCommit=$(TQ_BUILD_COMMIT) -X github.com/version-1/tasq/internal/config.defaultHomeProfile=dev" -o ./tqdev ./cmd/tq
+	go build -o $(HOME)/.tasq-dev/system/bin/issue-tracker ./cmd/issue-tracker
+	go build -o $(HOME)/.tasq-dev/system/bin/orchestrator ./cmd/orchestrator
+	go build -o $(HOME)/.tasq-dev/system/bin/web ./cmd/web
 
 .PHONY: dev-check
 dev-check:
