@@ -6,6 +6,8 @@ version="${TASQ_VERSION:-}"
 release_channel="${TASQ_RELEASE_CHANNEL:-release}"
 install_dir="${TASQ_INSTALL_DIR:-$HOME/.local/bin}"
 install_name="${TASQ_INSTALL_NAME:-tq}"
+tq_home="${TQ_HOME:-$HOME/.tasq}"
+service_install_dir="$tq_home/system/bin"
 download_method="${TASQ_DOWNLOAD_METHOD:-curl}"
 required_bins="tq issue-tracker orchestrator web"
 
@@ -106,9 +108,8 @@ verify_checksum() {
 
 verify_installed_binary() {
 	bin="$1"
-	installed_name="$2"
+	installed_path="$2"
 	source_path="$extract_dir/$bin"
-	installed_path="$install_dir/$installed_name"
 	expected_sha="$(sha256_file "$source_path")"
 	actual_sha="$(sha256_file "$installed_path")"
 
@@ -118,6 +119,16 @@ verify_installed_binary() {
 		echo "actual:   $actual_sha" >&2
 		exit 1
 	fi
+}
+
+install_binary() {
+	bin="$1"
+	destination="$2"
+	temporary="$destination.tmp.$$"
+	cp "$extract_dir/$bin" "$temporary"
+	chmod 0755 "$temporary"
+	verify_installed_binary "$bin" "$temporary"
+	mv "$temporary" "$destination"
 }
 
 download_release_assets() {
@@ -140,6 +151,7 @@ require_command curl
 require_command grep
 require_command mkdir
 require_command mktemp
+require_command mv
 require_command sed
 require_command tar
 require_command tr
@@ -175,16 +187,14 @@ for bin in $required_bins; do
 	fi
 done
 
-mkdir -p "$install_dir"
-cp "$extract_dir/tq" "$install_dir/$install_name"
-chmod 0755 "$install_dir/$install_name"
-verify_installed_binary "tq" "$install_name"
-
+mkdir -p "$service_install_dir"
 for bin in issue-tracker orchestrator web; do
-	cp "$extract_dir/$bin" "$install_dir/$bin"
-	chmod 0755 "$install_dir/$bin"
-	verify_installed_binary "$bin" "$bin"
+	install_binary "$bin" "$service_install_dir/$bin"
 done
 
-echo "installed tasq $tag binaries to $install_dir"
+mkdir -p "$install_dir"
+install_binary "tq" "$install_dir/$install_name"
+
+echo "installed tq $tag to $install_dir/$install_name"
+echo "installed service binaries to $service_install_dir"
 printf "verified installed %s sha256: %s\n" "$install_name" "$(sha256_file "$install_dir/$install_name")"

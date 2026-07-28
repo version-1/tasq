@@ -11,7 +11,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
 	"syscall"
@@ -110,6 +109,9 @@ func (a app) serviceStart(ctx context.Context, args []string, cfg config) error 
 	}
 	if state.Web != nil && processAlive(state.Web.PID) {
 		return usageError("web is already running")
+	}
+	if err := validateServiceExecutables(home); err != nil {
+		return err
 	}
 	if err := checkMigrationTargetsNoPending(ctx); err != nil {
 		return fmt.Errorf("migration pre-flight check failed: %w", err)
@@ -386,7 +388,6 @@ func startManagedService(ctx context.Context, home string, service managedServic
 	defer logFile.Close()
 	cmd.Stdout = logFile
 	cmd.Stderr = logFile
-	cmd.Dir = serviceWorkingDir()
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	if err := cmd.Start(); err != nil {
 		return 0, fmt.Errorf("start %s: %w", service.name, err)
@@ -395,18 +396,48 @@ func startManagedService(ctx context.Context, home string, service managedServic
 }
 
 func commandForService(ctx context.Context, home string, service managedService) (*exec.Cmd, error) {
-	var command *exec.Cmd
-	if executable, ok := siblingServiceExecutable(service.name); ok {
-		command = exec.CommandContext(ctx, executable, service.args...)
-	} else {
-		if _, err := os.Stat(filepath.Join("cmd", string(service.name), "main.go")); err != nil {
-			return nil, fmt.Errorf("%s executable not found next to tq and ./cmd/%s is unavailable", service.name, service.name)
-		}
-		args := append([]string{"run", "./cmd/" + string(service.name)}, service.args...)
-		command = exec.CommandContext(ctx, "go", args...)
+	executable := serviceExecutablePath(home, service.name)
+	if err := validateServiceExecutable(service.name, executable); err != nil {
+		return nil, err
 	}
+	command := exec.CommandContext(ctx, executable, service.args...)
 	command.Env = serviceCommandEnv(home, os.Environ())
 	return command, nil
+}
+
+func validateServiceExecutables(home string) error {
+	problems := make([]string, 0, 3)
+	for _, name := range []serviceName{serviceIssueTracker, serviceOrchestrator, serviceWeb} {
+		path := serviceExecutablePath(home, name)
+		if err := validateServiceExecutable(name, path); err != nil {
+			problems = append(problems, err.Error())
+		}
+	}
+	if len(problems) == 0 {
+		return nil
+	}
+	return fmt.Errorf("required service binaries are unavailable for resolved TQ_HOME %s:\n  %s\nReinstall Tasq with:\n  curl -fsSLO https://raw.githubusercontent.com/version-1/tasq/main/scripts/install.sh\n  TQ_HOME=%s sh install.sh", home, strings.Join(problems, "\n  "), home)
+}
+
+func validateServiceExecutable(name serviceName, path string) error {
+	info, err := os.Lstat(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("%s: missing (expected %s)", name, path)
+	}
+	if err != nil {
+		return fmt.Errorf("%s: inspect expected %s: %w", name, path, err)
+	}
+	if !info.Mode().IsRegular() {
+		return fmt.Errorf("%s: not a regular file (expected %s)", name, path)
+	}
+	if info.Mode().Perm()&0o111 == 0 {
+		return fmt.Errorf("%s: not executable (expected %s)", name, path)
+	}
+	return nil
+}
+
+func serviceExecutablePath(home string, name serviceName) string {
+	return filepath.Join(tqconfig.SystemDir(home), "bin", string(name))
 }
 
 func serviceCommandEnv(home string, environment []string) []string {
@@ -417,28 +448,6 @@ func serviceCommandEnv(home string, environment []string) []string {
 		}
 	}
 	return append(filtered, tqconfig.EnvHome+"="+home)
-}
-
-func siblingServiceExecutable(name serviceName) (string, bool) {
-	executable, err := os.Executable()
-	if err != nil {
-		return "", false
-	}
-	path := filepath.Join(filepath.Dir(executable), string(name))
-	if runtime.GOOS == "windows" {
-		path += ".exe"
-	}
-	if info, err := os.Stat(path); err == nil && !info.IsDir() {
-		return path, true
-	}
-	return "", false
-}
-
-func serviceWorkingDir() string {
-	if cwd, err := os.Getwd(); err == nil {
-		return cwd
-	}
-	return "."
 }
 
 func openServiceLog(home string, name string) (*os.File, error) {

@@ -830,6 +830,15 @@ func TestServiceStatusStopped(t *testing.T) {
 func TestServiceStartFailsBeforeStartingServicesWhenMigrationsPending(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv(tqconfig.EnvHome, home)
+	for _, name := range []serviceName{serviceIssueTracker, serviceOrchestrator, serviceWeb} {
+		path := serviceExecutablePath(home, name)
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatalf("create service bin directory: %v", err)
+		}
+		if err := os.WriteFile(path, []byte("#!/bin/sh\n"), 0o755); err != nil {
+			t.Fatalf("write service executable: %v", err)
+		}
+	}
 
 	stdout, stderr, code := runCLI(t, []string{"service", "start"})
 	if code != 1 {

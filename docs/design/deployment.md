@@ -69,9 +69,10 @@ binary embeds `cmd/web/frontend/dist`, so the Release workflow must run the fron
 build before GoReleaser.
 
 `make install-tq` and `make install-tq-prerelease` both delegate to `scripts/install.sh`. They install `tq` using
-`TQ_INSTALL_NAME`, and install the service executables next to it with their fixed names. The Make targets use `gh`
-to preserve authenticated downloads, while the standalone installer uses curl by default. `tq service start` looks for those sibling
-executables before falling back to source-based `go run` service startup.
+`TQ_INSTALL_NAME` into the public install directory, and install the fixed-name service executables under
+`$TQ_HOME/system/bin`. The Make targets use `gh` to preserve authenticated downloads, while the standalone installer
+uses curl by default. `tq service start` only starts the three service executables from that managed directory; it does
+not search sibling binaries, `PATH`, or the source tree.
 
 Installed users can run `tq update` to install the latest formal release into the fixed user install
 location, apply local migrations, and restart services. `tq update --tag <tag>` accepts both release

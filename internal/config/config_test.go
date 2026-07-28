@@ -44,6 +44,26 @@ func TestHomeUsesDefaultProfile(t *testing.T) {
 	}
 }
 
+func TestHomeUsesDefaultPathBeforeProfile(t *testing.T) {
+	originalPath := defaultHomePath
+	originalProfile := defaultHomeProfile
+	defaultHomePath = filepath.Join(t.TempDir(), "tasq-dev")
+	defaultHomeProfile = "preview"
+	t.Cleanup(func() {
+		defaultHomePath = originalPath
+		defaultHomeProfile = originalProfile
+	})
+	t.Setenv(EnvHome, "")
+
+	home, err := Home()
+	if err != nil {
+		t.Fatalf("home: %v", err)
+	}
+	if want := defaultHomePath; home != want {
+		t.Fatalf("home=%q, want %q", home, want)
+	}
+}
+
 func TestDefaultHomeProfileRejectsInvalidValue(t *testing.T) {
 	originalProfile := defaultHomeProfile
 	defaultHomeProfile = "Preview"

@@ -4,7 +4,7 @@ English counterpart: [release-binary-startup.md](release-binary-startup.md).
 
 このメモは、README の Getting Started に載せるバイナリ単体起動フローの前提を記録する。
 
-リリースアーカイブに `tq`、`issue-tracker`、`orchestrator`、`web` が同じディレクトリに含まれており、ローカルデータベースへ migration が適用済みであれば、Docker なしでフル体験を再現できる。
+リリースアーカイブに `tq`、`issue-tracker`、`orchestrator`、`web` が含まれ、インストーラーがサービス実行ファイルを `TQ_HOME` 配下へ配置し、ローカルデータベースへ migration が適用済みであれば、Docker なしでフル体験を再現できる。
 
 ## リリース成果物
 
@@ -28,6 +28,7 @@ Tasq はマシンローカルの runtime data を `TQ_HOME` 配下に保存す�
 - `$TQ_HOME/system/data/issues.sqlite`: issue-tracker database。
 - `$TQ_HOME/system/data/orchestrator.sqlite`: orchestrator database。
 - `$TQ_HOME/system/log/*.log`: `tq service start` が書き込む logs。
+- `$TQ_HOME/system/bin/{issue-tracker,orchestrator,web}`: `tq service start` が起動する private binaries。
 
 新規 database では、サービス起動前に migration が必要。
 
@@ -69,13 +70,13 @@ tq web
 | `orchestrator` | `37652` | `$TQ_HOME/system/data/orchestrator.sqlite` |
 | `web` | `37653` | `web` バイナリに埋め込まれた static assets |
 
-`tq service start` は、まず実行中の `tq` と同じディレクトリにある `issue-tracker`、`orchestrator`、`web` を探す。service binary が見つからず、現在のディレクトリに対応する `cmd/<service>/main.go` がある場合は、`go run ./cmd/<service>` に fallback する。README のリリースバイナリ手順では、4 つのバイナリが揃ったリリースアーカイブから実行することを明記し、binary-only flow を保つべき。
+`tq service start` は `$TQ_HOME/system/bin` の `issue-tracker`、`orchestrator`、`web` だけを起動する。実行中の `tq` の隣、`PATH`、source tree は探索しない。管理対象の binary が欠落または実行不可の場合は、サービスを起動する前にすべての不正な path を報告し、同じ `TQ_HOME` を指定した再インストールを案内する。
 
 `tq service start` には custom port 用の flags はない。default port が使用中の場合、README では競合プロセスの停止、または手動起動を案内する。
 
 ## 手動起動
 
-手動起動は custom port が必要な場合や、各バイナリの flags を説明する場合に有用。
+手動起動は custom port が必要な場合や、各バイナリの flags を説明する場合に有用。developer workflow であり、サービス binary の直接実行は配布上サポートしない。
 
 ```sh
 export TQ_HOME="$(pwd)/.tasq"
@@ -117,7 +118,7 @@ default 以外の port を使う場合は、`web` に `-tracker-url` と `-orche
 README では、次の制約付きで binary full experience をサポート済みとして案内できる。
 
 - `tq service start` の前に `tq migrate` を入れる。
-- `tq`、`issue-tracker`、`orchestrator`、`web` を同じディレクトリに展開する必要があると書く。
+- インストーラーが `tq` を公開 install directory に、3サービスを `$TQ_HOME/system/bin` に配置すると書く。
 - default ports `37651`、`37652`、`37653` を明記する。
 - custom ports が必要な場合は手動 service startup が必要だと説明する。
 - ダウンロード済み release の runtime requirements には Node.js を含めない。`web` は built frontend を埋め込んでいるため。

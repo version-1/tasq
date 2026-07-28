@@ -80,26 +80,71 @@ func TestServiceCommandEnvReplacesTQHome(t *testing.T) {
 	}
 }
 
-func TestCommandForServiceSetsResolvedHomeForGoRunFallback(t *testing.T) {
+func TestValidateServiceExecutablesReportsAllUnavailableTargets(t *testing.T) {
 	home := t.TempDir()
-	workingDir, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("get working directory: %v", err)
+	err := validateServiceExecutables(home)
+	if err == nil {
+		t.Fatal("validate service executables error = nil")
 	}
-	if err := os.Chdir(filepath.Join(workingDir, "../../..")); err != nil {
-		t.Fatalf("change to repository root: %v", err)
-	}
-	t.Cleanup(func() {
-		if err := os.Chdir(workingDir); err != nil {
-			t.Errorf("restore working directory: %v", err)
+	message := err.Error()
+	for _, name := range []serviceName{serviceIssueTracker, serviceOrchestrator, serviceWeb} {
+		path := serviceExecutablePath(home, name)
+		for _, want := range []string{string(name) + ": missing", path} {
+			if !strings.Contains(message, want) {
+				t.Errorf("error = %q, want %q", message, want)
+			}
 		}
-	})
+	}
+	if !strings.Contains(message, "resolved TQ_HOME "+home) || !strings.Contains(message, "curl -fsSLO https://raw.githubusercontent.com/version-1/tasq/main/scripts/install.sh") || !strings.Contains(message, "TQ_HOME="+home+" sh install.sh") {
+		t.Fatalf("error = %q, want home and reinstall instructions", message)
+	}
+}
+
+func TestCommandForServiceUsesHomeSystemBinExecutable(t *testing.T) {
+	home := t.TempDir()
+	path := serviceExecutablePath(home, serviceIssueTracker)
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatalf("create service bin dir: %v", err)
+	}
+	if err := os.WriteFile(path, []byte("#!/bin/sh\n"), 0o755); err != nil {
+		t.Fatalf("write service executable: %v", err)
+	}
 	command, err := commandForService(context.Background(), home, managedService{name: serviceIssueTracker})
 	if err != nil {
 		t.Fatalf("command for service: %v", err)
 	}
+	if command.Path != path {
+		t.Fatalf("command path = %q, want %q", command.Path, path)
+	}
 	if !containsString(command.Env, tqconfig.EnvHome+"="+home) {
 		t.Fatalf("command environment does not contain resolved home: %v", command.Env)
+	}
+}
+
+func TestValidateServiceExecutableRejectsNonRegularOrNonExecutableFiles(t *testing.T) {
+	home := t.TempDir()
+	path := serviceExecutablePath(home, serviceWeb)
+	if err := os.MkdirAll(path, 0o755); err != nil {
+		t.Fatalf("create non-regular service path: %v", err)
+	}
+	if err := validateServiceExecutable(serviceWeb, path); err == nil || !strings.Contains(err.Error(), "not a regular file") {
+		t.Fatalf("directory validation error = %v, want non-regular file", err)
+	}
+	if err := os.Remove(path); err != nil {
+		t.Fatalf("remove service directory: %v", err)
+	}
+	if err := os.WriteFile(path, []byte("service"), 0o644); err != nil {
+		t.Fatalf("write non-executable service: %v", err)
+	}
+	if err := validateServiceExecutable(serviceWeb, path); err == nil || !strings.Contains(err.Error(), "not executable") {
+		t.Fatalf("non-executable validation error = %v, want non-executable", err)
+	}
+}
+
+func TestServiceInstallDirUsesResolvedHomeSystemBin(t *testing.T) {
+	home := t.TempDir()
+	if got, want := serviceInstallDir(home), filepath.Join(home, "system", "bin"); got != want {
+		t.Fatalf("service install dir = %q, want %q", got, want)
 	}
 }
 

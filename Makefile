@@ -18,6 +18,7 @@ TQ_INSTALL_NAME ?= tq
 TQ_BUILD_COMMIT ?= $(shell git rev-parse --short HEAD 2>/dev/null || printf unknown)
 TQ_BUILD_PROFILE ?=
 TQ_BUILD_LDFLAGS ?= -X github.com/version-1/tasq/internal/cli/tq.buildCommit=$(TQ_BUILD_COMMIT) -X github.com/version-1/tasq/internal/config.defaultHomeProfile=$(TQ_BUILD_PROFILE)
+TQ_INSTALL_HOME = $(if $(filter file,$(origin TQ_HOME)),,$(TQ_HOME))
 
 export TQ_HOME
 
@@ -53,11 +54,11 @@ release: ## Create and push a formal release tag. Usage: make release version=v0
 
 .PHONY: install-tq
 install-tq: ## Install tq from the latest formal release, or a specific tag. Usage: make install-tq version=v0.1.0
-	@TASQ_REPO="$(RELEASE_REPO)" TASQ_RELEASE_CHANNEL=release TASQ_VERSION="$(version)" TASQ_INSTALL_DIR="$(TQ_INSTALL_DIR)" TASQ_INSTALL_NAME="$(TQ_INSTALL_NAME)" TASQ_DOWNLOAD_METHOD=gh sh scripts/install.sh
+	@TASQ_REPO="$(RELEASE_REPO)" TASQ_RELEASE_CHANNEL=release TASQ_VERSION="$(version)" TASQ_INSTALL_DIR="$(TQ_INSTALL_DIR)" TASQ_INSTALL_NAME="$(TQ_INSTALL_NAME)" TASQ_DOWNLOAD_METHOD=gh TQ_HOME="$(TQ_INSTALL_HOME)" sh scripts/install.sh
 
 .PHONY: install-tq-prerelease
 install-tq-prerelease: ## Install tq from the latest prerelease, or a specific tag. Usage: make install-tq-prerelease version=v0.1.0-pre.1
-	@TASQ_REPO="$(RELEASE_REPO)" TASQ_RELEASE_CHANNEL=prerelease TASQ_VERSION="$(version)" TASQ_INSTALL_DIR="$(TQ_INSTALL_DIR)" TASQ_INSTALL_NAME="$(TQ_INSTALL_NAME)" TASQ_DOWNLOAD_METHOD=gh sh scripts/install.sh
+	@TASQ_REPO="$(RELEASE_REPO)" TASQ_RELEASE_CHANNEL=prerelease TASQ_VERSION="$(version)" TASQ_INSTALL_DIR="$(TQ_INSTALL_DIR)" TASQ_INSTALL_NAME="$(TQ_INSTALL_NAME)" TASQ_DOWNLOAD_METHOD=gh TQ_HOME="$(TQ_INSTALL_HOME)" sh scripts/install.sh
 
 .PHONY: build-tq
 build-tq: ## Build tq for the host into ./bin/tq.
@@ -65,8 +66,13 @@ build-tq: ## Build tq for the host into ./bin/tq.
 	go build -ldflags "$(TQ_BUILD_LDFLAGS)" -o ./bin/tq ./cmd/tq
 
 .PHONY: build-tq-dev
-build-tq-dev: ## Build tq with the dev profile into ./tqdev.
-	go build -ldflags "-X github.com/version-1/tasq/internal/cli/tq.buildCommit=$(TQ_BUILD_COMMIT) -X github.com/version-1/tasq/internal/config.defaultHomeProfile=dev" -o ./tqdev ./cmd/tq
+build-tq-dev: ## Build tq and service binaries with the dev profile.
+	cd cmd/web/frontend && npm ci && npm run build
+	mkdir -p ./.tasq-dev/system/bin
+	go build -ldflags "-X github.com/version-1/tasq/internal/cli/tq.buildCommit=$(TQ_BUILD_COMMIT) -X github.com/version-1/tasq/internal/config.defaultHomeProfile=dev -X github.com/version-1/tasq/internal/config.defaultHomePath=$(CURDIR)/.tasq-dev" -o ./tqdev ./cmd/tq
+	go build -o ./.tasq-dev/system/bin/issue-tracker ./cmd/issue-tracker
+	go build -o ./.tasq-dev/system/bin/orchestrator ./cmd/orchestrator
+	go build -o ./.tasq-dev/system/bin/web ./cmd/web
 
 .PHONY: dev-check
 dev-check:

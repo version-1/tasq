@@ -10,24 +10,24 @@ Tasq をインストールしてローカルサービスを起動します。完
 
 ## CLI をインストールする
 
-最新の正式リリースをインストールし、`tq` が `PATH` に入っていることを確認します。
+インストール前に `TQ_HOME` を決めます。インストーラーは公開コマンドの `tq` を `PATH` 上へ配置し、非公開のサービスバイナリは選択した home 配下へ配置します。
 
 ```sh
 curl -fsSLO https://raw.githubusercontent.com/version-1/tasq/main/scripts/install.sh
 less install.sh
-sh install.sh
+export TQ_HOME="${HOME}/.tasq"
+TQ_HOME="$TQ_HOME" sh install.sh
 export PATH="${HOME}/.local/bin:${PATH}"
 tq version
 ```
 
-実行前にインストーラーの内容を確認してください。リリースアーカイブには `tq` CLI と、ローカルの `issue-tracker`、`orchestrator`、`web` サービスのバイナリが含まれます。
+実行前にインストーラーの内容を確認してください。デフォルトでは `tq` を `~/.local/bin` に、`issue-tracker`、`orchestrator`、`web` を `$TQ_HOME/system/bin` に配置します。サービスバイナリは `tq service start` が管理するため、直接実行は配布上サポートしません。
 
 ## ローカルサービスを起動する
 
-Tasq はマシンローカルの実行時データを `TQ_HOME` 配下に保存します。未設定の場合は `~/.tasq` を使います。
+Tasq はマシンローカルの実行時データとサービスバイナリを `TQ_HOME` 配下に保存します。インストール時に `TQ_HOME` を指定しなかった場合は `~/.tasq` を使います。サービス起動時にも同じ home を使用してください。
 
 ```sh
-export TQ_HOME="${HOME}/.tasq"
 tq migrate
 tq service start
 tq service status

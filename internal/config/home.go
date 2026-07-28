@@ -13,6 +13,19 @@ const (
 )
 
 var defaultHomeProfile = ""
+var defaultHomePath = ""
+
+func DefaultHomePath() (string, error) {
+	path := strings.TrimSpace(defaultHomePath)
+	if path == "" {
+		return "", nil
+	}
+	resolved, err := filepath.Abs(path)
+	if err != nil {
+		return "", fmt.Errorf("resolve default home: %w", err)
+	}
+	return resolved, nil
+}
 
 func DefaultHomeProfile() (string, error) {
 	profile := strings.TrimSpace(defaultHomeProfile)
@@ -30,6 +43,13 @@ func DefaultHomeProfile() (string, error) {
 func Home() (string, error) {
 	if value := strings.TrimSpace(os.Getenv(EnvHome)); value != "" {
 		return filepath.Abs(value)
+	}
+	path, err := DefaultHomePath()
+	if err != nil {
+		return "", err
+	}
+	if path != "" {
+		return path, nil
 	}
 	profile, err := DefaultHomeProfile()
 	if err != nil {

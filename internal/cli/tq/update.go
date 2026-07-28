@@ -409,17 +409,27 @@ func installExtractedExecutables(extractDir string) error {
 	if err := os.MkdirAll(installDir, 0o755); err != nil {
 		return fmt.Errorf("create install dir: %w", err)
 	}
-	for _, executable := range []string{"tq", "issue-tracker", "orchestrator", "web"} {
-		source := filepath.Join(extractDir, executable)
-		name := executable
-		if executable == "tq" {
-			name = updateInstallName
-		}
-		if err := installExecutable(source, filepath.Join(installDir, name)); err != nil {
+	home, err := tqconfig.Home()
+	if err != nil {
+		return err
+	}
+	serviceDir := serviceInstallDir(home)
+	if err := os.MkdirAll(serviceDir, 0o755); err != nil {
+		return fmt.Errorf("create service install dir: %w", err)
+	}
+	for _, executable := range []string{"issue-tracker", "orchestrator", "web"} {
+		if err := installExecutable(filepath.Join(extractDir, executable), filepath.Join(serviceDir, executable)); err != nil {
 			return err
 		}
 	}
+	if err := installExecutable(filepath.Join(extractDir, "tq"), filepath.Join(installDir, updateInstallName)); err != nil {
+		return err
+	}
 	return nil
+}
+
+func serviceInstallDir(home string) string {
+	return filepath.Join(tqconfig.SystemDir(home), "bin")
 }
 
 func installExecutable(source string, destination string) error {
