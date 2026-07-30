@@ -9,6 +9,8 @@ import {
   ContextMenuItem,
 } from "@/components/ui/context-menu";
 import { IconProxy, type IconProxyName } from "@/components/ui/icon-proxy";
+import { fetchOrchestratorIssueRuntime } from "@/lib/api";
+import { toast } from "@/lib/toast";
 import { PriorityBadge } from "@/features/issues/components/priority-badge";
 import { ProjectBadge } from "@/features/issues/components/project-badge";
 import { StatusBadge } from "@/features/issues/components/status-badge";
@@ -56,7 +58,10 @@ export function IssueCard({
   const quickStatusTarget = readonly ? undefined : quickStatusTargets[issue.status];
   const canReject = !readonly && issue.status === "review" && onRejectIssue !== undefined;
   const cardRef = useRef<HTMLElement>(null);
+  const hasLoadedThreadID = useRef(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isThreadIDLoading, setIsThreadIDLoading] = useState(false);
+  const [threadID, setThreadID] = useState<string | null>(null);
   const menuID = `issue-card-menu-${issue.id}`;
   const menuLabel = t("issues.card.actionsLabel", { title: issue.title });
   const lockedStatusLabel = t("issues.card.statusLocked", { status: t(`statuses.${issue.status}`) });
@@ -73,6 +78,44 @@ export function IssueCard({
     },
   ];
 
+  async function loadThreadID() {
+    if (hasLoadedThreadID.current) {
+      return;
+    }
+
+    hasLoadedThreadID.current = true;
+    setIsThreadIDLoading(true);
+    try {
+      const runtime = await fetchOrchestratorIssueRuntime(issue.id, { silent: true });
+      setThreadID(threadIDFromRuns(runtime.runs));
+    } catch {
+      setThreadID(null);
+    } finally {
+      setIsThreadIDLoading(false);
+    }
+  }
+
+  function handleMenuOpenChange(nextIsOpen: boolean) {
+    setIsMenuOpen(nextIsOpen);
+    if (nextIsOpen) {
+      void loadThreadID();
+    }
+  }
+
+  async function handleCopyThreadID() {
+    if (!threadID) {
+      return;
+    }
+
+    setIsMenuOpen(false);
+    try {
+      await navigator.clipboard.writeText(threadID);
+      toast.success({ message: t("toast.success.threadIDCopied") });
+    } catch {
+      toast.error({ message: t("toast.error.clipboardUnavailable") });
+    }
+  }
+
   return (
     <article className={styles.taskCard} ref={cardRef}>
       <div className={styles.cardHeader}>
@@ -82,7 +125,7 @@ export function IssueCard({
           id={menuID}
           isOpen={isMenuOpen}
           label={menuLabel}
-          onOpenChange={setIsMenuOpen}
+          onOpenChange={handleMenuOpenChange}
           trigger={(triggerProps) => (
             <button
               {...triggerProps}
@@ -95,6 +138,16 @@ export function IssueCard({
             </button>
           )}
         >
+          <ContextMenuItem
+            disabled={isThreadIDLoading || !threadID}
+            label={t("issues.card.copyThreadID")}
+            title={t("issues.card.copyThreadID")}
+            onSelect={() => {
+              void handleCopyThreadID();
+            }}
+          >
+            {t("issues.card.copyThreadID")}
+          </ContextMenuItem>
           <ContextMenuGroupLabel>{t("issues.card.changeStatus")}</ContextMenuGroupLabel>
           {statusOptions.map((status) => {
             const isCurrent = status === issue.status;
@@ -194,4 +247,14 @@ function quickActionClassName(status: IssueStatus): string {
 
 function quickActionShowsIcon(status: IssueStatus): boolean {
   return status === "ready";
+}
+
+function threadIDFromRuns(runs: readonly { readonly thread_id?: string }[]): string | null {
+  for (const run of runs) {
+    const threadID = run.thread_id?.trim();
+    if (threadID) {
+      return threadID;
+    }
+  }
+  return null;
 }
