@@ -6,13 +6,14 @@ import (
 )
 
 func printRootHelp(w io.Writer) {
-	fmt.Fprintln(w, "Usage: tq [--api-url URL] [--output text|json] <resource> <action> [flags]")
+	fmt.Fprintln(w, "Usage: tq [--api-url URL] [--output text|json] <resource|command> <action> [flags]")
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "Resources:")
 	fmt.Fprintln(w, "  issue    create, get, list, update, and shortcut issue actions")
 	fmt.Fprintln(w, "  comment  add and list issue comments")
 	fmt.Fprintln(w, "  project  add, remove, check, and list projects")
 	fmt.Fprintln(w, "  workflow add, remove, and show project workflow resolution")
+	fmt.Fprintln(w, "  api      send an allowlisted raw issue-tracker API request")
 	fmt.Fprintln(w, "  migrate  apply, roll back, and inspect local database migrations")
 	fmt.Fprintln(w, "  web      open the running Web UI in the default browser")
 	fmt.Fprintln(w, "  service  start, stop, and inspect local services")
@@ -20,6 +21,12 @@ func printRootHelp(w io.Writer) {
 	fmt.Fprintln(w, "  config   show resolved local configuration")
 	fmt.Fprintln(w, "  version  show version information")
 	fmt.Fprintln(w, "  update   update tq from a GitHub Release and restart services")
+}
+
+func printAPIHelp(w io.Writer) {
+	fmt.Fprintln(w, "Usage: tq api <method> <path> [--query key=value] [--header 'Name: value'] [--data value|@file|-]")
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, "Send a raw request to an allowlisted /api/v1 path. Response bytes are written unchanged to stdout.")
 }
 
 func printConfigHelp(w io.Writer) {

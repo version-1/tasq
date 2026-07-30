@@ -29,6 +29,8 @@ tq [--api-url URL] [--output text|json] <resource|command> <action> [flags]
 | `--api-url URL` | `TQ_API_URL`, then `$TQ_HOME/system/state.json`, then `http://localhost:37651` | Issue-tracker API base URL. |
 | `--output text\|json` | `text` | Output format. JSON output is intended for scripts and agents. |
 
+`--output` does not transform the response of `tq api`; that command always copies response bytes unchanged.
+
 ## Resources
 
 | Resource | Actions |
@@ -42,6 +44,31 @@ tq [--api-url URL] [--output text|json] <resource|command> <action> [flags]
 | `config` | show build, home, and resolved configuration information |
 | `update` | install a release and restart services |
 | `version` | show version information |
+| `api` | send an allowlisted raw issue-tracker API request |
+
+## Raw API requests
+
+`tq api` sends a raw request to the already-resolved issue-tracker base URL. It is useful for agent workflows that need an API operation not exposed by a typed `tq` command.
+
+```sh
+tq api GET /api/v1/issues --query states=ready
+
+tq api POST /api/v1/issues --header 'X-Request-ID: local-123' --data @request.json
+```
+
+The command syntax is:
+
+```text
+tq api <method> <path> [--query key=value] [--header 'Name: value'] [--data value|@file|-]
+```
+
+Methods are normalized to uppercase. The path must be an unencoded absolute `/api/v1/...` path; complete URLs, fragments, dot segments, empty segments, and trailing slashes are rejected. Query text in the path is preserved, and each repeatable `--query key=value` appends another value in order. Query names and values are passed to the API without semantic validation.
+
+The method and path must match the CLI's explicit allowlist of current issue-tracker routes. Numeric route IDs must be positive `int64` values. This is fail-closed: a newly added server route is unavailable until the CLI allowlist is updated. `POST /api/v1/attachments` is temporarily excluded while raw multipart support is unavailable; attachment `PATCH` is not allowed.
+
+`--header` may be repeated. Header names are case-insensitive and the last value wins. Transport-managed headers, including `Host`, `Content-Length`, `Transfer-Encoding`, `Connection`, `Trailer`, `Upgrade`, and `Proxy-Connection`, are rejected. `--data` accepts a literal value, `@file`, or `-` for standard input, and is available only for `POST`, `PUT`, and `PATCH`. A request body defaults to `Content-Type: application/json` unless supplied explicitly.
+
+The command does not prompt before write or delete operations, follows no redirects, and uses the standard 10-second HTTP timeout. It writes response bytes exactly as received to standard output, including binary data and error bodies. Exit status is `0` for HTTP `2xx`, `1` for HTTP `3xx`-`5xx` or transport failures, and `2` for usage, input, and allowlist errors.
 
 ## Version
 

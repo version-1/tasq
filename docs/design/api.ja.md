@@ -117,4 +117,8 @@ JSON の成功レスポンスは `{ "data": ..., "meta": {} }` を使います�
 
 `tq` は既定では人が読みやすい出力を使い、`--output json` が指定された場合は JSON 出力を使います。
 
+`tq api <method> <path>` は、同じ issue-tracker ベース URL 解決を使う、制約付きの生 API 呼び出しです。method と route template の許可リストは CLI 内で管理し、API に route が増えても fail-closed になります。現在の許可リストは上記 endpoint のうち一時的に除外する `POST /api/v1/attachments` 以外を対象にします。attachment の `PATCH` は公開しません。エンコードされていない厳格な `/api/v1/...` path だけを受け付け、method は大文字に正規化します。path 内の生 query と、指定順に追加する繰り返し指定可能な `--query key=value` を使えます。`--header 'Name: value'` も繰り返し指定でき、同名は最後の値を使用します。transport が管理する header は拒否します。`--data value|@file|-` は `POST`、`PUT`、`PATCH` に限定し、content type を省略した場合は JSON を使います。
+
+このコマンドは redirect を追跡せず、破壊的な操作でも確認を求めません。timeout は 10 秒で、envelope の解析や出力変換を行わずにレスポンスのバイト列をコピーします。HTTP `2xx` は終了ステータス `0`、受信した `3xx`-`5xx` レスポンスは本文コピー後に `1`、transport 失敗は `1`、入力・許可リストのエラーは `2` です。
+
 orchestrator は、`--port` または `server.port` で有効化したときに、実行時調査用の任意の loopback HTTP API を公開します。課題の実行時詳細レスポンスには過去の実行サマリーが含まれます。各実行は、Codex app-server thread が永続化された後に `thread_id` を含む場合があります。

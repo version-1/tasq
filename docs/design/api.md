@@ -117,4 +117,8 @@ The `tq` CLI wraps issue CRUD endpoints with these commands:
 
 `tq` uses human-readable output by default and JSON output when `--output json` is set.
 
+`tq api <method> <path>` provides a constrained raw escape hatch for the same issue-tracker base URL resolution. Its method and route-template allowlist is maintained in the CLI and fails closed when the API gains a route. The current allowlist covers every endpoint above except the temporary exclusion `POST /api/v1/attachments`; attachment `PATCH` is not exposed. It accepts only strict unencoded `/api/v1/...` paths, normalizes methods to uppercase, permits raw query text plus ordered repeated `--query key=value`, and accepts repeated `--header 'Name: value'` with last-value-wins semantics. It rejects transport-managed headers. `--data value|@file|-` is limited to `POST`, `PUT`, and `PATCH`, and defaults its content type to JSON when omitted.
+
+The command does not follow redirects or prompt for destructive operations, uses a 10-second timeout, and copies response bytes without envelope parsing or output formatting. HTTP `2xx` exits with status `0`; received `3xx`-`5xx` responses exit `1` after copying their bodies; transport failures exit `1`; input and allowlist failures exit `2`.
+
 The orchestrator exposes an optional loopback HTTP API for runtime inspection when enabled with `--port` or `server.port`. Its issue runtime detail response includes historical run summaries; each run may include `thread_id` once the Codex app-server thread has been persisted.

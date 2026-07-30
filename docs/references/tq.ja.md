@@ -29,6 +29,8 @@ tq [--api-url URL] [--output text|json] <resource|command> <action> [flags]
 | `--api-url URL` | `TQ_API_URL`、その後 `$TQ_HOME/system/state.json`、その後 `http://localhost:37651` | issue-tracker API のベース URL。 |
 | `--output text\|json` | `text` | 出力形式。JSON 出力はスクリプトやエージェント向けです。 |
 
+`tq api` のレスポンスは `--output` で変換しません。常にレスポンスのバイト列をそのまま出力します。
+
 ## リソース
 
 | Resource | Actions |
@@ -42,6 +44,31 @@ tq [--api-url URL] [--output text|json] <resource|command> <action> [flags]
 | `config` | build、home、解決済み設定情報を表示 |
 | `update` | リリースをインストールしてサービスを再起動 |
 | `version` | バージョン情報を表示 |
+| `api` | 許可リストにある issue-tracker API へ生のリクエストを送信 |
+
+## 生の API リクエスト
+
+`tq api` は、解決済みの issue-tracker ベース URL に対して生のリクエストを送信します。型付きの `tq` コマンドにない API 操作が必要なエージェントのワークフローで使用します。
+
+```sh
+tq api GET /api/v1/issues --query states=ready
+
+tq api POST /api/v1/issues --header 'X-Request-ID: local-123' --data @request.json
+```
+
+構文は次のとおりです。
+
+```text
+tq api <method> <path> [--query key=value] [--header 'Name: value'] [--data value|@file|-]
+```
+
+method は大文字に正規化します。path はエンコードされていない絶対 `/api/v1/...` path でなければなりません。完全 URL、fragment、dot segment、空 segment、末尾の slash は拒否します。path に含めた query は保持し、繰り返し指定した `--query key=value` は指定順で追加します。query の名前と値に意味的な検証は行わず、API に渡します。
+
+method と path は、CLI が明示的に持つ現行 issue-tracker route の許可リストに一致する必要があります。数値 ID は正の `int64` に限定します。これは fail-closed の設計であり、server に route を追加しても CLI の許可リストを更新するまで使用できません。生の multipart をまだ扱えないため、`POST /api/v1/attachments` は一時的に除外しています。attachment の `PATCH` も許可しません。
+
+`--header` は繰り返し指定できます。header 名は大文字小文字を区別せず、同名の場合は最後の値を使います。`Host`、`Content-Length`、`Transfer-Encoding`、`Connection`、`Trailer`、`Upgrade`、`Proxy-Connection` など、transport が管理する header は拒否します。`--data` はリテラル値、`@file`、標準入力を示す `-` を受け付け、`POST`、`PUT`、`PATCH` でだけ使用できます。body があり `Content-Type` を明示しない場合は `application/json` を使います。
+
+書き込みや削除操作でも確認は求めません。redirect は追跡せず、標準の HTTP timeout は 10 秒です。バイナリやエラー本文を含め、レスポンスのバイト列を受信したまま標準出力へ書き出します。終了ステータスは、HTTP `2xx` が `0`、HTTP `3xx`-`5xx` と transport 失敗が `1`、usage・入力・許可リストのエラーが `2` です。
 
 ## バージョン
 
