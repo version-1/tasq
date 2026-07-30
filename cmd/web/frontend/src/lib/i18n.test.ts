@@ -80,6 +80,7 @@ const knownErrorCodes = [
 ] as const;
 
 const genericSuccessActions = ["created", "deleted", "saved", "threadIDCopied", "updated"] as const;
+const issueCardActions = ["copyThreadID"] as const;
 
 describe("i18n toast resources", () => {
   it("has translations for known server error codes in every supported language", () => {
@@ -98,6 +99,14 @@ describe("i18n toast resources", () => {
         expect(i18n.exists(`toast.success.${action}`, { lng: language }), `${language}: ${action}`).toBe(
           true,
         );
+      }
+    }
+  });
+
+  it("has issue card action translations in every supported language", () => {
+    for (const language of supportedLanguages) {
+      for (const action of issueCardActions) {
+        expect(i18n.exists(`issues.card.${action}`, { lng: language }), `${language}: ${action}`).toBe(true);
       }
     }
   });

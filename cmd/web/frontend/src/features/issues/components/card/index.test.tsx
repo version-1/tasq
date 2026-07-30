@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import * as api from "@/lib/api";
 import { toastStore } from "@/lib/toast";
 import type { IssueSummary, OrchestratorIssueRuntime } from "@/lib/types";
+import { clearIssueThreadIDCacheForTest } from "@/features/issues/thread-id-cache";
 import "@/lib/i18n";
 import { IssueCard } from "./index";
 
@@ -43,7 +44,7 @@ function issueWithCommentCount(commentCount: number): IssueSummary {
 function renderCard(props: Partial<Parameters<typeof IssueCard>[0]> = {}) {
   const onRejectIssue = vi.fn();
   const onStatusChange = vi.fn(async () => undefined);
-  render(
+  const rendered = render(
     <MemoryRouter>
       <IssueCard
         issue={issue}
@@ -53,11 +54,12 @@ function renderCard(props: Partial<Parameters<typeof IssueCard>[0]> = {}) {
       />
     </MemoryRouter>,
   );
-  return { onRejectIssue, onStatusChange };
+  return { onRejectIssue, onStatusChange, unmount: rendered.unmount };
 }
 
 describe("IssueCard", () => {
   afterEach(() => {
+    clearIssueThreadIDCacheForTest();
     toastStore.clear();
     vi.clearAllMocks();
     vi.restoreAllMocks();
@@ -311,6 +313,46 @@ describe("IssueCard", () => {
     await user.click(menuButton);
 
     expect(api.fetchOrchestratorIssueRuntime).toHaveBeenCalledTimes(1);
+  });
+
+  it("reuses the issue thread ID cache after the card remounts", async () => {
+    const user = userEvent.setup();
+    vi.mocked(api.fetchOrchestratorIssueRuntime).mockResolvedValue(runtimeWithRuns([
+      { thread_id: "thread-latest" },
+    ]));
+    const firstRender = renderCard();
+
+    await user.click(screen.getByRole("button", {
+      name: "Issue actions for Wire issue board to generated client",
+    }));
+    await waitFor(() => expect(screen.getByRole("menuitem", { name: "Copy thread ID" })).toBeEnabled());
+    firstRender.unmount();
+
+    renderCard();
+    await user.click(screen.getByRole("button", {
+      name: "Issue actions for Wire issue board to generated client",
+    }));
+
+    await waitFor(() => expect(screen.getByRole("menuitem", { name: "Copy thread ID" })).toBeEnabled());
+    expect(api.fetchOrchestratorIssueRuntime).toHaveBeenCalledTimes(1);
+  });
+
+  it("disables the copy action while the runtime request is pending", async () => {
+    const user = userEvent.setup();
+    let resolveRuntime: (runtime: OrchestratorIssueRuntime) => void;
+    const runtime = new Promise<OrchestratorIssueRuntime>((resolve) => {
+      resolveRuntime = resolve;
+    });
+    vi.mocked(api.fetchOrchestratorIssueRuntime).mockReturnValue(runtime);
+    renderCard();
+
+    await user.click(screen.getByRole("button", {
+      name: "Issue actions for Wire issue board to generated client",
+    }));
+
+    expect(screen.getByRole("menuitem", { name: "Copy thread ID" })).toBeDisabled();
+    resolveRuntime!(runtimeWithRuns([{ thread_id: "thread-latest" }]));
+    await waitFor(() => expect(screen.getByRole("menuitem", { name: "Copy thread ID" })).toBeEnabled());
   });
 
   it("falls back to an older run with a non-empty trimmed thread ID", async () => {

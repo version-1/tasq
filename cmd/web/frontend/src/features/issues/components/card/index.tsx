@@ -9,12 +9,12 @@ import {
   ContextMenuItem,
 } from "@/components/ui/context-menu";
 import { IconProxy, type IconProxyName } from "@/components/ui/icon-proxy";
-import { fetchOrchestratorIssueRuntime } from "@/lib/api";
 import { toast } from "@/lib/toast";
 import { PriorityBadge } from "@/features/issues/components/priority-badge";
 import { ProjectBadge } from "@/features/issues/components/project-badge";
 import { StatusBadge } from "@/features/issues/components/status-badge";
 import { PendingBadge } from "./pending-badge";
+import { loadIssueThreadID } from "@/features/issues/thread-id-cache";
 import styles from "./index.module.css";
 
 type IssueStatusChangeHandler = (id: number, status: IssueStatus) => Promise<void>;
@@ -58,7 +58,6 @@ export function IssueCard({
   const quickStatusTarget = readonly ? undefined : quickStatusTargets[issue.status];
   const canReject = !readonly && issue.status === "review" && onRejectIssue !== undefined;
   const cardRef = useRef<HTMLElement>(null);
-  const hasLoadedThreadID = useRef(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isThreadIDLoading, setIsThreadIDLoading] = useState(false);
   const [threadID, setThreadID] = useState<string | null>(null);
@@ -79,20 +78,10 @@ export function IssueCard({
   ];
 
   async function loadThreadID() {
-    if (hasLoadedThreadID.current) {
-      return;
-    }
-
-    hasLoadedThreadID.current = true;
     setIsThreadIDLoading(true);
-    try {
-      const runtime = await fetchOrchestratorIssueRuntime(issue.id, { silent: true });
-      setThreadID(threadIDFromRuns(runtime.runs));
-    } catch {
-      setThreadID(null);
-    } finally {
-      setIsThreadIDLoading(false);
-    }
+    const loadedThreadID = await loadIssueThreadID(issue.id);
+    setThreadID(loadedThreadID);
+    setIsThreadIDLoading(false);
   }
 
   function handleMenuOpenChange(nextIsOpen: boolean) {
@@ -247,14 +236,4 @@ function quickActionClassName(status: IssueStatus): string {
 
 function quickActionShowsIcon(status: IssueStatus): boolean {
   return status === "ready";
-}
-
-function threadIDFromRuns(runs: readonly { readonly thread_id?: string }[]): string | null {
-  for (const run of runs) {
-    const threadID = run.thread_id?.trim();
-    if (threadID) {
-      return threadID;
-    }
-  }
-  return null;
 }
