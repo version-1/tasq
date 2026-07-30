@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -14,6 +15,37 @@ import (
 )
 
 func TestAllowedAPIRoutes(t *testing.T) {
+	expected := []apiRoute{
+		{"GET", "/api/v1/health"}, {"GET", "/api/v1/summary"},
+		{"GET", "/api/v1/projects"}, {"POST", "/api/v1/projects"}, {"GET", "/api/v1/projects/{id}"}, {"PATCH", "/api/v1/projects/{id}"}, {"DELETE", "/api/v1/projects/{id}"}, {"POST", "/api/v1/projects/{id}/check"},
+		{"GET", "/api/v1/projects/{id}/workflow"}, {"PUT", "/api/v1/projects/{id}/workflow"}, {"DELETE", "/api/v1/projects/{id}/workflow"},
+		{"GET", "/api/v1/issues"}, {"POST", "/api/v1/issues"}, {"POST", "/api/v1/issues/states"}, {"GET", "/api/v1/queue"}, {"GET", "/api/v1/issues/{id}"}, {"PATCH", "/api/v1/issues/{id}"},
+		{"GET", "/api/v1/issues/{issueId}/comments"}, {"POST", "/api/v1/issues/{issueId}/comments"}, {"PATCH", "/api/v1/comments/{id}"},
+		{"GET", "/api/v1/issues/{issueId}/change-requests"}, {"POST", "/api/v1/issues/{issueId}/change-requests"}, {"GET", "/api/v1/change-requests/{id}"}, {"PATCH", "/api/v1/change-requests/{id}"}, {"POST", "/api/v1/change-requests/{id}/cancel"},
+		{"GET", "/api/v1/attachments"}, {"GET", "/api/v1/attachments/{attachmentId}/content"}, {"DELETE", "/api/v1/attachments/{attachmentId}"},
+	}
+	if len(apiRoutes) != len(expected) {
+		t.Fatalf("allowlist has %d routes, want %d", len(apiRoutes), len(expected))
+	}
+	expectedSet := make(map[string]struct{}, len(expected))
+	for _, route := range expected {
+		expectedSet[apiRouteKey(route)] = struct{}{}
+	}
+	if len(expectedSet) != len(expected) {
+		t.Fatal("expected allowlist contains duplicate routes")
+	}
+	actualSet := make(map[string]struct{}, len(apiRoutes))
+	for _, route := range apiRoutes {
+		actualSet[apiRouteKey(route)] = struct{}{}
+	}
+	if len(actualSet) != len(apiRoutes) {
+		t.Fatal("allowlist contains duplicate routes")
+	}
+	for key := range expectedSet {
+		if _, ok := actualSet[key]; !ok {
+			t.Fatalf("allowlist is missing %s", key)
+		}
+	}
 	tests := []struct{ method, path string }{
 		{"GET", "/api/v1/health"}, {"GET", "/api/v1/summary"},
 		{"GET", "/api/v1/projects"}, {"POST", "/api/v1/projects"}, {"GET", "/api/v1/projects/1"}, {"PATCH", "/api/v1/projects/1"}, {"DELETE", "/api/v1/projects/1"}, {"POST", "/api/v1/projects/1/check"},
@@ -31,6 +63,8 @@ func TestAllowedAPIRoutes(t *testing.T) {
 		})
 	}
 }
+
+func apiRouteKey(route apiRoute) string { return route.method + " " + route.template }
 
 func TestAPIRejectsInvalidRoutesAndPaths(t *testing.T) {
 	for _, args := range [][]string{
@@ -161,14 +195,36 @@ func TestAPIReadsDataFromStdinAndHonorsClientTimeout(t *testing.T) {
 	if code != 0 || stderr != "" {
 		t.Fatalf("stdin code=%d stderr=%q", code, stderr)
 	}
-	client, err := newAPIClient(server.URL)
+	originalTimeout := apiClientTimeout
+	apiClientTimeout = 20 * time.Millisecond
+	t.Cleanup(func() { apiClientTimeout = originalTimeout })
+	_, stderr, code = runAPI(t, server.URL, strings.NewReader(""), []string{"GET", "/api/v1/summary"})
+	if code != 1 || stderr == "" {
+		t.Fatalf("timeout code=%d stderr=%q", code, stderr)
+	}
+}
+
+func TestAPIEmptyResponseAndConnectionFailure(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer server.Close()
+	stdout, stderr, code := runAPI(t, server.URL, strings.NewReader(""), []string{"GET", "/api/v1/health"})
+	if code != 0 || stdout != "" || stderr != "" {
+		t.Fatalf("204 code=%d stdout=%q stderr=%q", code, stdout, stderr)
+	}
+
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
 	}
-	client.httpClient.Timeout = 20 * time.Millisecond
-	_, err = client.doRaw(context.Background(), apiRequest{method: http.MethodGet, path: "/api/v1/summary", headers: make(http.Header)})
-	if err == nil {
-		t.Fatal("expected timeout")
+	address := listener.Addr().String()
+	if err := listener.Close(); err != nil {
+		t.Fatal(err)
+	}
+	stdout, stderr, code = runAPI(t, "http://"+address, strings.NewReader(""), []string{"GET", "/api/v1/health"})
+	if code != 1 || stdout != "" || stderr == "" {
+		t.Fatalf("connection failure code=%d stdout=%q stderr=%q", code, stdout, stderr)
 	}
 }
 
