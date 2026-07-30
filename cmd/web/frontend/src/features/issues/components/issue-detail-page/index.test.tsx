@@ -250,6 +250,73 @@ describe("IssueDetailPage", () => {
     expect(api.fetchComments).toHaveBeenCalledWith(42, undefined, 20, { silent: true });
   });
 
+  it("continues a blocked issue from only its latest blocker comment", async () => {
+    const user = userEvent.setup();
+    api.fetchIssue.mockResolvedValueOnce({ ...issue, status: "blocked" });
+    api.fetchComments.mockResolvedValueOnce({
+      data: [
+        {
+          id: 1,
+          issueId: 42,
+          author: "operator",
+          type: "general",
+          body: "Investigating.",
+          createdAt: "2026-06-21T01:00:00.000Z",
+        },
+        {
+          id: 2,
+          issueId: 42,
+          author: "first-runner",
+          type: "blocker",
+          body: "First blocker.",
+          createdAt: "2026-06-21T02:00:00.000Z",
+        },
+        {
+          id: 3,
+          issueId: 42,
+          author: "latest-runner",
+          type: "blocker",
+          body: "Latest blocker.",
+          createdAt: "2026-06-21T03:00:00.000Z",
+        },
+      ],
+      meta: { cursor: 0, limit: 20, nextCursor: null },
+    } satisfies CommentListResponse);
+    api.updateIssueStatus.mockResolvedValueOnce({ ...issue, status: "ready" });
+
+    renderIssueDetail("/issues/42?tab=comments");
+
+    await user.click(await screen.findByRole("button", { name: "Comment actions for operator" }));
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Comment actions for first-runner" }));
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Comment actions for latest-runner" }));
+    await user.click(screen.getByRole("menuitem", { name: "Continue with comment" }));
+
+    const dialog = screen.getByRole("dialog", { name: "Continue with comment #42" });
+    const request = within(dialog).getByRole("textbox", { name: "Change request" });
+    expect(request).toHaveValue("");
+    await user.type(request, "Unblocked after updating credentials");
+    await user.click(within(dialog).getByRole("button", { name: "Continue with comment" }));
+
+    expect(api.createChangeRequest).toHaveBeenCalledWith(
+      42,
+      {
+        author: "reviewer",
+        body: "Unblocked after updating credentials",
+      },
+      { silent: true },
+    );
+    expect(api.updateIssueStatus).toHaveBeenCalledWith(42, "ready", { silent: true });
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("dialog", { name: "Continue with comment #42" }),
+      ).not.toBeInTheDocument();
+    });
+  });
+
   it("shows a change request load error without skipping comments", async () => {
     api.fetchChangeRequests.mockRejectedValueOnce(new Error("failed to load requests"));
 
