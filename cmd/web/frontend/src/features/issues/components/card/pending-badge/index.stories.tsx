@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { PendingBadge } from "./index";
 
 const meta = {
-  title: "Features/Issues/Card/PendingBadge",
+  title: "Features/Badge/PendingBadge",
   component: PendingBadge,
   decorators: [
     (Story) => (
