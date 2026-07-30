@@ -1,60 +1,31 @@
 # Tasq API
 
-This document covers the user-facing issue-tracker API. For ownership boundaries and component responsibilities, see [architecture.md](architecture.md). For local development and verification, see [operations.md](operations.md).
+This document describes the issue-tracker API's behavior and ownership boundaries. The [issue-tracker OpenAPI document](../openapi/issue-tracker.yml) is the normative source for paths, methods, parameters, and schemas. For component ownership, see [architecture.md](architecture.md); for local operation and verification, see [operations.md](operations.md).
 
-## API Surface
+## Contract
 
-The issue-tracker is the user-facing API.
+The issue-tracker is Tasq's user-facing API. Successful JSON responses use `{ "data": ..., "meta": {} }`; JSON errors use `{ "error": { "code": "...", "message": "..." }, "meta": {} }`.
 
-Current issue-tracker endpoints:
+API changes must update the OpenAPI document and generated clients as described in [development.md](../development.md). This document records cross-endpoint behavior that is easier to understand outside individual schema definitions.
 
-- `GET /api/v1/health`
-- `GET /api/v1/summary`
-- `GET /api/v1/projects`
-- `POST /api/v1/projects`
-- `GET /api/v1/projects/{id}`
-- `PATCH /api/v1/projects/{id}`
-- `DELETE /api/v1/projects/{id}`
-- `GET /api/v1/projects/{id}/workflow`
-- `PUT /api/v1/projects/{id}/workflow`
-- `POST /api/v1/projects/{id}/check`
-- `DELETE /api/v1/projects/{id}/workflow`
-- `GET /api/v1/issues`
-- `POST /api/v1/issues`
-- `POST /api/v1/issues/states`
-- `GET /api/v1/queue`
-- `GET /api/v1/issues/{id}`
-- `PATCH /api/v1/issues/{id}`
-- `GET /api/v1/issues/{issueId}/comments`
-- `POST /api/v1/issues/{issueId}/comments`
-- `PATCH /api/v1/comments/{id}`
-- `GET /api/v1/issues/{issueId}/change-requests`
-- `POST /api/v1/issues/{issueId}/change-requests`
-- `GET /api/v1/change-requests/{id}`
-- `PATCH /api/v1/change-requests/{id}`
-- `POST /api/v1/change-requests/{id}/cancel`
-- `GET /api/v1/attachments`
-- `POST /api/v1/attachments`
-- `GET /api/v1/attachments/{id}/content`
-- `DELETE /api/v1/attachments/{id}`
+## Projects
 
-`DELETE /api/v1/projects/{id}` deletes the project and all issue-tracker descendants owned by that project: issues, issue dependency edges that reference those issues, comments, change requests, attachment records and attachment files under `$TQ_HOME/system/data/attachments`, and stored project workflow overrides. It also deletes orchestrator runtime descendants for the owned issues: runs, runner events, workspace metadata, and workspace setup failures. If any owned issue has a `running` orchestrator run, the endpoint returns `409 Conflict` with `projects.delete.running_runs` and does not delete issue-tracker or orchestrator records. Orchestrator runtime records are deleted before issue-tracker records so a partial failure can be retried while the issue IDs are still available. It does not delete or modify the user's project directory recorded in `project.location` or any worktrees.
+Every issue belongs to exactly one project. Project responses identify the project by both numeric ID and key, while commands generally accept the project key.
 
-Attachment uploads accept multipart form data with `entity_type`, `entity_id`, and `file`. The first implementation supports PNG, JPEG, GIF, and WebP image files up to 5 MiB. Attachment bytes are stored below `$TQ_HOME/system/data/attachments`, while SQLite stores metadata and relative paths. Issue and comment text references attachments with Markdown image links such as `![screenshot](attachment://att_...)`.
+`DELETE /api/v1/projects/{id}` deletes the project and all issue-tracker descendants it owns:
 
-Issues belong to exactly one project. `POST /api/v1/issues` requires `projectId` and accepts `dependency_ids` as the initial dependency set. Issue responses include both `projectId` and `projectKey`. Issue responses include `dependency_ids`; issues without dependencies return an empty array. `GET /api/v1/issues` accepts optional `states`, `project_id`, `project_ids`, `priorities`, `assignee`, `search`, `limit`, `offset`, `sort_by`, and `sort_direction` query parameters. Omitting project filters lists issues across all projects. `project_id` limits the list to one project, while `project_ids` accepts a comma-separated set for table filters. `priorities` accepts comma-separated issue priorities. `search` matches issue IDs exactly and issue titles with case-insensitive partial matching; numeric search text matches either the exact ID or a title containing that text. Empty or whitespace-only `search` values are ignored. Search is combined with other filters before sorting and pagination. `sort_by` is limited to `id`, `priority`, `created_at`, and `updated_at`; `sort_direction` is limited to `asc` and `desc`.
+- issues and dependency edges that reference those issues;
+- comments and change requests;
+- attachment records and files under `$TQ_HOME/system/data/attachments`; and
+- stored project workflow overrides.
 
-`GET /api/v1/summary` returns issue board columns. Each issue summary includes `queueStatus`, which is the issue state from the system-wide queue perspective. `queueStatus=backlog` means the issue status is `backlog`. `queueStatus=pending` means the issue is `ready` but still has at least one blocking dependency. `queueStatus=queued` means the issue is `ready` and has no blocking dependencies. `queueStatus=processing` means the issue status is `in_progress`. `queueStatus=completed` means the issue status is `done`. `queueStatus=inactive` means the issue is outside the queue flow, including `review`, `blocked`, `failed`, `cancelled`, and `duplicate`. See [status.md](status.md) for status definitions and expected transitions.
+The operation also deletes orchestrator runtime data owned by those issues: runs, runner events, workspace metadata, and workspace setup failures. It deletes orchestrator data before issue-tracker records so a partial failure can be retried while the issue IDs still exist.
 
-Change requests are additional user or reviewer requests for an issue. They are separate from comments because they carry workflow state. `POST /api/v1/issues/{issueId}/change-requests` creates an `open` request. `GET /api/v1/issues/{issueId}/change-requests` lists requests for the issue and accepts optional `status` and `limit` query parameters. `PATCH /api/v1/change-requests/{id}` updates an open request body or advances status. Body edits are allowed only while the request is `open`. `POST /api/v1/change-requests/{id}/cancel` moves a request to `canceled`; no physical delete endpoint is exposed.
+If an owned issue has a `running` orchestrator run, deletion returns `409 Conflict` with `projects.delete.running_runs` and changes nothing. Project deletion never deletes or modifies the directory in `project.location` or its worktrees.
 
-Allowed change request transitions are `open -> in_progress`, `open -> canceled`, `in_progress -> resolved`, and `in_progress -> canceled`. `resolved` and `canceled` requests are immutable. When the orchestrator starts continuation work for an issue that already has a previous run, it fetches up to 20 `open` change requests in chronological order, moves each included request to `in_progress`, and includes them in the Codex continuation guidance. The guidance instructs the agent to mark handled requests `resolved` with `resolvedByRunId` set to the orchestrator run ID and `resultCommentId` when a result comment is available.
+## Issues and dependencies
 
-### `POST /api/v1/issues`
-
-Creates an issue in a project. `dependency_ids` is optional and sets the initial dependency issue IDs during the same create operation. Omit `dependency_ids` or pass an empty array to create an issue without dependencies. The API rejects missing dependency issues, self-dependencies, duplicate dependency IDs, and dependency cycles.
-
-Request:
+`POST /api/v1/issues` requires `projectId`. The optional `dependency_ids` field sets the initial dependency set in the same operation. Omitting it or passing an empty array creates an issue without dependencies.
 
 ```json
 {
@@ -68,57 +39,71 @@ Request:
 }
 ```
 
-Response:
+`PATCH /api/v1/issues/{id}` treats `dependency_ids` as a full replacement when present. Omitting the field preserves existing dependencies; passing an empty array removes all dependencies. Create and update both reject missing dependency issues, self-dependencies, duplicate IDs, and dependency cycles.
 
-```json
-{
-  "data": {
-    "id": 42,
-    "projectId": 1,
-    "projectKey": "tasq",
-    "title": "Document create dependencies",
-    "description": "Update API and schema docs.",
-    "status": "ready",
-    "priority": "normal",
-    "assignee": "docs",
-    "dependency_ids": [12, 18],
-    "createdAt": "2026-06-24T10:00:00Z",
-    "updatedAt": "2026-06-24T10:00:00Z"
-  },
-  "meta": {}
-}
-```
+Issue responses include `projectId`, `projectKey`, and `dependency_ids`. The dependency list is an empty array when the issue has no dependencies.
 
-`PATCH /api/v1/issues/{id}` accepts `dependency_ids` as an optional full replacement field. When omitted, existing dependencies are preserved. Passing an empty array removes all dependencies. The API rejects missing dependency issues, self-dependencies, duplicate dependency IDs, and updates that would create a dependency cycle.
+### Listing and search
 
-`GET /api/v1/queue` returns ready issues split into `queued` and `pending` arrays. `queued` issues are ready and have no blocking dependencies; `pending` issues are ready but still have at least one blocking dependency. Satisfied dependency statuses are `done`, `cancelled`, and `duplicate`; every other dependency status keeps the issue pending. Each array is sorted by priority descending (`urgent`, `high`, `normal`, `low`) and then ID ascending. The endpoint accepts the same `project_id` filter semantics as issue listing. Pending items include `blocked_dependency_ids` for dependencies that keep the issue pending.
+`GET /api/v1/issues` supports `states`, `project_id`, `project_ids`, `priorities`, `assignee`, `search`, `limit`, `offset`, `sort_by`, and `sort_direction`.
 
-JSON success responses use `{ "data": ..., "meta": {} }`. JSON error responses use `{ "error": { "code": "...", "message": "..." }, "meta": {} }`.
+- Omitting project filters lists issues across every project.
+- `project_id` selects one project; `project_ids` accepts a comma-separated set.
+- `priorities` accepts comma-separated priorities.
+- `search` matches an issue ID exactly or a title with a case-insensitive substring match. Numeric text may match either.
+- Empty or whitespace-only `search` values are ignored.
+- Search and filters are applied before sorting and pagination.
+- `sort_by` accepts `id`, `priority`, `created_at`, or `updated_at`; `sort_direction` accepts `asc` or `desc`.
 
-The `tq` CLI wraps issue CRUD endpoints with these commands:
+## Queue and summary
 
-- `tq issue list [--project <project-key>]`
-- `tq issue get <id>`
-- `tq issue create --project <project-key> --title <title> [--description ...] [--status ...] [--priority ...] [--assignee ...] [--dependency <ids>]`
-- `tq issue update <id> [--title ...] [--description ...] [--status ...] [--priority ...] [--assignee ...] [--dependency <ids>] [--clear-dependencies]`
-- `tq issue create ... --attach <image-path>`
-- `tq issue update <id> ... --attach <image-path>`
-- `tq issue close <id>`
-- `tq issue cancel <id>`
-- `tq issue ready <id>`
-- `tq issue draft <id>`
-- `tq issue rename <id> <title>`
-- `tq issue edit <id> <description>`
-- `tq comment add <issue-id> --body <body> [--attach <image-path>]`
-- `tq comment list <issue-id>`
-- `tq workflow add --project <project-key> (--file <path> | --body <text>)`
-- `tq workflow remove --project <project-key>`
-- `tq workflow show --project <project-key> [--json]`
+`GET /api/v1/queue` divides ready issues into `queued` and `pending` arrays:
 
-`tq` uses human-readable output by default and JSON output when `--output json` is set.
+- `queued` issues have no blocking dependencies.
+- `pending` issues have at least one blocking dependency and include `blocked_dependency_ids`.
 
-`tq api <method> <path>` provides a constrained raw escape hatch for the same issue-tracker base URL resolution. Its method and route-template allowlist is maintained in the CLI and fails closed when the API gains a route. The current allowlist covers every endpoint above except the temporary exclusion `POST /api/v1/attachments`; attachment `PATCH` is not exposed. It accepts only strict unencoded `/api/v1/...` paths, normalizes methods to uppercase, permits raw query text plus ordered repeated `--query key=value`, and accepts repeated `--header 'Name: value'` with last-value-wins semantics. It rejects transport-managed headers. `--data value|@file|-` is limited to `POST`, `PUT`, and `PATCH`, and defaults its content type to JSON when omitted.
+Dependencies in `done`, `cancelled`, or `duplicate` are satisfied; every other status remains blocking. Both arrays sort by priority (`urgent`, `high`, `normal`, `low`) and then by ascending issue ID. The endpoint accepts the same `project_id` filter as issue listing.
 
-The command does not follow redirects or prompt for destructive operations, uses a 10-second timeout, and copies response bytes without envelope parsing or output formatting. HTTP `2xx` exits with status `0`; received `3xx`-`5xx` responses exit `1` after copying their bodies; transport failures exit `1`; input and allowlist failures exit `2`.
+`GET /api/v1/summary` exposes the board view. Each issue summary includes a queue-oriented `queueStatus`:
 
-The orchestrator exposes an optional loopback HTTP API for runtime inspection when enabled with `--port` or `server.port`. Its issue runtime detail response includes historical run summaries; each run may include `thread_id` once the Codex app-server thread has been persisted.
+| `queueStatus` | Meaning |
+|---|---|
+| `backlog` | Issue status is `backlog`. |
+| `pending` | Issue is `ready` with a blocking dependency. |
+| `queued` | Issue is `ready` without a blocking dependency. |
+| `processing` | Issue status is `in_progress`. |
+| `completed` | Issue status is `done`. |
+| `inactive` | Issue is outside the queue flow, including `review`, `blocked`, `failed`, `cancelled`, and `duplicate`. |
+
+See [status.md](status.md) for status definitions and transition expectations.
+
+## Comments and change requests
+
+Comments record discussion. Change requests represent additional user or reviewer work and carry workflow state.
+
+Creating a change request under an issue sets its status to `open`. Open requests may be edited or moved to `in_progress`; in-progress requests may be resolved or canceled. The complete transition set is:
+
+- `open -> in_progress`
+- `open -> canceled`
+- `in_progress -> resolved`
+- `in_progress -> canceled`
+
+Resolved and canceled requests are immutable. Cancellation uses `POST /api/v1/change-requests/{id}/cancel`; there is no physical delete endpoint.
+
+When the orchestrator continues an issue with a previous run, it fetches up to 20 open requests in chronological order, moves the included requests to `in_progress`, and adds them to the Codex continuation guidance. The guidance asks the agent to resolve handled requests with `resolvedByRunId` and, when available, `resultCommentId`.
+
+## Attachments
+
+Attachment upload uses multipart form data with `entity_type`, `entity_id`, and `file`. Supported files are PNG, JPEG, GIF, and WebP images up to 5 MiB.
+
+File bytes are stored below `$TQ_HOME/system/data/attachments`; SQLite stores metadata and relative paths. Issue descriptions and comments refer to images with Markdown such as `![screenshot](attachment://att_...)`.
+
+## CLI access
+
+Use typed `tq` commands for routine issue, comment, project, and workflow operations. Use the allowlisted `tq api` command only when no typed command exposes the required issue-tracker operation.
+
+The raw command has its own fail-closed method-and-route allowlist. It does not automatically expose new OpenAPI routes, and it temporarily excludes `POST /api/v1/attachments` because multipart request construction is not supported. See the [tq command reference](../references/tq.md#raw-api-requests) for syntax, validation, output, and exit-status behavior.
+
+## Orchestrator inspection API
+
+The orchestrator can expose a separate loopback HTTP API for runtime inspection when enabled with `--port` or `server.port`. It is not part of the issue-tracker API. Issue runtime details include historical run summaries, and a run may include `thread_id` after its Codex app-server thread has been persisted.

@@ -1,60 +1,31 @@
 # Tasq API
 
-このドキュメントでは、ユーザー向けの issue-tracker API を扱います。所有境界とコンポーネントの責務は [architecture.ja.md](architecture.ja.md) を参照してください。ローカル開発と検証は [operations.ja.md](operations.ja.md) を参照してください。
+この文書では、Issue Tracker API の動作と所有範囲を説明します。パス、HTTP メソッド、パラメーター、スキーマの正式な仕様は [Issue Tracker の OpenAPI 文書](../openapi/issue-tracker.yml)です。コンポーネントの所有範囲については [architecture.ja.md](architecture.ja.md)、ローカルでの運用と検証については [operations.ja.md](operations.ja.md)を参照してください。
 
-## API Surface
+## 契約
 
-issue-tracker はユーザー向け API です。
+Issue Tracker は、Tasq が利用者向けに公開する API です。JSON の成功レスポンスは `{ "data": ..., "meta": {} }`、エラーレスポンスは `{ "error": { "code": "...", "message": "..." }, "meta": {} }` の形式です。
 
-現在の issue-tracker エンドポイント:
+API を変更するときは、[development.ja.md](../development.ja.md)の手順に従って OpenAPI 文書と生成済みクライアントを更新します。この文書では、個々のスキーマ定義から切り離して説明した方が理解しやすい、エンドポイント横断の動作を扱います。
 
-- `GET /api/v1/health`
-- `GET /api/v1/summary`
-- `GET /api/v1/projects`
-- `POST /api/v1/projects`
-- `GET /api/v1/projects/{id}`
-- `PATCH /api/v1/projects/{id}`
-- `DELETE /api/v1/projects/{id}`
-- `GET /api/v1/projects/{id}/workflow`
-- `PUT /api/v1/projects/{id}/workflow`
-- `POST /api/v1/projects/{id}/check`
-- `DELETE /api/v1/projects/{id}/workflow`
-- `GET /api/v1/issues`
-- `POST /api/v1/issues`
-- `POST /api/v1/issues/states`
-- `GET /api/v1/queue`
-- `GET /api/v1/issues/{id}`
-- `PATCH /api/v1/issues/{id}`
-- `GET /api/v1/issues/{issueId}/comments`
-- `POST /api/v1/issues/{issueId}/comments`
-- `PATCH /api/v1/comments/{id}`
-- `GET /api/v1/issues/{issueId}/change-requests`
-- `POST /api/v1/issues/{issueId}/change-requests`
-- `GET /api/v1/change-requests/{id}`
-- `PATCH /api/v1/change-requests/{id}`
-- `POST /api/v1/change-requests/{id}/cancel`
-- `GET /api/v1/attachments`
-- `POST /api/v1/attachments`
-- `GET /api/v1/attachments/{id}/content`
-- `DELETE /api/v1/attachments/{id}`
+## プロジェクト
 
-`DELETE /api/v1/projects/{id}` は project と、その project が所有する issue-tracker 上の子孫データを削除します。対象は issues、その issues を参照する issue dependency edges、comments、change requests、attachment records と `$TQ_HOME/system/data/attachments` 配下の attachment files、保存済み project workflow overrides です。所有する issues に紐づく orchestrator runtime の子孫データである runs、runner events、workspace metadata、workspace setup failures も削除します。所有 issue に `running` の orchestrator run が 1 件でもある場合、endpoint は `409 Conflict` と `projects.delete.running_runs` を返し、issue-tracker と orchestrator のどちらのレコードも削除しません。途中失敗後も issue IDs を使って再実行できるように、orchestrator runtime records を issue-tracker records より先に削除します。`project.location` に記録されたユーザーの project directory や worktrees は削除・変更しません。
+すべての課題は、必ず1つのプロジェクトに所属します。プロジェクトのレスポンスには数値 ID とキーの両方が含まれますが、コマンドでは通常、プロジェクトキーを指定します。
 
-添付ファイルのアップロードは、`entity_type`、`entity_id`、`file` を持つ multipart form data を受け取ります。最初の実装では PNG、JPEG、GIF、WebP の画像ファイルを 5 MiB までサポートします。添付ファイルのバイト列は `$TQ_HOME/system/data/attachments` 配下に保存し、SQLite にはメタデータと相対パスを保存します。課題とコメントの本文は、`![screenshot](attachment://att_...)` のような Markdown image link で添付ファイルを参照します。
+`DELETE /api/v1/projects/{id}` は、プロジェクトと、そのプロジェクトが所有する次の Issue Tracker データを削除します。
 
-課題は必ず 1 つのプロジェクトに属します。`POST /api/v1/issues` は `projectId` を必須とし、初期の依存関係として `dependency_ids` を受け取ります。課題のレスポンスは `projectId` と `projectKey` の両方を返します。課題レスポンスには `dependency_ids` が含まれます。依存がない場合は空配列を返します。`GET /api/v1/issues` は任意の query parameter として `states`、`project_id`、`project_ids`、`priorities`、`assignee`、`search`、`limit`、`offset`、`sort_by`、`sort_direction` を受け取ります。project filter を省略した場合は、すべてのプロジェクトの課題を一覧表示します。`project_id` は 1 つのプロジェクトに絞り込み、`project_ids` はテーブルフィルター用にカンマ区切りの複数プロジェクトを受け取ります。`priorities` はカンマ区切りの優先度を受け取ります。`search` は課題 ID の完全一致と、課題タイトルの大文字小文字を区別しない部分一致で検索します。数値の search text は、完全一致する ID またはその文字列を含むタイトルに一致します。空文字または空白のみの `search` は無視します。検索は他のフィルターと組み合わせ、sorting と pagination より前に適用します。`sort_by` は `id`、`priority`、`created_at`、`updated_at` のみ、`sort_direction` は `asc`、`desc` のみ受け付けます。
+- 課題と、その課題を参照する依存関係
+- コメントと変更依頼
+- 添付ファイルのレコードと `$TQ_HOME/system/data/attachments` 以下のファイル
+- 保存済みのプロジェクト別ワークフロー上書き
 
-`GET /api/v1/summary` は課題ボードのカラムを返します。各課題サマリーには、システム全体のキューから見た課題の状態である `queueStatus` が含まれます。`queueStatus=backlog` は課題の status が `backlog` の状態です。`queueStatus=pending` は課題が `ready` だが、ブロック中の依存先が 1 件以上残っている状態です。`queueStatus=queued` は課題が `ready` で、ブロック中の依存先がない状態です。`queueStatus=processing` は課題の status が `in_progress` の状態です。`queueStatus=completed` は課題の status が `done` の状態です。`queueStatus=inactive` はキュー処理の対象外で、`review`、`blocked`、`failed`、`cancelled`、`duplicate` を含みます。status の定義と想定される遷移は [status.ja.md](status.ja.md) を参照してください。
+この操作は、対象課題が所有するオーケストレーターの実行時データも削除します。対象は、実行、ランナーイベント、ワークスペースのメタデータ、ワークスペース準備の失敗記録です。途中で失敗しても課題 ID が残っている状態から再試行できるように、オーケストレーターのデータを Issue Tracker のレコードより先に削除します。
 
-change request は、issue に対するユーザーまたは reviewer からの追加依頼です。workflow state を持つため comments とは分離します。`POST /api/v1/issues/{issueId}/change-requests` は `open` request を作成します。`GET /api/v1/issues/{issueId}/change-requests` は issue の requests を一覧し、任意の `status` と `limit` query parameters を受け取ります。`PATCH /api/v1/change-requests/{id}` は open request の本文編集または status 更新を行います。本文編集は request が `open` の間だけ許可します。`POST /api/v1/change-requests/{id}/cancel` は request を `canceled` に移します。物理 delete endpoint は公開しません。
+対象課題に `running` 状態のオーケストレーター実行がある場合、削除は `projects.delete.running_runs` を伴う `409 Conflict` を返し、何も変更しません。`project.location` に記録されたディレクトリや、そのワークツリーを削除または変更することはありません。
 
-許可される change request の遷移は `open -> in_progress`、`open -> canceled`、`in_progress -> resolved`、`in_progress -> canceled` です。`resolved` と `canceled` は immutable です。orchestrator は、前回 run を持つ issue の継続作業を開始するとき、`open` change requests を時系列で最大 20 件取得し、含めた request を `in_progress` に移して Codex continuation guidance に含めます。guidance は、対応済み request を `resolved` にし、`resolvedByRunId` に orchestrator run ID を設定し、結果 comment がある場合は `resultCommentId` を設定するよう agent に指示します。
+## 課題と依存関係
 
-### `POST /api/v1/issues`
-
-プロジェクト内に課題を作成します。`dependency_ids` は任意で、同じ create 操作の中で初期 dependency issue IDs を設定します。`dependency_ids` を省略するか空配列を渡すと、依存関係のない課題を作成します。API は存在しない dependency issue、自己依存、重複した dependency ID、dependency cycle を拒否します。
-
-Request:
+`POST /api/v1/issues` では `projectId` が必須です。任意の `dependency_ids` を指定すると、作成と同じ操作で初期の依存関係を設定できます。省略するか空配列を渡すと、依存関係のない課題を作成します。
 
 ```json
 {
@@ -68,57 +39,71 @@ Request:
 }
 ```
 
-Response:
+`PATCH /api/v1/issues/{id}` で `dependency_ids` を指定した場合は、依存関係全体を置き換えます。このフィールドを省略すると既存の依存関係を維持し、空配列を渡すとすべて削除します。作成と更新のどちらでも、存在しない課題への依存、自分自身への依存、ID の重複、依存関係の循環を拒否します。
 
-```json
-{
-  "data": {
-    "id": 42,
-    "projectId": 1,
-    "projectKey": "tasq",
-    "title": "Document create dependencies",
-    "description": "Update API and schema docs.",
-    "status": "ready",
-    "priority": "normal",
-    "assignee": "docs",
-    "dependency_ids": [12, 18],
-    "createdAt": "2026-06-24T10:00:00Z",
-    "updatedAt": "2026-06-24T10:00:00Z"
-  },
-  "meta": {}
-}
-```
+課題のレスポンスには `projectId`、`projectKey`、`dependency_ids` が含まれます。依存関係がない場合、`dependency_ids` は空配列です。
 
-`PATCH /api/v1/issues/{id}` は、任意の full replacement field として `dependency_ids` を受け取ります。省略した場合、既存の依存関係は維持されます。空配列を渡すと、すべての依存関係を削除します。API は存在しない dependency issue、自己依存、重複した dependency ID、dependency cycle を作る更新を拒否します。
+### 一覧と検索
 
-`GET /api/v1/queue` は `ready` の課題を `queued` と `pending` の配列に分けて返します。`queued` は `ready` かつブロック中の依存先がない課題です。`pending` は `ready` だが、ブロック中の依存先が 1 件以上残っている課題です。満たされた依存先の status は `done`、`cancelled`、`duplicate` です。それ以外の依存先 status は課題を `pending` に残します。各配列は priority desc（`urgent`, `high`, `normal`, `low`）と ID asc で並びます。この endpoint は課題一覧と同じ `project_id` filter semantics を受け取ります。`pending` の項目には、pending の原因になっている依存先の `blocked_dependency_ids` が含まれます。
+`GET /api/v1/issues` では、`states`、`project_id`、`project_ids`、`priorities`、`assignee`、`search`、`limit`、`offset`、`sort_by`、`sort_direction` を使用できます。
 
-JSON の成功レスポンスは `{ "data": ..., "meta": {} }` を使います。JSON のエラーレスポンスは `{ "error": { "code": "...", "message": "..." }, "meta": {} }` を使います。
+- プロジェクトの絞り込みを省略すると、すべてのプロジェクトの課題を取得します。
+- `project_id` は1つのプロジェクトを選択し、`project_ids` はカンマ区切りで複数指定できます。
+- `priorities` は優先度をカンマ区切りで指定します。
+- `search` は課題 ID との完全一致、またはタイトルとの大文字・小文字を区別しない部分一致です。数字だけの検索文字列は、どちらにも一致する可能性があります。
+- 空または空白だけの `search` は無視します。
+- 検索と絞り込みを適用してから、並べ替えとページ分割を行います。
+- `sort_by` には `id`、`priority`、`created_at`、`updated_at`、`sort_direction` には `asc` または `desc` を指定できます。
 
-`tq` CLI は課題 CRUD エンドポイントを次のコマンドでラップします。
+## キューとサマリー
 
-- `tq issue list [--project <project-key>]`
-- `tq issue get <id>`
-- `tq issue create --project <project-key> --title <title> [--description ...] [--status ...] [--priority ...] [--assignee ...] [--dependency <ids>]`
-- `tq issue update <id> [--title ...] [--description ...] [--status ...] [--priority ...] [--assignee ...] [--dependency <ids>] [--clear-dependencies]`
-- `tq issue create ... --attach <image-path>`
-- `tq issue update <id> ... --attach <image-path>`
-- `tq issue close <id>`
-- `tq issue cancel <id>`
-- `tq issue ready <id>`
-- `tq issue draft <id>`
-- `tq issue rename <id> <title>`
-- `tq issue edit <id> <description>`
-- `tq comment add <issue-id> --body <body> [--attach <image-path>]`
-- `tq comment list <issue-id>`
-- `tq workflow add --project <project-key> (--file <path> | --body <text>)`
-- `tq workflow remove --project <project-key>`
-- `tq workflow show --project <project-key> [--json]`
+`GET /api/v1/queue` は、実行準備ができた課題を `queued` と `pending` の配列に分けます。
 
-`tq` は既定では人が読みやすい出力を使い、`--output json` が指定された場合は JSON 出力を使います。
+- `queued` は、処理を妨げる依存関係がない課題です。
+- `pending` は、処理を妨げる依存関係が1つ以上ある課題で、`blocked_dependency_ids` を含みます。
 
-`tq api <method> <path>` は、同じ issue-tracker ベース URL 解決を使う、制約付きの生 API 呼び出しです。method と route template の許可リストは CLI 内で管理し、API に route が増えても fail-closed になります。現在の許可リストは上記 endpoint のうち一時的に除外する `POST /api/v1/attachments` 以外を対象にします。attachment の `PATCH` は公開しません。エンコードされていない厳格な `/api/v1/...` path だけを受け付け、method は大文字に正規化します。path 内の生 query と、指定順に追加する繰り返し指定可能な `--query key=value` を使えます。`--header 'Name: value'` も繰り返し指定でき、同名は最後の値を使用します。transport が管理する header は拒否します。`--data value|@file|-` は `POST`、`PUT`、`PATCH` に限定し、content type を省略した場合は JSON を使います。
+依存先の状態が `done`、`cancelled`、`duplicate` の場合は解決済みとして扱い、それ以外は処理を妨げます。どちらの配列も優先度順（`urgent`、`high`、`normal`、`low`）、同じ優先度では課題 ID の昇順に並びます。課題一覧と同じ `project_id` による絞り込みを使用できます。
 
-このコマンドは redirect を追跡せず、破壊的な操作でも確認を求めません。timeout は 10 秒で、envelope の解析や出力変換を行わずにレスポンスのバイト列をコピーします。HTTP `2xx` は終了ステータス `0`、受信した `3xx`-`5xx` レスポンスは本文コピー後に `1`、transport 失敗は `1`、入力・許可リストのエラーは `2` です。
+`GET /api/v1/summary` は、ボード表示用の情報を返します。各課題のサマリーには、キューでの位置づけを示す `queueStatus` が含まれます。
 
-orchestrator は、`--port` または `server.port` で有効化したときに、実行時調査用の任意の loopback HTTP API を公開します。課題の実行時詳細レスポンスには過去の実行サマリーが含まれます。各実行は、Codex app-server thread が永続化された後に `thread_id` を含む場合があります。
+| `queueStatus` | 意味 |
+|---|---|
+| `backlog` | 課題の状態が `backlog`。 |
+| `pending` | 課題は `ready` だが、処理を妨げる依存関係がある。 |
+| `queued` | 課題は `ready` で、処理を妨げる依存関係がない。 |
+| `processing` | 課題の状態が `in_progress`。 |
+| `completed` | 課題の状態が `done`。 |
+| `inactive` | `review`、`blocked`、`failed`、`cancelled`、`duplicate` など、キューの処理対象外。 |
+
+状態の定義と遷移については [status.ja.md](status.ja.md)を参照してください。
+
+## コメントと変更依頼
+
+コメントは議論を記録します。変更依頼は、利用者やレビュアーが追加で求める作業を表し、ワークフロー上の状態を持ちます。
+
+課題に変更依頼を作成すると、状態は `open` になります。`open` の変更依頼は、内容を編集するか `in_progress` に移行できます。`in_progress` の変更依頼は、解決済みまたは取り消しにできます。許可する遷移は次のとおりです。
+
+- `open -> in_progress`
+- `open -> canceled`
+- `in_progress -> resolved`
+- `in_progress -> canceled`
+
+`resolved` と `canceled` の変更依頼は変更できません。取り消しには `POST /api/v1/change-requests/{id}/cancel` を使用し、物理削除のエンドポイントは提供しません。
+
+オーケストレーターが過去の実行を持つ課題の作業を継続するときは、`open` の変更依頼を古い順に最大20件取得し、対象を `in_progress` に移して Codex の継続指示へ加えます。継続指示では、対応した変更依頼に `resolvedByRunId` を設定し、結果コメントがある場合は `resultCommentId` も設定して `resolved` にするようエージェントへ求めます。
+
+## 添付ファイル
+
+添付ファイルのアップロードには、`entity_type`、`entity_id`、`file` を含む multipart form data を使用します。PNG、JPEG、GIF、WebP 形式の画像を5 MiBまでアップロードできます。
+
+ファイル本体は `$TQ_HOME/system/data/attachments` 以下に保存し、SQLite にはメタデータと相対パスを保存します。課題の説明とコメントでは、`![screenshot](attachment://att_...)` のような Markdown で画像を参照します。
+
+## CLI からの利用
+
+通常の課題、コメント、プロジェクト、ワークフロー操作には、型付きの `tq` コマンドを使用します。必要な Issue Tracker 操作が型付きコマンドにない場合に限り、許可リストで制限された `tq api` を使用します。
+
+生の API コマンドは、HTTP メソッドとルートの独自の許可リストを持ち、閉じた状態を既定とします。OpenAPI にルートを追加しても自動では公開しません。また、multipart リクエストの組み立てに対応していないため、`POST /api/v1/attachments` を一時的に除外しています。構文、入力検証、出力、終了ステータスについては、[tq コマンドリファレンス](../references/tq.ja.md#生の-api-リクエスト)を参照してください。
+
+## オーケストレーター調査 API
+
+オーケストレーターは、`--port` または `server.port` で有効にした場合に、実行時の調査に使う別のループバック HTTP API を公開できます。この API は Issue Tracker API には含まれません。課題の実行時詳細には過去の実行サマリーが含まれ、Codex app-server のスレッドを永続化した後は、各実行に `thread_id` が含まれる場合があります。
