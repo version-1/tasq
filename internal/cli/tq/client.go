@@ -24,6 +24,8 @@ type apiClient struct {
 	httpClient *http.Client
 }
 
+var apiClientTimeout = 10 * time.Second
+
 type apiResponse[T any] struct {
 	Data T `json:"data"`
 }
@@ -70,7 +72,7 @@ func newAPIClient(baseURL string) (*apiClient, error) {
 	}
 	return &apiClient{
 		baseURL:    baseURL,
-		httpClient: &http.Client{Timeout: 10 * time.Second},
+		httpClient: &http.Client{Timeout: apiClientTimeout},
 	}, nil
 }
 
