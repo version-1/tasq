@@ -239,6 +239,7 @@ export function IssueDetailPage() {
       issueState.kind !== "ready" ||
       issueState.issue.status !== "blocked" ||
       !commentsLoaded ||
+      commentsError !== "" ||
       isLoadingComments ||
       nextCursor === null
     ) {
@@ -248,6 +249,7 @@ export function IssueDetailPage() {
   }, [
     activeTab,
     commentsLoaded,
+    commentsError,
     isLoadingComments,
     issueState,
     loadComments,

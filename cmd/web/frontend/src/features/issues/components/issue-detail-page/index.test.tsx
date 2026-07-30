@@ -326,6 +326,33 @@ describe("IssueDetailPage", () => {
     });
   });
 
+  it("stops automatic blocker comment pagination after a request failure", async () => {
+    api.fetchIssue.mockResolvedValueOnce({ ...issue, status: "blocked" });
+    api.fetchComments
+      .mockResolvedValueOnce({
+        data: [
+          {
+            id: 1,
+            issueId: 42,
+            author: "runner",
+            type: "blocker",
+            body: "Blocked.",
+            createdAt: "2026-06-21T01:00:00.000Z",
+          },
+        ],
+        meta: { cursor: 0, limit: 20, nextCursor: 1 },
+      } satisfies CommentListResponse)
+      .mockRejectedValueOnce(new Error("failed to load next page"));
+
+    renderIssueDetail("/issues/42?tab=comments");
+
+    expect(await screen.findByText("failed to load next page")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(api.fetchComments).toHaveBeenCalledTimes(2);
+    });
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+  });
+
   it("shows a change request load error without skipping comments", async () => {
     api.fetchChangeRequests.mockRejectedValueOnce(new Error("failed to load requests"));
 
