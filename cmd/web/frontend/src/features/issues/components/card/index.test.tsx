@@ -1,10 +1,18 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
+import { QueryClientProvider, type QueryClient } from "@tanstack/react-query";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it, vi } from "vitest";
-import type { IssueSummary } from "@/lib/types";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import * as api from "@/lib/api";
+import { createAppQueryClient } from "@/lib/query-client";
+import { toastStore } from "@/lib/toast";
+import type { IssueSummary, OrchestratorIssueRuntime } from "@/lib/types";
 import "@/lib/i18n";
 import { IssueCard } from "./index";
+
+vi.mock("@/lib/api", () => ({
+  fetchOrchestratorIssueRuntime: vi.fn(),
+}));
 
 const issue: IssueSummary = {
   id: 24,
@@ -24,6 +32,8 @@ const issue: IssueSummary = {
   },
 };
 
+let queryClient: QueryClient;
+
 function issueWithCommentCount(commentCount: number): IssueSummary {
   return {
     ...issue,
@@ -37,20 +47,34 @@ function issueWithCommentCount(commentCount: number): IssueSummary {
 function renderCard(props: Partial<Parameters<typeof IssueCard>[0]> = {}) {
   const onRejectIssue = vi.fn();
   const onStatusChange = vi.fn(async () => undefined);
-  render(
-    <MemoryRouter>
-      <IssueCard
-        issue={issue}
-        onRejectIssue={onRejectIssue}
-        onStatusChange={onStatusChange}
-        {...props}
-      />
-    </MemoryRouter>,
+  const rendered = render(
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter>
+        <IssueCard
+          issue={issue}
+          onRejectIssue={onRejectIssue}
+          onStatusChange={onStatusChange}
+          {...props}
+        />
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
-  return { onRejectIssue, onStatusChange };
+  return { onRejectIssue, onStatusChange, unmount: rendered.unmount };
 }
 
 describe("IssueCard", () => {
+  beforeEach(() => {
+    queryClient = createAppQueryClient();
+  });
+
+  afterEach(() => {
+    queryClient.clear();
+    toastStore.clear();
+    vi.clearAllMocks();
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
   it("renders summary fields without the issue body", () => {
     renderCard({ issue: issueWithCommentCount(3), runCount: 2 });
 
@@ -109,7 +133,7 @@ describe("IssueCard", () => {
     });
     const items = within(menu).getAllByRole("menuitem").map((item) => item.textContent);
 
-    expect(items).toEqual(["Ready (current)", "Backlog", "Cancelled", "Done", "Duplicate"]);
+    expect(items).toEqual(["Copy thread ID", "Ready (current)", "Backlog", "Cancelled", "Done", "Duplicate"]);
   });
 
   it("runs allowed status changes from the action menu", async () => {
@@ -162,7 +186,7 @@ describe("IssueCard", () => {
     });
     const items = within(menu).getAllByRole("menuitem").map((item) => item.textContent);
 
-    expect(items).toEqual(["Blocked (current)", "Cancelled", "Done", "Duplicate"]);
+    expect(items).toEqual(["Copy thread ID", "Blocked (current)", "Cancelled", "Done", "Duplicate"]);
 
     await user.click(quickAction);
 
@@ -223,13 +247,15 @@ describe("IssueCard", () => {
   it("closes the action menu when clicking outside the card", async () => {
     const user = userEvent.setup();
     render(
-      <MemoryRouter>
-        <IssueCard
-          issue={issue}
-          onStatusChange={async () => undefined}
-        />
-        <button type="button">Outside target</button>
-      </MemoryRouter>,
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+          <IssueCard
+            issue={issue}
+            onStatusChange={async () => undefined}
+          />
+          <button type="button">Outside target</button>
+        </MemoryRouter>
+      </QueryClientProvider>,
     );
 
     await user.click(screen.getByRole("button", {
@@ -275,4 +301,161 @@ describe("IssueCard", () => {
     expect(within(menu).getByRole("menuitem", { name: "In Progress (current)" })).toBeDisabled();
     expect(within(menu).getByText("In Progress cannot be changed from the Web UI")).toBeInTheDocument();
   });
+
+  it("loads and caches a thread ID when the action menu first opens", async () => {
+    const user = userEvent.setup();
+    vi.mocked(api.fetchOrchestratorIssueRuntime).mockResolvedValue(runtimeWithRuns([
+      { thread_id: "  thread-latest  " },
+      { thread_id: "thread-previous" },
+    ]));
+    renderCard();
+
+    const menuButton = screen.getByRole("button", {
+      name: "Issue actions for Wire issue board to generated client",
+    });
+    await user.click(menuButton);
+
+    await waitFor(() => {
+      expect(screen.getByRole("menuitem", { name: "Copy thread ID" })).toBeEnabled();
+    });
+    expect(api.fetchOrchestratorIssueRuntime).toHaveBeenCalledWith(24, { silent: true });
+
+    await user.click(menuButton);
+    await user.click(menuButton);
+
+    expect(api.fetchOrchestratorIssueRuntime).toHaveBeenCalledTimes(1);
+  });
+
+  it("reuses the issue thread ID cache after the card remounts", async () => {
+    const user = userEvent.setup();
+    vi.mocked(api.fetchOrchestratorIssueRuntime).mockResolvedValue(runtimeWithRuns([
+      { thread_id: "thread-latest" },
+    ]));
+    const firstRender = renderCard();
+
+    await user.click(screen.getByRole("button", {
+      name: "Issue actions for Wire issue board to generated client",
+    }));
+    await waitFor(() => expect(screen.getByRole("menuitem", { name: "Copy thread ID" })).toBeEnabled());
+    firstRender.unmount();
+
+    renderCard();
+    await user.click(screen.getByRole("button", {
+      name: "Issue actions for Wire issue board to generated client",
+    }));
+
+    await waitFor(() => expect(screen.getByRole("menuitem", { name: "Copy thread ID" })).toBeEnabled());
+    expect(api.fetchOrchestratorIssueRuntime).toHaveBeenCalledTimes(1);
+  });
+
+  it("disables the copy action while the runtime request is pending", async () => {
+    const user = userEvent.setup();
+    let resolveRuntime: (runtime: OrchestratorIssueRuntime) => void;
+    const runtime = new Promise<OrchestratorIssueRuntime>((resolve) => {
+      resolveRuntime = resolve;
+    });
+    vi.mocked(api.fetchOrchestratorIssueRuntime).mockReturnValue(runtime);
+    renderCard();
+
+    await user.click(screen.getByRole("button", {
+      name: "Issue actions for Wire issue board to generated client",
+    }));
+
+    expect(screen.getByRole("menuitem", { name: "Copy thread ID" })).toBeDisabled();
+    resolveRuntime!(runtimeWithRuns([{ thread_id: "thread-latest" }]));
+    await waitFor(() => expect(screen.getByRole("menuitem", { name: "Copy thread ID" })).toBeEnabled());
+  });
+
+  it("falls back to an older run with a non-empty trimmed thread ID", async () => {
+    const user = userEvent.setup();
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });
+    vi.mocked(api.fetchOrchestratorIssueRuntime).mockResolvedValue(runtimeWithRuns([
+      { thread_id: "  " },
+      { thread_id: "  thread-previous  " },
+    ]));
+    renderCard({ readonly: true });
+
+    await user.click(screen.getByRole("button", {
+      name: "Issue actions for Wire issue board to generated client",
+    }));
+    const copyItem = screen.getByRole("menuitem", { name: "Copy thread ID" });
+    await waitFor(() => expect(copyItem).toBeEnabled());
+    await user.click(copyItem);
+
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith("thread-previous"));
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(toastStore.getSnapshot()).toMatchObject([
+        { type: "success", message: "Thread ID copied" },
+      ]);
+    });
+  });
+
+  it("keeps the copy action disabled when loading fails without showing a toast", async () => {
+    const user = userEvent.setup();
+    vi.mocked(api.fetchOrchestratorIssueRuntime).mockRejectedValue(new Error("unavailable"));
+    renderCard();
+
+    await user.click(screen.getByRole("button", {
+      name: "Issue actions for Wire issue board to generated client",
+    }));
+
+    const copyItem = screen.getByRole("menuitem", { name: "Copy thread ID" });
+    await waitFor(() => expect(api.fetchOrchestratorIssueRuntime).toHaveBeenCalledTimes(1));
+    await user.click(screen.getByRole("button", {
+      name: "Issue actions for Wire issue board to generated client",
+    }));
+    await user.click(screen.getByRole("button", {
+      name: "Issue actions for Wire issue board to generated client",
+    }));
+
+    expect(copyItem).toBeDisabled();
+    expect(api.fetchOrchestratorIssueRuntime).toHaveBeenCalledTimes(1);
+    expect(toastStore.getSnapshot()).toEqual([]);
+  });
+
+  it("keeps the copy action disabled when no run has a thread ID", async () => {
+    const user = userEvent.setup();
+    vi.mocked(api.fetchOrchestratorIssueRuntime).mockResolvedValue(runtimeWithRuns([
+      { thread_id: "  " },
+      {},
+    ]));
+    renderCard();
+
+    await user.click(screen.getByRole("button", {
+      name: "Issue actions for Wire issue board to generated client",
+    }));
+
+    await waitFor(() => expect(api.fetchOrchestratorIssueRuntime).toHaveBeenCalledTimes(1));
+    expect(screen.getByRole("menuitem", { name: "Copy thread ID" })).toBeDisabled();
+  });
+
+  it("shows the existing clipboard error toast when copying fails", async () => {
+    const user = userEvent.setup();
+    const writeText = vi.fn().mockRejectedValue(new Error("clipboard unavailable"));
+    vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });
+    vi.mocked(api.fetchOrchestratorIssueRuntime).mockResolvedValue(runtimeWithRuns([
+      { thread_id: "thread-latest" },
+    ]));
+    renderCard();
+
+    await user.click(screen.getByRole("button", {
+      name: "Issue actions for Wire issue board to generated client",
+    }));
+    const copyItem = screen.getByRole("menuitem", { name: "Copy thread ID" });
+    await waitFor(() => expect(copyItem).toBeEnabled());
+    await user.click(copyItem);
+
+    await waitFor(() => {
+      expect(toastStore.getSnapshot()).toMatchObject([
+        { type: "error", message: "Could not copy to the clipboard" },
+      ]);
+    });
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+  });
 });
+
+function runtimeWithRuns(runs: Array<{ thread_id?: string }>): OrchestratorIssueRuntime {
+  return { runs } as OrchestratorIssueRuntime;
+}

@@ -1,8 +1,10 @@
 import type { Preview } from "@storybook/react-vite";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { type PropsWithChildren, useEffect } from "react";
 import { MemoryRouter } from "react-router-dom";
 import "../src/app/globals.css";
 import "../src/lib/i18n";
+import { appQueryClient } from "../src/lib/query-client";
 
 const StorybookTheme = {
   dark: "dark",
@@ -61,9 +63,11 @@ const preview: Preview = {
             : StorybookTheme.light
         }
       >
-        <MemoryRouter initialEntries={["/issues"]}>
-          <Story />
-        </MemoryRouter>
+        <QueryClientProvider client={appQueryClient}>
+          <MemoryRouter initialEntries={["/issues"]}>
+            <Story />
+          </MemoryRouter>
+        </QueryClientProvider>
       </StorybookThemeProvider>
     ),
   ],

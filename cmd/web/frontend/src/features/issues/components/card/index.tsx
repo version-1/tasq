@@ -9,9 +9,11 @@ import {
   ContextMenuItem,
 } from "@/components/ui/context-menu";
 import { IconProxy, type IconProxyName } from "@/components/ui/icon-proxy";
+import { toast } from "@/lib/toast";
 import { PriorityBadge } from "@/features/issues/components/priority-badge";
 import { ProjectBadge } from "@/features/issues/components/project-badge";
 import { StatusBadge } from "@/features/issues/components/status-badge";
+import { useIssueThreadID } from "@/features/issues/hooks/use-issue-thread-id";
 import { PendingBadge } from "./pending-badge";
 import styles from "./index.module.css";
 
@@ -57,6 +59,7 @@ export function IssueCard({
   const canReject = !readonly && issue.status === "review" && onRejectIssue !== undefined;
   const cardRef = useRef<HTMLElement>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { isThreadIDLoading, threadID } = useIssueThreadID(issue.id, isMenuOpen);
   const menuID = `issue-card-menu-${issue.id}`;
   const menuLabel = t("issues.card.actionsLabel", { title: issue.title });
   const lockedStatusLabel = t("issues.card.statusLocked", { status: t(`statuses.${issue.status}`) });
@@ -73,6 +76,24 @@ export function IssueCard({
     },
   ];
 
+  function handleMenuOpenChange(nextIsOpen: boolean) {
+    setIsMenuOpen(nextIsOpen);
+  }
+
+  async function handleCopyThreadID() {
+    if (!threadID) {
+      return;
+    }
+
+    setIsMenuOpen(false);
+    try {
+      await navigator.clipboard.writeText(threadID);
+      toast.success({ message: t("toast.success.threadIDCopied") });
+    } catch {
+      toast.error({ message: t("toast.error.clipboardUnavailable") });
+    }
+  }
+
   return (
     <article className={styles.taskCard} ref={cardRef}>
       <div className={styles.cardHeader}>
@@ -82,7 +103,7 @@ export function IssueCard({
           id={menuID}
           isOpen={isMenuOpen}
           label={menuLabel}
-          onOpenChange={setIsMenuOpen}
+          onOpenChange={handleMenuOpenChange}
           trigger={(triggerProps) => (
             <button
               {...triggerProps}
@@ -95,6 +116,16 @@ export function IssueCard({
             </button>
           )}
         >
+          <ContextMenuItem
+            disabled={isThreadIDLoading || !threadID}
+            label={t("issues.card.copyThreadID")}
+            title={t("issues.card.copyThreadID")}
+            onSelect={() => {
+              void handleCopyThreadID();
+            }}
+          >
+            {t("issues.card.copyThreadID")}
+          </ContextMenuItem>
           <ContextMenuGroupLabel>{t("issues.card.changeStatus")}</ContextMenuGroupLabel>
           {statusOptions.map((status) => {
             const isCurrent = status === issue.status;
