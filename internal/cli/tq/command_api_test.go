@@ -195,10 +195,9 @@ func TestAPIReadsDataFromStdinAndHonorsClientTimeout(t *testing.T) {
 	if code != 0 || stderr != "" {
 		t.Fatalf("stdin code=%d stderr=%q", code, stderr)
 	}
-	originalTimeout := apiClientTimeout
-	apiClientTimeout = 20 * time.Millisecond
-	t.Cleanup(func() { apiClientTimeout = originalTimeout })
-	_, stderr, code = runAPI(t, server.URL, strings.NewReader(""), []string{"GET", "/api/v1/summary"})
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
+	defer cancel()
+	_, stderr, code = runAPIContext(t, ctx, server.URL, strings.NewReader(""), []string{"GET", "/api/v1/summary"})
 	if code != 1 || stderr == "" {
 		t.Fatalf("timeout code=%d stderr=%q", code, stderr)
 	}
@@ -229,8 +228,12 @@ func TestAPIEmptyResponseAndConnectionFailure(t *testing.T) {
 }
 
 func runAPI(t *testing.T, apiURL string, stdin io.Reader, args []string) (string, string, int) {
+	return runAPIContext(t, context.Background(), apiURL, stdin, args)
+}
+
+func runAPIContext(t *testing.T, ctx context.Context, apiURL string, stdin io.Reader, args []string) (string, string, int) {
 	t.Helper()
 	var stdout, stderr bytes.Buffer
-	code := run(context.Background(), append([]string{"--api-url", apiURL, "api"}, args...), stdin, &stdout, &stderr)
+	code := run(ctx, append([]string{"--api-url", apiURL, "api"}, args...), stdin, &stdout, &stderr)
 	return stdout.String(), stderr.String(), code
 }
