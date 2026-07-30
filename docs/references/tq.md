@@ -1,6 +1,6 @@
 # tq Command Reference
 
-`tq` is the command-line client for the issue-tracker API. It is intended for agents, workflow tools, and local development commands that need to create, inspect, update, and annotate issues without dealing with raw HTTP requests.
+`tq` is the command-line client for Tasq. It provides typed commands for common issue-tracker operations, local service and migration commands, and an allowlisted raw API command.
 
 ## Invocation
 
@@ -21,7 +21,7 @@ TQ_HOME=./.tasq go run ./cmd/tq --api-url http://localhost:37651 issue list
 ## Global Options
 
 ```text
-tq [--api-url URL] [--output text|json] <resource|command> <action> [flags]
+tq [--api-url URL] [--output text|json] <command> [args] [flags]
 ```
 
 | Option | Default | Description |
@@ -29,19 +29,48 @@ tq [--api-url URL] [--output text|json] <resource|command> <action> [flags]
 | `--api-url URL` | `TQ_API_URL`, then `$TQ_HOME/system/state.json`, then `http://localhost:37651` | Issue-tracker API base URL. |
 | `--output text\|json` | `text` | Output format. JSON output is intended for scripts and agents. |
 
-## Resources
+## Commands
 
-| Resource | Actions |
+| Command | Actions or purpose |
 |---|---|
-| `issue` | `create`, `get`, `list`, `update` |
+| `issue` | `create`, `get`, `list`, `watch`, `update`, `close`, `cancel`, `ready`, `draft`, `rename`, `edit` |
 | `comment` | `add`, `list` |
 | `project` | `add`, `remove`, `check`, `list` |
 | `workflow` | `add`, `remove`, `show` |
-| `migrate` | apply pending migrations, `down`, `status` |
+| `migrate` | apply pending migrations, roll back with `down`, or inspect with `status` |
 | `service` | `start`, `stop`, `status` |
+| `logs` | show or follow service logs |
+| `web` | open the running Web UI |
 | `config` | show build, home, and resolved configuration information |
 | `update` | install a release and restart services |
 | `version` | show version information |
+| `api` | send an allowlisted raw issue-tracker API request |
+
+## Raw API requests
+
+Use `tq api` when the issue-tracker operation is not exposed by a typed command. It sends a raw request to the resolved issue-tracker base URL; it is not a general-purpose HTTP client. See [Tasq API](../design/api.md) for API semantics and the [OpenAPI document](../openapi/issue-tracker.yml) for the normative endpoint contract.
+
+```sh
+tq api GET /api/v1/issues --query states=ready
+
+tq api POST /api/v1/issues --header 'X-Request-ID: local-123' --data @request.json
+```
+
+The command syntax is:
+
+```text
+tq api <method> <path> [--query key=value] [--header 'Name: value'] [--data value|@file|-]
+```
+
+Methods are case-insensitive and normalized to uppercase. The path must be an unencoded absolute `/api/v1/...` path; complete URLs, fragments, dot segments, empty segments, and trailing slashes are rejected. Query text in the path is preserved, and each repeatable `--query key=value` appends another value in order. Query names and values are passed to the API without semantic validation.
+
+The method and path must match the CLI's explicit allowlist of current issue-tracker routes. Numeric route IDs must be positive `int64` values. This is fail-closed: a newly added server route is unavailable until the CLI allowlist is updated. `POST /api/v1/attachments` is temporarily excluded while raw multipart support is unavailable; attachment `PATCH` is not allowed.
+
+`--header` may be repeated. Header names are case-insensitive, and the last value wins. Transport-managed headers, including `Host`, `Content-Length`, `Transfer-Encoding`, `Connection`, `Trailer`, `Upgrade`, and `Proxy-Connection`, are rejected.
+
+`--data` accepts a literal value, `@file`, or `-` for standard input and is available only for `POST`, `PUT`, and `PATCH`. The body is not validated as JSON. A request with a body defaults to `Content-Type: application/json` unless the header is supplied explicitly.
+
+The command does not prompt before write or delete operations, does not follow redirects, and uses a 10-second HTTP timeout. It writes response bytes unchanged to standard output, including binary data and HTTP error bodies; `--output` does not transform them. Exit status is `0` for HTTP `2xx`, `1` for HTTP `3xx`-`5xx` or transport failures, and `2` for usage, input, and allowlist errors.
 
 ## Version
 
@@ -161,6 +190,31 @@ Flags:
 
 Attachment references use `![filename](attachment://<id>)`. The issue-tracker serves those images through the attachment content API, and the Web UI renders them from Markdown.
 
+### `issue watch`
+
+Poll the ready queue and emit one JSON object per line for monitoring and agent dispatch. `event` records contain newly observed queued issues; transient API failures produce `error` records without stopping the loop. The command always uses this JSON-line protocol and ignores the global `--output` setting.
+
+| Flag | Default | Description |
+|---|---:|---|
+| `--interval SECONDS` | `30` | Polling interval. Must be positive. |
+| `--seen-ttl SECONDS` | `900` | Suppress re-emitting an issue for this period. Must exceed `--interval`. |
+| `--verbose` | disabled | Also emit polling details as `info` records. |
+
+### Issue shortcuts
+
+Shortcut commands update one field without requiring `issue update` flags:
+
+```text
+tq issue close <id>
+tq issue cancel <id>
+tq issue ready <id>
+tq issue draft <id>
+tq issue rename <id> <title>
+tq issue edit <id> <description>
+```
+
+The status shortcuts set `done`, `cancelled`, `ready`, and `backlog`, respectively.
+
 ## Comments
 
 ### `comment add`
@@ -227,6 +281,26 @@ Stop orchestrator first and issue-tracker second. Each process receives `SIGTERM
 ```sh
 TQ_HOME=./.tasq go run ./cmd/tq service stop
 ```
+
+## Logs and Web UI
+
+Show the last 1,000 lines of a service log:
+
+```sh
+tq logs issue-tracker
+tq logs orchestrator
+tq logs web
+```
+
+Use `-n LINES` to change the number of lines and `-f` to follow appended output. `tracker` is an alias for `issue-tracker`. The command reads files below `$TQ_HOME/system/log/` and does not support `--output json`.
+
+Open the running Web UI in the default browser:
+
+```sh
+tq web
+```
+
+The command reads the Web URL from local service state and fails if the Web UI is not running.
 
 ## Projects
 
@@ -377,6 +451,8 @@ in_progress
 review
 blocked
 failed
+cancelled
+duplicate
 done
 ```
 

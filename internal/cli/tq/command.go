@@ -47,6 +47,10 @@ func run(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.
 		client: client,
 	}
 	if err := application.route(ctx, remaining, cfg); err != nil {
+		var statusErr apiStatusError
+		if errors.As(err, &statusErr) {
+			return statusErr.code
+		}
 		var ce cliError
 		if errors.As(err, &ce) {
 			return writeCLIErrorForFormat(stderr, cfg.output, ce.message, ce.code)
@@ -78,6 +82,12 @@ func (a app) route(ctx context.Context, args []string, cfg config) error {
 		return a.routeProject(ctx, args[1:], cfg)
 	case "workflow":
 		return a.routeWorkflow(ctx, args[1:], cfg)
+	case "api":
+		if len(args) == 1 || args[1] == "help" || args[1] == "-help" || args[1] == "--help" {
+			printAPIHelp(a.stdout)
+			return nil
+		}
+		return a.api(ctx, args[1:])
 	case "migrate":
 		return a.routeMigrate(ctx, args[1:], cfg)
 	case "web":
