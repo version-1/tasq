@@ -13,8 +13,8 @@ import { toast } from "@/lib/toast";
 import { PriorityBadge } from "@/features/issues/components/priority-badge";
 import { ProjectBadge } from "@/features/issues/components/project-badge";
 import { StatusBadge } from "@/features/issues/components/status-badge";
+import { useIssueThreadID } from "@/features/issues/hooks/use-issue-thread-id";
 import { PendingBadge } from "./pending-badge";
-import { loadIssueThreadID } from "@/features/issues/thread-id-cache";
 import styles from "./index.module.css";
 
 type IssueStatusChangeHandler = (id: number, status: IssueStatus) => Promise<void>;
@@ -59,8 +59,7 @@ export function IssueCard({
   const canReject = !readonly && issue.status === "review" && onRejectIssue !== undefined;
   const cardRef = useRef<HTMLElement>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isThreadIDLoading, setIsThreadIDLoading] = useState(false);
-  const [threadID, setThreadID] = useState<string | null>(null);
+  const { isThreadIDLoading, threadID } = useIssueThreadID(issue.id, isMenuOpen);
   const menuID = `issue-card-menu-${issue.id}`;
   const menuLabel = t("issues.card.actionsLabel", { title: issue.title });
   const lockedStatusLabel = t("issues.card.statusLocked", { status: t(`statuses.${issue.status}`) });
@@ -77,18 +76,8 @@ export function IssueCard({
     },
   ];
 
-  async function loadThreadID() {
-    setIsThreadIDLoading(true);
-    const loadedThreadID = await loadIssueThreadID(issue.id);
-    setThreadID(loadedThreadID);
-    setIsThreadIDLoading(false);
-  }
-
   function handleMenuOpenChange(nextIsOpen: boolean) {
     setIsMenuOpen(nextIsOpen);
-    if (nextIsOpen) {
-      void loadThreadID();
-    }
   }
 
   async function handleCopyThreadID() {

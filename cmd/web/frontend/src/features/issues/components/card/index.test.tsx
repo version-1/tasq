@@ -1,11 +1,12 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
+import { QueryClientProvider, type QueryClient } from "@tanstack/react-query";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as api from "@/lib/api";
+import { createAppQueryClient } from "@/lib/query-client";
 import { toastStore } from "@/lib/toast";
 import type { IssueSummary, OrchestratorIssueRuntime } from "@/lib/types";
-import { clearIssueThreadIDCacheForTest } from "@/features/issues/thread-id-cache";
 import "@/lib/i18n";
 import { IssueCard } from "./index";
 
@@ -31,6 +32,8 @@ const issue: IssueSummary = {
   },
 };
 
+let queryClient: QueryClient;
+
 function issueWithCommentCount(commentCount: number): IssueSummary {
   return {
     ...issue,
@@ -45,21 +48,27 @@ function renderCard(props: Partial<Parameters<typeof IssueCard>[0]> = {}) {
   const onRejectIssue = vi.fn();
   const onStatusChange = vi.fn(async () => undefined);
   const rendered = render(
-    <MemoryRouter>
-      <IssueCard
-        issue={issue}
-        onRejectIssue={onRejectIssue}
-        onStatusChange={onStatusChange}
-        {...props}
-      />
-    </MemoryRouter>,
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter>
+        <IssueCard
+          issue={issue}
+          onRejectIssue={onRejectIssue}
+          onStatusChange={onStatusChange}
+          {...props}
+        />
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
   return { onRejectIssue, onStatusChange, unmount: rendered.unmount };
 }
 
 describe("IssueCard", () => {
+  beforeEach(() => {
+    queryClient = createAppQueryClient();
+  });
+
   afterEach(() => {
-    clearIssueThreadIDCacheForTest();
+    queryClient.clear();
     toastStore.clear();
     vi.clearAllMocks();
     vi.restoreAllMocks();
@@ -238,13 +247,15 @@ describe("IssueCard", () => {
   it("closes the action menu when clicking outside the card", async () => {
     const user = userEvent.setup();
     render(
-      <MemoryRouter>
-        <IssueCard
-          issue={issue}
-          onStatusChange={async () => undefined}
-        />
-        <button type="button">Outside target</button>
-      </MemoryRouter>,
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+          <IssueCard
+            issue={issue}
+            onStatusChange={async () => undefined}
+          />
+          <button type="button">Outside target</button>
+        </MemoryRouter>
+      </QueryClientProvider>,
     );
 
     await user.click(screen.getByRole("button", {
