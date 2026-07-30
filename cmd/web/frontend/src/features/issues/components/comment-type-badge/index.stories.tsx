@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { CommentTypeBadge, commentTypes } from "./index";
 
 const meta = {
-  title: "Features/Issues/CommentTypeBadge",
+  title: "Features/Badge/CommentTypeBadge",
   component: CommentTypeBadge,
   decorators: [
     (Story) => (

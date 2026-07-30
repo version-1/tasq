@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { ChangeRequestStatusBadge, changeRequestStatuses } from "./index";
 
 const meta = {
-  title: "Features/Issues/ChangeRequestStatusBadge",
+  title: "Features/Badge/ChangeRequestStatusBadge",
   component: ChangeRequestStatusBadge,
   decorators: [
     (Story) => (

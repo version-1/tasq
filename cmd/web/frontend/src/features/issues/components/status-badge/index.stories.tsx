@@ -3,7 +3,7 @@ import { issueStatuses } from "@/lib/types";
 import { StatusBadge } from "./index";
 
 const meta = {
-  title: "Features/Issues/StatusBadge",
+  title: "Features/Badge/StatusBadge",
   component: StatusBadge,
   decorators: [
     (Story) => (

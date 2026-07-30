@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { PriorityBadge } from "./index";
 
 const meta = {
-  title: "Features/Issues/PriorityBadge",
+  title: "Features/Badge/PriorityBadge",
   component: PriorityBadge,
   decorators: [
     (Story) => (
