@@ -234,6 +234,27 @@ export function IssueDetailPage() {
   }, [activeTab, commentsLoaded, isLoadingComments, loadComments]);
 
   useEffect(() => {
+    if (
+      activeTab !== "comments" ||
+      issueState.kind !== "ready" ||
+      issueState.issue.status !== "blocked" ||
+      !commentsLoaded ||
+      isLoadingComments ||
+      nextCursor === null
+    ) {
+      return;
+    }
+    void loadComments(nextCursor);
+  }, [
+    activeTab,
+    commentsLoaded,
+    isLoadingComments,
+    issueState,
+    loadComments,
+    nextCursor,
+  ]);
+
+  useEffect(() => {
     if (activeTab === "comments" && !changeRequestsLoaded && !isLoadingChangeRequests) {
       void loadChangeRequests();
     }
@@ -430,7 +451,9 @@ export function IssueDetailPage() {
                 hasMore={nextCursor !== null}
                 isLoading={isLoadingComments}
                 latestActionableBlockerCommentID={
-                  issueState.issue.status === "blocked" ? latestBlockerCommentID : undefined
+                  issueState.issue.status === "blocked" && nextCursor === null
+                    ? latestBlockerCommentID
+                    : undefined
                 }
                 onLoadMore={() => void loadComments(nextCursor ?? undefined)}
                 onContinueWithComment={() => {

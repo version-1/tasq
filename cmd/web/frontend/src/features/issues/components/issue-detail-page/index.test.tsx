@@ -253,39 +253,48 @@ describe("IssueDetailPage", () => {
   it("continues a blocked issue from only its latest blocker comment", async () => {
     const user = userEvent.setup();
     api.fetchIssue.mockResolvedValueOnce({ ...issue, status: "blocked" });
-    api.fetchComments.mockResolvedValueOnce({
-      data: [
-        {
-          id: 1,
-          issueId: 42,
-          author: "operator",
-          type: "general",
-          body: "Investigating.",
-          createdAt: "2026-06-21T01:00:00.000Z",
-        },
-        {
-          id: 2,
-          issueId: 42,
-          author: "first-runner",
-          type: "blocker",
-          body: "First blocker.",
-          createdAt: "2026-06-21T02:00:00.000Z",
-        },
-        {
-          id: 3,
-          issueId: 42,
-          author: "latest-runner",
-          type: "blocker",
-          body: "Latest blocker.",
-          createdAt: "2026-06-21T03:00:00.000Z",
-        },
-      ],
-      meta: { cursor: 0, limit: 20, nextCursor: null },
-    } satisfies CommentListResponse);
+    api.fetchComments
+      .mockResolvedValueOnce({
+        data: [
+          {
+            id: 1,
+            issueId: 42,
+            author: "operator",
+            type: "general",
+            body: "Investigating.",
+            createdAt: "2026-06-21T01:00:00.000Z",
+          },
+          {
+            id: 2,
+            issueId: 42,
+            author: "first-runner",
+            type: "blocker",
+            body: "First blocker.",
+            createdAt: "2026-06-21T02:00:00.000Z",
+          },
+        ],
+        meta: { cursor: 0, limit: 20, nextCursor: 2 },
+      } satisfies CommentListResponse)
+      .mockResolvedValueOnce({
+        data: [
+          {
+            id: 3,
+            issueId: 42,
+            author: "latest-runner",
+            type: "blocker",
+            body: "Latest blocker.",
+            createdAt: "2026-06-21T03:00:00.000Z",
+          },
+        ],
+        meta: { cursor: 2, limit: 20, nextCursor: null },
+      } satisfies CommentListResponse);
     api.updateIssueStatus.mockResolvedValueOnce({ ...issue, status: "ready" });
 
     renderIssueDetail("/issues/42?tab=comments");
 
+    await waitFor(() => {
+      expect(api.fetchComments).toHaveBeenNthCalledWith(2, 42, 2, 20, { silent: true });
+    });
     await user.click(await screen.findByRole("button", { name: "Comment actions for operator" }));
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
 
