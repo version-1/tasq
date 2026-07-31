@@ -54,6 +54,14 @@
   color: var(--text);
 }
 
+.statusMenuIcon {
+  color: var(--status-color);
+}
+
+.cancelledStatusMenuIcon {
+  color: var(--danger);
+}
+
 .metric {
   align-items: center;
   display: flex;

@@ -5,7 +5,9 @@ import {
   ContextMenuGroupLabel,
   ContextMenuHelp,
   ContextMenuItem,
+  ContextMenuSeparator,
 } from "./index";
+import { IconProxy } from "@/components/ui/icon-proxy";
 
 function ContextMenuStory() {
   const [isOpen, setIsOpen] = useState(true);
@@ -17,19 +19,37 @@ function ContextMenuStory() {
       label="Story actions"
       onOpenChange={setIsOpen}
       placement="bottom-start"
+      size="wide"
       trigger={(props) => (
         <button type="button" {...props}>
           Actions
         </button>
       )}
     >
-      <ContextMenuGroupLabel>Status</ContextMenuGroupLabel>
-      <ContextMenuItem onSelect={() => setIsOpen(false)}>Move to review</ContextMenuItem>
+      <ContextMenuItem
+        icon={<IconProxy name="clipboard" size={18} />}
+        onSelect={() => setIsOpen(false)}
+      >
+        Copy thread ID
+      </ContextMenuItem>
+      <ContextMenuSeparator />
+      <ContextMenuGroupLabel>Change status</ContextMenuGroupLabel>
+      <ContextMenuItem
+        accessory={<IconProxy name="check" size={18} />}
+        disabled
+        icon={<IconProxy name="play" size={18} />}
+        selected
+      >
+        Ready (current)
+      </ContextMenuItem>
+      <ContextMenuItem
+        icon={<IconProxy name="eye" size={18} />}
+        onSelect={() => setIsOpen(false)}
+      >
+        Move to review
+      </ContextMenuItem>
       <ContextMenuItem variant="danger" onSelect={() => setIsOpen(false)}>
         Delete project
-      </ContextMenuItem>
-      <ContextMenuItem disabled title="Current state">
-        Already in progress
       </ContextMenuItem>
       <ContextMenuHelp>Only valid transitions are enabled.</ContextMenuHelp>
     </ContextMenu>

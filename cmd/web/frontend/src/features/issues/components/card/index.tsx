@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { Fragment, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import type { IssueStatus, IssueSummary } from "@/lib/types";
@@ -7,12 +7,16 @@ import {
   ContextMenuGroupLabel,
   ContextMenuHelp,
   ContextMenuItem,
+  ContextMenuSeparator,
 } from "@/components/ui/context-menu";
 import { IconProxy, type IconProxyName } from "@/components/ui/icon-proxy";
 import { toast } from "@/lib/toast";
 import { PriorityBadge } from "@/features/issues/components/priority-badge";
 import { ProjectBadge } from "@/features/issues/components/project-badge";
-import { StatusBadge } from "@/features/issues/components/status-badge";
+import {
+  StatusBadge,
+  statusToneClassName,
+} from "@/features/issues/components/status-badge";
 import { useIssueThreadID } from "@/features/issues/hooks/use-issue-thread-id";
 import { PendingBadge } from "./pending-badge";
 import styles from "./index.module.css";
@@ -38,6 +42,18 @@ const quickStatusTargets: Partial<Record<IssueStatus, IssueStatus>> = {
   blocked: "ready",
   review: "done",
 };
+
+const statusMenuIcons = {
+  backlog: "circle",
+  blocked: "ban",
+  cancelled: "ban",
+  done: "check",
+  duplicate: "copy",
+  failed: "x",
+  in_progress: "play",
+  ready: "play",
+  review: "eye",
+} satisfies Record<IssueStatus, IconProxyName>;
 
 export function IssueCard({
   issue,
@@ -104,6 +120,7 @@ export function IssueCard({
           isOpen={isMenuOpen}
           label={menuLabel}
           onOpenChange={handleMenuOpenChange}
+          size="wide"
           trigger={(triggerProps) => (
             <button
               {...triggerProps}
@@ -118,6 +135,7 @@ export function IssueCard({
         >
           <ContextMenuItem
             disabled={isThreadIDLoading || !threadID}
+            icon={<IconProxy name="clipboard" size={18} />}
             label={t("issues.card.copyThreadID")}
             title={t("issues.card.copyThreadID")}
             onSelect={() => {
@@ -126,6 +144,7 @@ export function IssueCard({
           >
             {t("issues.card.copyThreadID")}
           </ContextMenuItem>
+          <ContextMenuSeparator />
           <ContextMenuGroupLabel>{t("issues.card.changeStatus")}</ContextMenuGroupLabel>
           {statusOptions.map((status) => {
             const isCurrent = status === issue.status;
@@ -135,18 +154,33 @@ export function IssueCard({
               : t(`statuses.${status}`);
 
             return (
-              <ContextMenuItem
-                key={status}
-                disabled={isDisabled}
-                label={isDisabled && !isCurrent ? lockedStatusLabel : itemLabel}
-                title={isDisabled && !isCurrent ? lockedStatusLabel : itemLabel}
-                onSelect={() => {
-                  setIsMenuOpen(false);
-                  void onStatusChange(issue.id, status);
-                }}
-              >
-                {itemLabel}
-              </ContextMenuItem>
+              <Fragment key={status}>
+                {status === "duplicate" ? <ContextMenuSeparator /> : null}
+                <ContextMenuItem
+                  accessory={isCurrent ? <IconProxy name="check" size={18} /> : undefined}
+                  disabled={isDisabled}
+                  icon={
+                    <IconProxy
+                      className={[
+                        styles.statusMenuIcon,
+                        statusToneClassName(status),
+                        status === "cancelled" ? styles.cancelledStatusMenuIcon : "",
+                      ].filter(Boolean).join(" ")}
+                      name={statusMenuIcons[status]}
+                      size={18}
+                    />
+                  }
+                  label={isDisabled && !isCurrent ? lockedStatusLabel : itemLabel}
+                  selected={isCurrent}
+                  title={isDisabled && !isCurrent ? lockedStatusLabel : itemLabel}
+                  onSelect={() => {
+                    setIsMenuOpen(false);
+                    void onStatusChange(issue.id, status);
+                  }}
+                >
+                  {itemLabel}
+                </ContextMenuItem>
+              </Fragment>
             );
           })}
           {!canChangeStatus && statusOptions.length === 1 ? (

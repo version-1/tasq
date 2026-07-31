@@ -16,6 +16,7 @@ type ContextMenuProps = {
   label: string;
   onOpenChange: (isOpen: boolean) => void;
   placement?: "bottom-end" | "bottom-start";
+  size?: "default" | "wide";
   trigger: (props: ContextMenuTriggerProps) => ReactNode;
 };
 
@@ -27,6 +28,7 @@ export function ContextMenu({
   label,
   onOpenChange,
   placement = "bottom-end",
+  size = "default",
   trigger,
 }: ContextMenuProps) {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -61,7 +63,11 @@ export function ContextMenu({
       {isOpen ? (
         <div
           aria-label={label}
-          className={[styles.menu, styles[placement]].join(" ")}
+          className={[
+            styles.menu,
+            styles[placement],
+            size === "wide" ? styles.wideMenu : "",
+          ].filter(Boolean).join(" ")}
           id={id}
           role="menu"
         >
@@ -77,35 +83,53 @@ export function ContextMenuGroupLabel({ children }: { children: ReactNode }) {
 }
 
 export function ContextMenuItem({
+  accessory,
   children,
   disabled = false,
+  icon,
   label,
   onSelect,
+  selected = false,
   title,
   variant = "default",
 }: {
+  accessory?: ReactNode;
   children: ReactNode;
   disabled?: boolean;
+  icon?: ReactNode;
   label?: string;
   onSelect?: () => void;
+  selected?: boolean;
   title?: string;
   variant?: "default" | "danger";
 }) {
   return (
     <button
       aria-label={label}
-      className={[styles.item, variant === "danger" ? styles.dangerItem : ""]
+      className={[
+        styles.item,
+        icon || accessory ? styles.richItem : "",
+        variant === "danger" ? styles.dangerItem : "",
+        selected ? styles.selectedItem : "",
+      ]
         .filter(Boolean)
         .join(" ")}
+      data-selected={selected || undefined}
       disabled={disabled}
       role="menuitem"
       title={title}
       type="button"
       onClick={onSelect}
     >
-      {children}
+      {icon ? <span className={styles.itemIcon}>{icon}</span> : null}
+      <span className={styles.itemContent}>{children}</span>
+      {accessory ? <span className={styles.itemAccessory}>{accessory}</span> : null}
     </button>
   );
+}
+
+export function ContextMenuSeparator() {
+  return <div className={styles.separator} role="separator" />;
 }
 
 export function ContextMenuHelp({ children }: { children: ReactNode }) {

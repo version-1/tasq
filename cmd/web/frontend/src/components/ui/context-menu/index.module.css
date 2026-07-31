@@ -24,11 +24,15 @@
   left: 0;
 }
 
+.wideMenu {
+  min-width: 244px;
+}
+
 .groupLabel {
   color: var(--muted);
   font-size: 12px;
   font-weight: 400;
-  padding: 4px 8px;
+  padding: 8px;
 }
 
 .item {
@@ -38,6 +42,15 @@
   color: var(--text);
   padding: 8px;
   text-align: left;
+}
+
+.richItem {
+  align-items: center;
+  display: flex;
+  font-size: 14px;
+  gap: 10px;
+  min-height: 36px;
+  width: 100%;
 }
 
 .item:hover:not(:disabled),
@@ -52,6 +65,34 @@
 .item:disabled {
   color: var(--muted);
   cursor: not-allowed;
+}
+
+.selectedItem:disabled {
+  color: var(--text);
+}
+
+.itemIcon {
+  align-items: center;
+  display: inline-flex;
+  flex: 0 0 20px;
+  justify-content: center;
+}
+
+.itemContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.itemAccessory {
+  align-items: center;
+  display: inline-flex;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+.separator {
+  border-top: 1px solid var(--border);
+  margin: 4px 0;
 }
 
 .help {
