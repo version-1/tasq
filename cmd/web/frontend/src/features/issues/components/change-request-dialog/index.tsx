@@ -4,9 +4,11 @@ import { MarkdownEditor } from "@/components/ui/markdown-editor";
 import { createChangeRequest } from "@/lib/api";
 import styles from "./index.module.css";
 
-const rejectAuthor = "reviewer";
+const changeRequestAuthor = "reviewer";
 
-export function RejectIssueDialog({
+type ChangeRequestDialogVariant = "continue" | "reject";
+
+export function ChangeRequestDialog({
   error,
   isMovingIssue,
   issueID,
@@ -14,6 +16,7 @@ export function RejectIssueDialog({
   onCancel,
   onMoveIssueReady,
   onSuccess,
+  variant,
 }: {
   error?: string;
   isMovingIssue?: boolean;
@@ -22,8 +25,10 @@ export function RejectIssueDialog({
   onCancel: () => void;
   onMoveIssueReady: () => Promise<void>;
   onSuccess: () => void;
+  variant: ChangeRequestDialogVariant;
 }) {
   const { t } = useTranslation();
+  const translationKey = variant === "continue" ? "issues.continueWithComment" : "issues.reject";
   const [body, setBody] = useState("");
   const [validationError, setValidationError] = useState("");
   const [submitError, setSubmitError] = useState("");
@@ -43,7 +48,7 @@ export function RejectIssueDialog({
     event.preventDefault();
     const trimmedBody = body.trim();
     if (!trimmedBody) {
-      setValidationError(t("issues.reject.errors.bodyRequired"));
+      setValidationError(t(`${translationKey}.errors.bodyRequired`));
       return;
     }
 
@@ -53,7 +58,7 @@ export function RejectIssueDialog({
       if (!hasCreatedRequest) {
         setIsCreatingRequest(true);
         await createChangeRequest(issueID, {
-          author: rejectAuthor,
+          author: changeRequestAuthor,
           body: trimmedBody,
         }, { silent: true });
         setHasCreatedRequest(true);
@@ -62,7 +67,9 @@ export function RejectIssueDialog({
       await onMoveIssueReady();
       onSuccess();
     } catch (caught) {
-      setSubmitError(caught instanceof Error ? caught.message : t("issues.reject.errors.submitFailed"));
+      setSubmitError(
+        caught instanceof Error ? caught.message : t(`${translationKey}.errors.submitFailed`),
+      );
     } finally {
       setIsCreatingRequest(false);
     }
@@ -73,17 +80,17 @@ export function RejectIssueDialog({
   return (
     <div className={styles.dialogBackdrop} role="presentation">
       <section
-        aria-labelledby="reject-issue-title"
+        aria-labelledby="change-request-title"
         aria-modal="true"
         className={styles.dialog}
         role="dialog"
       >
         <form className={styles.form} onSubmit={(event) => void handleSubmit(event)}>
           <div className={styles.dialogHeader}>
-            <h2 id="reject-issue-title">{t("issues.reject.title", { id: issueID })}</h2>
+            <h2 id="change-request-title">{t(`${translationKey}.title`, { id: issueID })}</h2>
             <button
               type="button"
-              aria-label={t("issues.reject.close")}
+              aria-label={t(`${translationKey}.close`)}
               disabled={isSubmitting}
               onClick={onCancel}
             >
@@ -94,19 +101,19 @@ export function RejectIssueDialog({
           <p className={styles.issueTitle}>{issueTitle}</p>
 
           <div className={styles.markdownEditorField}>
-            <span>{t("issues.reject.fields.body")}</span>
+            <span>{t(`${translationKey}.fields.body`)}</span>
             <MarkdownEditor
               initialMode="edit"
               initialTab="raw"
               labels={{
                 cancel: t("markdownEditor.cancel"),
                 edit: t("markdownEditor.edit"),
-                empty: t("issues.reject.emptyRequest"),
+                empty: t(`${translationKey}.emptyRequest`),
                 preview: t("markdownEditor.preview"),
                 raw: t("markdownEditor.raw"),
                 save: t("markdownEditor.save"),
                 saving: t("markdownEditor.saving"),
-                textarea: t("issues.reject.fields.body"),
+                textarea: t(`${translationKey}.fields.body`),
               }}
               showActions={false}
               stablePanelRows={12}
@@ -116,15 +123,17 @@ export function RejectIssueDialog({
             />
           </div>
 
-          {hasCreatedRequest ? <p className={styles.retryNote}>{t("issues.reject.retryNote")}</p> : null}
+          {hasCreatedRequest ? (
+            <p className={styles.retryNote}>{t(`${translationKey}.retryNote`)}</p>
+          ) : null}
           {errorMessage ? <p className={styles.formError}>{errorMessage}</p> : null}
 
           <div className={styles.dialogActions}>
             <button type="button" disabled={isSubmitting} onClick={onCancel}>
-              {t("issues.reject.cancel")}
+              {t(`${translationKey}.cancel`)}
             </button>
             <button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? t("issues.reject.saving") : t("issues.reject.submit")}
+              {isSubmitting ? t(`${translationKey}.saving`) : t(`${translationKey}.submit`)}
             </button>
           </div>
         </form>

@@ -34,7 +34,7 @@ import type {
 import { AddIssueDialog } from "@/components/dialog/add-issue";
 import { AddProjectDialog } from "@/components/dialog/add-project";
 import { DeleteProjectDialog } from "@/components/dialog/delete-project";
-import { RejectIssueDialog } from "@/features/issues/components/reject-issue-dialog";
+import { ChangeRequestDialog } from "@/features/issues/components/change-request-dialog";
 import { Header } from "./header";
 import { Sidebar } from "./sidebar";
 import { useTheme } from "./use-theme";
@@ -503,7 +503,7 @@ function LayoutModalContent({ shellData }: { shellData: LayoutShellData }) {
 
   if (modal.activeModalID === modalIDs.rejectIssue && shellData.rejectIssue) {
     return (
-      <RejectIssueDialog
+      <ChangeRequestDialog
         error={shellData.rejectIssueError}
         isMovingIssue={shellData.isMovingRejectedIssue}
         issueID={shellData.rejectIssue.id}
@@ -511,6 +511,7 @@ function LayoutModalContent({ shellData }: { shellData: LayoutShellData }) {
         onCancel={shellData.onCloseModal}
         onMoveIssueReady={shellData.onMoveRejectedIssueReady}
         onSuccess={shellData.onCloseModal}
+        variant="reject"
       />
     );
   }

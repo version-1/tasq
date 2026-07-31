@@ -32,12 +32,13 @@ import { ConversationTab, defaultConversationMessageTypes } from "./conversation
 import { IssueDescription } from "./issue-description";
 import { BasicInfoPanel } from "./basic-info-panel";
 import { RunsSection } from "./runs-section";
-import { RejectIssueDialog } from "../reject-issue-dialog";
+import { ChangeRequestDialog } from "../change-request-dialog";
 import styles from "./index.module.css";
 
 const commentPageSize = 20;
 const validTabs = ["details", "comments", "conversation"] as const;
 type IssueDetailTab = (typeof validTabs)[number];
+type ChangeRequestDialogVariant = "continue" | "reject";
 
 type IssueLoadState =
   | { kind: "loading" }
@@ -75,8 +76,9 @@ export function IssueDetailPage() {
   const [isLoadingConversation, setIsLoadingConversation] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [isUpdatingDescription, setIsUpdatingDescription] = useState(false);
-  const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
-  const [rejectIssueError, setRejectIssueError] = useState("");
+  const [changeRequestDialogVariant, setChangeRequestDialogVariant] =
+    useState<ChangeRequestDialogVariant | null>(null);
+  const [changeRequestError, setChangeRequestError] = useState("");
 
   const updateSearchParams = useCallback(
     (updates: Record<string, string | null>) => {
@@ -232,6 +234,29 @@ export function IssueDetailPage() {
   }, [activeTab, commentsLoaded, isLoadingComments, loadComments]);
 
   useEffect(() => {
+    if (
+      activeTab !== "comments" ||
+      issueState.kind !== "ready" ||
+      issueState.issue.status !== "blocked" ||
+      !commentsLoaded ||
+      commentsError !== "" ||
+      isLoadingComments ||
+      nextCursor === null
+    ) {
+      return;
+    }
+    void loadComments(nextCursor);
+  }, [
+    activeTab,
+    commentsLoaded,
+    commentsError,
+    isLoadingComments,
+    issueState,
+    loadComments,
+    nextCursor,
+  ]);
+
+  useEffect(() => {
     if (activeTab === "comments" && !changeRequestsLoaded && !isLoadingChangeRequests) {
       void loadChangeRequests();
     }
@@ -301,18 +326,30 @@ export function IssueDetailPage() {
     }
   }
 
-  async function handleMoveRejectedIssueReady() {
+  async function handleMoveIssueReady() {
     if (issueState.kind !== "ready") return;
 
     setIsUpdatingStatus(true);
-    setRejectIssueError("");
+    setChangeRequestError("");
     try {
       const issue = await updateIssueStatus(issueState.issue.id, "ready", { silent: true });
       setIssueState({ kind: "ready", issue });
-      toast.success({ message: t("toast.success.issueRejected") });
+      toast.success({
+        message:
+          changeRequestDialogVariant === "continue"
+            ? t("toast.success.continuedWithComment")
+            : t("toast.success.issueRejected"),
+      });
     } catch (error) {
-      const message = error instanceof Error ? error.message : t("issues.reject.errors.statusUpdateFailed");
-      setRejectIssueError(message);
+      const message =
+        error instanceof Error
+          ? error.message
+          : t(
+              changeRequestDialogVariant === "continue"
+                ? "issues.continueWithComment.errors.statusUpdateFailed"
+                : "issues.reject.errors.statusUpdateFailed",
+            );
+      setChangeRequestError(message);
       throw new Error(message);
     } finally {
       setIsUpdatingStatus(false);
@@ -340,6 +377,12 @@ export function IssueDetailPage() {
   const sortedChangeRequests = useMemo(() => {
     return [...changeRequests].sort((left, right) => left.createdAt.localeCompare(right.createdAt));
   }, [changeRequests]);
+  const latestBlockerCommentID = useMemo(() => {
+    return comments.reduce<number | undefined>((latestID, comment) => {
+      if (comment.type !== "blocker") return latestID;
+      return latestID === undefined || comment.id > latestID ? comment.id : latestID;
+    }, undefined);
+  }, [comments]);
 
   function handleRunChange(runID: string) {
     updateSearchParams({ runId: runID });
@@ -382,8 +425,8 @@ export function IssueDetailPage() {
                     issue={issueState.issue}
                     issueOptions={layoutShellData?.issues ?? []}
                     onRejectIssue={() => {
-                      setRejectIssueError("");
-                      setIsRejectDialogOpen(true);
+                      setChangeRequestError("");
+                      setChangeRequestDialogVariant("reject");
                     }}
                     onStatusChange={handleStatusChange}
                   />
@@ -409,7 +452,16 @@ export function IssueDetailPage() {
                 error={commentsError}
                 hasMore={nextCursor !== null}
                 isLoading={isLoadingComments}
+                latestActionableBlockerCommentID={
+                  issueState.issue.status === "blocked" && nextCursor === null
+                    ? latestBlockerCommentID
+                    : undefined
+                }
                 onLoadMore={() => void loadComments(nextCursor ?? undefined)}
+                onContinueWithComment={() => {
+                  setChangeRequestError("");
+                  setChangeRequestDialogVariant("continue");
+                }}
               />
             </div>
           ) : null}
@@ -429,21 +481,25 @@ export function IssueDetailPage() {
           ) : null}
         </>
       ) : null}
-      {issueState.kind === "ready" && isRejectDialogOpen ? (
-        <RejectIssueDialog
-          error={rejectIssueError}
+      {issueState.kind === "ready" && changeRequestDialogVariant ? (
+        <ChangeRequestDialog
+          error={changeRequestError}
           isMovingIssue={isUpdatingStatus}
           issueID={issueState.issue.id}
           issueTitle={issueState.issue.title}
           onCancel={() => {
-            setRejectIssueError("");
-            setIsRejectDialogOpen(false);
+            setChangeRequestError("");
+            setChangeRequestDialogVariant(null);
           }}
-          onMoveIssueReady={handleMoveRejectedIssueReady}
+          onMoveIssueReady={handleMoveIssueReady}
           onSuccess={() => {
-            setRejectIssueError("");
-            setIsRejectDialogOpen(false);
+            setChangeRequestError("");
+            setChangeRequestDialogVariant(null);
+            if (changeRequestDialogVariant === "continue") {
+              void loadChangeRequests();
+            }
           }}
+          variant={changeRequestDialogVariant}
         />
       ) : null}
     </div>

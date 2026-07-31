@@ -8,13 +8,17 @@ export function CommentList({
   error,
   hasMore,
   isLoading,
+  latestActionableBlockerCommentID,
   onLoadMore,
+  onContinueWithComment,
 }: {
   comments: Comment[];
   error: string;
   hasMore: boolean;
   isLoading: boolean;
+  latestActionableBlockerCommentID?: number;
   onLoadMore: () => void;
+  onContinueWithComment?: () => void;
 }) {
   const { t } = useTranslation();
 
@@ -29,7 +33,15 @@ export function CommentList({
       ) : null}
       <div className={styles.commentList}>
         {comments.map((comment) => (
-          <CommentCard key={comment.id} comment={comment} />
+          <CommentCard
+            key={comment.id}
+            comment={comment}
+            onContinueWithComment={
+              comment.id === latestActionableBlockerCommentID
+                ? onContinueWithComment
+                : undefined
+            }
+          />
         ))}
       </div>
       {error ? <p className={styles.errorText}>{error}</p> : null}

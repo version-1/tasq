@@ -193,6 +193,25 @@ const resources = {
           submit: "Reject",
           title: "#{{id}} を Reject",
         },
+        continueWithComment: {
+          action: "コメントをつけて継続",
+          cancel: "キャンセル",
+          close: "閉じる",
+          emptyRequest: "変更リクエストなし",
+          errors: {
+            bodyRequired: "変更リクエストを入力してください",
+            statusUpdateFailed: "Issue を ready に戻せません",
+            submitFailed: "コメントをつけて継続できません",
+          },
+          fields: {
+            body: "変更リクエスト",
+          },
+          retryNote:
+            "Change request は作成済みです。再送信すると Issue の ready 更新だけを再試行します。",
+          saving: "送信中...",
+          submit: "コメントをつけて継続",
+          title: "コメントをつけて継続 #{{id}}",
+        },
         detail: {
           issueStatus: "Issue ステータス",
           openDetail: "詳細ページを開く",
@@ -214,6 +233,7 @@ const resources = {
           attachments: "添付ファイル",
           basicInfo: "基本情報",
           commentCount: "{{count}} 件",
+          commentActions: "{{author}} のコメント操作",
           comments: "コメント",
           commentsTab: "コメント",
           conversation: "会話履歴",
@@ -564,6 +584,7 @@ const resources = {
         },
         region: "通知",
         success: {
+          continuedWithComment: "コメントをつけて Issue を継続しました",
           created: "作成しました",
           deleted: "削除しました",
           issueCreated: "Issue を作成しました",
@@ -765,6 +786,25 @@ const resources = {
           submit: "Reject",
           title: "Reject #{{id}}",
         },
+        continueWithComment: {
+          action: "Continue with comment",
+          cancel: "Cancel",
+          close: "Close",
+          emptyRequest: "No change request",
+          errors: {
+            bodyRequired: "Enter a change request",
+            statusUpdateFailed: "Failed to move issue back to ready",
+            submitFailed: "Failed to continue with comment",
+          },
+          fields: {
+            body: "Change request",
+          },
+          retryNote:
+            "The change request has already been created. Submitting again only retries moving the issue to ready.",
+          saving: "Sending...",
+          submit: "Continue with comment",
+          title: "Continue with comment #{{id}}",
+        },
         detail: {
           issueStatus: "Issue Status",
           openDetail: "Open detail page",
@@ -786,6 +826,7 @@ const resources = {
           attachments: "Attachments",
           basicInfo: "Basic information",
           commentCount: "{{count}} comments",
+          commentActions: "Comment actions for {{author}}",
           comments: "Comments",
           commentsTab: "Comments",
           conversation: "Conversation history",
@@ -1136,6 +1177,7 @@ const resources = {
         },
         region: "Notifications",
         success: {
+          continuedWithComment: "Continued issue with comment",
           created: "Created",
           deleted: "Deleted",
           issueCreated: "Issue created",
