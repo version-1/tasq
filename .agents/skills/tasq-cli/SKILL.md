@@ -1,11 +1,11 @@
 ---
 name: tasq-cli
-description: Index for invoking the tq CLI — points to per-resource references and use-case playbooks loaded on demand
+description: Index for invoking the tq CLI, including typed issue-tracker resources, allowlisted raw API requests, local services, migrations, and release updates. Use for tq command syntax, flags, output, and operational workflows.
 ---
 
 # Purpose
 
-Drive the `tq` CLI (issue tracker, comments, projects, workflows, migrations, local services, release updates). This file is the index: load only the reference(s) that match the task so the agent's working context stays small.
+Drive the `tq` CLI (issue tracker, comments, projects, workflows, allowlisted raw API requests, migrations, local services, release updates). This file is the index: load only the reference(s) that match the task so the agent's working context stays small.
 
 Pair with [[tq-orchestrator]] when polling and dispatching ready issues — that skill covers *when* to call `tq`; this one covers *how*.
 
@@ -17,6 +17,7 @@ tq [--api-url URL] [--output text|json] <resource> <action> [flags] [positional 
 
 - Global flags must appear *before* the resource. `--flag value` and `--flag=value` both work.
 - `tq <resource> --help` / `tq <resource> <action> --help` prints scoped help.
+- `tq api` is a command rather than an action resource: `tq api <method> <path> [flags]`.
 - Prefer the installed `tq` binary so the CLI version matches the running services. `tq service start` will fall back to `go run ./cmd/<service>` when a sibling service binary is missing, but `tq` itself should be the installed binary.
 
 # Pick the reference
@@ -31,6 +32,7 @@ Load the smallest set of references that matches the task. Each file is self-con
 | [comment.md](references/resources/comment.md) | add or list issue comments, set author / type |
 | [project.md](references/resources/project.md) | register, remove, check, list projects |
 | [workflow.md](references/resources/workflow.md) | add, remove, show project workflow overrides |
+| [api.md](references/resources/api.md) | call an allowlisted raw issue-tracker endpoint when no typed command exposes the operation |
 | [migrate.md](references/resources/migrate.md) | apply, roll back, inspect local DB migrations |
 | [service-and-logs.md](references/resources/service-and-logs.md) | start / stop / status of services, tail logs, open web UI, version, update |
 | [enums.md](references/resources/enums.md) | valid status / priority / comment-type values |
