@@ -36,17 +36,20 @@
 }
 
 .item {
-  align-items: center;
   background: transparent;
   border: 0;
   border-radius: var(--radius-sm);
   color: var(--text);
+  padding: 8px;
+  text-align: left;
+}
+
+.richItem {
+  align-items: center;
   display: flex;
   font-size: 14px;
   gap: 10px;
   min-height: 36px;
-  padding: 8px;
-  text-align: left;
   width: 100%;
 }
 

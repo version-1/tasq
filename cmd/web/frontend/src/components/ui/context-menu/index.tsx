@@ -108,6 +108,7 @@ export function ContextMenuItem({
       aria-label={label}
       className={[
         styles.item,
+        icon || accessory ? styles.richItem : "",
         variant === "danger" ? styles.dangerItem : "",
         selected ? styles.selectedItem : "",
       ]
