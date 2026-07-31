@@ -18,6 +18,12 @@ tq [--api-url URL] api <method> <path> \
 - Repeat `--header` to set multiple headers. For duplicate names, the last value wins.
 - Use `--data` only with `POST`, `PUT`, or `PATCH`.
 
+## Safety boundary
+
+Treat `POST`, `PUT`, `PATCH`, and `DELETE` as external state changes. Execute them only when the user explicitly requests or authorizes the mutation. Resolve and verify the method, path, resource ID, query, and body before sending the request; an allowlisted route is not blanket authorization to change it. Ask before proceeding when the target or effect is ambiguous.
+
+The CLI does not add a confirmation prompt, including for delete operations.
+
 ## Examples
 
 ```sh
@@ -96,7 +102,7 @@ The body is not validated as JSON. When a body is present and `Content-Type` is 
 - Global `--output text|json` does not transform the response.
 - Redirects are not followed.
 - The HTTP client timeout is 10 seconds.
-- The command does not prompt before write or delete operations.
+- The command does not prompt before write or delete operations; follow the safety boundary above.
 
 | Exit code | Meaning |
 | --- | --- |
