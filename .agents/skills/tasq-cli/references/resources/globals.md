@@ -1,4 +1,4 @@
-# Globals: flags, env, output, exit codes
+# Shared CLI behavior
 
 ## Global flags
 
@@ -27,7 +27,7 @@ Global flags must appear *before* the resource.
 
 - `--output text` (default) — human-readable tables / messages.
 - `--output json` — structured JSON for the same response. Use this when a script or agent needs to parse the result. See [usecases/script-with-json.md](../usecases/script-with-json.md).
-- `tq logs` always streams text. `tq workflow show` has its own `--json` flag separate from the global `--output`.
+- `tq logs` always streams text. `tq workflow show --json` is a convenience equivalent to global `--output json`.
 - `tq issue watch` always emits NDJSON envelopes (one JSON object per line) regardless of `--output`.
 
 ## Exit codes

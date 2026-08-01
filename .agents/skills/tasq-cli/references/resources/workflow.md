@@ -1,6 +1,6 @@
 # `tq workflow`
 
-Manage per-project workflow overrides. The workflow content drives the orchestration rules — it must include YAML front matter at the top of the file or body.
+Manage per-project workflow overrides. The supplied workflow must begin with YAML front matter.
 
 ## Actions
 
@@ -14,7 +14,7 @@ Manage per-project workflow overrides. The workflow content drives the orchestra
 
 - `--project KEY` is required.
 - Exactly one of `--file PATH` or `--body TEXT` must be supplied. Passing both, or neither, is a usage error.
-- The content must begin with YAML front matter (delimited by `---`); the front matter must parse as a YAML object and supply the workflow's required fields. Otherwise the call fails with `workflow front matter is required` / `workflow front matter must be a YAML object` / `missing fields …`.
+- The front matter is delimited by `---`, must parse as a YAML object, and must provide required workflow fields.
 
 ## `remove`
 

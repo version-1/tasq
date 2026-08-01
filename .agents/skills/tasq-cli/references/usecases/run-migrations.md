@@ -1,23 +1,20 @@
 # Run migrations safely
 
-`tq migrate` operates on the local SQLite databases the services use. Running it while a writer is open can race; the safe order is **stop → migrate → start**.
-
-`tq service start` runs a migration pre-flight and refuses to boot if any pending migration exists (`migration pre-flight check failed: pending migrations: …; run `tq migrate` before starting services`). After applying or rolling back migrations, run `tq migrate status` to confirm before starting the stack again.
+For forward migrations, use **stop → migrate → verify → start**. A rollback also requires switching to application binaries compatible with the rolled-back schema before restarting. Command semantics are in [migrate.md](../resources/migrate.md).
 
 ## Check first (read-only)
 
 ```bash
 tq migrate status                  # text
-tq migrate status --output json    # script-friendly
+tq --output json migrate status    # script-friendly
 ```
-
-Lists applied and pending migrations per local database. Always safe to run.
 
 ## Apply pending migrations
 
 ```bash
 tq service stop          # release writers
 tq migrate               # apply every pending migration
+tq migrate status        # verify no migration remains pending
 tq service start         # bring the stack back up
 ```
 
@@ -26,14 +23,14 @@ tq service start         # bring the stack back up
 ```bash
 tq service stop
 tq migrate down          # rolls back exactly one migration per local database
-tq service start
+tq migrate status        # verify the intended migration is now pending
 ```
 
-`down` rolls back one step per database — run it again for each step you want to undo. Verify with `tq migrate status` between runs.
+Do not immediately restart the same application version: its startup pre-flight sees the rolled-back migration as pending and refuses to start. Switch to or install the application version that expects the rolled-back schema, then run `tq service start` with that compatible version.
 
 ## When the stack is already down
 
-If `tq service status` shows nothing running, skip the stop / start and just call `tq migrate` or `tq migrate down` directly.
+If `tq service status` shows nothing running, skip `tq service stop`. After a forward migration, start the services normally. After a rollback, first switch to a compatible application version as described above.
 
 ## See also
 

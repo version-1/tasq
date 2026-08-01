@@ -1,6 +1,6 @@
 # Comment flows: progress, blocker, handoff
 
-Comment `--type` exists so the orchestrator UX (and human readers) can distinguish routine notes from blockers and handoffs. Always pass `--author` from an agent so the source is attributable.
+Use explicit author and type values so orchestration and human readers can classify the note. See [comment.md](../resources/comment.md) for defaults and attachment behavior.
 
 ## Progress update
 
@@ -38,18 +38,8 @@ Bash's `$'…'` form lets you embed newlines without `printf`.
 
 ```bash
 tq comment list 42                  # text
-tq comment list 42 --output json    # structured
+tq --output json comment list 42    # structured
 ```
-
-## Author resolution
-
-Without `--author`, `tq` picks the first non-empty value from:
-
-1. `TQ_AUTHOR`
-2. config `author` field
-3. `$USER`
-
-An agent should not rely on `$USER` — pass `--author` explicitly.
 
 ## See also
 

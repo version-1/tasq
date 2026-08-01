@@ -23,18 +23,12 @@ Manage issues. Enum values live in [enums.md](enums.md). Global flags / env in [
 | Action | Required |
 | --- | --- |
 | `create` | `--title` and `--project` (the project *key*, not the id). |
-| `update` | At least one of `--title` / `--description` / `--status` / `--priority` / `--assignee` / `--dependency` / `--clear-dependencies` / `--attach`. |
+| `update` | At least one update flag. |
 | `get` / `close` / `cancel` / `ready` / `draft` | A single positive integer `<id>` positional. |
 | `rename` | `<id> <title>` — title is a single positional after the id. |
 | `edit` | `<id> <description>` — description is a single positional after the id. |
 
-## Defaults applied on create
-
-| Field | Default when omitted |
-| --- | --- |
-| `--status` | `backlog` |
-| `--priority` | `normal` |
-| `--description`, `--assignee` | empty string |
+`create` defaults status to `backlog`, priority to `normal`, and description and assignee to empty strings. Valid status and priority values are in [enums.md](enums.md).
 
 ## Dependencies
 

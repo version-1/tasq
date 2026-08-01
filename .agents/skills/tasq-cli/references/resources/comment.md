@@ -1,6 +1,6 @@
 # `tq comment`
 
-Add and list issue comments. Comment types live in [enums.md](enums.md).
+Add and list issue comments. Comment types live in [enums.md](enums.md); global flags and author resolution live in [globals.md](globals.md).
 
 ## Actions
 
@@ -13,7 +13,7 @@ Add and list issue comments. Comment types live in [enums.md](enums.md).
 
 - `<issue-id>` is a positive integer positional.
 - `--body` is required. Empty body is rejected.
-- `--author` defaults to `TQ_AUTHOR` → config `author` → `$USER`. Agents should always pass `--author` explicitly so the source is attributable (e.g. `--author claude-code`).
+- `--author` uses the shared resolution order. Agents should always pass it explicitly so the source is attributable (for example, `--author codex`).
 - `--type` defaults to `general`. Use `progress`, `blocker`, or `handoff` to drive the orchestration UX.
 - `--attach PATH` first creates the comment, then uploads the file, then patches the comment body with a Markdown image reference. If the body patch fails, the uploaded attachment is deleted, but the already-created comment row remains.
 

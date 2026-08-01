@@ -1,6 +1,6 @@
 # Upload attachments
 
-`--attach PATH` is accepted by `tq issue create`, `tq issue update`, and `tq comment add`. The file is uploaded, then a Markdown image reference of the form `![alt](attachment://<id>)` is appended to the issue description (or comment body). If the issue / comment write fails afterwards, the uploaded attachment is deleted so no orphan file remains.
+Use this procedure after choosing the owning command. Command semantics, rollback behavior, and generated Markdown are defined by [issue.md](../resources/issue.md) and [comment.md](../resources/comment.md).
 
 ## Attach to a new issue
 
@@ -29,20 +29,6 @@ tq comment add 42 \
   --body "Reproduced the misalignment on Safari 17:" \
   --attach ./screenshots/safari-17.png
 ```
-
-## Path resolution
-
-`--attach` is resolved from the CLI's current working directory. Either pass an absolute path or `cd` into the directory that contains the file before running `tq`.
-
-## Markdown produced
-
-The appended snippet is:
-
-```
-![<sanitized filename>](attachment://<attachment-id>)
-```
-
-Square brackets and newlines in the filename are stripped from the alt text.
 
 ## See also
 
