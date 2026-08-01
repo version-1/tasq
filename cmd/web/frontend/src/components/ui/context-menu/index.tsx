@@ -79,6 +79,7 @@ export function ContextMenuGroupLabel({ children }: { children: ReactNode }) {
 export function ContextMenuItem({
   children,
   disabled = false,
+  icon,
   label,
   onSelect,
   title,
@@ -86,6 +87,7 @@ export function ContextMenuItem({
 }: {
   children: ReactNode;
   disabled?: boolean;
+  icon?: ReactNode;
   label?: string;
   onSelect?: () => void;
   title?: string;
@@ -103,6 +105,7 @@ export function ContextMenuItem({
       type="button"
       onClick={onSelect}
     >
+      {icon ? <span className={styles.itemIcon}>{icon}</span> : null}
       {children}
     </button>
   );

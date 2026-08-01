@@ -134,6 +134,14 @@ describe("IssueCard", () => {
     const items = within(menu).getAllByRole("menuitem").map((item) => item.textContent);
 
     expect(items).toEqual(["Copy thread ID", "Ready (current)", "Backlog", "Cancelled", "Done", "Duplicate"]);
+    expect(within(menu).getByRole("menuitem", { name: "Copy thread ID" }).querySelector(".lucide-copy"))
+      .toBeInTheDocument();
+    expect(within(menu).getByRole("menuitem", { name: "Ready (current)" }).querySelector(".lucide-check"))
+      .toBeInTheDocument();
+    for (const status of ["Backlog", "Cancelled", "Done", "Duplicate"]) {
+      expect(within(menu).getByRole("menuitem", { name: status }).querySelector(".lucide-circle"))
+        .toBeInTheDocument();
+    }
   });
 
   it("runs allowed status changes from the action menu", async () => {

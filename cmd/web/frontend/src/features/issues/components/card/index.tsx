@@ -118,6 +118,7 @@ export function IssueCard({
         >
           <ContextMenuItem
             disabled={isThreadIDLoading || !threadID}
+            icon={<IconProxy name="copy" />}
             label={t("issues.card.copyThreadID")}
             title={t("issues.card.copyThreadID")}
             onSelect={() => {
@@ -138,6 +139,7 @@ export function IssueCard({
               <ContextMenuItem
                 key={status}
                 disabled={isDisabled}
+                icon={<IconProxy name={isCurrent ? "check" : "circle"} />}
                 label={isDisabled && !isCurrent ? lockedStatusLabel : itemLabel}
                 title={isDisabled && !isCurrent ? lockedStatusLabel : itemLabel}
                 onSelect={() => {

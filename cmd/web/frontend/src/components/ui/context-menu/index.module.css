@@ -32,12 +32,28 @@
 }
 
 .item {
+  align-items: center;
   background: transparent;
   border: 0;
   border-radius: var(--radius-sm);
   color: var(--text);
+  display: flex;
+  gap: var(--space-2);
   padding: 8px;
   text-align: left;
+  width: 100%;
+}
+
+.itemIcon {
+  align-items: center;
+  color: currentcolor;
+  display: inline-flex;
+  flex: 0 0 auto;
+  justify-content: center;
+}
+
+.itemIcon svg {
+  display: block;
 }
 
 .item:hover:not(:disabled),
