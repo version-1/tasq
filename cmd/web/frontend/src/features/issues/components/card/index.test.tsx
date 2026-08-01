@@ -134,6 +134,8 @@ describe("IssueCard", () => {
     const items = within(menu).getAllByRole("menuitem").map((item) => item.textContent);
 
     expect(items).toEqual(["Copy thread ID", "Ready (current)", "Backlog", "Cancelled", "Done", "Duplicate"]);
+    expect(within(menu).getAllByRole("menuitem")).toHaveLength(6);
+    expect(menu.querySelectorAll("svg")).toHaveLength(6);
   });
 
   it("runs allowed status changes from the action menu", async () => {

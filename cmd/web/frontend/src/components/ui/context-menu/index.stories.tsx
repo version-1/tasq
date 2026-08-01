@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { IconProxy } from "@/components/ui/icon-proxy";
 import {
   ContextMenu,
   ContextMenuGroupLabel,
@@ -24,11 +25,20 @@ function ContextMenuStory() {
       )}
     >
       <ContextMenuGroupLabel>Status</ContextMenuGroupLabel>
-      <ContextMenuItem onSelect={() => setIsOpen(false)}>Move to review</ContextMenuItem>
-      <ContextMenuItem variant="danger" onSelect={() => setIsOpen(false)}>
+      <ContextMenuItem
+        icon={<IconProxy name="circle" />}
+        onSelect={() => setIsOpen(false)}
+      >
+        Move to review
+      </ContextMenuItem>
+      <ContextMenuItem
+        icon={<IconProxy name="ban" />}
+        variant="danger"
+        onSelect={() => setIsOpen(false)}
+      >
         Delete project
       </ContextMenuItem>
-      <ContextMenuItem disabled title="Current state">
+      <ContextMenuItem disabled icon={<IconProxy name="check" />} title="Current state">
         Already in progress
       </ContextMenuItem>
       <ContextMenuHelp>Only valid transitions are enabled.</ContextMenuHelp>
