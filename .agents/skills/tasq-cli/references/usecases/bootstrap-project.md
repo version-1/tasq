@@ -18,16 +18,10 @@ tq project add --key my-app
 #    in the API. Front matter is required.
 tq workflow add --project my-app --file ./WORKFLOW.md
 
-# 3. Verify everything (WORKFLOW.md present, front matter valid, API accepts
-#    the workflow, AGENTS.md present). Exits non-zero if any check fails.
+# 3. Verify WORKFLOW.md exists, its front matter is valid, and the API accepts
+#    the workflow. Exits non-zero if any check fails.
 tq project check
 ```
-
-## What `tq project add` does locally
-
-- Creates `WORKFLOW.md` from the default template if it does not exist.
-- Appends `.worktrees` to `.gitignore` (creating the file if absent).
-- Rolls back both file changes if the API call fails.
 
 ## Verifying without registering
 
@@ -46,8 +40,6 @@ tq project check my-app
 ```bash
 tq project remove my-app
 ```
-
-This clears the API record but does not touch local files (`WORKFLOW.md`, `.gitignore`).
 
 ## See also
 

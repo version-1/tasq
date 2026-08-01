@@ -1,59 +1,47 @@
 ---
 name: tasq-cli
-description: Index for invoking the tq CLI, including typed issue-tracker resources, allowlisted raw API requests, local services, migrations, and release updates. Use for tq command syntax, flags, output, and operational workflows.
+description: "Index for invoking the tq CLI: typed issue-tracker resources, allowlisted raw API requests, and local operations. Use for command syntax, flags, output, and operational workflows."
 ---
 
-# Purpose
+# `tq` CLI index
 
-Drive the `tq` CLI (issue tracker, comments, projects, workflows, allowlisted raw API requests, migrations, local services, release updates). This file is the index: load only the reference(s) that match the task so the agent's working context stays small.
+Use this skill to choose the smallest reference set for a `tq` task. Resource references define commands; use cases define ordered procedures. Pair with [[tq-orchestrator]] for dispatch policy: this skill covers CLI invocation only.
 
-Pair with [[tq-orchestrator]] when polling and dispatching ready issues — that skill covers *when* to call `tq`; this one covers *how*.
+## Shared rules
 
-# Invocation shape
-
-```
-tq [--api-url URL] [--output text|json] <resource> <action> [flags] [positional args]
+```text
+tq [--api-url URL] [--output text|json] <resource-or-command> [action-or-args] [flags]
 ```
 
-- Global flags must appear *before* the resource. `--flag value` and `--flag=value` both work.
-- `tq <resource> --help` / `tq <resource> <action> --help` prints scoped help.
-- `tq api` is a command rather than an action resource: `tq api <method> <path> [flags]`.
-- Prefer the installed `tq` binary so the CLI version matches the running services. `tq service start` will fall back to `go run ./cmd/<service>` when a sibling service binary is missing, but `tq` itself should be the installed binary.
+- Put global flags before the resource or command. Use scoped `--help` for the installed CLI version.
+- Use the installed `tq` binary; it matches the local services. `tq service start` may fall back to `go run` only for missing sibling service binaries.
+- IDs are positive integers; `--project` always takes a kebab-case project key, not a numeric ID.
+- Treat `tq api` writes and state-changing operational commands as mutations requiring explicit user authorization. For agent-created comments, pass `--author` explicitly.
+- Run `tq issue watch`, `tq logs -f`, and `tq service start` under the Monitor tool rather than a blocking Bash call.
 
-# Pick the reference
+## References
 
-Load the smallest set of references that matches the task. Each file is self-contained.
+Load a resource reference for command syntax and semantics. Load a use case only when its ordered procedure is needed.
 
-## By resource (`references/resources/`)
-
-| Resource | When to load |
+| Task | Reference |
 | --- | --- |
-| [issue.md](references/resources/issue.md) | create, get, list, update, status transitions, rename, edit, watch |
-| [comment.md](references/resources/comment.md) | add or list issue comments, set author / type |
-| [project.md](references/resources/project.md) | register, remove, check, list projects |
-| [workflow.md](references/resources/workflow.md) | add, remove, show project workflow overrides |
-| [api.md](references/resources/api.md) | call an allowlisted raw issue-tracker endpoint when no typed command exposes the operation |
-| [migrate.md](references/resources/migrate.md) | apply, roll back, inspect local DB migrations |
-| [service-and-logs.md](references/resources/service-and-logs.md) | start / stop / status of services, tail logs, open web UI, version, update |
-| [enums.md](references/resources/enums.md) | valid status / priority / comment-type values |
-| [globals.md](references/resources/globals.md) | global flags, environment variables, API URL resolution, output / exit codes |
+| Shared flags, API resolution, output, exit codes | [globals.md](references/resources/globals.md) |
+| Status, priority, comment-type values and shortcuts | [enums.md](references/resources/enums.md) |
+| Issues, including `watch` | [issue.md](references/resources/issue.md) |
+| Comments | [comment.md](references/resources/comment.md) |
+| Projects | [project.md](references/resources/project.md) |
+| Workflow overrides | [workflow.md](references/resources/workflow.md) |
+| Allowlisted raw API request | [api.md](references/resources/api.md) |
+| Local migrations | [migrate.md](references/resources/migrate.md) |
+| Services, logs, Web UI, version, update, configuration | [service-and-logs.md](references/resources/service-and-logs.md) |
 
-## By use case (`references/usecases/`)
-
-| Goal | Load |
+| Procedure | Reference |
 | --- | --- |
-| Register a repo with tasq end-to-end | [bootstrap-project.md](references/usecases/bootstrap-project.md) |
-| Move an issue through backlog → done | [issue-lifecycle.md](references/usecases/issue-lifecycle.md) |
-| Record progress, blockers, or handoffs as comments | [comment-flows.md](references/usecases/comment-flows.md) |
-| Upload an image to an issue or comment | [attachments.md](references/usecases/attachments.md) |
-| Stream ready issues for the orchestrator | [watch-and-dispatch.md](references/usecases/watch-and-dispatch.md) |
-| Boot, stop, inspect, or update local services | [operate-services.md](references/usecases/operate-services.md) |
-| Apply or roll back migrations safely | [run-migrations.md](references/usecases/run-migrations.md) |
-| Parse `tq` output from a script | [script-with-json.md](references/usecases/script-with-json.md) |
-
-# Conventions
-
-- IDs are positive integers. `tq` rejects `0` and negative values.
-- `--project` takes the *project key* (kebab-case), not the numeric id.
-- Long-running commands (`tq issue watch`, `tq logs -f`, `tq service start`) belong under the Monitor tool, not a blocking Bash call.
-- When an agent posts comments programmatically, always pass `--author` explicitly (e.g. `--author claude-code`) so the source is attributable.
+| Register and validate a repository | [bootstrap-project.md](references/usecases/bootstrap-project.md) |
+| Create, progress, and finish an issue | [issue-lifecycle.md](references/usecases/issue-lifecycle.md) |
+| Record progress, blockers, and handoffs | [comment-flows.md](references/usecases/comment-flows.md) |
+| Attach an image | [attachments.md](references/usecases/attachments.md) |
+| Stream queued issues for dispatch | [watch-and-dispatch.md](references/usecases/watch-and-dispatch.md) |
+| Operate local services | [operate-services.md](references/usecases/operate-services.md) |
+| Apply or roll back migrations | [run-migrations.md](references/usecases/run-migrations.md) |
+| Consume JSON from a script | [script-with-json.md](references/usecases/script-with-json.md) |

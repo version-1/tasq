@@ -1,71 +1,37 @@
-# `tq service`, `tq logs`, `tq web`, `tq version`, `tq update`
+# Local operations
 
-Operational commands for the local stack: the issue-tracker API, the orchestrator, and the web UI.
+Commands for the issue-tracker, orchestrator, and Web UI. Global output behavior is in [globals.md](globals.md).
 
-## `tq service`
+## Services
 
-| Action | Usage | Notes |
-| --- | --- | --- |
-| `start` | `tq service start` | Starts issue-tracker, orchestrator, and web in that order. Errors if any of the three is already running. Runs a migration pre-flight first and aborts with `migration pre-flight check failed: pending migrations: …; run `tq migrate` before starting services` if there is anything pending. |
-| `stop` | `tq service stop` | Stops web, orchestrator, then issue-tracker. |
-| `status` | `tq service status` | Text output prints `pid`, `port`, `uptime`, and `state` (`running` / `stopped`). JSON output adds `addr` and `started_at`. |
+| Command | Behavior |
+| --- | --- |
+| `tq service start [-y]` | Checks migrations, then starts issue-tracker, orchestrator, and Web UI. It fails if a service is already running. If default ports are occupied, it proposes alternate loopback ports and asks for confirmation; `-y` accepts them. |
+| `tq service stop` | Stops Web UI, orchestrator, then issue-tracker. |
+| `tq service status` | Shows each service's state, PID, port, and uptime; JSON also includes address and start time. |
 
-None of the actions accept positional arguments. All honor `--output text|json`.
+`start` refuses pending migrations and directs the caller to `tq migrate`. All service commands accept no positional arguments and honor `--output text|json`.
 
-## `tq logs`
+## Logs and Web UI
 
-```
-tq logs <service> [-n LINES] [-f]
-```
-
-| Flag | Default | Notes |
-| --- | --- | --- |
-| `<service>` (positional) | — | One of `issue-tracker` (alias `tracker`), `orchestrator`, `web`. |
-| `-n` | `1000` | Tail size. Must be non-negative. |
-| `-f` | off | Follow new log output. |
-
-`tq logs` does not honor `--output json` — it always streams text. Run `-f` under the Monitor tool, not a blocking Bash call.
-
-## `tq web`
-
-```
+```text
+tq logs <issue-tracker|tracker|orchestrator|web> [-n LINES] [-f]
 tq web
 ```
 
-Opens the running web UI in the default browser. Errors with `web UI is not running; run `tq service start` first` if the web service has not been started.
+`-n` defaults to `1000` and must be non-negative. Logs always stream text, ignoring `--output`; run `-f` under Monitor. `tq web` opens the running UI and fails if it is not running.
 
-## `tq version`
+## Version, configuration, and update
 
-```
-tq version
-```
+| Command | Behavior |
+| --- | --- |
+| `tq version` | Prints the embedded version. |
+| `tq config` | Shows build profile, home resolution, and resolved configuration; use global `--output json` for structured output. |
+| `tq update [-y] [--tag TAG]` | Installs release artifacts, migrates local databases, and restarts services. It confirms the service interruption unless `-y` is supplied. |
 
-Prints the embedded version string. Use this after an update to confirm the binary matches the running services.
-
-## `tq update`
-
-```
-tq update [-y] [--tag TAG]
-```
-
-Installs `tq`, `issue-tracker`, `orchestrator`, and `web` from GitHub Release artifacts, applies migrations, and restarts local services. By default it targets the latest formal release. `--tag` installs a specific release or prerelease tag.
-
-The command prints the current version and target version before stopping services. It asks for confirmation because services will stop and restart; pass `-y` only when that disruption is expected.
-
-Flow:
-
-1. Resolve target release.
-2. Print current and target versions.
-3. Confirm unless `-y` is set.
-4. Stop services.
-5. Install release artifacts into the fixed user install location.
-6. Run the newly installed `tq version`.
-7. Apply migrations.
-8. Start services.
-
-If any step fails, later steps are not run. If install fails after services stop, inspect the error, then run `tq service start` after fixing the install problem.
+`update` targets the latest formal release by default; `--tag` also accepts prereleases. After confirmation it stops services, installs the artifacts, verifies the new `tq version`, migrates, and starts services. A failure stops the remaining steps; after an install failure, fix the problem and run `tq service start`.
 
 ## See also
 
-- [usecases/operate-services.md](../usecases/operate-services.md) — boot / inspect / stop the stack.
-- [usecases/run-migrations.md](../usecases/run-migrations.md) — recommended ordering when migrations and services overlap.
+- [operate-services.md](../usecases/operate-services.md) for an operational sequence.
+- [run-migrations.md](../usecases/run-migrations.md) for safe migration ordering.
