@@ -56,10 +56,6 @@
   display: block;
 }
 
-.itemLabel {
-  min-width: 0;
-}
-
 .item:hover:not(:disabled),
 .item:focus-visible:not(:disabled) {
   background: var(--extra-light-gray);
