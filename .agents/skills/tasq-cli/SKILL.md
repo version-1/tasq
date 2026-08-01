@@ -15,7 +15,7 @@ tq [--api-url URL] [--output text|json] <resource-or-command> [action-or-args] [
 
 - Put global flags before the resource or command. Use scoped `--help` for the installed CLI version.
 - Use the installed `tq` binary; it matches the local services. `tq service start` may fall back to `go run` only for missing sibling service binaries.
-- IDs are positive integers; `--project` always takes a kebab-case project key, not a numeric ID.
+- Numeric issue-tracker resource IDs are positive integers; attachment IDs are non-empty strings. `--project` always takes a kebab-case project key, not a numeric ID.
 - Treat `tq api` writes and state-changing operational commands as mutations requiring explicit user authorization. For agent-created comments, pass `--author` explicitly.
 - Run `tq issue watch`, `tq logs -f`, and `tq service start` under the Monitor tool rather than a blocking Bash call.
 
