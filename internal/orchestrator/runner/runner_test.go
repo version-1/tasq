@@ -126,7 +126,7 @@ while IFS= read -r line; do
       ;;
     4)
       case "$line" in
-        *'"method":"turn/start"'*'tq issue update 123 --status in_progress'*'continue the same task in this live thread.'*'tq artifact set 123 --type pull_request'*'"threadId":"thread-previous"'*)
+        *'"method":"turn/start"'*'tq issue update 123 --status in_progress'*'continue the same task in this live thread without repeating completed work'*'tq artifact set 123 --type pull_request'*'"threadId":"thread-previous"'*)
           ;;
         *)
           echo "expected resumed continuation turn: $line" >&2
@@ -604,8 +604,8 @@ func TestRenderPromptInjectsTaskWorkPromptByDefault(t *testing.T) {
 		"`tq artifact set` is an upsert",
 		"Mention any supporting PRs in the handoff comment",
 		"retry a reasonable number of times",
-		"leave a blocker comment and do not move the issue to `review`",
-		"If you do not create or update a pull request, artifact registration is not required.",
+		"leave a blocker comment and do not move to `review`",
+		"Skip artifact registration when no pull request was created or updated.",
 	} {
 		if !strings.Contains(prompt, want) {
 			t.Fatalf("prompt missing contract wording %q: %q", want, prompt)
@@ -680,10 +680,10 @@ func TestContinuationGuidanceIncludesChangeRequests(t *testing.T) {
 	for _, want := range []string{
 		"tq issue update 7 --status in_progress",
 		"tq artifact set 7 --type pull_request <pr-url>",
-		"After registration succeeds, add the handoff comment, then move the issue to `review`.",
-		"Retry a failed registration a reasonable number of times",
-		"leave a blocker comment and do not move the issue to `review`",
-		"If you do not create or update a pull request during this continuation, artifact registration is not required.",
+		"On success, add the handoff comment, then move the issue to `review`",
+		"on failure, retry a reasonable number of times",
+		"leave a blocker comment and do not move to `review` if it remains unresolved",
+		"Otherwise, artifact registration is not required.",
 		"Change requests assigned to this continuation:",
 		"#1 by user: Update the tests.",
 		"#2 by reviewer: Document the API.",
@@ -696,7 +696,7 @@ func TestContinuationGuidanceIncludesChangeRequests(t *testing.T) {
 			t.Fatalf("prompt missing %q: %q", want, prompt)
 		}
 	}
-	if strings.Index(prompt, "If you create or update a pull request during this continuation") > strings.Index(prompt, "Change requests assigned to this continuation:") {
+	if strings.Index(prompt, "If this continuation creates or updates a pull request") > strings.Index(prompt, "Change requests assigned to this continuation:") {
 		t.Fatalf("change-request guidance moved before continuation reminder: %q", prompt)
 	}
 }

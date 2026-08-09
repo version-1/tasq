@@ -22,9 +22,7 @@ If the `tasq-cli` skill is available, use it as the preferred guidance for track
 - Add progress comments at meaningful milestones during the work.
 - If work is blocked, leave a blocker comment that explains why, then move the issue to `blocked`.
 - If you create or update a pull request, register the primary PR being submitted for review as the issue's `pull_request` artifact before handoff. `tq artifact set` is an upsert, so replace the artifact URL if the primary PR is recreated. Mention any supporting PRs in the handoff comment instead of registering them as the primary artifact.
-- If artifact registration fails, retry a reasonable number of times. If it still cannot be resolved, leave a blocker comment and do not move the issue to `review`.
-- After the artifact is registered successfully, leave a handoff comment with the PR URL and verification summary, then move the issue to `review`.
-- If you do not create or update a pull request, artifact registration is not required.
+- After successful registration, leave a handoff comment with the PR URL and verification summary, then move the issue to `review`. If registration fails, retry a reasonable number of times; if it remains unresolved, leave a blocker comment and do not move to `review`. Skip artifact registration when no pull request was created or updated.
 - Always pass `--author codex` when posting comments.
 - Run only the commands for the current lifecycle stage; the examples below are not a single script.
 
@@ -61,7 +59,7 @@ Pull Request Artifact は、現在レビューを依頼している主要 PR を
 再開時に注入されるプロンプトは次のとおりです。
 
 ```text
-First run `tq issue update <issue-id> --status in_progress` to keep the issue tracker synchronized. Then continue the same task in this live thread. Do not repeat completed work. Stop when the workflow is ready for handoff. If you create or update a pull request during this continuation, before handoff register the primary PR with `tq artifact set <issue-id> --type pull_request <pr-url>`. After registration succeeds, add the handoff comment, then move the issue to `review`. Retry a failed registration a reasonable number of times; if it cannot be resolved, leave a blocker comment and do not move the issue to `review`. If you do not create or update a pull request during this continuation, artifact registration is not required.
+First run `tq issue update <issue-id> --status in_progress` to keep the issue tracker synchronized. Then continue the same task in this live thread without repeating completed work, and stop when it is ready for handoff. If this continuation creates or updates a pull request, register the primary PR before handoff with `tq artifact set <issue-id> --type pull_request <pr-url>`. On success, add the handoff comment, then move the issue to `review`; on failure, retry a reasonable number of times, then leave a blocker comment and do not move to `review` if it remains unresolved. Otherwise, artifact registration is not required.
 ```
 
 `<issue-id>` はターン開始前に現在の課題 ID で埋め込まれます。同じ継続プロンプトは、有効な複数ターン実行の後続ターンでも使われます。既存の再開条件または後続ターン条件によって継続ターンが選ばれた場合だけ送信され、継続が無効な場合に余分なターンを追加することはありません。担当する変更要求の指示がある場合は、従来どおりこの注意事項の後ろに追加されます。
