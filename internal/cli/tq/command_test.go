@@ -816,14 +816,12 @@ func TestServiceStatusStopped(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("code=%d stderr=%s", code, stderr)
 	}
-	if !strings.Contains(stripANSI(stdout), "issue-tracker\tstopped") {
-		t.Fatalf("stdout missing issue-tracker stopped status: %s", stdout)
-	}
-	if !strings.Contains(stripANSI(stdout), "orchestrator\tstopped") {
-		t.Fatalf("stdout missing orchestrator stopped status: %s", stdout)
-	}
-	if !strings.Contains(stripANSI(stdout), "web\tstopped") {
-		t.Fatalf("stdout missing web stopped status: %s", stdout)
+	want := "SERVICE        STATE    PID  PORT  UPTIME\n" +
+		"issue-tracker  stopped    -     -       -\n" +
+		"orchestrator   stopped    -     -       -\n" +
+		"web            stopped    -     -       -\n"
+	if got := stripANSI(stdout); got != want {
+		t.Fatalf("service status table:\n%s\nwant:\n%s", got, want)
 	}
 }
 
@@ -988,7 +986,7 @@ func TestServiceStatusCleansStaleState(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("code=%d stderr=%s", code, stderr)
 	}
-	if !strings.Contains(stripANSI(stdout), "issue-tracker\tstopped") {
+	if !strings.Contains(stripANSI(stdout), "issue-tracker  stopped") {
 		t.Fatalf("unexpected stdout: %s", stdout)
 	}
 	state, err := tqconfig.ReadState()

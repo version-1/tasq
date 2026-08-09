@@ -95,11 +95,20 @@ func TestWriteServiceStatusesTextUsesStateColors(t *testing.T) {
 	var buf bytes.Buffer
 	if err := writeServiceStatuses(&buf, []serviceStatus{
 		{Name: "issue-tracker", State: "running", PID: 42, Port: 37651, Uptime: "1m"},
+		{Name: "orchestrator", State: "running", PID: 104153, Port: 37652, Uptime: "2m41s"},
 		{Name: "web", State: "stopped"},
 	}); err != nil {
 		t.Fatal(err)
 	}
+	wantTable := "SERVICE        STATE       PID   PORT  UPTIME\n" +
+		"issue-tracker  running      42  37651      1m\n" +
+		"orchestrator   running  104153  37652   2m41s\n" +
+		"web            stopped       -      -       -\n"
+	if got := stripANSI(buf.String()); got != wantTable {
+		t.Fatalf("service status table:\n%s\nwant:\n%s", got, wantTable)
+	}
 	for _, want := range []string{
+		ansiBold + "SERVICE        STATE       PID   PORT  UPTIME" + ansiReset,
 		ansiCyan + "issue-tracker" + ansiReset,
 		ansiGreen + "running" + ansiReset,
 		ansiCyan + "web" + ansiReset,

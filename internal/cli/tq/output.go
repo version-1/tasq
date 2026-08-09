@@ -228,18 +228,104 @@ func writeProjectCheckItems(w io.Writer, format string, items []projectCheckItem
 }
 
 func writeServiceStatuses(w io.Writer, statuses []serviceStatus) error {
+	table := formatServiceStatusTable(statuses)
+	_, err := io.WriteString(w, colorServiceStatusTable(table))
+	return err
+}
+
+type serviceStatusTableRow struct {
+	service string
+	state   string
+	pid     string
+	port    string
+	uptime  string
+}
+
+func formatServiceStatusTable(statuses []serviceStatus) string {
+	rows := make([]serviceStatusTableRow, 0, len(statuses)+1)
+	rows = append(rows, serviceStatusTableRow{
+		service: "SERVICE",
+		state:   "STATE",
+		pid:     "PID",
+		port:    "PORT",
+		uptime:  "UPTIME",
+	})
 	for _, status := range statuses {
 		if status.State == "running" {
-			if _, err := fmt.Fprintf(w, "%s%s%s\t%s\tpid=%d\tport=%d\tuptime=%s\n", ansiCyan, status.Name, ansiReset, colorValue("running", ansiGreen), status.PID, status.Port, status.Uptime); err != nil {
-				return err
-			}
+			rows = append(rows, serviceStatusTableRow{
+				service: status.Name,
+				state:   status.State,
+				pid:     strconv.Itoa(status.PID),
+				port:    strconv.Itoa(status.Port),
+				uptime:  status.Uptime,
+			})
 			continue
 		}
-		if _, err := fmt.Fprintf(w, "%s%s%s\t%s\n", ansiCyan, status.Name, ansiReset, colorValue("stopped", ansiFaint)); err != nil {
-			return err
+		rows = append(rows, serviceStatusTableRow{
+			service: status.Name,
+			state:   status.State,
+			pid:     "-",
+			port:    "-",
+			uptime:  "-",
+		})
+	}
+
+	widths := serviceStatusTableRow{}
+	for _, row := range rows {
+		if len(row.service) > len(widths.service) {
+			widths.service = row.service
+		}
+		if len(row.state) > len(widths.state) {
+			widths.state = row.state
+		}
+		if len(row.pid) > len(widths.pid) {
+			widths.pid = row.pid
+		}
+		if len(row.port) > len(widths.port) {
+			widths.port = row.port
+		}
+		if len(row.uptime) > len(widths.uptime) {
+			widths.uptime = row.uptime
 		}
 	}
-	return nil
+
+	var buf strings.Builder
+	for _, row := range rows {
+		fmt.Fprintf(
+			&buf,
+			"%-*s  %-*s  %*s  %*s  %*s\n",
+			len(widths.service), row.service,
+			len(widths.state), row.state,
+			len(widths.pid), row.pid,
+			len(widths.port), row.port,
+			len(widths.uptime), row.uptime,
+		)
+	}
+	return buf.String()
+}
+
+func colorServiceStatusTable(table string) string {
+	lines := strings.Split(table, "\n")
+	for i, line := range lines {
+		if line == "" {
+			continue
+		}
+		if i == 0 {
+			lines[i] = ansiBold + line + ansiReset
+			continue
+		}
+		fields := strings.Fields(line)
+		if len(fields) < 2 {
+			continue
+		}
+		line = strings.Replace(line, fields[0], ansiCyan+fields[0]+ansiReset, 1)
+		stateColor := ansiFaint
+		if fields[1] == "running" {
+			stateColor = ansiGreen
+		}
+		lines[i] = strings.Replace(line, fields[1], stateColor+fields[1]+ansiReset, 1)
+	}
+	return strings.Join(lines, "\n")
 }
 
 func writeWorkflowAddResult(w io.Writer, format string, project entity.Project, workflow entity.ProjectWorkflow) error {
