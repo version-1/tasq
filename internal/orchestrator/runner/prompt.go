@@ -9,7 +9,7 @@ import (
 )
 
 func continuationPrompt(task Task) string {
-	prompt := fmt.Sprintf(continuationGuidance, task.Issue.ID)
+	prompt := fmt.Sprintf(continuationGuidance, task.Issue.ID, task.Issue.ID)
 	changeRequestGuidance := changeRequestGuidanceForTask(task)
 	if changeRequestGuidance == "" {
 		return prompt

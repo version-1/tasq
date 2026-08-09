@@ -1,24 +1,30 @@
 # System Prompts
 
-このドキュメントでは、orchestrator が Codex runner の turn に注入する Tasq 所有の prompt 文字列を記録します。プロジェクト固有の作業指示は、引き続き有効な `WORKFLOW.md` から取得します。
+このドキュメントでは、オーケストレーターが Codex runner のターンに注入する、Tasq 所有のプロンプト文字列を記録します。プロジェクト固有の作業指示は、引き続き有効な `WORKFLOW.md` から取得します。
 
-orchestrator は、Symphony の境界である「workflow が定義した ticket mutation は coding agent が行う」を保ちつつ、agent が issue tracker を同期できるようにこれらの prompt を注入します。
+オーケストレーターは、「ワークフローで定義した課題の変更はコーディングエージェントが行う」という Symphony の境界を保ちながら、エージェントが Issue Tracker を同期できるようにこれらのプロンプトを注入します。
 
-## タスク開始時の Prompt
+## タスク開始時のプロンプト
 
-初回 run では、`Task.ResumeThreadID` が空の場合、runner は有効な workflow prompt を render します。`tasq.task_work_prompt` が `false` に設定されていない限り、Tasq は template expansion の前に既定の task-work prompt を先頭へ追加します。
+初回実行で `Task.ResumeThreadID` が空の場合、runner は有効なワークフロープロンプトを展開します。`tasq.task_work_prompt` が `false` に設定されていない限り、Tasq はテンプレート変数を展開する前に、既定の task-work プロンプトを先頭へ追加します。
 
-開始時に注入される prompt は次のとおりです。
+開始時に注入されるプロンプトは次のとおりです。
 
 ````text
 Use `tq` to keep the issue tracker synchronized:
 
 If the `tasq-cli` skill is available, use it as the preferred guidance for tracker operations.
 
+- Prefer typed `tq` commands such as `tq issue`, `tq comment`, and `tq artifact` for issue tracker operations.
+- Use `tq api` only when the issue tracker operation has no typed `tq` command.
+- Do not call the issue tracker API directly with `curl`, `wget`, or a custom HTTP script. This restriction applies only to the issue tracker API, not to other services or local endpoint verification.
 - When work starts, move the issue to `in_progress` and leave a progress comment.
 - Add progress comments at meaningful milestones during the work.
 - If work is blocked, leave a blocker comment that explains why, then move the issue to `blocked`.
-- When the pull request is ready for review, leave a handoff comment with the PR and verification summary, then move the issue to `review`.
+- If you create or update a pull request, register the primary PR being submitted for review as the issue's `pull_request` artifact before handoff. `tq artifact set` is an upsert, so replace the artifact URL if the primary PR is recreated. Mention any supporting PRs in the handoff comment instead of registering them as the primary artifact.
+- If artifact registration fails, retry a reasonable number of times. If it still cannot be resolved, leave a blocker comment and do not move the issue to `review`.
+- After the artifact is registered successfully, leave a handoff comment with the PR URL and verification summary, then move the issue to `review`.
+- If you do not create or update a pull request, artifact registration is not required.
 - Always pass `--author codex` when posting comments.
 - Run only the commands for the current lifecycle stage; the examples below are not a single script.
 
@@ -35,6 +41,7 @@ tq comment add {{ issue.id }} --author codex --type blocker --body "Blocked: exp
 tq issue update {{ issue.id }} --status blocked
 
 # Ready for review
+tq artifact set {{ issue.id }} --type pull_request <pr-url>
 tq comment add {{ issue.id }} --author codex --type handoff --body "PR: <url>; verification: <summary>."
 tq issue update {{ issue.id }} --status review
 ```
@@ -43,16 +50,18 @@ Run the installed `tq` binary from `PATH`. Do not use `go run ./cmd/tq` for
 tracker synchronization.
 ````
 
-`{{ issue.id }}` などの template variable は、この prompt を先頭へ追加した後に render されます。
+`{{ issue.id }}` などのテンプレート変数は、このプロンプトを先頭へ追加した後に展開されます。`tasq.task_work_prompt: false` を設定すると、Issue Tracker と Artifact に関する指示を含む開始プロンプト全体が無効になりますが、継続時の動作は変わりません。
 
-## タスク再開時の Prompt
+Pull Request Artifact は、現在レビューを依頼している主要 PR を表します。同じ Artifact を再設定すると以前の URL が置き換わり、補助 PR はハンドオフコメントの補足情報として残します。PR を作成または更新した場合にだけ Artifact 登録が必要です。登録に失敗した場合は合理的な回数だけ再試行し、解決できなければブロッカーコメントを残して `review` へ移動してはいけません。
 
-再開 run では、`Task.ResumeThreadID` が設定されている場合、runner は既存の Codex thread を resume し、完全な workflow prompt は再送しません。完了済みの作業を繰り返さず同じタスクを続けるため、continuation guidance だけを送信します。
+## タスク再開時のプロンプト
 
-再開時に注入される prompt は次のとおりです。
+再開時に `Task.ResumeThreadID` が設定されている場合、runner は既存の Codex thread を再開し、完全なワークフロープロンプトは再送しません。完了済みの作業を繰り返さず同じタスクを続けるため、継続用の指示だけを送信します。
+
+再開時に注入されるプロンプトは次のとおりです。
 
 ```text
-First run `tq issue update <issue-id> --status in_progress` to keep the issue tracker synchronized. Then continue the same task in this live thread. Do not repeat completed work. Stop when the workflow is ready for handoff.
+First run `tq issue update <issue-id> --status in_progress` to keep the issue tracker synchronized. Then continue the same task in this live thread. Do not repeat completed work. Stop when the workflow is ready for handoff. If you create or update a pull request during this continuation, before handoff register the primary PR with `tq artifact set <issue-id> --type pull_request <pr-url>`. After registration succeeds, add the handoff comment, then move the issue to `review`. Retry a failed registration a reasonable number of times; if it cannot be resolved, leave a blocker comment and do not move the issue to `review`. If you do not create or update a pull request during this continuation, artifact registration is not required.
 ```
 
-`<issue-id>` は turn 開始前に現在の task の issue ID で埋め込まれます。同じ continuation prompt は、multi-turn run の後続 turn でも使われます。
+`<issue-id>` はターン開始前に現在の課題 ID で埋め込まれます。同じ継続プロンプトは、有効な複数ターン実行の後続ターンでも使われます。既存の再開条件または後続ターン条件によって継続ターンが選ばれた場合だけ送信され、継続が無効な場合に余分なターンを追加することはありません。担当する変更要求の指示がある場合は、従来どおりこの注意事項の後ろに追加されます。
