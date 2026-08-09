@@ -48,6 +48,7 @@ export function CommentCard({
               )}
             >
               <ContextMenuItem
+                icon={<IconProxy name="arrow-right" />}
                 onSelect={() => {
                   setIsMenuOpen(false);
                   onContinueWithComment();

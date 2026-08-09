@@ -82,6 +82,7 @@ export function ContextMenuItem({
   icon,
   label,
   onSelect,
+  trailingIcon,
   title,
   variant = "default",
 }: {
@@ -90,6 +91,7 @@ export function ContextMenuItem({
   icon?: ReactNode;
   label?: string;
   onSelect?: () => void;
+  trailingIcon?: ReactNode;
   title?: string;
   variant?: "default" | "danger";
 }) {
@@ -107,8 +109,13 @@ export function ContextMenuItem({
     >
       {icon ? <span className={styles.itemIcon}>{icon}</span> : null}
       {children}
+      {trailingIcon ? <span className={styles.trailingIcon}>{trailingIcon}</span> : null}
     </button>
   );
+}
+
+export function ContextMenuSeparator() {
+  return <div className={styles.separator} role="separator" />;
 }
 
 export function ContextMenuHelp({ children }: { children: ReactNode }) {

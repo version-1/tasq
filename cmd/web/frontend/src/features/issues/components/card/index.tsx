@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { Fragment, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import type { IssueStatus, IssueSummary } from "@/lib/types";
@@ -7,6 +7,7 @@ import {
   ContextMenuGroupLabel,
   ContextMenuHelp,
   ContextMenuItem,
+  ContextMenuSeparator,
 } from "@/components/ui/context-menu";
 import { IconProxy, type IconProxyName } from "@/components/ui/icon-proxy";
 import { toast } from "@/lib/toast";
@@ -140,6 +141,7 @@ export function IssueCard({
           </ContextMenuItem>
           {pullRequest ? (
             <ContextMenuItem
+              icon={<IconProxy name="git-pull-request" />}
               label={t("issues.card.openPullRequest")}
               title={t("issues.card.openPullRequest")}
               onSelect={handleOpenPullRequest}
@@ -147,8 +149,9 @@ export function IssueCard({
               {t("issues.card.openPullRequest")}
             </ContextMenuItem>
           ) : null}
+          <ContextMenuSeparator />
           <ContextMenuGroupLabel>{t("issues.card.changeStatus")}</ContextMenuGroupLabel>
-          {statusOptions.map((status) => {
+          {statusOptions.map((status, index) => {
             const isCurrent = status === issue.status;
             const isDisabled = isCurrent || !canChangeStatus;
             const itemLabel = isCurrent
@@ -156,19 +159,27 @@ export function IssueCard({
               : t(`statuses.${status}`);
 
             return (
-              <ContextMenuItem
-                key={status}
-                disabled={isDisabled}
-                icon={<IconProxy name={isCurrent ? "check" : "circle"} />}
-                label={isDisabled && !isCurrent ? lockedStatusLabel : itemLabel}
-                title={isDisabled && !isCurrent ? lockedStatusLabel : itemLabel}
-                onSelect={() => {
-                  setIsMenuOpen(false);
-                  void onStatusChange(issue.id, status);
-                }}
-              >
-                {itemLabel}
-              </ContextMenuItem>
+              <Fragment key={status}>
+                {status === "duplicate" && index > 0 ? <ContextMenuSeparator /> : null}
+                <ContextMenuItem
+                  disabled={isDisabled}
+                  icon={
+                    <IconProxy
+                      className={statusIconClassName(status)}
+                      name={statusIconName(status)}
+                    />
+                  }
+                  label={isDisabled && !isCurrent ? lockedStatusLabel : itemLabel}
+                  title={isDisabled && !isCurrent ? lockedStatusLabel : itemLabel}
+                  trailingIcon={isCurrent ? <IconProxy name="check" /> : undefined}
+                  onSelect={() => {
+                    setIsMenuOpen(false);
+                    void onStatusChange(issue.id, status);
+                  }}
+                >
+                  {itemLabel}
+                </ContextMenuItem>
+              </Fragment>
             );
           })}
           {!canChangeStatus && statusOptions.length === 1 ? (
@@ -239,6 +250,35 @@ export function IssueCard({
 
 function statusOptionsFor(status: IssueStatus): IssueStatus[] {
   return [status, ...(statusTransitionTargets[status] ?? [])];
+}
+
+const statusIcons = {
+  backlog: "inbox",
+  blocked: "circle-alert",
+  cancelled: "ban",
+  done: "circle-check",
+  duplicate: "copy",
+  failed: "circle-x",
+  in_progress: "play",
+  ready: "circle-play",
+  review: "eye",
+} satisfies Record<IssueStatus, IconProxyName>;
+
+function statusIconName(status: IssueStatus): IconProxyName {
+  return statusIcons[status];
+}
+
+function statusIconClassName(status: IssueStatus): string {
+  if (status === "ready" || status === "done") {
+    return styles.statusIconPositive;
+  }
+  if (status === "cancelled" || status === "failed") {
+    return styles.statusIconDanger;
+  }
+  if (status === "blocked" || status === "review") {
+    return styles.statusIconWarning;
+  }
+  return styles.statusIconMuted;
 }
 
 function quickActionClassName(status: IssueStatus): string {

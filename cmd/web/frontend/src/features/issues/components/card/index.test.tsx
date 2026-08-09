@@ -137,12 +137,42 @@ describe("IssueCard", () => {
     expect(items).toEqual(["Copy thread ID", "Ready (current)", "Backlog", "Cancelled", "Done", "Duplicate"]);
     expect(within(menu).getByRole("menuitem", { name: "Copy thread ID" }).querySelector(".lucide-copy"))
       .toBeInTheDocument();
+    expect(within(menu).getByRole("menuitem", { name: "Ready (current)" }).querySelector(".lucide-circle-play"))
+      .toBeInTheDocument();
     expect(within(menu).getByRole("menuitem", { name: "Ready (current)" }).querySelector(".lucide-check"))
       .toBeInTheDocument();
-    for (const status of ["Backlog", "Cancelled", "Done", "Duplicate"]) {
-      expect(within(menu).getByRole("menuitem", { name: status }).querySelector(".lucide-circle"))
-        .toBeInTheDocument();
-    }
+    expect(within(menu).getByRole("menuitem", { name: "Backlog" }).querySelector(".lucide-inbox"))
+      .toBeInTheDocument();
+    expect(within(menu).getByRole("menuitem", { name: "Cancelled" }).querySelector(".lucide-ban"))
+      .toBeInTheDocument();
+    expect(within(menu).getByRole("menuitem", { name: "Done" }).querySelector(".lucide-circle-check"))
+      .toBeInTheDocument();
+    expect(within(menu).getByRole("menuitem", { name: "Duplicate" }).querySelector(".lucide-copy"))
+      .toBeInTheDocument();
+    expect(within(menu).getAllByRole("separator")).toHaveLength(2);
+  });
+
+  it.each([
+    ["backlog", "Backlog", "lucide-inbox"],
+    ["blocked", "Blocked", "lucide-circle-alert"],
+    ["cancelled", "Cancelled", "lucide-ban"],
+    ["done", "Done", "lucide-circle-check"],
+    ["duplicate", "Duplicate", "lucide-copy"],
+    ["failed", "Failed", "lucide-circle-x"],
+    ["in_progress", "In Progress", "lucide-play"],
+    ["ready", "Ready", "lucide-circle-play"],
+    ["review", "Review", "lucide-eye"],
+  ] as const)("renders the %s status icon and current indicator", async (status, label, iconClass) => {
+    const user = userEvent.setup();
+    renderCard({ issue: { ...issue, status } });
+
+    await user.click(screen.getByRole("button", {
+      name: "Issue actions for Wire issue board to generated client",
+    }));
+    const currentStatus = screen.getByRole("menuitem", { name: `${label} (current)` });
+
+    expect(currentStatus.querySelector(`.${iconClass}`)).toBeInTheDocument();
+    expect(currentStatus.querySelector(".lucide-check")).toBeInTheDocument();
   });
 
   it("runs allowed status changes from the action menu", async () => {
@@ -177,7 +207,10 @@ describe("IssueCard", () => {
     await user.click(screen.getByRole("button", {
       name: "Issue actions for Wire issue board to generated client",
     }));
-    await user.click(screen.getByRole("menuitem", { name: "Open pull request" }));
+    const pullRequestAction = screen.getByRole("menuitem", { name: "Open pull request" });
+
+    expect(pullRequestAction.querySelector(".lucide-git-pull-request")).toBeInTheDocument();
+    await user.click(pullRequestAction);
 
     expect(open).toHaveBeenCalledWith(
       "https://github.com/version-1/tasq/pull/14",

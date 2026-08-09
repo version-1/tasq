@@ -6,6 +6,7 @@ import {
   ContextMenuGroupLabel,
   ContextMenuHelp,
   ContextMenuItem,
+  ContextMenuSeparator,
 } from "./index";
 
 function ContextMenuStory() {
@@ -27,10 +28,12 @@ function ContextMenuStory() {
       <ContextMenuGroupLabel>Status</ContextMenuGroupLabel>
       <ContextMenuItem
         icon={<IconProxy name="circle" />}
+        trailingIcon={<IconProxy name="check" />}
         onSelect={() => setIsOpen(false)}
       >
         Move to review
       </ContextMenuItem>
+      <ContextMenuSeparator />
       <ContextMenuItem
         icon={<IconProxy name="ban" />}
         variant="danger"
