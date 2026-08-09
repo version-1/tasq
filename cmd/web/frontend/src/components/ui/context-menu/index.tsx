@@ -108,7 +108,7 @@ export function ContextMenuItem({
       onClick={onSelect}
     >
       {icon ? <span className={styles.itemIcon}>{icon}</span> : null}
-      <span className={styles.itemContent}>{children}</span>
+      {children}
       {trailingIcon ? <span className={styles.trailingIcon}>{trailingIcon}</span> : null}
     </button>
   );
