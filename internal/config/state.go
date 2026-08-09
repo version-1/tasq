@@ -81,6 +81,17 @@ func WebURLFromState() (string, bool, error) {
 	return serviceURL(state.Web.Addr), true, nil
 }
 
+func OrchestratorURLFromState() (string, bool, error) {
+	state, err := ReadState()
+	if err != nil {
+		return "", false, err
+	}
+	if state.Orchestrator == nil || strings.TrimSpace(state.Orchestrator.Addr) == "" {
+		return "", false, nil
+	}
+	return serviceURL(state.Orchestrator.Addr), true, nil
+}
+
 func readStateFile(path string) (State, error) {
 	raw, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {

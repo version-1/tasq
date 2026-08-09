@@ -1404,6 +1404,47 @@ func TestCommentsPagination(t *testing.T) {
 	}
 }
 
+func TestCommentsBackwardPagination(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer(t)
+	issue := createIssue(t, server, "Latest comments", entity.StatusBacklog)
+	first := createComment(t, server, issue.ID, "first")
+	second := createComment(t, server, issue.ID, "second")
+	third := createComment(t, server, issue.ID, "third")
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/issues/"+stringID(issue.ID)+"/comments?direction=backward&limit=2", nil)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	var payload struct {
+		Data []entity.Comment `json:"data"`
+		Meta struct {
+			Direction  string `json:"direction"`
+			NextCursor *int64 `json:"nextCursor"`
+		} `json:"meta"`
+	}
+	if err := json.NewDecoder(rec.Body).Decode(&payload); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	assertCommentIDs(t, payload.Data, []int64{third.ID, second.ID})
+	if payload.Meta.Direction != "backward" || payload.Meta.NextCursor == nil || *payload.Meta.NextCursor != second.ID {
+		t.Fatalf("meta = %+v", payload.Meta)
+	}
+
+	olderReq := httptest.NewRequest(http.MethodGet, "/api/v1/issues/"+stringID(issue.ID)+"/comments?direction=backward&cursor="+stringID(second.ID)+"&limit=2", nil)
+	olderRec := httptest.NewRecorder()
+	server.Handler().ServeHTTP(olderRec, olderReq)
+	if olderRec.Code != http.StatusOK {
+		t.Fatalf("older status = %d, body = %s", olderRec.Code, olderRec.Body.String())
+	}
+	older := decodeData[[]entity.Comment](t, olderRec)
+	assertCommentIDs(t, older, []int64{first.ID})
+}
+
 func TestCommentsRejectsInvalidQuery(t *testing.T) {
 	t.Parallel()
 
@@ -1418,6 +1459,14 @@ func TestCommentsRejectsInvalidQuery(t *testing.T) {
 		t.Fatalf("status = %d", rec.Code)
 	}
 	assertErrorCode(t, rec, "comments.list.invalid_input")
+
+	directionReq := httptest.NewRequest(http.MethodGet, "/api/v1/issues/"+stringID(issue.ID)+"/comments?direction=sideways", nil)
+	directionRec := httptest.NewRecorder()
+	server.Handler().ServeHTTP(directionRec, directionReq)
+	if directionRec.Code != http.StatusBadRequest {
+		t.Fatalf("direction status = %d", directionRec.Code)
+	}
+	assertErrorCode(t, directionRec, "comments.list.invalid_input")
 }
 
 func TestCreateListUpdateAndCancelChangeRequest(t *testing.T) {

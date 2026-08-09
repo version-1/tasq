@@ -516,6 +516,38 @@ func TestCommentsByIssueID(t *testing.T) {
 	}
 }
 
+func TestCommentsPageByIssueIDBackward(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer store.Close()
+
+	project := createTestProject(t, store, "OLDER")
+	issue, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Older comments"})
+	if err != nil {
+		t.Fatalf("create issue: %v", err)
+	}
+	first := createComment(t, store, issue.ID, "first")
+	second := createComment(t, store, issue.ID, "second")
+	third := createComment(t, store, issue.ID, "third")
+
+	comments, err := store.CommentsPageByIssueID(ctx, issue.ID, 0, 2, CommentDirectionBackward)
+	if err != nil {
+		t.Fatalf("list latest comments: %v", err)
+	}
+	assertCommentIDs(t, comments, []int64{third.ID, second.ID})
+
+	comments, err = store.CommentsPageByIssueID(ctx, issue.ID, second.ID, 2, CommentDirectionBackward)
+	if err != nil {
+		t.Fatalf("list older comments: %v", err)
+	}
+	assertCommentIDs(t, comments, []int64{first.ID})
+}
+
 func TestCommentsByIssueIDClampsLimit(t *testing.T) {
 	t.Parallel()
 

@@ -22,6 +22,14 @@ func printRootHelp(w io.Writer) {
 	fmt.Fprintln(w, "  config   show resolved local configuration")
 	fmt.Fprintln(w, "  version  show version information")
 	fmt.Fprintln(w, "  update   update tq from a GitHub Release and restart services")
+	fmt.Fprintln(w, "  tui      open the experimental read-only terminal UI (aliases: console, c)")
+}
+
+func printTUIHelp(w io.Writer) {
+	fmt.Fprintln(w, "Usage: tq [--api-url URL] [--output text] tui [--orchestrator-url URL]")
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, "Aliases: tq console, tq c")
+	fmt.Fprintln(w, "Read-only experimental terminal UI for issues, comments, artifacts, and run state.")
 }
 
 func printArtifactHelp(w io.Writer) {

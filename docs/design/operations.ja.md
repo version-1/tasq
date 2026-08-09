@@ -28,6 +28,9 @@ CLI コマンド:
 - `make run-tq ARGS="issue list"`
 - `make run-tq ARGS="issue get 1"`
 - `TQ_HOME=./.tasq go run ./cmd/tq service status`
+- `tq tui`（別名: `tq console`、`tq c`）
+
+`tq tui` には対話型端末と text 出力が必要です。Issue Tracker の URL は通常の CLI 解決順に従います。`--orchestrator-url` はサービス状態に保存されたオーケストレーターのアドレスより優先されます。オーケストレーターが未設定または利用できない場合は Run タブだけを縮退表示し、Issue Tracker の障害時は再試行画面を表示します。
 
 `make build-tq` はホスト用の `tq` binary を `./bin/tq` に build し、release build と同じ `buildCommit` ldflags variable を通じて現在の short commit hash を `tq version` に注入します。
 

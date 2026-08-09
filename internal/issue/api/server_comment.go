@@ -37,11 +37,11 @@ func (s *Server) comments(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	cursor, limit, ok := parseCommentListQuery(w, r)
+	cursor, limit, direction, ok := parseCommentListQuery(w, r)
 	if !ok {
 		return
 	}
-	items, err := s.store.CommentsByIssueID(r.Context(), issueID, cursor, limit)
+	items, err := s.store.CommentsPageByIssueID(r.Context(), issueID, cursor, limit, direction)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			writeError(w, http.StatusNotFound, "comments.list.issue_not_found", errors.New("issue not found"))
@@ -58,6 +58,7 @@ func (s *Server) comments(w http.ResponseWriter, r *http.Request) {
 	writeJSONWithMeta(w, http.StatusOK, items, responseMeta{
 		"cursor":     cursor,
 		"limit":      limit,
+		"direction":  direction,
 		"nextCursor": nextCursor,
 	})
 }

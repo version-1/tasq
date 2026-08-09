@@ -98,6 +98,8 @@ func (a app) route(ctx context.Context, args []string, cfg config) error {
 		return a.routeService(ctx, args[1:], cfg)
 	case "logs":
 		return a.routeLogs(ctx, args[1:], cfg)
+	case "tui", "console", "c":
+		return a.tui(ctx, args[1:], cfg)
 	default:
 		return usageError("unknown resource %q", resource)
 	}
