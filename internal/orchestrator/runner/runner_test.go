@@ -67,6 +67,7 @@ done
 		RunID:          "run-1",
 		Workspace:      workspace.Workspace{Path: dir, WorkspaceKey: "ISSUE-123"},
 		PromptTemplate: "Work on {{ issue.id }}: {{ issue.title }}",
+		MaxTurns:       2,
 		Command:        "sh " + strconv.Quote(script),
 		ReadTimeout:    5 * time.Second,
 		TurnTimeout:    5 * time.Second,
@@ -125,7 +126,7 @@ while IFS= read -r line; do
       ;;
     4)
       case "$line" in
-        *'"method":"turn/start"'*'tq issue update 123 --status in_progress'*'continue the same task in this live thread.'*'"threadId":"thread-previous"'*)
+        *'"method":"turn/start"'*'tq issue update 123 --status in_progress'*'continue the same task in this live thread without repeating completed work'*'tq artifact set 123 --type pull_request'*'"threadId":"thread-previous"'*)
           ;;
         *)
           echo "expected resumed continuation turn: $line" >&2
@@ -174,6 +175,75 @@ done
 	}
 	if event.Message != "thread_id=thread-previous" {
 		t.Fatalf("session started message = %q", event.Message)
+	}
+}
+
+func TestCodexRunnerUsesContinuationReminderForLaterTurns(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	script := filepath.Join(dir, "fake-app-server.sh")
+	if err := os.WriteFile(script, []byte(`#!/bin/sh
+count=0
+while IFS= read -r line; do
+  count=$((count + 1))
+  case "$count" in
+    1)
+      echo '{"id":1,"result":{"codexHome":"/tmp/codex","platformFamily":"unix","platformOs":"linux","userAgent":"fake"}}'
+      ;;
+    3)
+      echo '{"id":2,"result":{"thread":{"id":"thread-1"},"approvalPolicy":"never","approvalsReviewer":"user","cwd":"'"$PWD"'","model":"fake","modelProvider":"fake","sandbox":{"type":"readOnly"}}}'
+      ;;
+    4)
+      case "$line" in
+        *'Original issue prompt 123'*)
+          ;;
+        *)
+          echo "expected original prompt on first turn: $line" >&2
+          exit 2
+          ;;
+      esac
+      echo '{"id":3,"result":{"turn":{"id":"turn-1"}}}'
+      echo '{"method":"turn/completed","params":{"threadId":"thread-1","turn":{"id":"turn-1"}}}'
+      ;;
+    5)
+      case "$line" in
+        *'tq issue update 123 --status in_progress'*'tq artifact set 123 --type pull_request'*'add the handoff comment'*'move the issue to'*'review'*)
+          ;;
+        *)
+          echo "expected continuation reminder on second turn: $line" >&2
+          exit 2
+          ;;
+      esac
+      case "$line" in
+        *'Original issue prompt'*|*'keep the issue tracker synchronized:'*)
+          echo "later turn must not resend the full start prompt: $line" >&2
+          exit 2
+          ;;
+      esac
+      echo '{"id":4,"result":{"turn":{"id":"turn-2"}}}'
+      echo '{"method":"turn/completed","params":{"threadId":"thread-1","turn":{"id":"turn-2"}}}'
+      ;;
+  esac
+done
+`), 0o755); err != nil {
+		t.Fatalf("write fake app-server: %v", err)
+	}
+
+	result := CodexRunner{}.Run(context.Background(), Task{
+		Attempt:        1,
+		Issue:          entity.Issue{ID: 123, Title: "Runner task"},
+		RunID:          "run-1",
+		Workspace:      workspace.Workspace{Path: dir, WorkspaceKey: "ISSUE-123"},
+		PromptTemplate: "Original issue prompt {{ issue.id }}",
+		ContinueTurns:  true,
+		MaxTurns:       2,
+		Command:        "sh " + strconv.Quote(script),
+		ReadTimeout:    5 * time.Second,
+		TurnTimeout:    5 * time.Second,
+	})
+	if result.Status != run.StatusSucceeded {
+		t.Fatalf("status = %q error = %q", result.Status, result.Error)
 	}
 }
 
@@ -516,6 +586,7 @@ func TestRenderPromptInjectsTaskWorkPromptByDefault(t *testing.T) {
 		"tq comment add 7 --author codex --type progress",
 		"tq comment add 7 --author codex --type blocker",
 		"tq issue update 7 --status blocked",
+		"tq artifact set 7 --type pull_request <pr-url>",
 		"tq comment add 7 --author codex --type handoff",
 		"tq issue update 7 --status review",
 	}
@@ -523,6 +594,28 @@ func TestRenderPromptInjectsTaskWorkPromptByDefault(t *testing.T) {
 		if !strings.Contains(prompt, want) {
 			t.Fatalf("prompt missing %q: %q", want, prompt)
 		}
+	}
+	for _, want := range []string{
+		"Prefer typed `tq` commands",
+		"Use `tq api` only when the issue tracker operation has no typed `tq` command.",
+		"Do not call the issue tracker API directly with `curl`, `wget`, or a custom HTTP script.",
+		"not to other services or local endpoint verification",
+		"primary PR being submitted for review",
+		"`tq artifact set` is an upsert",
+		"Mention any supporting PRs in the handoff comment",
+		"retry a reasonable number of times",
+		"leave a blocker comment and do not move to `review`",
+		"Skip artifact registration when no pull request was created or updated.",
+	} {
+		if !strings.Contains(prompt, want) {
+			t.Fatalf("prompt missing contract wording %q: %q", want, prompt)
+		}
+	}
+	artifactIndex := strings.Index(prompt, "tq artifact set 7 --type pull_request <pr-url>")
+	handoffIndex := strings.Index(prompt, "tq comment add 7 --author codex --type handoff")
+	reviewIndex := strings.Index(prompt, "tq issue update 7 --status review")
+	if !(artifactIndex < handoffIndex && handoffIndex < reviewIndex) {
+		t.Fatalf("review commands out of order: artifact=%d handoff=%d review=%d", artifactIndex, handoffIndex, reviewIndex)
 	}
 	if !strings.Contains(prompt, "\n\nWork on Runner task.") {
 		t.Fatalf("prompt missing workflow template: %q", prompt)
@@ -542,6 +635,11 @@ func TestRenderPromptSkipsTaskWorkPromptWhenDisabled(t *testing.T) {
 	}
 	if prompt != "Work on 7." {
 		t.Fatalf("prompt = %q", prompt)
+	}
+	for _, unexpected := range []string{"Prefer typed `tq` commands", "tq api", "tq artifact set", "pull_request"} {
+		if strings.Contains(prompt, unexpected) {
+			t.Fatalf("disabled prompt contains %q: %q", unexpected, prompt)
+		}
 	}
 }
 
@@ -581,6 +679,11 @@ func TestContinuationGuidanceIncludesChangeRequests(t *testing.T) {
 
 	for _, want := range []string{
 		"tq issue update 7 --status in_progress",
+		"tq artifact set 7 --type pull_request <pr-url>",
+		"On success, add the handoff comment, then move the issue to `review`",
+		"on failure, retry a reasonable number of times",
+		"leave a blocker comment and do not move to `review` if it remains unresolved",
+		"Otherwise, artifact registration is not required.",
 		"Change requests assigned to this continuation:",
 		"#1 by user: Update the tests.",
 		"#2 by reviewer: Document the API.",
@@ -592,6 +695,9 @@ func TestContinuationGuidanceIncludesChangeRequests(t *testing.T) {
 		if !strings.Contains(prompt, want) {
 			t.Fatalf("prompt missing %q: %q", want, prompt)
 		}
+	}
+	if strings.Index(prompt, "If this continuation creates or updates a pull request") > strings.Index(prompt, "Change requests assigned to this continuation:") {
+		t.Fatalf("change-request guidance moved before continuation reminder: %q", prompt)
 	}
 }
 

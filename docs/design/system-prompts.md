@@ -15,10 +15,14 @@ Use `tq` to keep the issue tracker synchronized:
 
 If the `tasq-cli` skill is available, use it as the preferred guidance for tracker operations.
 
+- Prefer typed `tq` commands such as `tq issue`, `tq comment`, and `tq artifact` for issue tracker operations.
+- Use `tq api` only when the issue tracker operation has no typed `tq` command.
+- Do not call the issue tracker API directly with `curl`, `wget`, or a custom HTTP script. This restriction applies only to the issue tracker API, not to other services or local endpoint verification.
 - When work starts, move the issue to `in_progress` and leave a progress comment.
 - Add progress comments at meaningful milestones during the work.
 - If work is blocked, leave a blocker comment that explains why, then move the issue to `blocked`.
-- When the pull request is ready for review, leave a handoff comment with the PR and verification summary, then move the issue to `review`.
+- If you create or update a pull request, register the primary PR being submitted for review as the issue's `pull_request` artifact before handoff. `tq artifact set` is an upsert, so replace the artifact URL if the primary PR is recreated. Mention any supporting PRs in the handoff comment instead of registering them as the primary artifact.
+- After successful registration, leave a handoff comment with the PR URL and verification summary, then move the issue to `review`. If registration fails, retry a reasonable number of times; if it remains unresolved, leave a blocker comment and do not move to `review`. Skip artifact registration when no pull request was created or updated.
 - Always pass `--author codex` when posting comments.
 - Run only the commands for the current lifecycle stage; the examples below are not a single script.
 
@@ -35,6 +39,7 @@ tq comment add {{ issue.id }} --author codex --type blocker --body "Blocked: exp
 tq issue update {{ issue.id }} --status blocked
 
 # Ready for review
+tq artifact set {{ issue.id }} --type pull_request <pr-url>
 tq comment add {{ issue.id }} --author codex --type handoff --body "PR: <url>; verification: <summary>."
 tq issue update {{ issue.id }} --status review
 ```
@@ -43,7 +48,9 @@ Run the installed `tq` binary from `PATH`. Do not use `go run ./cmd/tq` for
 tracker synchronization.
 ````
 
-Template variables such as `{{ issue.id }}` are rendered after this prompt is prepended.
+Template variables such as `{{ issue.id }}` are rendered after this prompt is prepended. Setting `tasq.task_work_prompt: false` disables this entire start prompt, including its tracker and artifact instructions; it does not change continuation behavior.
+
+The pull-request artifact represents the primary PR currently submitted for review. Setting it again replaces the prior URL, while supporting PRs remain handoff-comment context. Artifact registration is conditional on creating or updating a PR. A registration failure must be retried reasonably and, if unresolved, reported as a blocker without a transition to `review`.
 
 ## Task Resume Prompt
 
@@ -52,7 +59,7 @@ On a resumed run, when `Task.ResumeThreadID` is set, the runner resumes the exis
 The injected resume prompt is:
 
 ```text
-First run `tq issue update <issue-id> --status in_progress` to keep the issue tracker synchronized. Then continue the same task in this live thread. Do not repeat completed work. Stop when the workflow is ready for handoff.
+First run `tq issue update <issue-id> --status in_progress` to keep the issue tracker synchronized. Then continue the same task in this live thread without repeating completed work, and stop when it is ready for handoff. If this continuation creates or updates a pull request, register the primary PR before handoff with `tq artifact set <issue-id> --type pull_request <pr-url>`. On success, add the handoff comment, then move the issue to `review`; on failure, retry a reasonable number of times, then leave a blocker comment and do not move to `review` if it remains unresolved. Otherwise, artifact registration is not required.
 ```
 
-`<issue-id>` is filled from the current task issue ID before the turn starts. The same continuation prompt is also used for later turns in a multi-turn run.
+`<issue-id>` is filled from the current task issue ID before the turn starts. The same continuation prompt is also used for later turns in an enabled multi-turn run. It is sent only when the runner's existing resume or later-turn conditions select a continuation turn; the runner does not add an extra turn when continuation is disabled. Assigned change-request guidance, when present, remains appended after this reminder.

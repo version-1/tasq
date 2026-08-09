@@ -142,10 +142,14 @@ const defaultTaskWorkPrompt = "Use `tq` to keep the issue tracker synchronized:\
 	"\n" +
 	"If the `tasq-cli` skill is available, use it as the preferred guidance for tracker operations.\n" +
 	"\n" +
+	"- Prefer typed `tq` commands such as `tq issue`, `tq comment`, and `tq artifact` for issue tracker operations.\n" +
+	"- Use `tq api` only when the issue tracker operation has no typed `tq` command.\n" +
+	"- Do not call the issue tracker API directly with `curl`, `wget`, or a custom HTTP script. This restriction applies only to the issue tracker API, not to other services or local endpoint verification.\n" +
 	"- When work starts, move the issue to `in_progress` and leave a progress comment.\n" +
 	"- Add progress comments at meaningful milestones during the work.\n" +
 	"- If work is blocked, leave a blocker comment that explains why, then move the issue to `blocked`.\n" +
-	"- When the pull request is ready for review, leave a handoff comment with the PR and verification summary, then move the issue to `review`.\n" +
+	"- If you create or update a pull request, register the primary PR being submitted for review as the issue's `pull_request` artifact before handoff. `tq artifact set` is an upsert, so replace the artifact URL if the primary PR is recreated. Mention any supporting PRs in the handoff comment instead of registering them as the primary artifact.\n" +
+	"- After successful registration, leave a handoff comment with the PR URL and verification summary, then move the issue to `review`. If registration fails, retry a reasonable number of times; if it remains unresolved, leave a blocker comment and do not move to `review`. Skip artifact registration when no pull request was created or updated.\n" +
 	"- Always pass `--author codex` when posting comments.\n" +
 	"- Run only the commands for the current lifecycle stage; the examples below are not a single script.\n" +
 	"\n" +
@@ -162,6 +166,7 @@ const defaultTaskWorkPrompt = "Use `tq` to keep the issue tracker synchronized:\
 	"tq issue update {{ issue.id }} --status blocked\n" +
 	"\n" +
 	"# Ready for review\n" +
+	"tq artifact set {{ issue.id }} --type pull_request <pr-url>\n" +
 	"tq comment add {{ issue.id }} --author codex --type handoff --body \"PR: <url>; verification: <summary>.\"\n" +
 	"tq issue update {{ issue.id }} --status review\n" +
 	"```\n" +
@@ -169,4 +174,4 @@ const defaultTaskWorkPrompt = "Use `tq` to keep the issue tracker synchronized:\
 	"Run the installed `tq` binary from `PATH`. Do not use `go run ./cmd/tq` for\n" +
 	"tracker synchronization."
 
-const continuationGuidance = "First run `tq issue update %d --status in_progress` to keep the issue tracker synchronized. Then continue the same task in this live thread. Do not repeat completed work. Stop when the workflow is ready for handoff."
+const continuationGuidance = "First run `tq issue update %d --status in_progress` to keep the issue tracker synchronized. Then continue the same task in this live thread without repeating completed work, and stop when it is ready for handoff. If this continuation creates or updates a pull request, register the primary PR before handoff with `tq artifact set %d --type pull_request <pr-url>`. On success, add the handoff comment, then move the issue to `review`; on failure, retry a reasonable number of times, then leave a blocker comment and do not move to `review` if it remains unresolved. Otherwise, artifact registration is not required."
