@@ -283,6 +283,7 @@ export function listComments(issueID: number, cursor = 0, limit = 20): CommentLi
     meta: {
       cursor,
       limit,
+      direction: "forward",
       nextCursor: remaining[0]?.id ?? null,
     },
   };

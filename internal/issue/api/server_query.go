@@ -183,16 +183,16 @@ func parseProjectIDQuery(w http.ResponseWriter, r *http.Request, action string) 
 	return &id, true
 }
 
-func parseCommentListQuery(w http.ResponseWriter, r *http.Request) (int64, int, bool) {
+func parseCommentListQuery(w http.ResponseWriter, r *http.Request) (int64, int, store.CommentDirection, bool) {
 	cursor, err := parseOptionalInt64Query(r, "cursor", 0)
 	if err != nil || cursor < 0 {
 		writeError(w, http.StatusBadRequest, "comments.list.invalid_input", errors.New("cursor is invalid"))
-		return 0, 0, false
+		return 0, 0, "", false
 	}
 	limit64, err := parseOptionalInt64Query(r, "limit", 50)
 	if err != nil || limit64 < 0 {
 		writeError(w, http.StatusBadRequest, "comments.list.invalid_input", errors.New("limit is invalid"))
-		return 0, 0, false
+		return 0, 0, "", false
 	}
 	limit := int(limit64)
 	if limit <= 0 {
@@ -201,7 +201,15 @@ func parseCommentListQuery(w http.ResponseWriter, r *http.Request) (int64, int, 
 	if limit > 100 {
 		limit = 100
 	}
-	return cursor, limit, true
+	direction := store.CommentDirection(strings.TrimSpace(r.URL.Query().Get("direction")))
+	if direction == "" {
+		direction = store.CommentDirectionForward
+	}
+	if direction != store.CommentDirectionForward && direction != store.CommentDirectionBackward {
+		writeError(w, http.StatusBadRequest, "comments.list.invalid_input", errors.New("direction is invalid"))
+		return 0, 0, "", false
+	}
+	return cursor, limit, direction, true
 }
 
 func parseChangeRequestListQuery(w http.ResponseWriter, r *http.Request) (entity.ChangeRequestStatus, int, bool) {

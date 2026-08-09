@@ -439,11 +439,21 @@ export interface IssueStateListResponse {
   meta: ApiMeta;
 }
 
+export type CommentListMetaDirection = typeof CommentListMetaDirection[keyof typeof CommentListMetaDirection];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CommentListMetaDirection = {
+  forward: 'forward',
+  backward: 'backward',
+} as const;
+
 export type CommentListMetaNextCursor = number | null;
 
 export interface CommentListMeta {
   cursor: number;
   limit: number;
+  direction: CommentListMetaDirection;
   nextCursor: CommentListMetaNextCursor;
 }
 
@@ -560,10 +570,14 @@ project_id?: number;
 
 export type GetApiV1IssuesIssueIdCommentsParams = {
 /**
- * Comment ID cursor. Results start after this ID.
+ * Comment ID cursor. Forward results start after this ID; backward results start before it. Zero selects the newest page in backward mode.
  * @minimum 0
  */
 cursor?: number;
+/**
+ * Pagination direction. The default forward mode preserves the existing chronological contract; backward returns newest-first pages.
+ */
+direction?: GetApiV1IssuesIssueIdCommentsDirection;
 /**
  * Maximum number of comments to return.
  * @minimum 1
@@ -571,6 +585,15 @@ cursor?: number;
  */
 limit?: number;
 };
+
+export type GetApiV1IssuesIssueIdCommentsDirection = typeof GetApiV1IssuesIssueIdCommentsDirection[keyof typeof GetApiV1IssuesIssueIdCommentsDirection];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GetApiV1IssuesIssueIdCommentsDirection = {
+  forward: 'forward',
+  backward: 'backward',
+} as const;
 
 export type GetApiV1IssuesIssueIdChangeRequestsParams = {
 status?: ChangeRequestStatus;

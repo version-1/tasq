@@ -70,6 +70,23 @@ func TestIssueTrackerURLFromState(t *testing.T) {
 	}
 }
 
+func TestOrchestratorURLFromState(t *testing.T) {
+	t.Setenv(EnvHome, t.TempDir())
+	if err := UpdateState(func(state *State) error {
+		state.Orchestrator = &ServiceState{Addr: "http://127.0.0.1:51235/"}
+		return nil
+	}); err != nil {
+		t.Fatalf("update state: %v", err)
+	}
+	apiURL, ok, err := OrchestratorURLFromState()
+	if err != nil {
+		t.Fatalf("url from state: %v", err)
+	}
+	if !ok || apiURL != "http://127.0.0.1:51235" {
+		t.Fatalf("apiURL=%q ok=%v", apiURL, ok)
+	}
+}
+
 func TestReadStateParsesExistingFile(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv(EnvHome, home)

@@ -293,7 +293,7 @@ describe("IssueDetailPage", () => {
             createdAt: "2026-06-21T02:00:00.000Z",
           },
         ],
-        meta: { cursor: 0, limit: 20, nextCursor: 2 },
+        meta: { cursor: 0, limit: 20, direction: "forward", nextCursor: 2 },
       } satisfies CommentListResponse)
       .mockResolvedValueOnce({
         data: [
@@ -306,7 +306,7 @@ describe("IssueDetailPage", () => {
             createdAt: "2026-06-21T03:00:00.000Z",
           },
         ],
-        meta: { cursor: 2, limit: 20, nextCursor: null },
+        meta: { cursor: 2, limit: 20, direction: "forward", nextCursor: null },
       } satisfies CommentListResponse);
     api.updateIssueStatus.mockResolvedValueOnce({ ...issue, status: "ready" });
 
@@ -360,7 +360,7 @@ describe("IssueDetailPage", () => {
             createdAt: "2026-06-21T01:00:00.000Z",
           },
         ],
-        meta: { cursor: 0, limit: 20, nextCursor: 1 },
+        meta: { cursor: 0, limit: 20, direction: "forward", nextCursor: 1 },
       } satisfies CommentListResponse)
       .mockRejectedValueOnce(new Error("failed to load next page"));
 
@@ -467,6 +467,7 @@ const commentsResponse: CommentListResponse = {
   meta: {
     cursor: 0,
     limit: 20,
+    direction: "forward",
     nextCursor: null,
   },
 };

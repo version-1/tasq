@@ -46,6 +46,8 @@ Responsibilities:
 - Support one-shot and watch-mode rendering.
 - Avoid direct calls to the orchestrator.
 
+This legacy `cmd/tasq-tui` component remains a summary-oriented one-shot/watch client. The canonical interactive terminal entry point is `tq tui`.
+
 ### tq
 
 `tq` is a standalone Go CLI for agents and workflow tools that need to mutate issue state without embedding HTTP details.
@@ -59,6 +61,7 @@ Responsibilities:
 - Manage host-local issue-tracker and orchestrator processes through `tq service`.
 - Render text errors as colored `Error: <message>` on stderr by default; preserve the machine-readable `{"error":"<message>"}` envelope when `--output json` is selected, always with a non-zero exit code.
 - Avoid direct calls to the orchestrator.
+- Provide the experimental read-only `tq tui` console. It reads issue data from the issue-tracker and may read runtime inspection from the orchestrator, but never calls mutation or refresh endpoints.
 
 ### issue-tracker
 
@@ -118,7 +121,7 @@ The current workspace manager creates sanitized per-issue workspace directories,
 
 ## Dependency Direction
 
-User-facing clients and agent-facing workflow tools depend on the issue-tracker API only.
+User-facing clients and agent-facing workflow tools depend on the issue-tracker API. The optional `tq tui` Run tab also has a narrowly scoped read-only dependency on the orchestrator inspection API.
 
 The orchestrator no longer uses issue-tracker event receiver endpoints. Historical run and runner-event data stays in the orchestrator SQLite store and is exposed by the optional orchestrator HTTP API. Dispatch eligibility is still read from the issue-tracker through the derived queue endpoint because dependency resolution belongs to issue state ownership.
 

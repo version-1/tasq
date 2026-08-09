@@ -327,6 +327,22 @@ tq web
 
 The command reads the Web URL from local service state and fails if the Web UI is not running.
 
+## Experimental terminal console
+
+Open the canonical read-only terminal UI with any equivalent command:
+
+```sh
+tq tui
+tq console
+tq c
+```
+
+Use `--orchestrator-url URL` after the command to override the service-state address. The command supports only `--output text` and requires TTY input and output. It lists issues across projects with server-side project, multi-status, and keyword filters; loads 50 issues at a time; and refreshes the list every 15 seconds and the selected issue every 5 seconds.
+
+The wide layout shows issue list and detail panes together. Narrow terminals use Enter to open detail and Esc to return. Detail tabs are Overview, Comments, Artifacts, and Run. `q`/Ctrl+C exits, arrows or `j`/`k` navigate, Tab changes tabs, `/` searches, `f` opens filters, `r` refreshes, `?` opens help, `o` opens an HTTP(S) artifact URL, and PgUp loads older comments. The footer always marks the interface experimental.
+
+The console only issues GET requests. Tracker failures show a retry screen. A missing, unavailable, or malformed orchestrator response degrades only the Run tab, and a 404 is shown separately as no run data.
+
 ## Projects
 
 ### `project add`

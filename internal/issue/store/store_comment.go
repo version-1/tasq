@@ -38,20 +38,46 @@ func (s *Store) CreateComment(ctx context.Context, input entity.CreateCommentInp
 	return s.Comment(ctx, id)
 }
 
+type CommentDirection string
+
+const (
+	CommentDirectionForward  CommentDirection = "forward"
+	CommentDirectionBackward CommentDirection = "backward"
+)
+
 func (s *Store) CommentsByIssueID(ctx context.Context, issueID int64, cursor int64, limit int) ([]entity.Comment, error) {
+	return s.CommentsPageByIssueID(ctx, issueID, cursor, limit, CommentDirectionForward)
+}
+
+func (s *Store) CommentsPageByIssueID(ctx context.Context, issueID int64, cursor int64, limit int, direction CommentDirection) ([]entity.Comment, error) {
 	if issueID <= 0 {
 		return nil, errors.New("issueId is required")
 	}
 	if cursor < 0 {
 		return nil, errors.New("cursor is invalid")
 	}
+	if direction == "" {
+		direction = CommentDirectionForward
+	}
+	if direction != CommentDirectionForward && direction != CommentDirectionBackward {
+		return nil, errors.New("direction is invalid")
+	}
 	if _, err := s.Issue(ctx, issueID); err != nil {
 		return nil, err
 	}
 	limit = normalizeCommentLimit(limit)
+	comparison := ">"
+	order := "ASC"
+	if direction == CommentDirectionBackward {
+		comparison = "<"
+		order = "DESC"
+		if cursor == 0 {
+			cursor = int64(^uint64(0) >> 1)
+		}
+	}
 	rows, err := s.db.QueryContext(ctx, `SELECT `+commentColumns()+` FROM comments
-		WHERE issue_id = ? AND id > ?
-		ORDER BY id ASC
+		WHERE issue_id = ? AND id `+comparison+` ?
+		ORDER BY id `+order+`
 		LIMIT ?`, issueID, cursor, limit)
 	if err != nil {
 		return nil, fmt.Errorf("list comments: %w", err)

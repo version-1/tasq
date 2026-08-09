@@ -28,6 +28,9 @@ CLI commands:
 - `make run-tq ARGS="issue list"`
 - `make run-tq ARGS="issue get 1"`
 - `TQ_HOME=./.tasq go run ./cmd/tq service status`
+- `tq tui` (aliases: `tq console`, `tq c`)
+
+`tq tui` requires an interactive terminal and text output. The issue-tracker URL follows the normal CLI resolution order. `--orchestrator-url` overrides the orchestrator address from service state. A missing or unavailable orchestrator degrades only the Run tab; tracker failures show a retry screen.
 
 `make build-tq` builds the host `tq` binary at `./bin/tq` and injects the current short commit hash into `tq version` through the same `buildCommit` ldflags variable used by release builds.
 

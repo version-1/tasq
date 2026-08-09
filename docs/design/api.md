@@ -89,6 +89,8 @@ See [status.md](status.md) for status definitions and transition expectations.
 
 Comments record discussion. Change requests represent additional user or reviewer work and carry workflow state.
 
+Comment listing defaults to the existing forward contract: `cursor` selects comments with a greater ID and results are chronological. Passing `direction=backward` selects comments with a lower ID and returns each page newest-first. In backward mode, cursor zero selects the newest page. Clients reverse and prepend backward pages when they need a chronological, latest-at-bottom view.
+
 Creating a change request under an issue sets its status to `open`. Open requests may be edited or moved to `in_progress`; in-progress requests may be resolved or canceled. The complete transition set is:
 
 - `open -> in_progress`

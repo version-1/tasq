@@ -460,12 +460,22 @@ paths:
         - name: cursor
           in: query
           required: false
-          description: Comment ID cursor. Results start after this ID.
+          description: Comment ID cursor. Forward results start after this ID; backward results start before it. Zero selects the newest page in backward mode.
           schema:
             type: integer
             format: int64
             minimum: 0
             default: 0
+        - name: direction
+          in: query
+          required: false
+          description: Pagination direction. The default forward mode preserves the existing chronological contract; backward returns newest-first pages.
+          schema:
+            type: string
+            enum:
+              - forward
+              - backward
+            default: forward
         - name: limit
           in: query
           required: false
@@ -1519,6 +1529,7 @@ components:
       required:
         - cursor
         - limit
+        - direction
         - nextCursor
       properties:
         cursor:
@@ -1526,6 +1537,11 @@ components:
           format: int64
         limit:
           type: integer
+        direction:
+          type: string
+          enum:
+            - forward
+            - backward
         nextCursor:
           oneOf:
             - type: integer

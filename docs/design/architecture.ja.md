@@ -46,6 +46,8 @@ Responsibilities:
 - 1 回限りの描画と watch-mode rendering をサポートする。
 - orchestrator を直接呼び出さない。
 
+従来の `cmd/tasq-tui` は、概要を一度表示する機能と監視表示を担うクライアントとして残します。対話型の正式な端末入口は `tq tui` です。
+
 ### tq
 
 `tq` は、HTTP の詳細を埋め込まずに課題の状態を変更する必要があるエージェントやワークフローツール向けの単体 Go CLI です。
@@ -59,6 +61,7 @@ Responsibilities:
 - `tq service` でホストローカルの issue-tracker と orchestrator のプロセスを管理する。
 - コマンドが失敗した場合は、既定で stderr に色付きの `Error: <message>` を出力する。`--output json` 指定時は機械判読可能な `{"error":"<message>"}` envelope を維持し、いずれもゼロ以外の終了コードを返す。
 - orchestrator を直接呼び出さない。
+- 実験的な閲覧専用コンソール `tq tui` を提供する。このコマンドは Issue Tracker から課題データを読み取り、必要に応じてオーケストレーターから実行状況を読み取るが、変更用または更新要求用の API は呼び出さない。
 
 ### issue-tracker
 
@@ -118,7 +121,7 @@ Responsibilities:
 
 ## Dependency Direction
 
-ユーザー向けクライアントとエージェント向けワークフローツールは、issue-tracker API のみに依存します。
+ユーザー向けクライアントとエージェント向けワークフローツールは Issue Tracker API に依存します。`tq tui` の Run タブだけは、オーケストレーターの状態確認 API にも限定的かつ閲覧専用で依存します。
 
 orchestrator は issue-tracker のイベント受信エンドポイントを使いません。過去の実行データと runner-event データは orchestrator の SQLite store に残り、任意の orchestrator HTTP API から参照できます。dispatch eligibility は issue state ownership に属するため、issue-tracker の derived queue endpoint から読み取ります。
 
