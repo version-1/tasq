@@ -21,7 +21,7 @@ Tasq 利用では、`tq` は Codex や Claude Code などのエージェント�
 - default では human-readable output を返す。
 - tools と agents 向けに `--output json` を support する。
 - すべての command に API URL を渡さなくても local service URLs を解決する。
-- issue lookup、comments、status transitions のために、エージェントへ 1 つの安定した
+- 課題の検索、Artifact、コメント、ステータス遷移のために、エージェントへ 1 つの安定した
   command surface を提供する。
 - issue commands から direct orchestration mutations を避ける。
 
@@ -40,7 +40,7 @@ flowchart TD
 
 ## 主な操作面
 
-`tq issue` と `tq comment` は issue-tracker data に対して動作します。`tq project` は
+`tq issue`、`tq artifact`、`tq comment` は Issue Tracker のデータに対して動作します。`tq project` は
 repositories を登録し、workflow setup を validate します。`tq workflow` は project
 workflow overrides を管理します。`tq service`、`tq logs`、`tq migrate` は local
 runtime state に対して動作します。`tq web` は services が起動している状態で local

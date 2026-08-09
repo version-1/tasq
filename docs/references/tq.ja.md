@@ -34,6 +34,7 @@ tq [--api-url URL] [--output text|json] <command> [args] [flags]
 | コマンド | 操作または用途 |
 |---|---|
 | `issue` | `create`、`get`、`list`、`watch`、`update`、`close`、`cancel`、`ready`、`draft`、`rename`、`edit` |
+| `artifact` | `set`、`delete` |
 | `comment` | `add`、`list` |
 | `project` | `add`、`remove`、`check`、`list` |
 | `workflow` | `add`、`remove`、`show` |
@@ -64,7 +65,7 @@ tq api <method> <path> [--query key=value] [--header 'Name: value'] [--data valu
 
 HTTP メソッドは大文字と小文字を区別せず、内部で大文字に正規化します。パスには、エンコードされていない `/api/v1/...` 形式の絶対パスを指定します。完全 URL、フラグメント、ドットセグメント、空のセグメント、末尾のスラッシュは使用できません。パスに直接記述したクエリは保持し、繰り返し指定した `--query key=value` は指定順で追加します。クエリの名前と値は意味を検証せず、API に渡します。
 
-HTTP メソッドとパスは、CLI が明示的に保持する現行 Issue Tracker ルートの許可リストに一致する必要があります。数値 ID は正の `int64` に限定します。許可リストは閉じた状態を既定とする設計であり、サーバーにルートを追加しても、CLI の許可リストを更新するまでは使用できません。生の multipart をまだ扱えないため、`POST /api/v1/attachments` は一時的に除外しています。添付ファイルに対する `PATCH` も許可しません。
+HTTP メソッドとパスは、CLI が明示的に保持する現行 Issue Tracker ルートの許可リストに一致する必要があります。数値 ID は正の `int64` に限定します。許可リストは閉じた状態を既定とする設計であり、サーバーにルートを追加しても、CLI の許可リストを更新するまでは使用できません。Artifact の `PUT` / `DELETE` ルートは、型付きコマンドと合わせて許可リストに追加します。生の multipart をまだ扱えないため、`POST /api/v1/attachments` は一時的に除外しています。添付ファイルに対する `PATCH` も許可しません。
 
 `--header` は繰り返し指定できます。ヘッダー名は大文字と小文字を区別せず、同名の場合は最後の値を使います。`Host`、`Content-Length`、`Transfer-Encoding`、`Connection`、`Trailer`、`Upgrade`、`Proxy-Connection` など、HTTP トランスポートが管理するヘッダーは指定できません。
 
@@ -214,6 +215,30 @@ tq issue edit <id> <description>
 ```
 
 状態変更の短縮コマンドは、順に `done`、`cancelled`、`ready`、`backlog` を設定します。
+
+## Artifact
+
+Artifact は、課題に外部成果物を関連付けます。初期対応の type は `pull_request` で、1 つの課題と type の組み合わせにつき 1 件の URL を保存します。
+
+### `artifact set`
+
+Artifact を作成または更新します。課題 ID は正の値でなければならず、`--type` は必須です。
+
+```sh
+tq artifact set 14 --type pull_request https://github.com/example/tasq/pull/42
+```
+
+URL は前後の空白を除去した後、host を持つ絶対 `http` / `https` URL で、userinfo を含まないことが必要です。UTF-8 で 4,096 bytes を超える値は拒否されます。同じ課題と type に対してこのコマンドを繰り返すと、Artifact の元の作成時刻を維持したまま URL を置き換えます。
+
+### `artifact delete`
+
+課題の Artifact を削除します。課題 ID は正の値でなければならず、`--type` は必須です。
+
+```sh
+tq artifact delete 14 --type pull_request
+```
+
+両コマンドはグローバルな text / JSON 出力の規約に従います。課題が不明な場合や Artifact が存在しない場合は対応する `404` エラーを返し、未対応の type や不正な URL は成功リクエストの前に拒否します。
 
 ## コメント
 

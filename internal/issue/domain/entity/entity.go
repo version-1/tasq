@@ -3,8 +3,10 @@ package entity
 import (
 	"encoding/json"
 	"errors"
+	"net/url"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"time"
 	"unicode/utf8"
 )
@@ -15,6 +17,7 @@ const (
 	maxIssueTitleLength  = 500
 	maxNameLength        = 200
 	maxPathLength        = 1000
+	maxArtifactURLBytes  = 4096
 )
 
 var projectKeyPattern = regexp.MustCompile(`^([A-Z][A-Z0-9_]{0,19}|[a-z][a-z0-9-]{0,63})$`)
@@ -114,17 +117,57 @@ type UpsertProjectWorkflowInput struct {
 }
 
 type Issue struct {
-	ID            int64     `json:"id"`
-	ProjectID     int64     `json:"projectId"`
-	ProjectKey    string    `json:"projectKey"`
-	Title         string    `json:"title"`
-	Description   string    `json:"description"`
-	Status        Status    `json:"status"`
-	Priority      Priority  `json:"priority"`
-	Assignee      string    `json:"assignee"`
-	DependencyIDs []int64   `json:"dependency_ids"`
-	CreatedAt     time.Time `json:"createdAt"`
-	UpdatedAt     time.Time `json:"updatedAt"`
+	ID            int64      `json:"id"`
+	ProjectID     int64      `json:"projectId"`
+	ProjectKey    string     `json:"projectKey"`
+	Title         string     `json:"title"`
+	Description   string     `json:"description"`
+	Status        Status     `json:"status"`
+	Priority      Priority   `json:"priority"`
+	Assignee      string     `json:"assignee"`
+	DependencyIDs []int64    `json:"dependency_ids"`
+	Artifacts     []Artifact `json:"artifacts"`
+	CreatedAt     time.Time  `json:"createdAt"`
+	UpdatedAt     time.Time  `json:"updatedAt"`
+}
+
+type ArtifactType string
+
+const ArtifactTypePullRequest ArtifactType = "pull_request"
+
+type ArtifactDataType string
+
+const ArtifactDataTypeURL ArtifactDataType = "url"
+
+type Artifact struct {
+	Type      ArtifactType     `json:"type"`
+	DataType  ArtifactDataType `json:"data_type"`
+	DataValue string           `json:"data_value"`
+}
+
+type UpsertArtifactInput struct {
+	DataValue string `json:"data_value"`
+}
+
+func NormalizeArtifactInput(artifactType ArtifactType, input UpsertArtifactInput) (Artifact, error) {
+	if artifactType != ArtifactTypePullRequest {
+		return Artifact{}, errors.New("artifact type is unsupported")
+	}
+	if !utf8.ValidString(input.DataValue) {
+		return Artifact{}, errors.New("artifact URL is invalid UTF-8")
+	}
+	value := strings.TrimSpace(input.DataValue)
+	if value == "" {
+		return Artifact{}, errors.New("artifact URL is required")
+	}
+	if len(value) > maxArtifactURLBytes {
+		return Artifact{}, errors.New("artifact URL must be 4096 bytes or fewer")
+	}
+	parsed, err := url.Parse(value)
+	if err != nil || !parsed.IsAbs() || parsed.Host == "" || parsed.User != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") {
+		return Artifact{}, errors.New("artifact URL must be an absolute http or https URL without userinfo")
+	}
+	return Artifact{Type: artifactType, DataType: ArtifactDataTypeURL, DataValue: value}, nil
 }
 
 type IssueState struct {

@@ -93,6 +93,12 @@ Supported languages:
 
 Keep user-facing UI text in `cmd/web/frontend/src/lib/i18n.ts`. Components should render translated text with `useTranslation()` instead of hard-coded display strings. User-provided issue content, API identifiers, and route path segments can remain untranslated.
 
+## Artifact links
+
+Issue cards show an `Open pull request` context-menu item only when the issue has a `pull_request` artifact. The issue details sidebar similarly shows an `Artifacts` section with a `Pull request` link only when that artifact exists. Neither surface renders an empty section, placeholder, or editing control when artifacts are absent.
+
+Both links open the external URL in a new tab without an opener. Artifact creation, updating, and deletion remain CLI and API operations; the Web UI is display-only for artifacts.
+
 ## Theme
 
 The Web UI supports light and dark themes. `cmd/web/frontend/index.html` resolves

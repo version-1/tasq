@@ -1,0 +1,26 @@
+.section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-panel);
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4-5);
+}
+
+.heading {
+  font-size: 16px;
+  margin: var(--space-0);
+}
+
+.link {
+  color: var(--markdown-link);
+  overflow-wrap: anywhere;
+  text-decoration-line: underline;
+  text-underline-offset: 2px;
+}
+
+.link:hover,
+.link:focus-visible {
+  color: var(--markdown-link-hover);
+}

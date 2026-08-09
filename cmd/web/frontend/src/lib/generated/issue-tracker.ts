@@ -196,8 +196,42 @@ export interface Issue {
   priority: Priority;
   assignee: string;
   dependency_ids: number[];
+  artifacts: Artifact[];
   createdAt: string;
   updatedAt: string;
+}
+
+export type ArtifactType = typeof ArtifactType[keyof typeof ArtifactType];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ArtifactType = {
+  pull_request: 'pull_request',
+} as const;
+
+export type ArtifactDataType = typeof ArtifactDataType[keyof typeof ArtifactDataType];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ArtifactDataType = {
+  url: 'url',
+} as const;
+
+export interface Artifact {
+  type: ArtifactType;
+  data_type: ArtifactDataType;
+  /** After trimming surrounding whitespace, an absolute HTTP or HTTPS URL with a host and no userinfo, limited to 4096 UTF-8 bytes. The stored value is otherwise unchanged. */
+  data_value: string;
+}
+
+export interface UpsertArtifactInput {
+  /** An absolute HTTP or HTTPS URL with a host and no userinfo. The server trims surrounding whitespace, rejects values over 4096 UTF-8 bytes, and otherwise preserves the value. */
+  data_value: string;
+}
+
+export interface ArtifactResponse {
+  data: Artifact;
+  meta: ApiMeta;
 }
 
 export interface IssueState {
@@ -1474,6 +1508,120 @@ export const patchApiV1IssuesId = async (id: number,
 
   const data: patchApiV1IssuesIdResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as patchApiV1IssuesIdResponse
+}
+
+
+
+/**
+ * @summary Set an issue artifact.
+ */
+export type putApiV1IssuesIssueIdArtifactsTypeResponse200 = {
+  data: ArtifactResponse
+  status: 200
+}
+
+export type putApiV1IssuesIssueIdArtifactsTypeResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type putApiV1IssuesIssueIdArtifactsTypeResponse404 = {
+  data: ErrorResponse
+  status: 404
+}
+
+export type putApiV1IssuesIssueIdArtifactsTypeResponseSuccess = (putApiV1IssuesIssueIdArtifactsTypeResponse200) & {
+  headers: Headers;
+};
+export type putApiV1IssuesIssueIdArtifactsTypeResponseError = (putApiV1IssuesIssueIdArtifactsTypeResponse400 | putApiV1IssuesIssueIdArtifactsTypeResponse404) & {
+  headers: Headers;
+};
+
+export type putApiV1IssuesIssueIdArtifactsTypeResponse = (putApiV1IssuesIssueIdArtifactsTypeResponseSuccess | putApiV1IssuesIssueIdArtifactsTypeResponseError)
+
+export const getPutApiV1IssuesIssueIdArtifactsTypeUrl = (issueId: number,
+    type: ArtifactType,) => {
+
+
+
+
+  return `/tracker/api/v1/issues/${issueId}/artifacts/${type}`
+}
+
+export const putApiV1IssuesIssueIdArtifactsType = async (issueId: number,
+    type: ArtifactType,
+    upsertArtifactInput: UpsertArtifactInput, options?: RequestInit): Promise<putApiV1IssuesIssueIdArtifactsTypeResponse> => {
+
+  const res = await fetch(getPutApiV1IssuesIssueIdArtifactsTypeUrl(issueId,type),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      upsertArtifactInput,)
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: putApiV1IssuesIssueIdArtifactsTypeResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as putApiV1IssuesIssueIdArtifactsTypeResponse
+}
+
+
+
+/**
+ * @summary Delete an issue artifact.
+ */
+export type deleteApiV1IssuesIssueIdArtifactsTypeResponse204 = {
+  data: void
+  status: 204
+}
+
+export type deleteApiV1IssuesIssueIdArtifactsTypeResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type deleteApiV1IssuesIssueIdArtifactsTypeResponse404 = {
+  data: ErrorResponse
+  status: 404
+}
+
+export type deleteApiV1IssuesIssueIdArtifactsTypeResponseSuccess = (deleteApiV1IssuesIssueIdArtifactsTypeResponse204) & {
+  headers: Headers;
+};
+export type deleteApiV1IssuesIssueIdArtifactsTypeResponseError = (deleteApiV1IssuesIssueIdArtifactsTypeResponse400 | deleteApiV1IssuesIssueIdArtifactsTypeResponse404) & {
+  headers: Headers;
+};
+
+export type deleteApiV1IssuesIssueIdArtifactsTypeResponse = (deleteApiV1IssuesIssueIdArtifactsTypeResponseSuccess | deleteApiV1IssuesIssueIdArtifactsTypeResponseError)
+
+export const getDeleteApiV1IssuesIssueIdArtifactsTypeUrl = (issueId: number,
+    type: ArtifactType,) => {
+
+
+
+
+  return `/tracker/api/v1/issues/${issueId}/artifacts/${type}`
+}
+
+export const deleteApiV1IssuesIssueIdArtifactsType = async (issueId: number,
+    type: ArtifactType, options?: RequestInit): Promise<deleteApiV1IssuesIssueIdArtifactsTypeResponse> => {
+
+  const res = await fetch(getDeleteApiV1IssuesIssueIdArtifactsTypeUrl(issueId,type),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: deleteApiV1IssuesIssueIdArtifactsTypeResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as deleteApiV1IssuesIssueIdArtifactsTypeResponse
 }
 
 

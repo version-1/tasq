@@ -43,6 +43,8 @@ Error responses use:
 | `GET` | `/api/v1/queue` | List issues that are eligible for agent execution, including dependency-derived queue status. |
 | `GET` | `/api/v1/issues/{id}` | Read an issue. |
 | `PATCH` | `/api/v1/issues/{id}` | Update an issue. |
+| `PUT` | `/api/v1/issues/{issueId}/artifacts/{type}` | Create or update an artifact. |
+| `DELETE` | `/api/v1/issues/{issueId}/artifacts/{type}` | Delete an artifact. |
 | `GET` | `/api/v1/issues/{issueId}/comments` | List comments. |
 | `POST` | `/api/v1/issues/{issueId}/comments` | Add a comment. |
 | `PATCH` | `/api/v1/comments/{id}` | Update a comment. |
@@ -58,6 +60,8 @@ Issue listing supports filters for `states`, `project_id`, `project_ids`,
 
 Comment listing supports `cursor` and `limit`. Attachment listing supports
 `entity_type` and `entity_id`.
+
+Issue responses always include an `artifacts` array, sorted by `type`, including `[]` when no artifacts exist. The initial `pull_request` artifact accepts only `data_value` on `PUT`; the server returns `type`, `data_type`, and `data_value`. `DELETE` returns an empty `204`. Invalid types or URLs return `400`; a missing issue or artifact returns `404`.
 
 ## Attachments
 

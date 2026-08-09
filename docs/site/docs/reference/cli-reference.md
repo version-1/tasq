@@ -46,6 +46,15 @@ Create and update accept `--title`, `--description`, `--status`, `--priority`,
 deduplicates emitted issues for the configured seen TTL, emits `issue-ready`
 events, and continues polling after transient API errors.
 
+## Artifact Commands
+
+| Command | Purpose |
+| --- | --- |
+| `tq artifact set <issue-id> --type pull_request <url>` | Create or replace an issue pull-request URL. |
+| `tq artifact delete <issue-id> --type pull_request` | Delete an issue pull-request URL. |
+
+Both commands require a positive issue ID and `--type`, and support the global text and JSON output modes.
+
 ## Comment Commands
 
 | Command | Purpose |

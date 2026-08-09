@@ -56,6 +56,10 @@ type upsertProjectWorkflowInput struct {
 	Checksum    string         `json:"checksum"`
 }
 
+type upsertArtifactInput struct {
+	DataValue string `json:"data_value"`
+}
+
 func newAPIClient(baseURL string) (*apiClient, error) {
 	baseURL = strings.TrimRight(strings.TrimSpace(baseURL), "/")
 	if baseURL == "" {
@@ -214,6 +218,18 @@ func (c *apiClient) updateIssue(ctx context.Context, id int64, input updateIssue
 		return entity.Issue{}, err
 	}
 	return issue, nil
+}
+
+func (c *apiClient) upsertArtifact(ctx context.Context, issueID int64, artifactType string, value string) (entity.Artifact, error) {
+	var artifact entity.Artifact
+	if err := c.do(ctx, http.MethodPut, fmt.Sprintf("/api/v1/issues/%d/artifacts/%s", issueID, url.PathEscape(artifactType)), upsertArtifactInput{DataValue: value}, &artifact); err != nil {
+		return entity.Artifact{}, err
+	}
+	return artifact, nil
+}
+
+func (c *apiClient) deleteArtifact(ctx context.Context, issueID int64, artifactType string) error {
+	return c.doNoContent(ctx, http.MethodDelete, fmt.Sprintf("/api/v1/issues/%d/artifacts/%s", issueID, url.PathEscape(artifactType)))
 }
 
 func (c *apiClient) createComment(ctx context.Context, issueID int64, input entity.CreateCommentInput) (entity.Comment, error) {

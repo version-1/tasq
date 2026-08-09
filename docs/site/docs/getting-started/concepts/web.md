@@ -18,6 +18,7 @@ and proxies API calls to the local backends.
 - Render project and issue summaries.
 - Display status, priority, assignee, descriptions, comments, and run links
   where available.
+- Show a pull-request link on an issue card and details sidebar when the issue has that artifact.
 - Show issue activity so operators can find run context such as a Codex thread
   ID when a blocked session needs to be resumed.
 - Move issues between statuses through the issue-tracker API.
@@ -49,3 +50,5 @@ the issue-tracker API, and it can inspect orchestrator runtime state through the
 Web server proxy when those views are available. Activity and run links are
 navigation aids; the issue-tracker and orchestrator remain the authoritative
 stores.
+
+Artifact links are display-only. They open in a safe new tab, and the UI omits them entirely when an issue has no pull-request artifact.

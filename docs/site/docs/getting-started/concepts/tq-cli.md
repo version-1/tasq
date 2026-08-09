@@ -21,7 +21,7 @@ agents choose the right command without guessing.
 - Return human-readable output by default.
 - Support `--output json` for tools and agents.
 - Resolve local service URLs without requiring every command to pass an API URL.
-- Give agents one stable command surface for issue lookup, comments, and status
+- Give agents one stable command surface for issue lookup, artifacts, comments, and status
   transitions.
 - Avoid direct orchestration mutations from issue commands.
 
@@ -40,7 +40,7 @@ flowchart TD
 
 ## Common Surfaces
 
-`tq issue` and `tq comment` operate on issue-tracker data. `tq project`
+`tq issue`, `tq artifact`, and `tq comment` operate on issue-tracker data. `tq project`
 registers repositories and validates workflow setup. `tq workflow` manages
 project workflow overrides. `tq service`, `tq logs`, and `tq migrate` operate
 on local runtime state. `tq web` opens the local Web UI after the services are

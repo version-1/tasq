@@ -23,12 +23,27 @@
 | Priority    | `Priority` | no                 | optional (`*Priority`) | `normal` | enum: `low`, `normal`, `high`, `urgent`                           |
 | Assignee    | `string`   | no                 | optional (`*string`) | `""`       | max 200 chars、自由入力                                           |
 | DependencyIDs | `[]int64` | no               | optional (`*[]int64`) | `[]`      | 指定時は全置換。各 ID は issue を参照すること。重複、自己依存、cycle は不可 |
+| Artifacts | `[]Artifact` | response | — | `[]` | `type` 昇順。すべての課題レスポンスに配列として含まれ、`null` にはならない |
 | CreatedAt   | `time.Time`| auto               | —                  | `now()`     | —                                                                  |
 | UpdatedAt   | `time.Time`| auto               | auto               | `now()`     | —                                                                  |
 
 課題の説明には Markdown を含められます。画像添付ファイルは `![alt](attachment://<attachment-id>)` として参照されます。
 すべての課題は必ず 1 つのプロジェクトに属します。課題が属するプロジェクトは作成時に設定され、update API では変更できません。
-`dependency_ids` は単一 issue response と list response の両方で公開されます。依存がない issue は `null` ではなく `[]` を返します。
+`dependency_ids` と `artifacts` は単一課題と一覧の両方のレスポンスで公開されます。依存または Artifact がない課題は、`null` ではなく `[]` を返します。
+
+### Artifact
+
+Artifact は、課題に外部成果物を関連付けます。1 つの課題には、同じ `type` の Artifact を最大 1 件だけ登録できます。初期対応の type は `pull_request` で、サーバーが設定する `data_type` は `url` です。
+
+| 公開フィールド | Go Type | 制約 |
+|--------------|---------|------|
+| Type | `ArtifactType` | `pull_request` |
+| DataType | `ArtifactDataType` | `pull_request` では `url` |
+| DataValue | `string` | 前後の空白を除いた絶対 `http` / `https` URL。host は必須、userinfo は禁止、UTF-8 で最大 4,096 bytes |
+
+Artifact の作成・更新時刻は内部で保持しますが、公開フィールドには含めません。`(issue_id, type)` は一意です。課題を削除すると、その Artifact も cascade 削除されます。既存 type を設定し直しても `created_at` は保持し、値と `updated_at` だけを更新します。
+
+検証では前後の空白を除去してから解析し、不正な UTF-8 を拒否します。それ以外は送信された URL を変更せずに保持します。課題レスポンスの Artifact は `type` 昇順です。
 
 ### CreateIssueInput
 

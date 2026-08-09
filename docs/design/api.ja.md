@@ -41,7 +41,15 @@ API を変更するときは、[development.ja.md](../development.ja.md)の手�
 
 `PATCH /api/v1/issues/{id}` で `dependency_ids` を指定した場合は、依存関係全体を置き換えます。このフィールドを省略すると既存の依存関係を維持し、空配列を渡すとすべて削除します。作成と更新のどちらでも、存在しない課題への依存、自分自身への依存、ID の重複、依存関係の循環を拒否します。
 
-課題のレスポンスには `projectId`、`projectKey`、`dependency_ids` が含まれます。依存関係がない場合、`dependency_ids` は空配列です。
+課題のレスポンスには `projectId`、`projectKey`、`dependency_ids`、`artifacts` が含まれます。依存関係と Artifact の一覧は必須配列であり、空の場合は `[]` です。Artifact は `type` 昇順で返します。
+
+### Artifact
+
+`PUT /api/v1/issues/{issue_id}/artifacts/{type}` は、課題と type に対応する Artifact を 1 件作成または更新します。リクエスト本文には `data_value` のみを指定し、`data_type` はサーバーが決定します。作成・更新ともに、Artifact の公開フィールドである `type`、`data_type`、`data_value` を含む `200` を返します。
+
+`DELETE /api/v1/issues/{issue_id}/artifacts/{type}` は Artifact を削除し、本文のない `204` を返します。課題または Artifact が存在しない場合は `404`、未対応の type、不正な本文、不正な URL は `400` です。
+
+初期対応の type は `pull_request` で、`data_type` は `url` です。URL は前後の空白を除去してから検証します。host を持つ絶対 `http` / `https` URL であること、userinfo を含まないこと、UTF-8 で 4,096 bytes 以下であることが必要です。空白除去以外に API が URL を正規化することはありません。
 
 ### 一覧と検索
 
@@ -100,7 +108,7 @@ API を変更するときは、[development.ja.md](../development.ja.md)の手�
 
 ## CLI からの利用
 
-通常の課題、コメント、プロジェクト、ワークフロー操作には、型付きの `tq` コマンドを使用します。必要な Issue Tracker 操作が型付きコマンドにない場合に限り、許可リストで制限された `tq api` を使用します。
+通常の課題、Artifact、コメント、プロジェクト、ワークフロー操作には、型付きの `tq` コマンドを使用します。必要な Issue Tracker 操作が型付きコマンドにない場合に限り、許可リストで制限された `tq api` を使用します。
 
 生の API コマンドは、HTTP メソッドとルートの独自の許可リストを持ち、閉じた状態を既定とします。OpenAPI にルートを追加しても自動では公開しません。また、multipart リクエストの組み立てに対応していないため、`POST /api/v1/attachments` を一時的に除外しています。構文、入力検証、出力、終了ステータスについては、[tq コマンドリファレンス](../references/tq.ja.md#生の-api-リクエスト)を参照してください。
 

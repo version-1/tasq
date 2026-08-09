@@ -34,6 +34,7 @@ tq [--api-url URL] [--output text|json] <command> [args] [flags]
 | Command | Actions or purpose |
 |---|---|
 | `issue` | `create`, `get`, `list`, `watch`, `update`, `close`, `cancel`, `ready`, `draft`, `rename`, `edit` |
+| `artifact` | `set`, `delete` |
 | `comment` | `add`, `list` |
 | `project` | `add`, `remove`, `check`, `list` |
 | `workflow` | `add`, `remove`, `show` |
@@ -64,7 +65,7 @@ tq api <method> <path> [--query key=value] [--header 'Name: value'] [--data valu
 
 Methods are case-insensitive and normalized to uppercase. The path must be an unencoded absolute `/api/v1/...` path; complete URLs, fragments, dot segments, empty segments, and trailing slashes are rejected. Query text in the path is preserved, and each repeatable `--query key=value` appends another value in order. Query names and values are passed to the API without semantic validation.
 
-The method and path must match the CLI's explicit allowlist of current issue-tracker routes. Numeric route IDs must be positive `int64` values. This is fail-closed: a newly added server route is unavailable until the CLI allowlist is updated. `POST /api/v1/attachments` is temporarily excluded while raw multipart support is unavailable; attachment `PATCH` is not allowed.
+The method and path must match the CLI's explicit allowlist of current issue-tracker routes. Numeric route IDs must be positive `int64` values. This is fail-closed: a newly added server route is unavailable until the CLI allowlist is updated. The artifact `PUT` and `DELETE` routes are allowlisted alongside their typed commands. `POST /api/v1/attachments` is temporarily excluded while raw multipart support is unavailable; attachment `PATCH` is not allowed.
 
 `--header` may be repeated. Header names are case-insensitive, and the last value wins. Transport-managed headers, including `Host`, `Content-Length`, `Transfer-Encoding`, `Connection`, `Trailer`, `Upgrade`, and `Proxy-Connection`, are rejected.
 
@@ -214,6 +215,30 @@ tq issue edit <id> <description>
 ```
 
 The status shortcuts set `done`, `cancelled`, `ready`, and `backlog`, respectively.
+
+## Artifacts
+
+Artifacts associate an issue with an external result. The initial supported type is `pull_request`; it stores one URL per issue and type.
+
+### `artifact set`
+
+Create or update an artifact. The issue ID must be positive and `--type` is required.
+
+```sh
+tq artifact set 14 --type pull_request https://github.com/example/tasq/pull/42
+```
+
+The URL is trimmed, then must be an absolute `http` or `https` URL with a host and without userinfo. Values longer than 4,096 UTF-8 bytes are rejected. Repeating the command with the same issue and type replaces the URL while retaining the artifact's original creation time.
+
+### `artifact delete`
+
+Delete an artifact for an issue. The issue ID must be positive and `--type` is required.
+
+```sh
+tq artifact delete 14 --type pull_request
+```
+
+Both commands follow the global text and JSON output conventions. An unknown issue or missing artifact returns the corresponding `404` error; an unsupported type or invalid URL is rejected before a successful request.
 
 ## Comments
 

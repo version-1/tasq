@@ -11,6 +11,7 @@ func printRootHelp(w io.Writer) {
 	fmt.Fprintln(w, "Resources:")
 	fmt.Fprintln(w, "  issue    create, get, list, update, and shortcut issue actions")
 	fmt.Fprintln(w, "  comment  add and list issue comments")
+	fmt.Fprintln(w, "  artifact set and delete issue artifacts")
 	fmt.Fprintln(w, "  project  add, remove, check, and list projects")
 	fmt.Fprintln(w, "  workflow add, remove, and show project workflow resolution")
 	fmt.Fprintln(w, "  api      send an allowlisted raw issue-tracker API request")
@@ -21,6 +22,14 @@ func printRootHelp(w io.Writer) {
 	fmt.Fprintln(w, "  config   show resolved local configuration")
 	fmt.Fprintln(w, "  version  show version information")
 	fmt.Fprintln(w, "  update   update tq from a GitHub Release and restart services")
+}
+
+func printArtifactHelp(w io.Writer) {
+	fmt.Fprintln(w, "Usage: tq artifact <action> [flags]")
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, "Actions:")
+	fmt.Fprintln(w, "  set     Set an artifact (tq artifact set <issue_id> --type pull_request <url>)")
+	fmt.Fprintln(w, "  delete  Delete an artifact (tq artifact delete <issue_id> --type pull_request)")
 }
 
 func printAPIHelp(w io.Writer) {

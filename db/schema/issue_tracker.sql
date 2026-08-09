@@ -14,6 +14,19 @@ CREATE TABLE IF NOT EXISTS issues (
 CREATE INDEX IF NOT EXISTS issues_project_id_idx ON issues(project_id);
 CREATE INDEX IF NOT EXISTS issues_status_idx ON issues(status);
 
+CREATE TABLE IF NOT EXISTS issue_artifacts (
+	issue_id INTEGER NOT NULL,
+	type TEXT NOT NULL,
+	data_type TEXT NOT NULL,
+	data_value TEXT NOT NULL,
+	created_at TEXT NOT NULL,
+	updated_at TEXT NOT NULL,
+	PRIMARY KEY (issue_id, type),
+	FOREIGN KEY(issue_id) REFERENCES issues(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS issue_artifacts_issue_id_idx ON issue_artifacts(issue_id);
+
 CREATE TABLE IF NOT EXISTS issue_dependencies (
 	parent_issue_id INTEGER NOT NULL,
 	dependency_issue_id INTEGER NOT NULL,

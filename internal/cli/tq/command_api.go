@@ -230,6 +230,12 @@ func (r apiRoute) matches(path string) bool {
 			}
 			continue
 		}
+		if want[i] == "{type}" {
+			if got[i] != "pull_request" {
+				return false
+			}
+			continue
+		}
 		if want[i] != got[i] {
 			return false
 		}
@@ -256,6 +262,7 @@ var apiRoutes = []apiRoute{
 	{"GET", "/api/v1/projects"}, {"POST", "/api/v1/projects"}, {"GET", "/api/v1/projects/{id}"}, {"PATCH", "/api/v1/projects/{id}"}, {"DELETE", "/api/v1/projects/{id}"}, {"POST", "/api/v1/projects/{id}/check"},
 	{"GET", "/api/v1/projects/{id}/workflow"}, {"PUT", "/api/v1/projects/{id}/workflow"}, {"DELETE", "/api/v1/projects/{id}/workflow"},
 	{"GET", "/api/v1/issues"}, {"POST", "/api/v1/issues"}, {"POST", "/api/v1/issues/states"}, {"GET", "/api/v1/queue"}, {"GET", "/api/v1/issues/{id}"}, {"PATCH", "/api/v1/issues/{id}"},
+	{"PUT", "/api/v1/issues/{issueId}/artifacts/{type}"}, {"DELETE", "/api/v1/issues/{issueId}/artifacts/{type}"},
 	{"GET", "/api/v1/issues/{issueId}/comments"}, {"POST", "/api/v1/issues/{issueId}/comments"}, {"PATCH", "/api/v1/comments/{id}"},
 	{"GET", "/api/v1/issues/{issueId}/change-requests"}, {"POST", "/api/v1/issues/{issueId}/change-requests"}, {"GET", "/api/v1/change-requests/{id}"}, {"PATCH", "/api/v1/change-requests/{id}"}, {"POST", "/api/v1/change-requests/{id}/cancel"},
 	{"GET", "/api/v1/attachments"}, {"GET", "/api/v1/attachments/{attachmentId}/content"}, {"DELETE", "/api/v1/attachments/{attachmentId}"},
