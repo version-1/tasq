@@ -137,12 +137,19 @@ describe("IssueCard", () => {
     expect(items).toEqual(["Copy thread ID", "Ready (current)", "Backlog", "Cancelled", "Done", "Duplicate"]);
     expect(within(menu).getByRole("menuitem", { name: "Copy thread ID" }).querySelector(".lucide-copy"))
       .toBeInTheDocument();
+    expect(within(menu).getByRole("menuitem", { name: "Ready (current)" }).querySelector(".lucide-circle-play"))
+      .toBeInTheDocument();
     expect(within(menu).getByRole("menuitem", { name: "Ready (current)" }).querySelector(".lucide-check"))
       .toBeInTheDocument();
-    for (const status of ["Backlog", "Cancelled", "Done", "Duplicate"]) {
-      expect(within(menu).getByRole("menuitem", { name: status }).querySelector(".lucide-circle"))
-        .toBeInTheDocument();
-    }
+    expect(within(menu).getByRole("menuitem", { name: "Backlog" }).querySelector(".lucide-inbox"))
+      .toBeInTheDocument();
+    expect(within(menu).getByRole("menuitem", { name: "Cancelled" }).querySelector(".lucide-ban"))
+      .toBeInTheDocument();
+    expect(within(menu).getByRole("menuitem", { name: "Done" }).querySelector(".lucide-circle-check"))
+      .toBeInTheDocument();
+    expect(within(menu).getByRole("menuitem", { name: "Duplicate" }).querySelector(".lucide-copy"))
+      .toBeInTheDocument();
+    expect(within(menu).getAllByRole("separator")).toHaveLength(2);
   });
 
   it("runs allowed status changes from the action menu", async () => {

@@ -54,6 +54,22 @@
   color: var(--text);
 }
 
+.statusIconPositive {
+  color: var(--status-ready-accent);
+}
+
+.statusIconDanger {
+  color: var(--danger);
+}
+
+.statusIconWarning {
+  color: var(--status-review-accent);
+}
+
+.statusIconMuted {
+  color: var(--muted);
+}
+
 .metric {
   align-items: center;
   display: flex;

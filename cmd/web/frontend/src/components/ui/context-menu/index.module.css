@@ -9,7 +9,7 @@
   box-shadow: var(--shadow-dropdown);
   display: grid;
   gap: 4px;
-  min-width: 188px;
+  min-width: 220px;
   padding: 8px;
   position: absolute;
   top: 40px;
@@ -54,6 +54,30 @@
 
 .itemIcon svg {
   display: block;
+}
+
+.itemContent {
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.trailingIcon {
+  align-items: center;
+  color: var(--muted);
+  display: inline-flex;
+  flex: 0 0 auto;
+  justify-content: center;
+  margin-left: auto;
+}
+
+.trailingIcon svg {
+  display: block;
+}
+
+.separator {
+  border-top: 1px solid var(--border);
+  margin: 4px 0;
 }
 
 .item:hover:not(:disabled),
