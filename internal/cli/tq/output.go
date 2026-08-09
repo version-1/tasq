@@ -66,6 +66,27 @@ func writeSuccess(w io.Writer, message string) error {
 	return err
 }
 
+func writeArtifact(w io.Writer, format string, artifact entity.Artifact) error {
+	if format == "json" {
+		return writeJSON(w, artifact)
+	}
+	_, err := fmt.Fprintf(w, "Type: %s\nData type: %s\nValue: %s\n", artifact.Type, artifact.DataType, artifact.DataValue)
+	return err
+}
+
+type artifactDeleteResult struct {
+	IssueID int64  `json:"issue_id"`
+	Type    string `json:"type"`
+	Deleted bool   `json:"deleted"`
+}
+
+func writeArtifactDeleted(w io.Writer, format string, issueID int64, artifactType string) error {
+	if format == "json" {
+		return writeJSON(w, artifactDeleteResult{IssueID: issueID, Type: artifactType, Deleted: true})
+	}
+	return writeSuccess(w, "Artifact deleted")
+}
+
 func writeFaintMessage(w io.Writer, message string) error {
 	_, err := fmt.Fprintf(w, "%s%s%s\n", ansiFaint, message, ansiReset)
 	return err

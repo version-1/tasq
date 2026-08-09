@@ -6,6 +6,40 @@ import (
 	"testing"
 )
 
+func TestNormalizeArtifactInput(t *testing.T) {
+	t.Parallel()
+	artifact, err := NormalizeArtifactInput(ArtifactTypePullRequest, UpsertArtifactInput{DataValue: " https://github.com/version-1/tasq/pull/14?view=files#discussion_r1 "})
+	if err != nil {
+		t.Fatalf("normalize artifact: %v", err)
+	}
+	if artifact.DataType != ArtifactDataTypeURL || artifact.DataValue != "https://github.com/version-1/tasq/pull/14?view=files#discussion_r1" {
+		t.Fatalf("artifact = %+v", artifact)
+	}
+	for _, value := range []string{"", "ftp://example.com/a", "https:///missing-host", "https://user@example.com/a", string([]byte{'h', 0xff}), "https://example.com/" + strings.Repeat("a", 4097)} {
+		if _, err := NormalizeArtifactInput(ArtifactTypePullRequest, UpsertArtifactInput{DataValue: value}); err == nil {
+			t.Fatalf("NormalizeArtifactInput(%q) succeeded", value)
+		}
+	}
+	if _, err := NormalizeArtifactInput(ArtifactType("unknown"), UpsertArtifactInput{DataValue: "https://example.com"}); err == nil {
+		t.Fatal("unsupported type succeeded")
+	}
+	for _, test := range []struct {
+		name  string
+		value string
+		valid bool
+	}{
+		{name: "4096 bytes", value: "https://example.com/" + strings.Repeat("a", 4076), valid: true},
+		{name: "4097 bytes", value: "https://example.com/" + strings.Repeat("a", 4077), valid: false},
+		{name: "4096 multibyte bytes", value: "https://example.com/" + strings.Repeat("界", 1358) + "aa", valid: true},
+		{name: "4097 multibyte bytes", value: "https://example.com/" + strings.Repeat("界", 1359), valid: false},
+	} {
+		_, err := NormalizeArtifactInput(ArtifactTypePullRequest, UpsertArtifactInput{DataValue: test.value})
+		if (err == nil) != test.valid {
+			t.Errorf("%s: error = %v, valid = %t", test.name, err, test.valid)
+		}
+	}
+}
+
 func TestNormalizeCreate(t *testing.T) {
 	t.Parallel()
 

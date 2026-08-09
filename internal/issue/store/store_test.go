@@ -27,6 +27,8 @@ func TestOpenAppliesIssueTrackerSchema(t *testing.T) {
 		"issues",
 		"issues_project_id_idx",
 		"issues_status_idx",
+		"issue_artifacts",
+		"issue_artifacts_issue_id_idx",
 		"issue_dependencies",
 		"issue_dependencies_dependency_issue_id_idx",
 		"comments",
@@ -43,6 +45,58 @@ func TestOpenAppliesIssueTrackerSchema(t *testing.T) {
 		if !schemaObjectExists(t, store, name) {
 			t.Fatalf("schema object %q does not exist", name)
 		}
+	}
+}
+
+func TestIssueArtifactUpsertHydrationAndCascade(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	store, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer store.Close()
+	project := createTestProject(t, store, "ARTIFACT")
+	issue, err := store.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Artifact"})
+	if err != nil {
+		t.Fatalf("create issue: %v", err)
+	}
+	if issue.Artifacts == nil || len(issue.Artifacts) != 0 {
+		t.Fatalf("initial artifacts = %#v", issue.Artifacts)
+	}
+	if _, err := store.UpsertArtifact(ctx, issue.ID, entity.ArtifactTypePullRequest, entity.UpsertArtifactInput{DataValue: "https://example.com/one"}); err != nil {
+		t.Fatalf("create artifact: %v", err)
+	}
+	var createdAt string
+	if err := store.db.QueryRowContext(ctx, `SELECT created_at FROM issue_artifacts WHERE issue_id = ?`, issue.ID).Scan(&createdAt); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.UpsertArtifact(ctx, issue.ID, entity.ArtifactTypePullRequest, entity.UpsertArtifactInput{DataValue: "https://example.com/two"}); err != nil {
+		t.Fatalf("update artifact: %v", err)
+	}
+	var storedCreatedAt string
+	if err := store.db.QueryRowContext(ctx, `SELECT created_at FROM issue_artifacts WHERE issue_id = ?`, issue.ID).Scan(&storedCreatedAt); err != nil {
+		t.Fatal(err)
+	}
+	if storedCreatedAt != createdAt {
+		t.Fatalf("created_at changed: %q -> %q", createdAt, storedCreatedAt)
+	}
+	read, err := store.Issue(ctx, issue.ID)
+	if err != nil {
+		t.Fatalf("read issue: %v", err)
+	}
+	if len(read.Artifacts) != 1 || read.Artifacts[0].DataValue != "https://example.com/two" {
+		t.Fatalf("artifacts = %#v", read.Artifacts)
+	}
+	if err := store.DeleteProject(ctx, project.ID); err != nil {
+		t.Fatalf("delete project: %v", err)
+	}
+	var count int
+	if err := store.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM issue_artifacts`).Scan(&count); err != nil {
+		t.Fatal(err)
+	}
+	if count != 0 {
+		t.Fatalf("artifacts after cascade = %d", count)
 	}
 }
 

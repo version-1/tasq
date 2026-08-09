@@ -245,6 +245,9 @@ func (s *Store) issuesByFilterOrder(ctx context.Context, filter IssueFilter, ord
 	if err := s.hydrateIssueDependencyIDs(ctx, issues); err != nil {
 		return IssueList{}, err
 	}
+	if err := s.hydrateIssueArtifacts(ctx, issues); err != nil {
+		return IssueList{}, err
+	}
 	return IssueList{Issues: issues, Total: total}, nil
 }
 
@@ -295,6 +298,11 @@ func (s *Store) Issue(ctx context.Context, id int64) (entity.Issue, error) {
 		return entity.Issue{}, err
 	}
 	item.DependencyIDs = dependencyIDs
+	artifacts, err := s.artifactsForIssue(ctx, id)
+	if err != nil {
+		return entity.Issue{}, err
+	}
+	item.Artifacts = artifacts
 	return item, nil
 }
 

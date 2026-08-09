@@ -1111,6 +1111,61 @@ func TestCommentCommandsAgainstIssueTrackerAPI(t *testing.T) {
 	}
 }
 
+func TestArtifactCommandsAgainstIssueTrackerAPI(t *testing.T) {
+	ctx := context.Background()
+	issueStore, err := store.OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer issueStore.Close()
+	project, err := issueStore.CreateProject(ctx, entity.CreateProjectInput{Key: "ARTCLI", Name: "Artifacts", Location: t.TempDir()})
+	if err != nil {
+		t.Fatalf("create project: %v", err)
+	}
+	issue, err := issueStore.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Artifact through CLI"})
+	if err != nil {
+		t.Fatalf("create issue: %v", err)
+	}
+	server := httptest.NewServer(api.NewServer(issueStore).Handler())
+	defer server.Close()
+	args := []string{"--api-url", server.URL, "artifact", "set", stringID(issue.ID), "--type", "pull_request", "https://example.com/one"}
+	stdout, stderr, code := runCLI(t, args)
+	if code != 0 || stderr != "" || !strings.Contains(stdout, "https://example.com/one") {
+		t.Fatalf("set: code=%d stdout=%q stderr=%q", code, stdout, stderr)
+	}
+	_, stderr, code = runCLI(t, []string{"--api-url", server.URL, "artifact", "set", stringID(issue.ID), "--type", "pull_request", "https://example.com/two"})
+	if code != 0 || stderr != "" {
+		t.Fatalf("overwrite: code=%d stderr=%q", code, stderr)
+	}
+	_, stderr, code = runCLI(t, []string{"--api-url", server.URL, "artifact", "set", "0", "--type", "pull_request", "https://example.com"})
+	if code == 0 || !strings.Contains(stderr, "id must be a positive integer") {
+		t.Fatalf("invalid ID: code=%d stderr=%q", code, stderr)
+	}
+	_, stderr, code = runCLI(t, []string{"--api-url", server.URL, "artifact", "set", stringID(issue.ID), "https://example.com"})
+	if code == 0 || !strings.Contains(stderr, "type is required") {
+		t.Fatalf("missing type: code=%d stderr=%q", code, stderr)
+	}
+	read, err := issueStore.Issue(ctx, issue.ID)
+	if err != nil || len(read.Artifacts) != 1 || read.Artifacts[0].DataValue != "https://example.com/two" {
+		t.Fatalf("issue artifacts = %#v, err=%v", read.Artifacts, err)
+	}
+	stdout, stderr, code = runCLI(t, []string{"--api-url", server.URL, "--output", "json", "artifact", "delete", stringID(issue.ID), "--type", "pull_request"})
+	if code != 0 || stderr != "" {
+		t.Fatalf("delete: code=%d stderr=%q", code, stderr)
+	}
+	var deleted artifactDeleteResult
+	if err := json.Unmarshal([]byte(stdout), &deleted); err != nil {
+		t.Fatalf("decode delete output %q: %v", stdout, err)
+	}
+	if deleted.IssueID != issue.ID || deleted.Type != "pull_request" || !deleted.Deleted {
+		t.Fatalf("delete output = %+v", deleted)
+	}
+	_, stderr, code = runCLI(t, []string{"--api-url", server.URL, "artifact", "delete", stringID(issue.ID), "--type", "pull_request"})
+	if code == 0 || !strings.Contains(stderr, "artifact not found") {
+		t.Fatalf("redelete: code=%d stderr=%q", code, stderr)
+	}
+}
+
 func TestIssueCreateWithAttachmentAgainstIssueTrackerAPI(t *testing.T) {
 	ctx := context.Background()
 	issueStore, err := store.OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))

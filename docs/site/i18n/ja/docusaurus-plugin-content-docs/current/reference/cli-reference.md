@@ -46,6 +46,15 @@ create と update は、該当する場合に `--title`、`--description`、`--s
 読み、設定された seen TTL の間は同じ issue の出力を重複排除し、`issue-ready` event
 を出力します。一時的な API error が起きても polling を継続します。
 
+## Artifact コマンド
+
+| コマンド | 用途 |
+| --- | --- |
+| `tq artifact set <issue-id> --type pull_request <url>` | 課題のプルリクエスト URL を作成または置き換えます。 |
+| `tq artifact delete <issue-id> --type pull_request` | 課題のプルリクエスト URL を削除します。 |
+
+どちらのコマンドも正の課題 ID と `--type` を必要とし、グローバルな text / JSON 出力モードに対応します。
+
 ## Comment Commands
 
 | Command | Purpose |

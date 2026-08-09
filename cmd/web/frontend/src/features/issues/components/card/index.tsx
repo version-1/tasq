@@ -14,6 +14,7 @@ import { PriorityBadge } from "@/features/issues/components/priority-badge";
 import { ProjectBadge } from "@/features/issues/components/project-badge";
 import { StatusBadge } from "@/features/issues/components/status-badge";
 import { useIssueThreadID } from "@/features/issues/hooks/use-issue-thread-id";
+import { pullRequestArtifact } from "@/features/issues/artifacts";
 import { PendingBadge } from "./pending-badge";
 import styles from "./index.module.css";
 
@@ -63,6 +64,7 @@ export function IssueCard({
   const menuID = `issue-card-menu-${issue.id}`;
   const menuLabel = t("issues.card.actionsLabel", { title: issue.title });
   const lockedStatusLabel = t("issues.card.statusLocked", { status: t(`statuses.${issue.status}`) });
+  const pullRequest = pullRequestArtifact(issue.artifacts);
   const metrics: IssueMetric[] = [
     {
       icon: "message-square",
@@ -92,6 +94,15 @@ export function IssueCard({
     } catch {
       toast.error({ message: t("toast.error.clipboardUnavailable") });
     }
+  }
+
+  function handleOpenPullRequest() {
+    if (!pullRequest) {
+      return;
+    }
+
+    setIsMenuOpen(false);
+    window.open(pullRequest.data_value, "_blank", "noopener,noreferrer");
   }
 
   return (
@@ -127,6 +138,15 @@ export function IssueCard({
           >
             {t("issues.card.copyThreadID")}
           </ContextMenuItem>
+          {pullRequest ? (
+            <ContextMenuItem
+              label={t("issues.card.openPullRequest")}
+              title={t("issues.card.openPullRequest")}
+              onSelect={handleOpenPullRequest}
+            >
+              {t("issues.card.openPullRequest")}
+            </ContextMenuItem>
+          ) : null}
           <ContextMenuGroupLabel>{t("issues.card.changeStatus")}</ContextMenuGroupLabel>
           {statusOptions.map((status) => {
             const isCurrent = status === issue.status;

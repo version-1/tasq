@@ -78,6 +78,8 @@ func (a app) route(ctx context.Context, args []string, cfg config) error {
 		return a.routeIssue(ctx, args[1:], cfg)
 	case "comment":
 		return a.routeComment(ctx, args[1:], cfg)
+	case "artifact":
+		return a.routeArtifact(ctx, args[1:], cfg)
 	case "project":
 		return a.routeProject(ctx, args[1:], cfg)
 	case "workflow":

@@ -409,6 +409,46 @@ paths:
           $ref: "#/components/responses/Error"
         "404":
           $ref: "#/components/responses/Error"
+  /api/v1/issues/{issueId}/artifacts/{type}:
+    parameters:
+      - $ref: "#/components/parameters/IssueIDPath"
+      - name: type
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/ArtifactType"
+    put:
+      tags:
+        - Issues
+      summary: Set an issue artifact.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpsertArtifactInput"
+      responses:
+        "200":
+          description: Created or updated artifact.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArtifactResponse"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+    delete:
+      tags:
+        - Issues
+      summary: Delete an issue artifact.
+      responses:
+        "204":
+          description: Artifact deleted.
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
   /api/v1/issues/{issueId}/comments:
     parameters:
       - $ref: "#/components/parameters/IssueIDPath"
@@ -1002,6 +1042,7 @@ components:
         - priority
         - assignee
         - dependency_ids
+        - artifacts
         - createdAt
         - updatedAt
       properties:
@@ -1029,12 +1070,58 @@ components:
           items:
             type: integer
             format: int64
+        artifacts:
+          type: array
+          items:
+            $ref: "#/components/schemas/Artifact"
         createdAt:
           type: string
           format: date-time
         updatedAt:
           type: string
           format: date-time
+    ArtifactType:
+      type: string
+      enum:
+        - pull_request
+    ArtifactDataType:
+      type: string
+      enum:
+        - url
+    Artifact:
+      type: object
+      required:
+        - type
+        - data_type
+        - data_value
+      properties:
+        type:
+          $ref: "#/components/schemas/ArtifactType"
+        data_type:
+          $ref: "#/components/schemas/ArtifactDataType"
+        data_value:
+          type: string
+          format: uri
+          description: After trimming surrounding whitespace, an absolute HTTP or HTTPS URL with a host and no userinfo, limited to 4096 UTF-8 bytes. The stored value is otherwise unchanged.
+    UpsertArtifactInput:
+      type: object
+      required:
+        - data_value
+      properties:
+        data_value:
+          type: string
+          format: uri
+          description: An absolute HTTP or HTTPS URL with a host and no userinfo. The server trims surrounding whitespace, rejects values over 4096 UTF-8 bytes, and otherwise preserves the value.
+    ArtifactResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          $ref: "#/components/schemas/Artifact"
+        meta:
+          $ref: "#/components/schemas/ApiMeta"
     IssueState:
       type: object
       required:

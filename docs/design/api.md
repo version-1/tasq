@@ -41,7 +41,15 @@ If an owned issue has a `running` orchestrator run, deletion returns `409 Confli
 
 `PATCH /api/v1/issues/{id}` treats `dependency_ids` as a full replacement when present. Omitting the field preserves existing dependencies; passing an empty array removes all dependencies. Create and update both reject missing dependency issues, self-dependencies, duplicate IDs, and dependency cycles.
 
-Issue responses include `projectId`, `projectKey`, and `dependency_ids`. The dependency list is an empty array when the issue has no dependencies.
+Issue responses include `projectId`, `projectKey`, `dependency_ids`, and `artifacts`. Dependency and artifact lists are required arrays and are `[]` when empty. Artifacts are sorted by `type`.
+
+### Artifacts
+
+`PUT /api/v1/issues/{issue_id}/artifacts/{type}` creates or updates one artifact for an issue and type. The request body contains only `data_value`; the server determines `data_type`. Both creation and update return `200` with the artifact's public `type`, `data_type`, and `data_value` fields.
+
+`DELETE /api/v1/issues/{issue_id}/artifacts/{type}` removes the artifact and returns an empty `204` response. A missing issue or artifact returns `404`; an unsupported type, invalid body, or invalid URL returns `400`.
+
+The initial supported type is `pull_request`, with `data_type` `url`. The URL is trimmed before validation and must be an absolute `http` or `https` URL with a host, without userinfo, and no more than 4,096 UTF-8 bytes. Apart from trimming, the API does not normalize the URL.
 
 ### Listing and search
 
@@ -100,7 +108,7 @@ File bytes are stored below `$TQ_HOME/system/data/attachments`; SQLite stores me
 
 ## CLI access
 
-Use typed `tq` commands for routine issue, comment, project, and workflow operations. Use the allowlisted `tq api` command only when no typed command exposes the required issue-tracker operation.
+Use typed `tq` commands for routine issue, artifact, comment, project, and workflow operations. Use the allowlisted `tq api` command only when no typed command exposes the required issue-tracker operation.
 
 The raw command has its own fail-closed method-and-route allowlist. It does not automatically expose new OpenAPI routes, and it temporarily excludes `POST /api/v1/attachments` because multipart request construction is not supported. See the [tq command reference](../references/tq.md#raw-api-requests) for syntax, validation, output, and exit-status behavior.
 

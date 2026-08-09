@@ -13,6 +13,7 @@ Tasq validates entity data at the store layer on create and update operations. T
 | Entity | Required fields | Key constraints |
 | --- | --- | --- |
 | Issue | `projectId`, `title` | title 1-500 chars, description max 10,000 chars, assignee max 200 chars, immutable project ownership |
+| Artifact | `type`, `dataType`, `dataValue` | one per issue and type; initial type `pull_request` has data type `url`; URL is trimmed, absolute HTTP(S), host-required, userinfo-free, max 4,096 UTF-8 bytes |
 | Comment | `issueId`, `author`, `body` | body 1-10,000 chars, type defaults to `general` |
 | Attachment | `entityType`, `entityId`, `file` | image PNG/JPEG/GIF/WebP, max 5 MiB |
 | Project | `key`, `name`, `location` | key format, name 1-200 chars, description max 10,000 chars, absolute location |
@@ -36,6 +37,8 @@ Tasq validates entity data at the store layer on create and update operations. T
 | Issue priority | `low`, `normal`, `high`, `urgent` |
 | Comment type | `progress`, `blocker`, `handoff`, `general` |
 | Attachment entity type | `issue`, `comment` |
+| Artifact type | `pull_request` |
+| Artifact data type | `url` |
 | Run status | `queued`, `running`, `succeeded`, `failed`, `cancelled` |
 
 ## String and Path Limits

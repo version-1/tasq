@@ -3,6 +3,7 @@ import {
   Priority as PriorityValues,
   type Attachment,
   type AttachmentListResponse,
+  type Artifact,
   type ChangeRequest,
   type ChangeRequestListResponse,
   type ChangeRequestStatus,
@@ -52,6 +53,7 @@ export type OrchestratorConversation = ConversationResponse;
 export type {
   Attachment,
   AttachmentListResponse,
+  Artifact,
   ChangeRequest,
   ChangeRequestListResponse,
   ChangeRequestStatus,

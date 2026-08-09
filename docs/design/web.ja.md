@@ -91,6 +91,12 @@ Web UI は表示文字列に `react-i18next` を使います。
 
 ユーザーに表示する UI text は `cmd/web/frontend/src/lib/i18n.ts` に置きます。コンポーネントは hard-coded display string ではなく、`useTranslation()` で翻訳済みテキストを表示します。ユーザーが入力した課題本文、API identifier、route path segment は翻訳しないままで構いません。
 
+## Artifact リンク
+
+課題カードは、課題に `pull_request` Artifact がある場合に限り、コンテキストメニューに `Open pull request` を表示します。課題詳細のサイドバーも、その Artifact がある場合に限り、`Artifacts` セクションと `Pull request` リンクを表示します。Artifact がない場合は、空のセクション、プレースホルダー、編集コントロールを表示しません。
+
+どちらのリンクも opener を渡さずに外部 URL を新しいタブで開きます。Artifact の作成、更新、削除は CLI と API で行い、Web UI では表示のみを提供します。
+
 ## テーマ
 
 Web UI はライトテーマとダークテーマに対応します。`cmd/web/frontend/index.html` は

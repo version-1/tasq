@@ -21,12 +21,27 @@ Validation is enforced at the **store layer** (Go code) on every create and upda
 | Priority    | `Priority` | no                 | optional (`*Priority`) | `normal` | enum: `low`, `normal`, `high`, `urgent`                           |
 | Assignee    | `string`   | no                 | optional (`*string`) | `""`       | max 200 chars, free text                                          |
 | DependencyIDs | `[]int64` | no               | optional (`*[]int64`) | `[]`      | full replacement when set; each ID must reference an issue; no duplicates; no self-dependency; no cycles |
+| Artifacts | `[]Artifact` | response | — | `[]` | sorted by `type`; every issue response includes an array, never `null` |
 | CreatedAt   | `time.Time`| auto               | —                  | `now()`     | —                                                                  |
 | UpdatedAt   | `time.Time`| auto               | auto               | `now()`     | —                                                                  |
 
 Issue descriptions may contain Markdown. Image attachments are referenced as `![alt](attachment://<attachment-id>)`.
 Every issue belongs to exactly one project. Issue project ownership is set at create time and cannot be changed through update APIs.
-`dependency_ids` is exposed on single-issue and list responses. Issues without dependencies return `[]`, not `null`.
+`dependency_ids` and `artifacts` are exposed on single-issue and list responses. Issues without dependencies or artifacts return `[]`, not `null`.
+
+### Artifact
+
+Artifacts associate an issue with one external result. An issue can have at most one artifact for each `type`. The initial supported type is `pull_request`; its server-selected `data_type` is `url`.
+
+| Public field | Go Type | Constraints |
+|--------------|---------|-------------|
+| Type | `ArtifactType` | `pull_request` |
+| DataType | `ArtifactDataType` | `url` for `pull_request` |
+| DataValue | `string` | trimmed absolute `http` or `https` URL; host required; userinfo forbidden; at most 4,096 UTF-8 bytes |
+
+Artifact rows retain their creation and update timestamps internally, but those timestamps are not public fields. `(issue_id, type)` is unique. Deleting an issue cascades to its artifacts. Setting an existing type preserves `created_at` and changes only the value and `updated_at`.
+
+Validation trims surrounding whitespace before parsing, rejects invalid UTF-8, and otherwise preserves the submitted URL unchanged. Issue responses sort artifacts by `type`.
 
 ### CreateIssueInput
 

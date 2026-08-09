@@ -24,6 +24,7 @@ const issue: IssueSummary = {
   priority: "high",
   assignee: "web",
   dependency_ids: [],
+  artifacts: [],
   queueStatus: "queued",
   createdAt: "2026-06-01T00:00:00.000Z",
   updatedAt: "2026-06-01T00:00:00.000Z",
@@ -155,6 +156,46 @@ describe("IssueCard", () => {
 
     expect(onStatusChange).toHaveBeenCalledWith(24, "backlog");
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+  });
+
+  it("opens the pull request artifact in a safe new tab and closes the action menu", async () => {
+    const user = userEvent.setup();
+    const open = vi.spyOn(window, "open").mockImplementation(() => null);
+    renderCard({
+      issue: {
+        ...issue,
+        artifacts: [
+          {
+            type: "pull_request",
+            data_type: "url",
+            data_value: "https://github.com/version-1/tasq/pull/14",
+          },
+        ],
+      },
+    });
+
+    await user.click(screen.getByRole("button", {
+      name: "Issue actions for Wire issue board to generated client",
+    }));
+    await user.click(screen.getByRole("menuitem", { name: "Open pull request" }));
+
+    expect(open).toHaveBeenCalledWith(
+      "https://github.com/version-1/tasq/pull/14",
+      "_blank",
+      "noopener,noreferrer",
+    );
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+  });
+
+  it("does not show a pull request action when no artifact is registered", async () => {
+    const user = userEvent.setup();
+    renderCard();
+
+    await user.click(screen.getByRole("button", {
+      name: "Issue actions for Wire issue board to generated client",
+    }));
+
+    expect(screen.queryByRole("menuitem", { name: "Open pull request" })).not.toBeInTheDocument();
   });
 
   it("renders a ready quick action for backlog issues", async () => {

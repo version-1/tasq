@@ -43,6 +43,8 @@ error responses は次を使います。
 | `GET` | `/api/v1/queue` | エージェントが実行できる issue を、依存関係から算出した queue status と一緒に list します。 |
 | `GET` | `/api/v1/issues/{id}` | issue を読みます。 |
 | `PATCH` | `/api/v1/issues/{id}` | issue を更新します。 |
+| `PUT` | `/api/v1/issues/{issueId}/artifacts/{type}` | Artifact を作成または更新します。 |
+| `DELETE` | `/api/v1/issues/{issueId}/artifacts/{type}` | Artifact を削除します。 |
 | `GET` | `/api/v1/issues/{issueId}/comments` | comments を list します。 |
 | `POST` | `/api/v1/issues/{issueId}/comments` | comment を追加します。 |
 | `PATCH` | `/api/v1/comments/{id}` | comment を更新します。 |
@@ -58,6 +60,8 @@ issue listing では `states`、`project_id`、`project_ids`、`priorities`、
 
 comment listing は `cursor` と `limit` を受け付けます。attachment listing は
 `entity_type` と `entity_id` を受け付けます。
+
+課題レスポンスには、Artifact がない場合も `[]` となる `artifacts` 配列が常に含まれ、`type` 昇順で返ります。初期の `pull_request` Artifact では、`PUT` に `data_value` だけを指定します。サーバーは `type`、`data_type`、`data_value` を返します。`DELETE` は本文のない `204` を返します。不正な type または URL は `400`、課題または Artifact が存在しない場合は `404` です。
 
 ## Attachments
 

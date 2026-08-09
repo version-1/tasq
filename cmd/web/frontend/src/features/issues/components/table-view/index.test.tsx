@@ -21,6 +21,7 @@ const baseIssue: Issue = {
   priority: "high",
   assignee: "frontend",
   dependency_ids: [],
+  artifacts: [],
   createdAt: "2026-06-01T00:00:00.000Z",
   updatedAt: "2026-06-02T00:00:00.000Z",
 };

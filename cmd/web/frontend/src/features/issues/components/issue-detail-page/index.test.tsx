@@ -75,6 +75,26 @@ describe("IssueDetailPage", () => {
     expect(api.fetchComments).not.toHaveBeenCalled();
   });
 
+  it("shows the artifacts sidebar section only when a pull request is registered", async () => {
+    api.fetchIssue.mockResolvedValueOnce({
+      ...issue,
+      artifacts: [
+        {
+          type: "pull_request",
+          data_type: "url",
+          data_value: "https://github.com/version-1/tasq/pull/14",
+        },
+      ],
+    });
+    renderIssueDetail();
+
+    expect(await screen.findByRole("heading", { name: "Artifacts" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Pull request" })).toHaveAttribute(
+      "href",
+      "https://github.com/version-1/tasq/pull/14",
+    );
+  });
+
   it("treats a null attachment list as empty", async () => {
     api.fetchIssueAttachments.mockResolvedValueOnce({ data: null, meta: {} });
 
@@ -413,6 +433,7 @@ const issue: Issue = {
   priority: "high",
   assignee: "frontend",
   dependency_ids: [],
+  artifacts: [],
   createdAt: "2026-06-20T00:00:00.000Z",
   updatedAt: "2026-06-21T00:00:00.000Z",
 };

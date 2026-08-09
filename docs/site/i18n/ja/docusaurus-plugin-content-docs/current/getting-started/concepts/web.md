@@ -17,6 +17,7 @@ backends に proxy します。
 
 - project と issue summaries を render する。
 - status、priority、assignee、descriptions、comments、利用可能な run links を表示する。
+- 課題に該当 Artifact がある場合、課題カードと詳細サイドバーにプルリクエストへのリンクを表示する。
 - blocked になったセッションを resume するときに Codex thread ID などの run context を
   確認できるよう、issue activity を表示する。
 - issue-tracker API を通じて issues を statuses 間で移動する。
@@ -47,3 +48,5 @@ Web UI は persistence を所有しません。issue-tracker API を通じて is
 変更し、該当 views が利用可能な場合は Web server proxy を通じて orchestrator
 runtime state を inspect できます。Activity と run links は navigation aids であり、
 issue-tracker と orchestrator が引き続き authoritative stores です。
+
+Artifact リンクは表示専用です。安全な新しいタブで開き、プルリクエスト Artifact がない課題ではリンク自体を表示しません。

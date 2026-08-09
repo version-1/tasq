@@ -125,6 +125,61 @@ func TestNoContentResponseStaysEmpty(t *testing.T) {
 	}
 }
 
+func TestIssueArtifactRoutes(t *testing.T) {
+	t.Parallel()
+	server := newTestServer(t)
+	issue := createIssue(t, server, "Artifact", entity.StatusReady)
+	put := httptest.NewRequest(http.MethodPut, "/api/v1/issues/"+stringID(issue.ID)+"/artifacts/pull_request", strings.NewReader(`{"data_value":" https://example.com/pr/14 "}`))
+	put.Header.Set("Content-Type", "application/json")
+	putRec := httptest.NewRecorder()
+	server.Handler().ServeHTTP(putRec, put)
+	if putRec.Code != http.StatusOK {
+		t.Fatalf("put status = %d: %s", putRec.Code, putRec.Body.String())
+	}
+	artifact := decodeData[entity.Artifact](t, putRec)
+	if artifact.DataType != entity.ArtifactDataTypeURL || artifact.DataValue != "https://example.com/pr/14" {
+		t.Fatalf("artifact = %+v", artifact)
+	}
+	invalidRec := httptest.NewRecorder()
+	server.Handler().ServeHTTP(invalidRec, httptest.NewRequest(http.MethodPut, "/api/v1/issues/"+stringID(issue.ID)+"/artifacts/unknown", strings.NewReader(`{"data_value":"https://example.com"}`)))
+	if invalidRec.Code != http.StatusBadRequest {
+		t.Fatalf("invalid status = %d", invalidRec.Code)
+	}
+	missingRec := httptest.NewRecorder()
+	server.Handler().ServeHTTP(missingRec, httptest.NewRequest(http.MethodPut, "/api/v1/issues/999999/artifacts/pull_request", strings.NewReader(`{"data_value":"https://example.com"}`)))
+	if missingRec.Code != http.StatusNotFound {
+		t.Fatalf("missing issue status = %d", missingRec.Code)
+	}
+	deleteRec := httptest.NewRecorder()
+	server.Handler().ServeHTTP(deleteRec, httptest.NewRequest(http.MethodDelete, "/api/v1/issues/"+stringID(issue.ID)+"/artifacts/pull_request", nil))
+	if deleteRec.Code != http.StatusNoContent || deleteRec.Body.Len() != 0 {
+		t.Fatalf("delete = %d %q", deleteRec.Code, deleteRec.Body.String())
+	}
+	missingArtifactRec := httptest.NewRecorder()
+	server.Handler().ServeHTTP(missingArtifactRec, httptest.NewRequest(http.MethodDelete, "/api/v1/issues/"+stringID(issue.ID)+"/artifacts/pull_request", nil))
+	if missingArtifactRec.Code != http.StatusNotFound {
+		t.Fatalf("missing artifact status = %d", missingArtifactRec.Code)
+	}
+}
+
+func TestIssueArtifactPutRejectsInvalidBodies(t *testing.T) {
+	t.Parallel()
+	server := newTestServer(t)
+	issue := createIssue(t, server, "Artifact body", entity.StatusReady)
+	path := "/api/v1/issues/" + stringID(issue.ID) + "/artifacts/pull_request"
+	for _, body := range []string{
+		`{"data_value":`,
+		`{"data_value":"https://example.com","unexpected":true}`,
+		`{"data_value":"https://example.com"}{"data_value":"https://example.org"}`,
+	} {
+		rec := httptest.NewRecorder()
+		server.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodPut, path, strings.NewReader(body)))
+		if rec.Code != http.StatusBadRequest {
+			t.Errorf("body %q: status = %d, want 400", body, rec.Code)
+		}
+	}
+}
+
 func TestDeleteProjectWorkflowAllowsMissingOverride(t *testing.T) {
 	t.Parallel()
 

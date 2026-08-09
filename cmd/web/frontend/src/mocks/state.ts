@@ -235,6 +235,7 @@ export function createIssue(input: CreateIssueInput): Issue | null {
     priority: input.priority ?? "normal",
     assignee: input.assignee ?? "",
     dependency_ids: [...dependencyIDs].sort((left, right) => left - right),
+    artifacts: [],
     createdAt: now,
     updatedAt: now,
   };

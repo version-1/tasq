@@ -26,6 +26,7 @@ import type {
   OrchestratorIssueRun,
 } from "@/lib/types";
 import { AttachmentsSection } from "./attachments-section";
+import { ArtifactsSection } from "./artifacts-section";
 import { ChangeRequestList } from "./change-request-list";
 import { CommentList } from "./comment-list";
 import { ConversationTab, defaultConversationMessageTypes } from "./conversation-tab";
@@ -430,6 +431,7 @@ export function IssueDetailPage() {
                     }}
                     onStatusChange={handleStatusChange}
                   />
+                  <ArtifactsSection artifacts={issueState.issue.artifacts} />
                 </aside>
               </div>
             </div>
