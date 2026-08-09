@@ -18,11 +18,27 @@ tq issue create \
   --assignee jiro
 ```
 
-For a multi-line description, use ANSI-C quoting on one physical command line:
+For a short multi-line description that contains no single quotes, ANSI-C quoting works on one physical command line:
 
 ```bash
 tq issue create --project my-app --title "Migrate auth to OIDC" --description $'Context: replace the legacy session cookie.\nAcceptance: OIDC login works and the old cookie path is removed.'
 ```
+
+For arbitrary Markdown, read a single-quoted here-document into a variable and pass the quoted variable. This preserves backticks, `$()`, `$variables`, backslashes, quotes, and newlines as literal text without command substitution:
+
+```bash
+IFS= read -r -d '' issue_body <<'EOF' || true
+## Context
+
+Keep `inline code`, $(literal-command), $LITERAL_VARIABLE, and **Markdown** unchanged.
+Single quotes like 'this' are safe too.
+EOF
+
+tq issue create --project my-app --title "Preserve Markdown" --description "$issue_body"
+tq issue edit 42 "$issue_body"
+```
+
+The quoted `EOF` delimiter is essential: an unquoted here-document delimiter expands command substitutions, parameters, and backslashes. Always quote `"$issue_body"` when passing it to `tq`; an unquoted variable is subject to word splitting and glob expansion. `read -d ''` returns non-zero when it reaches EOF without a NUL byte, so `|| true` is expected here.
 
 ## Inspect
 
