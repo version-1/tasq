@@ -94,10 +94,6 @@ func (a app) serviceStart(ctx context.Context, args []string, cfg config) error 
 	if err != nil {
 		return err
 	}
-	cliExecutable, err := prepareManagedCLI(home)
-	if err != nil {
-		return err
-	}
 	lock, err := acquireServiceStartLock(home)
 	if err != nil {
 		return err
@@ -124,6 +120,10 @@ func (a app) serviceStart(ctx context.Context, args []string, cfg config) error 
 	}
 	if err := checkMigrationTargetsNoPending(ctx); err != nil {
 		return fmt.Errorf("migration pre-flight check failed: %w", err)
+	}
+	cliExecutable, err := prepareManagedCLI(home)
+	if err != nil {
+		return err
 	}
 
 	addresses, fallback, err := serviceStartAddresses()

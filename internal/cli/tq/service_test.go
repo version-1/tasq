@@ -159,6 +159,39 @@ func TestPrepareManagedCLICopiesExecutableToPersistentServicePath(t *testing.T) 
 	}
 }
 
+func TestServiceStartDoesNotReplaceManagedCLIWhenServiceIsRunning(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv(tqconfig.EnvHome, home)
+	if _, err := tqconfig.EnsureHome(); err != nil {
+		t.Fatalf("ensure home: %v", err)
+	}
+	managedCLI := filepath.Join(serviceInstallDir(home), "tq-managed")
+	if err := os.MkdirAll(filepath.Dir(managedCLI), 0o755); err != nil {
+		t.Fatalf("create managed cli directory: %v", err)
+	}
+	if err := os.WriteFile(managedCLI, []byte("original cli"), 0o755); err != nil {
+		t.Fatalf("write managed cli: %v", err)
+	}
+	if err := tqconfig.UpdateState(func(state *tqconfig.State) error {
+		state.IssueTracker = &tqconfig.ServiceState{PID: os.Getpid()}
+		return nil
+	}); err != nil {
+		t.Fatalf("write running service state: %v", err)
+	}
+
+	err := (app{}).serviceStart(context.Background(), nil, config{})
+	if err == nil || !strings.Contains(err.Error(), "already running") {
+		t.Fatalf("service start error = %v", err)
+	}
+	content, err := os.ReadFile(managedCLI)
+	if err != nil {
+		t.Fatalf("read managed cli: %v", err)
+	}
+	if string(content) != "original cli" {
+		t.Fatalf("managed cli was replaced: %q", content)
+	}
+}
+
 func TestValidateServiceExecutableRejectsNonRegularOrNonExecutableFiles(t *testing.T) {
 	home := t.TempDir()
 	path := serviceExecutablePath(home, serviceWeb)

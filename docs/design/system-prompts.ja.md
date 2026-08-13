@@ -11,12 +11,13 @@
 開始時に注入されるプロンプトは次のとおりです。
 
 ````text
-Use `tq` to keep the issue tracker synchronized:
+Use `{{ tq.command }}` to keep the issue tracker synchronized:
 
 If the `tasq-cli` skill is available, use it as the preferred guidance for tracker operations.
 
-- Prefer typed `tq` commands such as `tq issue`, `tq comment`, and `tq artifact` for issue tracker operations.
-- Use `tq api` only when the issue tracker operation has no typed `tq` command.
+- Use `{{ tq.command }}` for every Tasq CLI operation, including commands shown elsewhere as `tq`; it identifies the CLI that started the managed services.
+- Prefer typed commands such as `{{ tq.command }} issue`, `{{ tq.command }} comment`, and `{{ tq.command }} artifact` for issue tracker operations.
+- Use `{{ tq.command }} api` only when the issue tracker operation has no typed command.
 - Do not call the issue tracker API directly with `curl`, `wget`, or a custom HTTP script. This restriction applies only to the issue tracker API, not to other services or local endpoint verification.
 - When work starts, move the issue to `in_progress` and leave a progress comment.
 - Add progress comments at meaningful milestones during the work.
@@ -28,20 +29,20 @@ If the `tasq-cli` skill is available, use it as the preferred guidance for track
 
 ```sh
 # Start
-tq issue update {{ issue.id }} --status in_progress
-tq comment add {{ issue.id }} --author codex --type progress --body "Started work."
+{{ tq.command }} issue update {{ issue.id }} --status in_progress
+{{ tq.command }} comment add {{ issue.id }} --author codex --type progress --body "Started work."
 
 # Meaningful progress milestone
-tq comment add {{ issue.id }} --author codex --type progress --body "Implemented the change; running verification."
+{{ tq.command }} comment add {{ issue.id }} --author codex --type progress --body "Implemented the change; running verification."
 
 # Blocked (use instead of the review handoff)
-tq comment add {{ issue.id }} --author codex --type blocker --body "Blocked: explain the blocker and what is needed."
-tq issue update {{ issue.id }} --status blocked
+{{ tq.command }} comment add {{ issue.id }} --author codex --type blocker --body "Blocked: explain the blocker and what is needed."
+{{ tq.command }} issue update {{ issue.id }} --status blocked
 
 # Ready for review
-tq artifact set {{ issue.id }} --type pull_request <pr-url>
-tq comment add {{ issue.id }} --author codex --type handoff --body "PR: <url>; verification: <summary>."
-tq issue update {{ issue.id }} --status review
+{{ tq.command }} artifact set {{ issue.id }} --type pull_request <pr-url>
+{{ tq.command }} comment add {{ issue.id }} --author codex --type handoff --body "PR: <url>; verification: <summary>."
+{{ tq.command }} issue update {{ issue.id }} --status review
 ```
 
 Tasq CLI のすべての操作には `{{ tq.command }}` を使います。managed service では service を起動した
