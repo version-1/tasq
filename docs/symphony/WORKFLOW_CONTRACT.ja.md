@@ -86,6 +86,7 @@ front matter の閉じ `---` 以降がすべてプロンプトテンプレート
 | `{{ issue.title }}`      | string | 課題タイトル                                   |
 | `{{ issue.description }}`| string | 課題説明本文                                   |
 | `{{ attempt }}`          | int    | attempt 番号（初回は 0、リトライは 1 以上）         |
+| `{{ tq.command }}`       | string | service 起動元から継承した CLI command         |
 
 変数は単純な文字列置換で展開されます。認識されない `{{ ... }}` トークンはそのまま残ります。
 
@@ -96,9 +97,15 @@ front matter の閉じ `---` 以降がすべてプロンプトテンプレート
 
 #### Issue ステータス更新
 
-デフォルトでは、Tasq はエージェントに `tq` CLI で progress comment と issue status update を行うように
-指示を注入します。実行時環境に `tq` が `PATH` 上にあり、`TQ_API_URL` が
-issue-tracker のエンドポイントに設定されている必要があります。
+デフォルトでは、Tasq はエージェントに `{{ tq.command }}` が表す CLI command で progress comment と
+issue status update を行うよう指示を注入します。`tq service start` で起動した service は、起動元の
+CLI を `TQ_HOME` 配下の永続 managed executable へコピーし、その path を `TQ_EXECUTABLE` で継承します。そのため `tqdev` から起動した場合は、
+`PATH` 上で別の `tq` が先に見つかっても同じ `tqdev` executable を使い続けます。この環境契約を持たずに
+orchestrator を直接起動した場合は、後方互換性のため `tq` に fallback します。
+
+managed agent run は `TQ_MANAGED_RUN=1` も継承します。この文脈では、run を所有する orchestrator を
+終了させる可能性があるため、`tq update` と `tq service stop` は service state を変更する前に失敗します。
+service lifecycle command と update command は user shell から実行してください。
 
 ワークフロー作成者は通常、これらの `tq` 指示をプロンプトテンプレートで繰り返す必要はありません。
 `tasq.task_work_prompt` を `false` に設定した場合、ワークフローテンプレート側で同等の issue-tracker

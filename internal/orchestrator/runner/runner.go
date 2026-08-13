@@ -138,12 +138,13 @@ func (r CodexRunner) Run(ctx context.Context, task Task) Result {
 var templateVariablePattern = regexp.MustCompile(`{{\s*([^{}]+?)\s*}}`)
 var templateNamePattern = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*$`)
 
-const defaultTaskWorkPrompt = "Use `tq` to keep the issue tracker synchronized:\n" +
+const defaultTaskWorkPrompt = "Use `{{ tq.command }}` to keep the issue tracker synchronized:\n" +
 	"\n" +
 	"If the `tasq-cli` skill is available, use it as the preferred guidance for tracker operations.\n" +
 	"\n" +
-	"- Prefer typed `tq` commands such as `tq issue`, `tq comment`, and `tq artifact` for issue tracker operations.\n" +
-	"- Use `tq api` only when the issue tracker operation has no typed `tq` command.\n" +
+	"- Use `{{ tq.command }}` for every Tasq CLI operation, including commands shown elsewhere as `tq`; it identifies the CLI that started the managed services.\n" +
+	"- Prefer typed commands such as `{{ tq.command }} issue`, `{{ tq.command }} comment`, and `{{ tq.command }} artifact` for issue tracker operations.\n" +
+	"- Use `{{ tq.command }} api` only when the issue tracker operation has no typed command.\n" +
 	"- Do not call the issue tracker API directly with `curl`, `wget`, or a custom HTTP script. This restriction applies only to the issue tracker API, not to other services or local endpoint verification.\n" +
 	"- When work starts, move the issue to `in_progress` and leave a progress comment.\n" +
 	"- Add progress comments at meaningful milestones during the work.\n" +
@@ -155,23 +156,22 @@ const defaultTaskWorkPrompt = "Use `tq` to keep the issue tracker synchronized:\
 	"\n" +
 	"```sh\n" +
 	"# Start\n" +
-	"tq issue update {{ issue.id }} --status in_progress\n" +
-	"tq comment add {{ issue.id }} --author codex --type progress --body \"Started work.\"\n" +
+	"{{ tq.command }} issue update {{ issue.id }} --status in_progress\n" +
+	"{{ tq.command }} comment add {{ issue.id }} --author codex --type progress --body \"Started work.\"\n" +
 	"\n" +
 	"# Meaningful progress milestone\n" +
-	"tq comment add {{ issue.id }} --author codex --type progress --body \"Implemented the change; running verification.\"\n" +
+	"{{ tq.command }} comment add {{ issue.id }} --author codex --type progress --body \"Implemented the change; running verification.\"\n" +
 	"\n" +
 	"# Blocked (use instead of the review handoff)\n" +
-	"tq comment add {{ issue.id }} --author codex --type blocker --body \"Blocked: explain the blocker and what is needed.\"\n" +
-	"tq issue update {{ issue.id }} --status blocked\n" +
+	"{{ tq.command }} comment add {{ issue.id }} --author codex --type blocker --body \"Blocked: explain the blocker and what is needed.\"\n" +
+	"{{ tq.command }} issue update {{ issue.id }} --status blocked\n" +
 	"\n" +
 	"# Ready for review\n" +
-	"tq artifact set {{ issue.id }} --type pull_request <pr-url>\n" +
-	"tq comment add {{ issue.id }} --author codex --type handoff --body \"PR: <url>; verification: <summary>.\"\n" +
-	"tq issue update {{ issue.id }} --status review\n" +
+	"{{ tq.command }} artifact set {{ issue.id }} --type pull_request <pr-url>\n" +
+	"{{ tq.command }} comment add {{ issue.id }} --author codex --type handoff --body \"PR: <url>; verification: <summary>.\"\n" +
+	"{{ tq.command }} issue update {{ issue.id }} --status review\n" +
 	"```\n" +
 	"\n" +
-	"Run the installed `tq` binary from `PATH`. Do not use `go run ./cmd/tq` for\n" +
-	"tracker synchronization."
+	"Do not substitute another executable from `PATH` and do not use `go run ./cmd/tq` for tracker synchronization."
 
-const continuationGuidance = "First run `tq issue update %d --status in_progress` to keep the issue tracker synchronized. Then continue the same task in this live thread without repeating completed work, and stop when it is ready for handoff. If this continuation creates or updates a pull request, register the primary PR before handoff with `tq artifact set %d --type pull_request <pr-url>`. On success, add the handoff comment, then move the issue to `review`; on failure, retry a reasonable number of times, then leave a blocker comment and do not move to `review` if it remains unresolved. Otherwise, artifact registration is not required."
+const continuationGuidance = "First run `%[1]s issue update %[2]d --status in_progress` to keep the issue tracker synchronized. Then continue the same task in this live thread without repeating completed work, and stop when it is ready for handoff. If this continuation creates or updates a pull request, register the primary PR before handoff with `%[1]s artifact set %[2]d --type pull_request <pr-url>`. On success, add the handoff comment, then move the issue to `review`; on failure, retry a reasonable number of times, then leave a blocker comment and do not move to `review` if it remains unresolved. Otherwise, artifact registration is not required."

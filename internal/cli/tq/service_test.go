@@ -57,13 +57,16 @@ func TestServiceStartAddressesUsesFallbackWhenDefaultPortIsUnavailable(t *testin
 	}
 }
 
-func TestServiceCommandEnvReplacesTQHome(t *testing.T) {
+func TestServiceCommandEnvSetsManagedExecutionContract(t *testing.T) {
 	home := t.TempDir()
-	environment := serviceCommandEnv(home, []string{
+	cliExecutable := filepath.Join(t.TempDir(), "tqdev")
+	environment := serviceCommandEnv(home, cliExecutable, []string{
 		"PATH=/usr/bin",
 		"TQ_HOME=/other/home",
 		"TQ_HOME_SUFFIX=preserved",
 		"TQ_HOME=/another/home",
+		"TQ_EXECUTABLE=/old/tq",
+		"TQ_MANAGED_RUN=0",
 	})
 
 	var homes []string
@@ -77,6 +80,14 @@ func TestServiceCommandEnvReplacesTQHome(t *testing.T) {
 	}
 	if !containsString(environment, "TQ_HOME_SUFFIX=preserved") {
 		t.Fatalf("environment = %v, want TQ_HOME_SUFFIX preserved", environment)
+	}
+	for _, want := range []string{
+		tqconfig.EnvExecutable + "=" + cliExecutable,
+		tqconfig.EnvManagedRun + "=1",
+	} {
+		if !containsString(environment, want) {
+			t.Fatalf("environment = %v, want %q", environment, want)
+		}
 	}
 }
 
@@ -109,7 +120,8 @@ func TestCommandForServiceUsesHomeSystemBinExecutable(t *testing.T) {
 	if err := os.WriteFile(path, []byte("#!/bin/sh\n"), 0o755); err != nil {
 		t.Fatalf("write service executable: %v", err)
 	}
-	command, err := commandForService(context.Background(), home, managedService{name: serviceIssueTracker})
+	cliExecutable := filepath.Join(t.TempDir(), "tqdev")
+	command, err := commandForService(context.Background(), home, cliExecutable, managedService{name: serviceIssueTracker})
 	if err != nil {
 		t.Fatalf("command for service: %v", err)
 	}
@@ -118,6 +130,65 @@ func TestCommandForServiceUsesHomeSystemBinExecutable(t *testing.T) {
 	}
 	if !containsString(command.Env, tqconfig.EnvHome+"="+home) {
 		t.Fatalf("command environment does not contain resolved home: %v", command.Env)
+	}
+	if !containsString(command.Env, tqconfig.EnvExecutable+"="+cliExecutable) || !containsString(command.Env, tqconfig.EnvManagedRun+"=1") {
+		t.Fatalf("command environment does not contain managed execution contract: %v", command.Env)
+	}
+}
+
+func TestPrepareManagedCLICopiesExecutableToPersistentServicePath(t *testing.T) {
+	home := t.TempDir()
+	source := filepath.Join(t.TempDir(), "temporary-go-run-binary")
+	if err := os.WriteFile(source, []byte("managed cli"), 0o755); err != nil {
+		t.Fatalf("write source executable: %v", err)
+	}
+
+	destination, err := copyManagedCLI(home, source)
+	if err != nil {
+		t.Fatalf("copy managed cli: %v", err)
+	}
+	if err := os.Remove(source); err != nil {
+		t.Fatalf("remove temporary source: %v", err)
+	}
+	content, err := os.ReadFile(destination)
+	if err != nil {
+		t.Fatalf("read persistent managed cli: %v", err)
+	}
+	if string(content) != "managed cli" {
+		t.Fatalf("managed cli content = %q", content)
+	}
+}
+
+func TestServiceStartDoesNotReplaceManagedCLIWhenServiceIsRunning(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv(tqconfig.EnvHome, home)
+	if _, err := tqconfig.EnsureHome(); err != nil {
+		t.Fatalf("ensure home: %v", err)
+	}
+	managedCLI := filepath.Join(serviceInstallDir(home), "tq-managed")
+	if err := os.MkdirAll(filepath.Dir(managedCLI), 0o755); err != nil {
+		t.Fatalf("create managed cli directory: %v", err)
+	}
+	if err := os.WriteFile(managedCLI, []byte("original cli"), 0o755); err != nil {
+		t.Fatalf("write managed cli: %v", err)
+	}
+	if err := tqconfig.UpdateState(func(state *tqconfig.State) error {
+		state.IssueTracker = &tqconfig.ServiceState{PID: os.Getpid()}
+		return nil
+	}); err != nil {
+		t.Fatalf("write running service state: %v", err)
+	}
+
+	err := (app{}).serviceStart(context.Background(), nil, config{})
+	if err == nil || !strings.Contains(err.Error(), "already running") {
+		t.Fatalf("service start error = %v", err)
+	}
+	content, err := os.ReadFile(managedCLI)
+	if err != nil {
+		t.Fatalf("read managed cli: %v", err)
+	}
+	if string(content) != "original cli" {
+		t.Fatalf("managed cli was replaced: %q", content)
 	}
 }
 

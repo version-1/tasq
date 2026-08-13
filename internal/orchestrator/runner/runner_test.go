@@ -596,8 +596,9 @@ func TestRenderPromptInjectsTaskWorkPromptByDefault(t *testing.T) {
 		}
 	}
 	for _, want := range []string{
-		"Prefer typed `tq` commands",
-		"Use `tq api` only when the issue tracker operation has no typed `tq` command.",
+		"Use `tq` for every Tasq CLI operation",
+		"Prefer typed commands such as `tq issue`",
+		"Use `tq api` only when the issue tracker operation has no typed command.",
 		"Do not call the issue tracker API directly with `curl`, `wget`, or a custom HTTP script.",
 		"not to other services or local endpoint verification",
 		"primary PR being submitted for review",
@@ -619,6 +620,41 @@ func TestRenderPromptInjectsTaskWorkPromptByDefault(t *testing.T) {
 	}
 	if !strings.Contains(prompt, "\n\nWork on Runner task.") {
 		t.Fatalf("prompt missing workflow template: %q", prompt)
+	}
+}
+
+func TestRenderPromptUsesManagedServiceExecutable(t *testing.T) {
+	t.Setenv("TQ_EXECUTABLE", "/tmp/tqdev")
+	t.Setenv("TQ_MANAGED_RUN", "1")
+
+	prompt, err := renderPrompt(Task{
+		PromptTemplate: "Work on {{ issue.id }}.",
+		Issue:          entity.Issue{ID: 7},
+	})
+	if err != nil {
+		t.Fatalf("render prompt: %v", err)
+	}
+	for _, want := range []string{
+		"Use `\"$TQ_EXECUTABLE\"` to keep the issue tracker synchronized",
+		`"$TQ_EXECUTABLE" issue update 7 --status in_progress`,
+		`"$TQ_EXECUTABLE" artifact set 7 --type pull_request <pr-url>`,
+	} {
+		if !strings.Contains(prompt, want) {
+			t.Fatalf("prompt missing %q: %q", want, prompt)
+		}
+	}
+}
+
+func TestRenderPromptIgnoresExecutableOutsideManagedRun(t *testing.T) {
+	t.Setenv("TQ_EXECUTABLE", "/tmp/stale-tqdev")
+	t.Setenv("TQ_MANAGED_RUN", "")
+
+	prompt, err := renderPrompt(Task{PromptTemplate: "Work on {{ issue.id }}.", Issue: entity.Issue{ID: 7}})
+	if err != nil {
+		t.Fatalf("render prompt: %v", err)
+	}
+	if strings.Contains(prompt, "TQ_EXECUTABLE") || !strings.Contains(prompt, "tq issue update 7 --status in_progress") {
+		t.Fatalf("prompt did not fall back to tq: %q", prompt)
 	}
 }
 
@@ -698,6 +734,22 @@ func TestContinuationGuidanceIncludesChangeRequests(t *testing.T) {
 	}
 	if strings.Index(prompt, "If this continuation creates or updates a pull request") > strings.Index(prompt, "Change requests assigned to this continuation:") {
 		t.Fatalf("change-request guidance moved before continuation reminder: %q", prompt)
+	}
+}
+
+func TestContinuationGuidanceUsesManagedServiceExecutable(t *testing.T) {
+	t.Setenv("TQ_EXECUTABLE", "/tmp/tqdev")
+	t.Setenv("TQ_MANAGED_RUN", "1")
+
+	prompt := continuationPrompt(Task{Issue: entity.Issue{ID: 7}})
+
+	for _, want := range []string{
+		`"$TQ_EXECUTABLE" issue update 7 --status in_progress`,
+		`"$TQ_EXECUTABLE" artifact set 7 --type pull_request <pr-url>`,
+	} {
+		if !strings.Contains(prompt, want) {
+			t.Fatalf("prompt missing %q: %q", want, prompt)
+		}
 	}
 }
 

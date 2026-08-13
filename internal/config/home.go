@@ -9,7 +9,9 @@ import (
 )
 
 const (
-	EnvHome = "TQ_HOME"
+	EnvHome       = "TQ_HOME"
+	EnvExecutable = "TQ_EXECUTABLE"
+	EnvManagedRun = "TQ_MANAGED_RUN"
 )
 
 var defaultHomeProfile = ""
