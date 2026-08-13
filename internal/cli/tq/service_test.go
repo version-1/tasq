@@ -136,6 +136,29 @@ func TestCommandForServiceUsesHomeSystemBinExecutable(t *testing.T) {
 	}
 }
 
+func TestPrepareManagedCLICopiesExecutableToPersistentServicePath(t *testing.T) {
+	home := t.TempDir()
+	source := filepath.Join(t.TempDir(), "temporary-go-run-binary")
+	if err := os.WriteFile(source, []byte("managed cli"), 0o755); err != nil {
+		t.Fatalf("write source executable: %v", err)
+	}
+
+	destination, err := copyManagedCLI(home, source)
+	if err != nil {
+		t.Fatalf("copy managed cli: %v", err)
+	}
+	if err := os.Remove(source); err != nil {
+		t.Fatalf("remove temporary source: %v", err)
+	}
+	content, err := os.ReadFile(destination)
+	if err != nil {
+		t.Fatalf("read persistent managed cli: %v", err)
+	}
+	if string(content) != "managed cli" {
+		t.Fatalf("managed cli content = %q", content)
+	}
+}
+
 func TestValidateServiceExecutableRejectsNonRegularOrNonExecutableFiles(t *testing.T) {
 	home := t.TempDir()
 	path := serviceExecutablePath(home, serviceWeb)

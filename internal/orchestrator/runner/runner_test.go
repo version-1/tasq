@@ -625,6 +625,7 @@ func TestRenderPromptInjectsTaskWorkPromptByDefault(t *testing.T) {
 
 func TestRenderPromptUsesManagedServiceExecutable(t *testing.T) {
 	t.Setenv("TQ_EXECUTABLE", "/tmp/tqdev")
+	t.Setenv("TQ_MANAGED_RUN", "1")
 
 	prompt, err := renderPrompt(Task{
 		PromptTemplate: "Work on {{ issue.id }}.",
@@ -641,6 +642,19 @@ func TestRenderPromptUsesManagedServiceExecutable(t *testing.T) {
 		if !strings.Contains(prompt, want) {
 			t.Fatalf("prompt missing %q: %q", want, prompt)
 		}
+	}
+}
+
+func TestRenderPromptIgnoresExecutableOutsideManagedRun(t *testing.T) {
+	t.Setenv("TQ_EXECUTABLE", "/tmp/stale-tqdev")
+	t.Setenv("TQ_MANAGED_RUN", "")
+
+	prompt, err := renderPrompt(Task{PromptTemplate: "Work on {{ issue.id }}.", Issue: entity.Issue{ID: 7}})
+	if err != nil {
+		t.Fatalf("render prompt: %v", err)
+	}
+	if strings.Contains(prompt, "TQ_EXECUTABLE") || !strings.Contains(prompt, "tq issue update 7 --status in_progress") {
+		t.Fatalf("prompt did not fall back to tq: %q", prompt)
 	}
 }
 
@@ -725,6 +739,7 @@ func TestContinuationGuidanceIncludesChangeRequests(t *testing.T) {
 
 func TestContinuationGuidanceUsesManagedServiceExecutable(t *testing.T) {
 	t.Setenv("TQ_EXECUTABLE", "/tmp/tqdev")
+	t.Setenv("TQ_MANAGED_RUN", "1")
 
 	prompt := continuationPrompt(Task{Issue: entity.Issue{ID: 7}})
 

@@ -94,7 +94,7 @@ func (a app) serviceStart(ctx context.Context, args []string, cfg config) error 
 	if err != nil {
 		return err
 	}
-	cliExecutable, err := currentExecutable()
+	cliExecutable, err := prepareManagedCLI(home)
 	if err != nil {
 		return err
 	}
@@ -482,6 +482,25 @@ func currentExecutable() (string, error) {
 		executable = resolved
 	}
 	return filepath.Clean(executable), nil
+}
+
+func prepareManagedCLI(home string) (string, error) {
+	source, err := currentExecutable()
+	if err != nil {
+		return "", err
+	}
+	return copyManagedCLI(home, source)
+}
+
+func copyManagedCLI(home string, source string) (string, error) {
+	destination := filepath.Join(serviceInstallDir(home), "tq-managed")
+	if err := os.MkdirAll(filepath.Dir(destination), 0o755); err != nil {
+		return "", fmt.Errorf("create managed tq directory: %w", err)
+	}
+	if err := installExecutable(source, destination); err != nil {
+		return "", fmt.Errorf("prepare managed tq executable: %w", err)
+	}
+	return destination, nil
 }
 
 func rejectManagedServiceMutation(action string) error {

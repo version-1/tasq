@@ -99,7 +99,7 @@ front matter の閉じ `---` 以降がすべてプロンプトテンプレート
 
 デフォルトでは、Tasq はエージェントに `{{ tq.command }}` が表す CLI command で progress comment と
 issue status update を行うよう指示を注入します。`tq service start` で起動した service は、起動元の
-正規化済み executable path を `TQ_EXECUTABLE` で継承します。そのため `tqdev` から起動した場合は、
+CLI を `TQ_HOME` 配下の永続 managed executable へコピーし、その path を `TQ_EXECUTABLE` で継承します。そのため `tqdev` から起動した場合は、
 `PATH` 上で別の `tq` が先に見つかっても同じ `tqdev` executable を使い続けます。この環境契約を持たずに
 orchestrator を直接起動した場合は、後方互換性のため `tq` に fallback します。
 

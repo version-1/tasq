@@ -101,7 +101,8 @@ interacting with the issue-tracker.
 
 By default, Tasq injects instructions that tell the agent to use the CLI command represented by
 `{{ tq.command }}` for progress comments and issue status updates. Services started by
-`tq service start` inherit the starter's normalized executable path through `TQ_EXECUTABLE`; a
+`tq service start` copy the starter into a persistent managed executable under `TQ_HOME` and
+inherit that path through `TQ_EXECUTABLE`; a
 `tqdev` starter therefore keeps using that same `tqdev` executable even if another `tq` appears
 earlier on `PATH`. Direct orchestrator launches without this environment contract fall back to
 `tq` for backward compatibility.

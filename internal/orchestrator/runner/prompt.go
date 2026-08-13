@@ -118,7 +118,7 @@ func templateVariables(task Task) map[string]string {
 }
 
 func tasqCommand() string {
-	if strings.TrimSpace(os.Getenv(tqconfig.EnvExecutable)) != "" {
+	if os.Getenv(tqconfig.EnvManagedRun) == "1" && strings.TrimSpace(os.Getenv(tqconfig.EnvExecutable)) != "" {
 		return `"$TQ_EXECUTABLE"`
 	}
 	return "tq"
