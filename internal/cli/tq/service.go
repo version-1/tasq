@@ -64,6 +64,11 @@ func (a app) routeService(ctx context.Context, args []string, cfg config) error 
 		return nil
 	}
 	action := args[0]
+	if action == "stop" {
+		if err := rejectManagedServiceMutation("stop"); err != nil {
+			return err
+		}
+	}
 	switch action {
 	case "start":
 		return a.serviceStart(ctx, args[1:], cfg)
@@ -86,6 +91,10 @@ func (a app) serviceStart(ctx context.Context, args []string, cfg config) error 
 		return usageError("usage: tq service start [-y]")
 	}
 	home, err := tqconfig.EnsureHome()
+	if err != nil {
+		return err
+	}
+	cliExecutable, err := currentExecutable()
 	if err != nil {
 		return err
 	}
@@ -149,7 +158,7 @@ func (a app) serviceStart(ctx context.Context, args []string, cfg config) error 
 			"-db", issueDB,
 		},
 	}
-	if _, err := startManagedService(ctx, home, issueService); err != nil {
+	if _, err := startManagedService(ctx, home, cliExecutable, issueService); err != nil {
 		return err
 	}
 	if err := waitIssueTrackerHealthy(ctx, "http://"+issueAddr); err != nil {
@@ -166,7 +175,7 @@ func (a app) serviceStart(ctx context.Context, args []string, cfg config) error 
 			"-port", strconv.Itoa(servicePort(orchestratorAddr)),
 		},
 	}
-	if _, err := startManagedService(ctx, home, orchestratorService); err != nil {
+	if _, err := startManagedService(ctx, home, cliExecutable, orchestratorService); err != nil {
 		_ = stopServiceByName(context.Background(), serviceIssueTracker)
 		return err
 	}
@@ -185,7 +194,7 @@ func (a app) serviceStart(ctx context.Context, args []string, cfg config) error 
 			"-orchestrator-url", "http://" + orchestratorAddr,
 		},
 	}
-	if _, err := startManagedService(ctx, home, webService); err != nil {
+	if _, err := startManagedService(ctx, home, cliExecutable, webService); err != nil {
 		_ = stopServiceByName(context.Background(), serviceOrchestrator)
 		_ = stopServiceByName(context.Background(), serviceIssueTracker)
 		return err
@@ -376,8 +385,8 @@ func (a app) serviceStatus(ctx context.Context, args []string, cfg config) error
 	return writeServiceStatuses(a.stdout, statuses)
 }
 
-func startManagedService(ctx context.Context, home string, service managedService) (int, error) {
-	cmd, err := commandForService(ctx, home, service)
+func startManagedService(ctx context.Context, home string, cliExecutable string, service managedService) (int, error) {
+	cmd, err := commandForService(ctx, home, cliExecutable, service)
 	if err != nil {
 		return 0, err
 	}
@@ -395,13 +404,13 @@ func startManagedService(ctx context.Context, home string, service managedServic
 	return cmd.Process.Pid, nil
 }
 
-func commandForService(ctx context.Context, home string, service managedService) (*exec.Cmd, error) {
+func commandForService(ctx context.Context, home string, cliExecutable string, service managedService) (*exec.Cmd, error) {
 	executable := serviceExecutablePath(home, service.name)
 	if err := validateServiceExecutable(service.name, executable); err != nil {
 		return nil, err
 	}
 	command := exec.CommandContext(ctx, executable, service.args...)
-	command.Env = serviceCommandEnv(home, os.Environ())
+	command.Env = serviceCommandEnv(home, cliExecutable, os.Environ())
 	return command, nil
 }
 
@@ -440,14 +449,46 @@ func serviceExecutablePath(home string, name serviceName) string {
 	return filepath.Join(tqconfig.SystemDir(home), "bin", string(name))
 }
 
-func serviceCommandEnv(home string, environment []string) []string {
-	filtered := make([]string, 0, len(environment)+1)
+func serviceCommandEnv(home string, cliExecutable string, environment []string) []string {
+	filtered := make([]string, 0, len(environment)+3)
 	for _, entry := range environment {
-		if !strings.HasPrefix(entry, tqconfig.EnvHome+"=") {
+		if !environmentEntryMatches(entry, tqconfig.EnvHome) &&
+			!environmentEntryMatches(entry, tqconfig.EnvExecutable) &&
+			!environmentEntryMatches(entry, tqconfig.EnvManagedRun) {
 			filtered = append(filtered, entry)
 		}
 	}
-	return append(filtered, tqconfig.EnvHome+"="+home)
+	return append(filtered,
+		tqconfig.EnvHome+"="+home,
+		tqconfig.EnvExecutable+"="+cliExecutable,
+		tqconfig.EnvManagedRun+"=1",
+	)
+}
+
+func environmentEntryMatches(entry string, name string) bool {
+	return strings.HasPrefix(entry, name+"=")
+}
+
+func currentExecutable() (string, error) {
+	executable, err := os.Executable()
+	if err != nil {
+		return "", fmt.Errorf("resolve tq executable: %w", err)
+	}
+	executable, err = filepath.Abs(executable)
+	if err != nil {
+		return "", fmt.Errorf("resolve absolute tq executable: %w", err)
+	}
+	if resolved, err := filepath.EvalSymlinks(executable); err == nil {
+		executable = resolved
+	}
+	return filepath.Clean(executable), nil
+}
+
+func rejectManagedServiceMutation(action string) error {
+	if os.Getenv(tqconfig.EnvManagedRun) != "1" {
+		return nil
+	}
+	return fmt.Errorf("tq service %s is unavailable inside an orchestrator-managed run; run it from a user shell", action)
 }
 
 func openServiceLog(home string, name string) (*os.File, error) {

@@ -57,13 +57,16 @@ func TestServiceStartAddressesUsesFallbackWhenDefaultPortIsUnavailable(t *testin
 	}
 }
 
-func TestServiceCommandEnvReplacesTQHome(t *testing.T) {
+func TestServiceCommandEnvSetsManagedExecutionContract(t *testing.T) {
 	home := t.TempDir()
-	environment := serviceCommandEnv(home, []string{
+	cliExecutable := filepath.Join(t.TempDir(), "tqdev")
+	environment := serviceCommandEnv(home, cliExecutable, []string{
 		"PATH=/usr/bin",
 		"TQ_HOME=/other/home",
 		"TQ_HOME_SUFFIX=preserved",
 		"TQ_HOME=/another/home",
+		"TQ_EXECUTABLE=/old/tq",
+		"TQ_MANAGED_RUN=0",
 	})
 
 	var homes []string
@@ -77,6 +80,14 @@ func TestServiceCommandEnvReplacesTQHome(t *testing.T) {
 	}
 	if !containsString(environment, "TQ_HOME_SUFFIX=preserved") {
 		t.Fatalf("environment = %v, want TQ_HOME_SUFFIX preserved", environment)
+	}
+	for _, want := range []string{
+		tqconfig.EnvExecutable + "=" + cliExecutable,
+		tqconfig.EnvManagedRun + "=1",
+	} {
+		if !containsString(environment, want) {
+			t.Fatalf("environment = %v, want %q", environment, want)
+		}
 	}
 }
 
@@ -109,7 +120,8 @@ func TestCommandForServiceUsesHomeSystemBinExecutable(t *testing.T) {
 	if err := os.WriteFile(path, []byte("#!/bin/sh\n"), 0o755); err != nil {
 		t.Fatalf("write service executable: %v", err)
 	}
-	command, err := commandForService(context.Background(), home, managedService{name: serviceIssueTracker})
+	cliExecutable := filepath.Join(t.TempDir(), "tqdev")
+	command, err := commandForService(context.Background(), home, cliExecutable, managedService{name: serviceIssueTracker})
 	if err != nil {
 		t.Fatalf("command for service: %v", err)
 	}
@@ -118,6 +130,9 @@ func TestCommandForServiceUsesHomeSystemBinExecutable(t *testing.T) {
 	}
 	if !containsString(command.Env, tqconfig.EnvHome+"="+home) {
 		t.Fatalf("command environment does not contain resolved home: %v", command.Env)
+	}
+	if !containsString(command.Env, tqconfig.EnvExecutable+"="+cliExecutable) || !containsString(command.Env, tqconfig.EnvManagedRun+"=1") {
+		t.Fatalf("command environment does not contain managed execution contract: %v", command.Env)
 	}
 }
 

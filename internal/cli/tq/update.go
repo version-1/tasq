@@ -53,6 +53,9 @@ func (a app) update(ctx context.Context, args []string, cfg config) error {
 	if fs.NArg() != 0 {
 		return usageError("update does not accept positional arguments")
 	}
+	if os.Getenv(tqconfig.EnvManagedRun) == "1" {
+		return errors.New("tq update is unavailable inside an orchestrator-managed run; run it from a user shell")
+	}
 	profile, err := tqconfig.DefaultHomeProfile()
 	if err != nil {
 		return err

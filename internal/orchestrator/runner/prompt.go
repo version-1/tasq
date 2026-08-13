@@ -3,13 +3,16 @@ package runner
 import (
 	"errors"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	tqconfig "github.com/version-1/tasq/internal/config"
 )
 
 func continuationPrompt(task Task) string {
-	prompt := fmt.Sprintf(continuationGuidance, task.Issue.ID, task.Issue.ID)
+	prompt := fmt.Sprintf(continuationGuidance, tasqCommand(), task.Issue.ID)
 	changeRequestGuidance := changeRequestGuidanceForTask(task)
 	if changeRequestGuidance == "" {
 		return prompt
@@ -101,6 +104,7 @@ func templateVariables(task Task) map[string]string {
 		attempt = task.Attempt
 	}
 	return map[string]string{
+		"tq.command":        tasqCommand(),
 		"issue.id":          strconv.FormatInt(task.Issue.ID, 10),
 		"issue.title":       task.Issue.Title,
 		"issue.description": task.Issue.Description,
@@ -111,4 +115,11 @@ func templateVariables(task Task) map[string]string {
 		"issue.updated_at":  task.Issue.UpdatedAt.Format(time.RFC3339),
 		"attempt":           strconv.Itoa(attempt),
 	}
+}
+
+func tasqCommand() string {
+	if strings.TrimSpace(os.Getenv(tqconfig.EnvExecutable)) != "" {
+		return `"$TQ_EXECUTABLE"`
+	}
+	return "tq"
 }

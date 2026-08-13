@@ -87,6 +87,7 @@ issue-tracker synchronization instructions before template variable expansion, s
 | `{{ issue.title }}`      | string | Issue title                                       |
 | `{{ issue.description }}`| string | Issue description body                            |
 | `{{ attempt }}`          | int    | Attempt number (0 for first run, >=1 for retries) |
+| `{{ tq.command }}`       | string | CLI command inherited from the service starter    |
 
 Variables are replaced by simple string substitution. Unrecognized `{{ ... }}` tokens are left
 as-is.
@@ -98,9 +99,16 @@ interacting with the issue-tracker.
 
 #### Issue Status Updates
 
-By default, Tasq injects instructions that tell the agent to use the `tq` CLI for progress comments
-and issue status updates. The runtime environment must have `tq` on `PATH` and `TQ_API_URL` set to
-the issue-tracker endpoint.
+By default, Tasq injects instructions that tell the agent to use the CLI command represented by
+`{{ tq.command }}` for progress comments and issue status updates. Services started by
+`tq service start` inherit the starter's normalized executable path through `TQ_EXECUTABLE`; a
+`tqdev` starter therefore keeps using that same `tqdev` executable even if another `tq` appears
+earlier on `PATH`. Direct orchestrator launches without this environment contract fall back to
+`tq` for backward compatibility.
+
+Managed agent runs also inherit `TQ_MANAGED_RUN=1`. In that context, `tq update` and
+`tq service stop` fail before changing service state because either command could terminate the
+orchestrator that owns the run. Run lifecycle and update commands from a user shell instead.
 
 Workflow authors normally do not need to repeat these `tq` instructions in the prompt template. If
 `tasq.task_work_prompt` is set to `false`, the workflow template is responsible for providing

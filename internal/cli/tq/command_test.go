@@ -183,6 +183,34 @@ func TestUpdateProfileAllowed(t *testing.T) {
 	}
 }
 
+func TestUpdateRejectsOrchestratorManagedRun(t *testing.T) {
+	t.Setenv(tqconfig.EnvManagedRun, "1")
+	runner := &fakeUpdateRunner{}
+
+	_, stderr, code := runCLIWithUpdateRunner(t, []string{"update", "-y"}, "", runner)
+
+	if code != 1 {
+		t.Fatalf("code=%d stderr=%s", code, stderr)
+	}
+	assertStringSlice(t, runner.calls, nil)
+	if message := decodeCLIError(t, stderr); !strings.Contains(message, "orchestrator-managed run") {
+		t.Fatalf("error = %q", message)
+	}
+}
+
+func TestServiceStopRejectsOrchestratorManagedRun(t *testing.T) {
+	t.Setenv(tqconfig.EnvManagedRun, "1")
+
+	_, stderr, code := runCLI(t, []string{"service", "stop"})
+
+	if code != 1 {
+		t.Fatalf("code=%d stderr=%s", code, stderr)
+	}
+	if message := decodeCLIError(t, stderr); !strings.Contains(message, "orchestrator-managed run") {
+		t.Fatalf("error = %q", message)
+	}
+}
+
 func TestUpdateYesSkipsConfirmation(t *testing.T) {
 	runner := &fakeUpdateRunner{
 		current:   "tq v0.1.0 (commit: old)",
