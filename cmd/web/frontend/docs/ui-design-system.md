@@ -366,8 +366,9 @@ The application shell is a two-column grid declared in
 - Nav rows: `44px` min height, `12px` icon gap, `--radius-sm`, and
   `--surface-hover` hover.
 - The active route uses `--surface-hover` background (no border accent).
-- Bottom of sidebar: settings link separated by `border-top` and a theme switch
-  row with the same separator.
+- Bottom of sidebar: settings link separated by `border-top`, a theme switch
+  row with the same separator, and the current release version in small muted
+  text. The commit is available only as hover text when known.
 
 ### Header
 

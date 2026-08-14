@@ -17,7 +17,7 @@ TQ_INSTALL_DIR ?= $(HOME)/.local/bin
 TQ_INSTALL_NAME ?= tq
 TQ_BUILD_COMMIT ?= $(shell git rev-parse --short HEAD 2>/dev/null || printf unknown)
 TQ_BUILD_PROFILE ?=
-TQ_BUILD_LDFLAGS ?= -X github.com/version-1/tasq/internal/cli/tq.buildCommit=$(TQ_BUILD_COMMIT) -X github.com/version-1/tasq/internal/config.defaultHomeProfile=$(TQ_BUILD_PROFILE)
+TQ_BUILD_LDFLAGS ?= -X github.com/version-1/tasq/internal/buildinfo.commit=$(TQ_BUILD_COMMIT) -X github.com/version-1/tasq/internal/config.defaultHomeProfile=$(TQ_BUILD_PROFILE)
 TQ_INSTALL_HOME = $(if $(filter file,$(origin TQ_HOME)),,$(TQ_HOME))
 
 export TQ_HOME
@@ -69,10 +69,10 @@ build-tq: ## Build tq for the host into ./bin/tq.
 build-tq-dev: ## Build tq and service binaries with the dev profile.
 	cd cmd/web/frontend && npm ci && npm run build
 	mkdir -p "$(HOME)/.tasq-dev/system/bin"
-	go build -ldflags "-X github.com/version-1/tasq/internal/cli/tq.buildCommit=$(TQ_BUILD_COMMIT) -X github.com/version-1/tasq/internal/config.defaultHomeProfile=dev" -o ./tqdev ./cmd/tq
+	go build -ldflags "-X github.com/version-1/tasq/internal/buildinfo.commit=$(TQ_BUILD_COMMIT) -X github.com/version-1/tasq/internal/config.defaultHomeProfile=dev" -o ./tqdev ./cmd/tq
 	go build -o "$(HOME)/.tasq-dev/system/bin/issue-tracker" ./cmd/issue-tracker
 	go build -o "$(HOME)/.tasq-dev/system/bin/orchestrator" ./cmd/orchestrator
-	go build -o "$(HOME)/.tasq-dev/system/bin/web" ./cmd/web
+	go build -ldflags "-X github.com/version-1/tasq/internal/buildinfo.commit=$(TQ_BUILD_COMMIT)" -o "$(HOME)/.tasq-dev/system/bin/web" ./cmd/web
 
 .PHONY: dev-check
 dev-check:

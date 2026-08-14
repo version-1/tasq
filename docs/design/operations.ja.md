@@ -32,7 +32,7 @@ CLI コマンド:
 
 `tq tui` には対話型端末と text 出力が必要です。Issue Tracker の URL は通常の CLI 解決順に従います。`--orchestrator-url` はサービス状態に保存されたオーケストレーターのアドレスより優先されます。オーケストレーターが未設定または利用できない場合は Run タブだけを縮退表示し、Issue Tracker の障害時は再試行画面を表示します。
 
-`make build-tq` はホスト用の `tq` binary を `./bin/tq` に build し、release build と同じ `buildCommit` ldflags variable を通じて現在の short commit hash を `tq version` に注入します。
+`make build-tq` はホスト用の `tq` binary を `./bin/tq` に build し、release build と同じ共有 build-info ldflags variable を通じて現在の short commit hash を `tq version` に注入します。
 
 `make dev-up` は OpenAPI UI を起動し、`dev` container 内で issue-tracker、orchestrator、web-ui を起動します。実行時状態は `$TQ_HOME` 配下に保存され、container 内の既定値は `/workspace/.tasq` です。`run-all` step はサービス起動前に migration を明示的に適用します。`make dev-codex-login` は device auth を使い、Codex の認証情報を `codex-home` Docker volume に永続化します。
 

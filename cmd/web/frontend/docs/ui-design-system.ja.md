@@ -363,8 +363,9 @@ documented token になるまでは literal のまま扱います。
 - nav 行: 最小高さ `44px`、icon gap `12px`、`--radius-sm`、hover で
   `--surface-hover`。
 - アクティブな route は `--surface-hover` 背景を使用 (border アクセントはなし)。
-- sidebar 下部: settings リンクが `border-top` と theme switch 行で
-  仕切られた同じ separator を持ちます。
+- sidebar 下部: settings リンクが `border-top`、同じ separator を持つ theme
+  switch 行、そして小さく muted な現在の release version を表示します。
+  commit が分かる場合のみ hover text で確認できます。
 
 ### Header
 

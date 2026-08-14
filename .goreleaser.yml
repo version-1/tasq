@@ -5,7 +5,7 @@ builds:
     binary: tq
     id: tq
     ldflags:
-      - -s -w -X github.com/version-1/tasq/internal/cli/tq.buildVersion={{.Version}} -X github.com/version-1/tasq/internal/cli/tq.buildCommit={{.ShortCommit}} -X github.com/version-1/tasq/internal/config.defaultHomeProfile={{.Env.TQ_BUILD_PROFILE}}
+      - -s -w -X github.com/version-1/tasq/internal/buildinfo.version={{.Version}} -X github.com/version-1/tasq/internal/buildinfo.commit={{.ShortCommit}} -X github.com/version-1/tasq/internal/config.defaultHomeProfile={{.Env.TQ_BUILD_PROFILE}}
     env:
       - CGO_ENABLED=0
     goos:
@@ -44,7 +44,7 @@ builds:
     binary: web
     id: web
     ldflags:
-      - -s -w -X github.com/version-1/tasq/internal/config.defaultHomeProfile={{.Env.TQ_BUILD_PROFILE}}
+      - -s -w -X github.com/version-1/tasq/internal/buildinfo.version={{.Version}} -X github.com/version-1/tasq/internal/buildinfo.commit={{.ShortCommit}} -X github.com/version-1/tasq/internal/config.defaultHomeProfile={{.Env.TQ_BUILD_PROFILE}}
     env:
       - CGO_ENABLED=0
     goos:

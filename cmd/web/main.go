@@ -6,6 +6,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"html"
 	"io/fs"
 	"log"
 	"net"
@@ -18,6 +19,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/version-1/tasq/internal/buildinfo"
 	"github.com/version-1/tasq/internal/config"
 )
 
@@ -145,8 +147,8 @@ func (handler spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		path = "index.html"
 	}
 
-	info, err := fs.Stat(handler.assets, path)
-	if err == nil && !info.IsDir() {
+	fileInfo, err := fs.Stat(handler.assets, path)
+	if path != "index.html" && err == nil && !fileInfo.IsDir() {
 		http.FileServer(http.FS(handler.assets)).ServeHTTP(w, r)
 		return
 	}
@@ -157,5 +159,8 @@ func (handler spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	_, _ = w.Write(index)
+	info := buildinfo.Current()
+	page := strings.ReplaceAll(string(index), "__TASQ_VERSION__", html.EscapeString(info.Version))
+	page = strings.ReplaceAll(page, "__TASQ_COMMIT__", html.EscapeString(info.Commit))
+	_, _ = w.Write([]byte(page))
 }
