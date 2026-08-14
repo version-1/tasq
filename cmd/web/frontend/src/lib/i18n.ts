@@ -211,8 +211,18 @@ const resources = {
           retryNote:
             "Change request は作成済みです。再送信すると Issue の ready 更新だけを再試行します。",
           saving: "送信中...",
+          shortcuts: "定型文",
           submit: "コメントをつけて継続",
           title: "コメントをつけて継続 #{{id}}",
+        },
+        resolve: {
+          action: "Resolve",
+          blockerLoadFailed: "最新の blocker comment を取得できませんでした",
+          blockerNotFound: "Blocker comment が見つかりません",
+          emptyBlocker: "Blocker comment の本文がありません",
+          latestBlocker: "最新の blocker comment",
+          loadingBlocker: "Blocker comment を読み込んでいます...",
+          retryLoad: "再読み込み",
         },
         changeRequest: {
           writeComment: "コメントを入力…",
@@ -812,8 +822,18 @@ const resources = {
           retryNote:
             "The change request has already been created. Submitting again only retries moving the issue to ready.",
           saving: "Sending...",
+          shortcuts: "Shortcuts",
           submit: "Continue with comment",
           title: "Continue with comment #{{id}}",
+        },
+        resolve: {
+          action: "Resolve",
+          blockerLoadFailed: "Failed to load the latest blocker comment",
+          blockerNotFound: "No blocker comment was found",
+          emptyBlocker: "The blocker comment has no body",
+          latestBlocker: "Latest blocker comment",
+          loadingBlocker: "Loading blocker comment...",
+          retryLoad: "Reload",
         },
         changeRequest: {
           writeComment: "Write a comment…",

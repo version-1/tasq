@@ -48,6 +48,7 @@ function issueWithCommentCount(commentCount: number): IssueSummary {
 function renderCard(props: Partial<Parameters<typeof IssueCard>[0]> = {}) {
   const onRejectIssue = vi.fn();
   const onRejectShortcut = vi.fn(async () => undefined);
+  const onResolveIssue = vi.fn();
   const onStatusChange = vi.fn(async () => undefined);
   const rendered = render(
     <QueryClientProvider client={queryClient}>
@@ -56,13 +57,14 @@ function renderCard(props: Partial<Parameters<typeof IssueCard>[0]> = {}) {
           issue={issue}
           onRejectIssue={onRejectIssue}
           onRejectShortcut={onRejectShortcut}
+          onResolveIssue={onResolveIssue}
           onStatusChange={onStatusChange}
           {...props}
         />
       </MemoryRouter>
     </QueryClientProvider>,
   );
-  return { onRejectIssue, onRejectShortcut, onStatusChange, unmount: rendered.unmount };
+  return { onRejectIssue, onRejectShortcut, onResolveIssue, onStatusChange, unmount: rendered.unmount };
 }
 
 describe("IssueCard", () => {
@@ -251,16 +253,16 @@ describe("IssueCard", () => {
     expect(onStatusChange).toHaveBeenCalledWith(24, "ready");
   });
 
-  it("renders draft actions for blocked issues", async () => {
+  it("opens the resolve flow for blocked issues", async () => {
     const user = userEvent.setup();
-    const { onStatusChange } = renderCard({
+    const { onResolveIssue, onStatusChange } = renderCard({
       issue: {
         ...issue,
         status: "blocked",
       },
     });
 
-    const quickAction = screen.getByRole("button", { name: "Ready" });
+    const quickAction = screen.getByRole("button", { name: "Resolve" });
 
     await user.click(screen.getByRole("button", {
       name: "Issue actions for Wire issue board to generated client",
@@ -274,7 +276,8 @@ describe("IssueCard", () => {
 
     await user.click(quickAction);
 
-    expect(onStatusChange).toHaveBeenCalledWith(24, "ready");
+    expect(onResolveIssue).toHaveBeenCalledWith(24);
+    expect(onStatusChange).not.toHaveBeenCalled();
   });
 
   it("renders a done quick action for review issues", async () => {
@@ -325,6 +328,7 @@ describe("IssueCard", () => {
     });
 
     expect(screen.queryByRole("button", { name: "Ready" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Resolve" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Reject" })).not.toBeInTheDocument();
   });
 

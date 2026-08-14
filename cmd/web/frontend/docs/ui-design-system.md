@@ -581,6 +581,11 @@ This is the recurring shape for `runs-section`, `comment-list`,
 - Quick action button uses scoped variables (`--quick-action-bg`,
   `--quick-action-border`, `--quick-action-text`) so each variant
   (`quickAction-ready`, `quickAction-done`) only overrides colors.
+- A blocked card replaces the direct `Ready` transition with `Resolve`. The
+  action loads the latest blocker comment across all comment pages and opens a
+  continue-with-comment dialog. The blocker is read-only context; free text or
+  the built-in `Ok` / `Retry` shortcuts create the change request before the
+  issue moves to `ready`.
 
 ### Issue Board
 
