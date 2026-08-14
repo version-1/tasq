@@ -17,18 +17,24 @@ export function ResolveIssueDialog({
   isMovingIssue,
   issueID,
   issueTitle,
+  initialBody = "",
+  initialRequestCreated = false,
   loadLatestBlocker = fetchLatestBlockerComment,
   onCancel,
   onMoveIssueReady,
+  onRequestCreated,
   onSuccess,
 }: {
   error?: string;
   isMovingIssue?: boolean;
   issueID: number;
   issueTitle: string;
+  initialBody?: string;
+  initialRequestCreated?: boolean;
   loadLatestBlocker?: (issueID: number) => Promise<Comment | null>;
   onCancel: () => void;
   onMoveIssueReady: () => Promise<void>;
+  onRequestCreated?: (body: string) => void;
   onSuccess: () => void;
 }) {
   const { t } = useTranslation();
@@ -86,8 +92,11 @@ export function ResolveIssueDialog({
       isSubmissionDisabled={blockerState.kind !== "ready"}
       issueID={issueID}
       issueTitle={issueTitle}
+      initialBody={initialBody}
+      initialRequestCreated={initialRequestCreated}
       onCancel={onCancel}
       onMoveIssueReady={onMoveIssueReady}
+      onRequestCreated={onRequestCreated}
       onSuccess={onSuccess}
       shortcuts={builtInChangeRequestShortcuts.continue}
       variant="continue"

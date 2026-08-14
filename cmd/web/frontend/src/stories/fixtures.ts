@@ -124,6 +124,7 @@ export const storyShellData: LayoutShellData = {
   rejectRequestRecovery: { body: "", requestCreated: false },
   resolveIssue: null,
   resolveIssueError: "",
+  resolveRequestRecovery: { body: "", requestCreated: false },
   summary: storySummary,
   title: "Tasq",
   onIssueDetailTitleChange: noop,
@@ -135,4 +136,6 @@ export const storyShellData: LayoutShellData = {
   onConfirmDeleteProject: asyncNoop,
   onMoveRejectedIssueReady: asyncNoop,
   onMoveResolvedIssueReady: asyncNoop,
+  onResolvedRequestCreated: noop,
+  onResolvedIssueSuccess: noop,
 };

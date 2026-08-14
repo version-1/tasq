@@ -20,6 +20,7 @@ export function ChangeRequestDialog({
   context,
   onCancel,
   onMoveIssueReady,
+  onRequestCreated,
   onSuccess,
   shortcuts = [],
   variant,
@@ -34,6 +35,7 @@ export function ChangeRequestDialog({
   context?: ReactNode;
   onCancel: () => void;
   onMoveIssueReady: () => Promise<void>;
+  onRequestCreated?: (body: string) => void;
   onSuccess: () => void;
   shortcuts?: readonly ChangeRequestShortcut[];
   variant: ChangeRequestDialogVariant;
@@ -80,6 +82,7 @@ export function ChangeRequestDialog({
           body: trimmedBody,
         }, { silent: true });
         setHasCreatedRequest(true);
+        onRequestCreated?.(trimmedBody);
       }
       setIsCreatingRequest(false);
       await onMoveIssueReady();

@@ -87,6 +87,7 @@ export type LayoutShellData = {
   rejectRequestRecovery: { body: string; requestCreated: boolean };
   resolveIssue: IssueSummary | null;
   resolveIssueError: string;
+  resolveRequestRecovery: { body: string; requestCreated: boolean };
   summary: Summary | null;
   title: string | null;
   onIssueDetailTitleChange: (title: string | null) => void;
@@ -98,6 +99,8 @@ export type LayoutShellData = {
   onConfirmDeleteProject: () => Promise<void>;
   onMoveRejectedIssueReady: () => Promise<void>;
   onMoveResolvedIssueReady: () => Promise<void>;
+  onResolvedRequestCreated: (body: string) => void;
+  onResolvedIssueSuccess: () => void;
 };
 
 const layoutDataContext = createContext<LayoutData | null>(null);
@@ -140,6 +143,11 @@ function LayoutContent({ children }: { children: ReactNode }) {
   const [isMovingRejectedIssue, setIsMovingRejectedIssue] = useState(false);
   const [resolveIssueID, setResolveIssueID] = useState<number | null>(null);
   const [resolveIssueError, setResolveIssueError] = useState("");
+  const [resolveRequestRecovery, setResolveRequestRecovery] = useState<{
+    issueID: number | null;
+    body: string;
+    requestCreated: boolean;
+  }>({ issueID: null, body: "", requestCreated: false });
   const [isMovingResolvedIssue, setIsMovingResolvedIssue] = useState(false);
   const [issueDetailTitleOverride, setIssueDetailTitleOverride] = useState<string | null>(null);
   const [refreshIntervalMs, setRefreshIntervalMs] = useState(
@@ -327,7 +335,21 @@ function LayoutContent({ children }: { children: ReactNode }) {
   function handleResolveIssue(issueID: number) {
     setResolveIssueID(issueID);
     setResolveIssueError("");
+    setResolveRequestRecovery((current) =>
+      current.issueID === issueID
+        ? current
+        : { issueID, body: "", requestCreated: false },
+    );
     modal.openModal(modalIDs.resolveIssue);
+  }
+
+  function handleResolvedRequestCreated(body: string) {
+    setResolveRequestRecovery({ issueID: resolveIssueID, body, requestCreated: true });
+  }
+
+  function handleResolvedIssueSuccess() {
+    setResolveRequestRecovery({ issueID: null, body: "", requestCreated: false });
+    modal.closeModal();
   }
 
   async function handleMoveResolvedIssueReady() {
@@ -436,6 +458,10 @@ function LayoutContent({ children }: { children: ReactNode }) {
     rejectRequestRecovery,
     resolveIssue: issues.find((issue) => issue.id === resolveIssueID) ?? null,
     resolveIssueError,
+    resolveRequestRecovery: {
+      body: resolveRequestRecovery.body,
+      requestCreated: resolveRequestRecovery.requestCreated,
+    },
     summary,
     title: issueDetailTitleOverride ?? issueDetailTitle ?? issueScopeTitle(
       issueScope,
@@ -451,6 +477,8 @@ function LayoutContent({ children }: { children: ReactNode }) {
     onConfirmDeleteProject: handleConfirmDeleteProject,
     onMoveRejectedIssueReady: handleMoveRejectedIssueReady,
     onMoveResolvedIssueReady: handleMoveResolvedIssueReady,
+    onResolvedRequestCreated: handleResolvedRequestCreated,
+    onResolvedIssueSuccess: handleResolvedIssueSuccess,
   };
 
   return (
@@ -606,9 +634,12 @@ function LayoutModalContent({ shellData }: { shellData: LayoutShellData }) {
         isMovingIssue={shellData.isMovingResolvedIssue}
         issueID={shellData.resolveIssue.id}
         issueTitle={shellData.resolveIssue.title}
+        initialBody={shellData.resolveRequestRecovery.body}
+        initialRequestCreated={shellData.resolveRequestRecovery.requestCreated}
         onCancel={shellData.onCloseModal}
         onMoveIssueReady={shellData.onMoveResolvedIssueReady}
-        onSuccess={shellData.onCloseModal}
+        onRequestCreated={shellData.onResolvedRequestCreated}
+        onSuccess={shellData.onResolvedIssueSuccess}
       />
     );
   }

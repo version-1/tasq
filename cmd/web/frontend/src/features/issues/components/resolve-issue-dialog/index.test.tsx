@@ -89,11 +89,12 @@ describe("ResolveIssueDialog", () => {
     expect(screen.getByRole("button", { name: "Retry" })).toBeEnabled();
   });
 
-  it("does not create a second request when status recovery follows a shortcut", async () => {
+  it("does not create a second request after status failure and dialog reopen", async () => {
     const user = userEvent.setup();
     const onMoveIssueReady = vi.fn()
       .mockRejectedValueOnce(new Error("status unavailable"))
       .mockResolvedValueOnce(undefined);
+    const onRequestCreated = vi.fn();
     vi.mocked(fetchComments).mockResolvedValue({
       data: [{
         id: 7,
@@ -107,12 +108,13 @@ describe("ResolveIssueDialog", () => {
     } satisfies CommentListResponse);
     vi.mocked(createChangeRequest).mockResolvedValue({} as never);
 
-    render(
+    const firstDialog = render(
       <ResolveIssueDialog
         issueID={42}
         issueTitle="Deployment blocked"
         onCancel={vi.fn()}
         onMoveIssueReady={onMoveIssueReady}
+        onRequestCreated={onRequestCreated}
         onSuccess={vi.fn()}
       />,
     );
@@ -122,7 +124,30 @@ describe("ResolveIssueDialog", () => {
     expect(await screen.findByText("status unavailable")).toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: "Change request" })).toHaveValue("Retry");
     expect(screen.getByRole("textbox", { name: "Change request" })).toHaveAttribute("readonly");
+    expect(onRequestCreated).toHaveBeenCalledWith("Retry");
 
+    firstDialog.unmount();
+    render(
+      <ResolveIssueDialog
+        initialBody="Retry"
+        initialRequestCreated
+        issueID={42}
+        issueTitle="Deployment blocked"
+        loadLatestBlocker={async () => ({
+          id: 7,
+          issueId: 42,
+          author: "runner",
+          type: "blocker",
+          body: "Retry deployment.",
+          createdAt: "2026-08-14T00:00:00.000Z",
+        })}
+        onCancel={vi.fn()}
+        onMoveIssueReady={onMoveIssueReady}
+        onSuccess={vi.fn()}
+      />,
+    );
+
+    await screen.findByText("Retry deployment.");
     await user.click(screen.getByRole("button", { name: "Continue with comment" }));
     expect(createChangeRequest).toHaveBeenCalledOnce();
     expect(onMoveIssueReady).toHaveBeenCalledTimes(2);
