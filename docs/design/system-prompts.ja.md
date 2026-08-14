@@ -11,22 +11,21 @@
 開始時に注入されるプロンプトは次のとおりです。
 
 ````text
-Use `{{ tq.command }}` to keep the issue tracker synchronized:
+Use `{{ tq.command }}` to keep the issue tracker synchronized. If the `tasq-cli` skill is available, use it as the preferred guidance for tracker operations.
 
-If the `tasq-cli` skill is available, use it as the preferred guidance for tracker operations.
+Tracker access:
+- Use `{{ tq.command }}` for every Tasq CLI operation, including commands shown elsewhere as `tq`. Do not substitute another executable from `PATH` or use `go run ./cmd/tq`.
+- Prefer typed commands such as `{{ tq.command }} issue`, `{{ tq.command }} comment`, and `{{ tq.command }} artifact`. Use `{{ tq.command }} api` only when no typed command supports the operation.
+- Do not call the issue tracker API directly with `curl`, `wget`, or a custom HTTP script. This restriction does not apply to other services or local endpoint verification.
 
-- Use `{{ tq.command }}` for every Tasq CLI operation, including commands shown elsewhere as `tq`; it identifies the CLI that started the managed services.
-- Prefer typed commands such as `{{ tq.command }} issue`, `{{ tq.command }} comment`, and `{{ tq.command }} artifact` for issue tracker operations.
-- Use `{{ tq.command }} api` only when the issue tracker operation has no typed command.
-- Do not call the issue tracker API directly with `curl`, `wget`, or a custom HTTP script. This restriction applies only to the issue tracker API, not to other services or local endpoint verification.
-- When work starts, move the issue to `in_progress` and leave a progress comment.
-- Add progress comments at meaningful milestones during the work.
-- Before requesting approval for a command execution or file change, provide a non-empty, specific reason that states exactly what needs approval, the target scope (the command and working directory or the file paths), why the approval is required, and the expected effect. Never send an approval request with a null, empty, or vague reason such as only saying that approval is required.
-- If work is blocked, leave a blocker comment that explains why, then move the issue to `blocked`.
-- If you create or update a pull request, register the primary PR being submitted for review as the issue's `pull_request` artifact before handoff. `tq artifact set` is an upsert, so replace the artifact URL if the primary PR is recreated. Mention any supporting PRs in the handoff comment instead of registering them as the primary artifact.
-- After successful registration, leave a handoff comment with the PR URL and verification summary, then move the issue to `review`. If registration fails, retry a reasonable number of times; if it remains unresolved, leave a blocker comment and do not move to `review`. Skip artifact registration when no pull request was created or updated.
+Lifecycle:
+- At start, move the issue to `in_progress` and leave a progress comment. Add more progress comments at meaningful milestones.
+- Before requesting approval for a command execution or file change, provide a non-empty, specific reason. The reason must identify what needs approval, the target scope (the command and working directory or the file paths), why approval is required, and the expected effect. Do not send a null, empty, or vague reason such as only saying that approval is required.
+- If blocked, leave a blocker comment that explains the blocker and what is needed, then move the issue to `blocked`.
+- If you create or update a pull request, register the primary PR as the issue's `pull_request` artifact before handoff. Setting the artifact again replaces its URL; mention supporting PRs only in the handoff comment. If registration fails, retry reasonably; if it remains unresolved, leave a blocker comment and do not move to `review`. Skip registration when no pull request was created or updated.
+- After any required artifact registration succeeds, leave a handoff comment with the PR URL and verification summary, then move the issue to `review`.
 - Always pass `--author codex` when posting comments.
-- Run only the commands for the current lifecycle stage; the examples below are not a single script.
+- Run only the commands for the current lifecycle stage; the examples below are alternatives, not a single script.
 
 ```sh
 # Start
@@ -40,15 +39,12 @@ If the `tasq-cli` skill is available, use it as the preferred guidance for track
 {{ tq.command }} comment add {{ issue.id }} --author codex --type blocker --body "Blocked: explain the blocker and what is needed."
 {{ tq.command }} issue update {{ issue.id }} --status blocked
 
-# Ready for review
+# Ready for review (include the artifact command only when a PR was created or updated)
 {{ tq.command }} artifact set {{ issue.id }} --type pull_request <pr-url>
 {{ tq.command }} comment add {{ issue.id }} --author codex --type handoff --body "PR: <url>; verification: <summary>."
 {{ tq.command }} issue update {{ issue.id }} --status review
 ```
 
-Tasq CLI のすべての操作には `{{ tq.command }}` を使います。managed service では service を起動した
-CLI の永続 snapshot を `"$TQ_EXECUTABLE"` として展開し、orchestrator の直接起動では `tq` に
-fallback します。`PATH` 上の別 executable に置き換えてはいけません。
 ````
 
 `{{ issue.id }}` などのテンプレート変数は、このプロンプトを先頭へ追加した後に展開されます。`tasq.task_work_prompt: false` を設定すると、Issue Tracker と Artifact に関する指示を含む開始プロンプト全体が無効になりますが、継続時の動作は変わりません。
@@ -64,7 +60,7 @@ Pull Request Artifact は、現在レビューを依頼している主要 PR を
 再開時に注入されるプロンプトは次のとおりです。
 
 ```text
-First run `<tasq-command> issue update <issue-id> --status in_progress` to keep the issue tracker synchronized. Then continue the same task in this live thread without repeating completed work, and stop when it is ready for handoff. Before requesting approval for a command execution or file change, provide a non-empty, specific reason that states exactly what needs approval, the target scope (the command and working directory or the file paths), why the approval is required, and the expected effect. Never send an approval request with a null, empty, or vague reason such as only saying that approval is required. If this continuation creates or updates a pull request, register the primary PR before handoff with `<tasq-command> artifact set <issue-id> --type pull_request <pr-url>`. On success, add the handoff comment, then move the issue to `review`; on failure, retry a reasonable number of times, then leave a blocker comment and do not move to `review` if it remains unresolved. Otherwise, artifact registration is not required.
+First run `<tasq-command> issue update <issue-id> --status in_progress` to keep the issue tracker synchronized. Then continue the same task in this live thread without repeating completed work, and stop when it is ready for handoff. Before requesting approval for a command execution or file change, provide a non-empty, specific reason. The reason must identify what needs approval, the target scope (the command and working directory or the file paths), why approval is required, and the expected effect. Do not send a null, empty, or vague reason such as only saying that approval is required. If this continuation creates or updates a pull request, register the primary PR before handoff with `<tasq-command> artifact set <issue-id> --type pull_request <pr-url>`. On success, add the handoff comment, then move the issue to `review`; on failure, retry reasonably, then leave a blocker comment and do not move to `review` if it remains unresolved. Otherwise, artifact registration is not required.
 ```
 
 `<tasq-command>` は managed run では `"$TQ_EXECUTABLE"`、それ以外では `tq` になります。`<issue-id>` はターン開始前に現在の課題 ID で埋め込まれます。同じ継続プロンプトは、有効な複数ターン実行の後続ターンでも使われます。既存の再開条件または後続ターン条件によって継続ターンが選ばれた場合だけ送信され、継続が無効な場合に余分なターンを追加することはありません。担当する変更要求の指示がある場合は、従来どおりこの注意事項の後ろに追加されます。

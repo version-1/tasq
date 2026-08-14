@@ -575,7 +575,7 @@ func TestRenderPromptInjectsTaskWorkPromptByDefault(t *testing.T) {
 	if err != nil {
 		t.Fatalf("render prompt: %v", err)
 	}
-	if !strings.HasPrefix(prompt, "Use `tq` to keep the issue tracker synchronized:") {
+	if !strings.HasPrefix(prompt, "Use `tq` to keep the issue tracker synchronized.") {
 		t.Fatalf("prompt did not start with task work prompt: %q", prompt)
 	}
 	if !strings.Contains(prompt, "If the `tasq-cli` skill is available, use it as the preferred guidance for tracker operations.") {
@@ -598,19 +598,19 @@ func TestRenderPromptInjectsTaskWorkPromptByDefault(t *testing.T) {
 	for _, want := range []string{
 		"Use `tq` for every Tasq CLI operation",
 		"Prefer typed commands such as `tq issue`",
-		"Use `tq api` only when the issue tracker operation has no typed command.",
+		"Use `tq api` only when no typed command supports the operation.",
 		"Do not call the issue tracker API directly with `curl`, `wget`, or a custom HTTP script.",
-		"not to other services or local endpoint verification",
+		"does not apply to other services or local endpoint verification",
 		"Before requesting approval for a command execution or file change",
 		"the command and working directory or the file paths",
-		"why the approval is required, and the expected effect",
-		"Never send an approval request with a null, empty, or vague reason",
-		"primary PR being submitted for review",
-		"`tq artifact set` is an upsert",
-		"Mention any supporting PRs in the handoff comment",
-		"retry a reasonable number of times",
+		"why approval is required, and the expected effect",
+		"Do not send a null, empty, or vague reason",
+		"register the primary PR as the issue's `pull_request` artifact",
+		"Setting the artifact again replaces its URL",
+		"mention supporting PRs only in the handoff comment",
+		"retry reasonably",
 		"leave a blocker comment and do not move to `review`",
-		"Skip artifact registration when no pull request was created or updated.",
+		"Skip registration when no pull request was created or updated.",
 	} {
 		if !strings.Contains(prompt, want) {
 			t.Fatalf("prompt missing contract wording %q: %q", want, prompt)
@@ -721,13 +721,13 @@ func TestContinuationGuidanceIncludesChangeRequests(t *testing.T) {
 		"tq issue update 7 --status in_progress",
 		"tq artifact set 7 --type pull_request <pr-url>",
 		"On success, add the handoff comment, then move the issue to `review`",
-		"on failure, retry a reasonable number of times",
+		"on failure, retry reasonably",
 		"leave a blocker comment and do not move to `review` if it remains unresolved",
 		"Otherwise, artifact registration is not required.",
 		"Before requesting approval for a command execution or file change",
 		"the command and working directory or the file paths",
-		"why the approval is required, and the expected effect",
-		"Never send an approval request with a null, empty, or vague reason",
+		"why approval is required, and the expected effect",
+		"Do not send a null, empty, or vague reason",
 		"Change requests assigned to this continuation:",
 		"#1 by user: Update the tests.",
 		"#2 by reviewer: Document the API.",
