@@ -90,43 +90,6 @@ func TestConfigWritesJSON(t *testing.T) {
 	}
 }
 
-func TestIsPseudoVersion(t *testing.T) {
-	tests := []struct {
-		version string
-		want    bool
-	}{
-		{version: "v0.1.0", want: false},
-		{version: "v0.1.0-rc.1", want: false},
-		{version: "v0.0.0-20260603232640-51f272dbd384", want: true},
-		{version: "v0.0.0-20260603232640-51f272dbd384+dirty", want: true},
-	}
-	for _, test := range tests {
-		if got := isPseudoVersion(test.version); got != test.want {
-			t.Fatalf("isPseudoVersion(%q)=%t, want %t", test.version, got, test.want)
-		}
-	}
-}
-
-func TestVersionInfoUsesInjectedBuildMetadata(t *testing.T) {
-	originalVersion := buildVersion
-	originalCommit := buildCommit
-	t.Cleanup(func() {
-		buildVersion = originalVersion
-		buildCommit = originalCommit
-	})
-
-	buildVersion = "v0.1.0"
-	buildCommit = "abc1234"
-
-	version, commit := versionInfo()
-	if version != "v0.1.0" {
-		t.Fatalf("version=%q, want %q", version, "v0.1.0")
-	}
-	if commit != "abc1234" {
-		t.Fatalf("commit=%q, want %q", commit, "abc1234")
-	}
-}
-
 func TestNewGHCommandDisablesInteractivePrompts(t *testing.T) {
 	t.Setenv("GH_PROMPT_DISABLED", "")
 

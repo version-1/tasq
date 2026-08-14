@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { IconProxy } from "@/components/ui/icon-proxy";
 import { Switch } from "@/components/ui/switch";
+import { getBuildInfo } from "@/lib/build-info";
 import type { Project } from "@/lib/types";
 import styles from "./index.module.css";
 
@@ -23,6 +24,7 @@ export function Sidebar({
   projects,
 }: SidebarProps) {
   const { t } = useTranslation();
+  const buildInfo = getBuildInfo();
 
   return (
     <aside className={styles.sidebar}>
@@ -97,6 +99,13 @@ export function Sidebar({
           onChange={onDarkModeChange}
         />
       </label>
+
+      <small
+        className={styles.version}
+        title={buildInfo.commit ? `commit: ${buildInfo.commit}` : undefined}
+      >
+        {buildInfo.version}
+      </small>
     </aside>
   );
 }

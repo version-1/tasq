@@ -111,6 +111,14 @@
   font-weight: 700;
 }
 
+.version {
+  align-self: flex-end;
+  color: var(--medium-gray);
+  font-size: 11px;
+  line-height: 1;
+  padding-inline: var(--space-1-5);
+}
+
 @media (max-width: 900px) {
   .sidebar {
     border-bottom: 1px solid var(--light-gray);
