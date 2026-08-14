@@ -31,14 +31,15 @@
 }
 
 .quickActionButton {
+  block-size: 32px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   color: var(--primary-black);
   font-size: 13px;
   font-weight: 500;
-  min-block-size: 30px;
-  padding: 8px 12px;
+  line-height: 1;
+  padding: 0 12px;
 }
 
 .quickActionButton:hover:not(:disabled),

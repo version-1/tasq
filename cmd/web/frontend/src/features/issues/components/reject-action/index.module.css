@@ -4,26 +4,27 @@
 
 .primaryButton,
 .menuButton {
+  align-items: center;
+  block-size: 32px;
   background: var(--danger);
   border: 1px solid var(--danger);
   color: var(--white);
+  display: inline-flex;
   font-size: 13px;
   font-weight: 500;
-  min-block-size: 30px;
+  justify-content: center;
+  line-height: 1;
 }
 
 .primaryButton {
   border-radius: var(--radius-sm) 0 0 var(--radius-sm);
-  padding: 8px 12px;
+  padding: 0 12px;
 }
 
 .menuButton {
-  align-items: center;
   border-left: 0;
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-  display: inline-flex;
-  justify-content: center;
-  padding: 8px var(--space-2-5);
+  padding: 0 var(--space-2-5);
 }
 
 .primaryButton:hover:not(:disabled),
