@@ -2,7 +2,7 @@
 
 import type { IssueStatus, Summary } from "@/lib/types";
 import { IssueBoard } from "@/features/issues/components/board";
-import type { RejectIssueHandler, RejectShortcutHandler, StatusChangeHandler } from "./types";
+import type { RejectIssueHandler, RejectShortcutHandler, ResolveIssueHandler, StatusChangeHandler } from "./types";
 import styles from "./index.module.css";
 
 export function IssuesView({
@@ -11,6 +11,7 @@ export function IssuesView({
   onAddIssue,
   onRejectIssue,
   onRejectShortcut,
+  onResolveIssue,
   onStatusChange,
 }: {
   showFilterSortActions?: boolean;
@@ -18,6 +19,7 @@ export function IssuesView({
   onAddIssue: (status?: IssueStatus) => void;
   onRejectIssue?: RejectIssueHandler;
   onRejectShortcut?: RejectShortcutHandler;
+  onResolveIssue?: ResolveIssueHandler;
   onStatusChange: StatusChangeHandler;
 }) {
   return (
@@ -28,6 +30,7 @@ export function IssuesView({
         onAddIssue={onAddIssue}
         onRejectIssue={onRejectIssue}
         onRejectShortcut={onRejectShortcut}
+        onResolveIssue={onResolveIssue}
         onStatusChange={onStatusChange}
       />
     </div>

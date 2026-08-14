@@ -9,6 +9,7 @@ import styles from "./index.module.css";
 type StatusChangeHandler = (id: number, status: IssueStatus) => Promise<void>;
 type RejectIssueHandler = (id: number) => void;
 type RejectShortcutHandler = (id: number, shortcut: ChangeRequestShortcut) => Promise<void>;
+type ResolveIssueHandler = (id: number) => void;
 
 const boardActions = [
   { icon: "filter", titleKey: "issues.board.filter" },
@@ -22,6 +23,7 @@ export function IssueBoard({
   onAddIssue,
   onRejectIssue,
   onRejectShortcut,
+  onResolveIssue,
   onStatusChange,
 }: {
   showFilterSortActions?: boolean;
@@ -29,6 +31,7 @@ export function IssueBoard({
   onAddIssue: (status?: IssueStatus) => void;
   onRejectIssue?: RejectIssueHandler;
   onRejectShortcut?: RejectShortcutHandler;
+  onResolveIssue?: ResolveIssueHandler;
   onStatusChange: StatusChangeHandler;
 }) {
   const { t } = useTranslation();
@@ -85,6 +88,7 @@ export function IssueBoard({
                       issue={issue}
                       onRejectIssue={onRejectIssue}
                       onRejectShortcut={onRejectShortcut}
+                      onResolveIssue={onResolveIssue}
                       onStatusChange={onStatusChange}
                     />
                   ))

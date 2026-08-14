@@ -579,6 +579,11 @@ gap: 14px;
 - クイックアクションボタンはスコープ付き変数 (`--quick-action-bg`、
   `--quick-action-border`、`--quick-action-text`) を使い、各バリアント
   (`quickAction-ready`、`quickAction-done`) は色だけを上書きします。
+- blocked のカードでは、`Ready` への直接遷移を `Resolve` に置き換えます。
+  この操作は comment の全ページから最新の blocker comment を取得し、
+  Continue with Comment ダイアログを開きます。blocker は読み取り専用の文脈として
+  表示し、フリーテキストまたは組み込みの `Ok` / `Retry` ショートカットで
+  Change Request を作成してから Issue を `ready` へ移動します。
 
 ### Issue Board
 

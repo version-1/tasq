@@ -95,6 +95,7 @@ export const storyShellData: LayoutShellData = {
   isIssueDetailPage: false,
   isDeletingProject: false,
   isMovingRejectedIssue: false,
+  isMovingResolvedIssue: false,
   isProjectIssueScope: false,
   issues: storySummary.columns.flatMap((column) => column.issues),
   layoutData: {
@@ -109,6 +110,7 @@ export const storyShellData: LayoutShellData = {
     onAddIssue: noop,
     onRejectIssue: noop,
     onRejectShortcut: asyncNoop,
+    onResolveIssue: noop,
     onStatusChange: asyncNoop,
   },
   loadState: {
@@ -120,6 +122,9 @@ export const storyShellData: LayoutShellData = {
   rejectIssue: null,
   rejectIssueError: "",
   rejectRequestRecovery: { body: "", requestCreated: false },
+  resolveIssue: null,
+  resolveIssueError: "",
+  resolveRequestRecovery: { body: "", requestCreated: false },
   summary: storySummary,
   title: "Tasq",
   onIssueDetailTitleChange: noop,
@@ -130,4 +135,7 @@ export const storyShellData: LayoutShellData = {
   onDeleteProject: noop,
   onConfirmDeleteProject: asyncNoop,
   onMoveRejectedIssueReady: asyncNoop,
+  onMoveResolvedIssueReady: asyncNoop,
+  onResolvedRequestCreated: noop,
+  onResolvedIssueSuccess: noop,
 };

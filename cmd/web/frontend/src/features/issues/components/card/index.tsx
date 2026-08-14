@@ -23,6 +23,7 @@ import styles from "./index.module.css";
 
 type IssueStatusChangeHandler = (id: number, status: IssueStatus) => Promise<void>;
 type IssueRejectHandler = (id: number) => void;
+type IssueResolveHandler = (id: number) => void;
 type IssueRejectShortcutHandler = (id: number, shortcut: ChangeRequestShortcut) => Promise<void>;
 
 type IssueMetric = {
@@ -40,7 +41,6 @@ const statusTransitionTargets: Partial<Record<IssueStatus, IssueStatus[]>> = {
 
 const quickStatusTargets: Partial<Record<IssueStatus, IssueStatus>> = {
   backlog: "ready",
-  blocked: "ready",
   review: "done",
 };
 
@@ -49,6 +49,7 @@ export function IssueCard({
   onStatusChange,
   onRejectIssue,
   onRejectShortcut,
+  onResolveIssue,
   readonly = false,
   runCount,
 }: {
@@ -56,6 +57,7 @@ export function IssueCard({
   onStatusChange: IssueStatusChangeHandler;
   onRejectIssue?: IssueRejectHandler;
   onRejectShortcut?: IssueRejectShortcutHandler;
+  onResolveIssue?: IssueResolveHandler;
   readonly?: boolean;
   runCount?: number;
 }) {
@@ -63,6 +65,7 @@ export function IssueCard({
   const statusOptions = statusOptionsFor(issue.status);
   const canChangeStatus = !readonly && statusOptions.length > 1;
   const quickStatusTarget = readonly ? undefined : quickStatusTargets[issue.status];
+  const canResolve = !readonly && issue.status === "blocked" && onResolveIssue !== undefined;
   const canReject = !readonly && issue.status === "review" && onRejectIssue !== undefined && onRejectShortcut !== undefined;
   const cardRef = useRef<HTMLElement>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -221,7 +224,7 @@ export function IssueCard({
             </span>
           ))}
         </div>
-        {quickStatusTarget || canReject ? (
+        {quickStatusTarget || canReject || canResolve ? (
           <div className={styles.actionGroup}>
             {canReject ? (
               <RejectAction
@@ -229,7 +232,16 @@ export function IssueCard({
                 onSelectShortcut={(shortcut) => onRejectShortcut(issue.id, shortcut)}
               />
             ) : null}
-            {quickStatusTarget ? (
+            {canResolve ? (
+              <button
+                className={quickActionClassName("ready")}
+                type="button"
+                onClick={() => onResolveIssue(issue.id)}
+              >
+                {t("issues.resolve.action")}
+                <IconProxy className={styles.quickActionIcon} name="arrow-right" size={14} strokeWidth={2.4} />
+              </button>
+            ) : quickStatusTarget ? (
               <button
                 className={quickActionClassName(quickStatusTarget)}
                 type="button"

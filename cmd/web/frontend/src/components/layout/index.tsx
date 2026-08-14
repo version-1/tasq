@@ -36,6 +36,7 @@ import { AddIssueDialog } from "@/components/dialog/add-issue";
 import { AddProjectDialog } from "@/components/dialog/add-project";
 import { DeleteProjectDialog } from "@/components/dialog/delete-project";
 import { ChangeRequestDialog } from "@/features/issues/components/change-request-dialog";
+import { ResolveIssueDialog } from "@/features/issues/components/resolve-issue-dialog";
 import type { ChangeRequestShortcut } from "@/features/issues/change-request-shortcuts";
 import { Header } from "./header";
 import { Sidebar } from "./sidebar";
@@ -62,6 +63,7 @@ export type LayoutData = {
   onAddIssue: (status?: IssueStatus) => void;
   onRejectIssue: (issueID: number) => void;
   onRejectShortcut: (issueID: number, shortcut: ChangeRequestShortcut) => Promise<void>;
+  onResolveIssue: (issueID: number) => void;
   onStatusChange: (id: number, status: IssueStatus) => Promise<void>;
 };
 
@@ -73,6 +75,7 @@ export type LayoutShellData = {
   deleteProjectError: string;
   isDeletingProject: boolean;
   isMovingRejectedIssue: boolean;
+  isMovingResolvedIssue: boolean;
   isIssueDetailPage: boolean;
   isProjectIssueScope: boolean;
   issues: IssueSummary[];
@@ -82,6 +85,9 @@ export type LayoutShellData = {
   rejectIssue: IssueSummary | null;
   rejectIssueError: string;
   rejectRequestRecovery: { body: string; requestCreated: boolean };
+  resolveIssue: IssueSummary | null;
+  resolveIssueError: string;
+  resolveRequestRecovery: { body: string; requestCreated: boolean };
   summary: Summary | null;
   title: string | null;
   onIssueDetailTitleChange: (title: string | null) => void;
@@ -92,6 +98,9 @@ export type LayoutShellData = {
   onDeleteProject: () => void;
   onConfirmDeleteProject: () => Promise<void>;
   onMoveRejectedIssueReady: () => Promise<void>;
+  onMoveResolvedIssueReady: () => Promise<void>;
+  onResolvedRequestCreated: (body: string) => void;
+  onResolvedIssueSuccess: () => void;
 };
 
 const layoutDataContext = createContext<LayoutData | null>(null);
@@ -132,6 +141,14 @@ function LayoutContent({ children }: { children: ReactNode }) {
     requestCreated: boolean;
   }>({ body: "", requestCreated: false });
   const [isMovingRejectedIssue, setIsMovingRejectedIssue] = useState(false);
+  const [resolveIssueID, setResolveIssueID] = useState<number | null>(null);
+  const [resolveIssueError, setResolveIssueError] = useState("");
+  const [resolveRequestRecovery, setResolveRequestRecovery] = useState<{
+    issueID: number | null;
+    body: string;
+    requestCreated: boolean;
+  }>({ issueID: null, body: "", requestCreated: false });
+  const [isMovingResolvedIssue, setIsMovingResolvedIssue] = useState(false);
   const [issueDetailTitleOverride, setIssueDetailTitleOverride] = useState<string | null>(null);
   const [refreshIntervalMs, setRefreshIntervalMs] = useState(
     defaultRefreshIntervalMs,
@@ -315,6 +332,46 @@ function LayoutContent({ children }: { children: ReactNode }) {
     }
   }
 
+  function handleResolveIssue(issueID: number) {
+    setResolveIssueID(issueID);
+    setResolveIssueError("");
+    setResolveRequestRecovery((current) =>
+      current.issueID === issueID
+        ? current
+        : { issueID, body: "", requestCreated: false },
+    );
+    modal.openModal(modalIDs.resolveIssue);
+  }
+
+  function handleResolvedRequestCreated(body: string) {
+    setResolveRequestRecovery({ issueID: resolveIssueID, body, requestCreated: true });
+  }
+
+  function handleResolvedIssueSuccess() {
+    setResolveRequestRecovery({ issueID: null, body: "", requestCreated: false });
+    modal.closeModal();
+  }
+
+  async function handleMoveResolvedIssueReady() {
+    if (resolveIssueID === null) return;
+    setIsMovingResolvedIssue(true);
+    setResolveIssueError("");
+    try {
+      await updateIssueStatus(resolveIssueID, "ready", { silent: true });
+      toast.success({ message: t("toast.success.continuedWithComment") });
+      void load({ silent: true });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : t("issues.continueWithComment.errors.statusUpdateFailed");
+      setResolveIssueError(message);
+      throw new Error(message);
+    } finally {
+      setIsMovingResolvedIssue(false);
+    }
+  }
+
   async function handleConfirmDeleteProject() {
     if (!activeProject) return;
     setIsDeletingProject(true);
@@ -340,6 +397,7 @@ function LayoutContent({ children }: { children: ReactNode }) {
     setAddIssueError("");
     setDeleteProjectError("");
     setRejectIssueError("");
+    setResolveIssueError("");
     modal.closeModal();
   }
 
@@ -375,6 +433,7 @@ function LayoutContent({ children }: { children: ReactNode }) {
         onAddIssue: handleAddIssue,
         onRejectIssue: handleRejectIssue,
         onRejectShortcut: handleRejectShortcut,
+        onResolveIssue: handleResolveIssue,
         onStatusChange: handleStatusChange,
       }
     : null;
@@ -388,6 +447,7 @@ function LayoutContent({ children }: { children: ReactNode }) {
     isIssueDetailPage,
     isDeletingProject,
     isMovingRejectedIssue,
+    isMovingResolvedIssue,
     isProjectIssueScope,
     issues,
     layoutData,
@@ -396,6 +456,12 @@ function LayoutContent({ children }: { children: ReactNode }) {
     rejectIssue: issues.find((issue) => issue.id === rejectIssueID) ?? null,
     rejectIssueError,
     rejectRequestRecovery,
+    resolveIssue: issues.find((issue) => issue.id === resolveIssueID) ?? null,
+    resolveIssueError,
+    resolveRequestRecovery: {
+      body: resolveRequestRecovery.body,
+      requestCreated: resolveRequestRecovery.requestCreated,
+    },
     summary,
     title: issueDetailTitleOverride ?? issueDetailTitle ?? issueScopeTitle(
       issueScope,
@@ -410,6 +476,9 @@ function LayoutContent({ children }: { children: ReactNode }) {
     onDeleteProject: handleDeleteProject,
     onConfirmDeleteProject: handleConfirmDeleteProject,
     onMoveRejectedIssueReady: handleMoveRejectedIssueReady,
+    onMoveResolvedIssueReady: handleMoveResolvedIssueReady,
+    onResolvedRequestCreated: handleResolvedRequestCreated,
+    onResolvedIssueSuccess: handleResolvedIssueSuccess,
   };
 
   return (
@@ -554,6 +623,23 @@ function LayoutModalContent({ shellData }: { shellData: LayoutShellData }) {
         onMoveIssueReady={shellData.onMoveRejectedIssueReady}
         onSuccess={shellData.onCloseModal}
         variant="reject"
+      />
+    );
+  }
+
+  if (modal.activeModalID === modalIDs.resolveIssue && shellData.resolveIssue) {
+    return (
+      <ResolveIssueDialog
+        error={shellData.resolveIssueError}
+        isMovingIssue={shellData.isMovingResolvedIssue}
+        issueID={shellData.resolveIssue.id}
+        issueTitle={shellData.resolveIssue.title}
+        initialBody={shellData.resolveRequestRecovery.body}
+        initialRequestCreated={shellData.resolveRequestRecovery.requestCreated}
+        onCancel={shellData.onCloseModal}
+        onMoveIssueReady={shellData.onMoveResolvedIssueReady}
+        onRequestCreated={shellData.onResolvedRequestCreated}
+        onSuccess={shellData.onResolvedIssueSuccess}
       />
     );
   }

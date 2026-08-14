@@ -1,7 +1,8 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { MarkdownEditor } from "@/components/ui/markdown-editor";
 import { createChangeRequest } from "@/lib/api";
+import type { ChangeRequestShortcut } from "@/features/issues/change-request-shortcuts";
 import styles from "./index.module.css";
 
 const changeRequestAuthor = "reviewer";
@@ -15,9 +16,13 @@ export function ChangeRequestDialog({
   issueTitle,
   initialBody = "",
   initialRequestCreated = false,
+  isSubmissionDisabled = false,
+  context,
   onCancel,
   onMoveIssueReady,
+  onRequestCreated,
   onSuccess,
+  shortcuts = [],
   variant,
 }: {
   error?: string;
@@ -26,9 +31,13 @@ export function ChangeRequestDialog({
   issueTitle: string;
   initialBody?: string;
   initialRequestCreated?: boolean;
+  isSubmissionDisabled?: boolean;
+  context?: ReactNode;
   onCancel: () => void;
   onMoveIssueReady: () => Promise<void>;
+  onRequestCreated?: (body: string) => void;
   onSuccess: () => void;
+  shortcuts?: readonly ChangeRequestShortcut[];
   variant: ChangeRequestDialogVariant;
 }) {
   const { t } = useTranslation();
@@ -38,6 +47,8 @@ export function ChangeRequestDialog({
   const [submitError, setSubmitError] = useState("");
   const [isCreatingRequest, setIsCreatingRequest] = useState(false);
   const [hasCreatedRequest, setHasCreatedRequest] = useState(initialRequestCreated);
+  const [editorRevision, setEditorRevision] = useState(0);
+  const isSubmittingRef = useRef(false);
   const isSubmitting = isCreatingRequest || isMovingIssue === true;
 
   useEffect(() => {
@@ -46,11 +57,14 @@ export function ChangeRequestDialog({
     setSubmitError("");
     setIsCreatingRequest(false);
     setHasCreatedRequest(initialRequestCreated);
+    setEditorRevision(0);
+    isSubmittingRef.current = false;
   }, [initialBody, initialRequestCreated, issueID]);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const trimmedBody = body.trim();
+  async function submit(requestBody: string) {
+    if (isSubmittingRef.current || isSubmitting || isSubmissionDisabled) return;
+
+    const trimmedBody = requestBody.trim();
     if (!trimmedBody) {
       setValidationError(t(`${translationKey}.errors.bodyRequired`));
       return;
@@ -58,6 +72,8 @@ export function ChangeRequestDialog({
 
     setValidationError("");
     setSubmitError("");
+    setBody(trimmedBody);
+    isSubmittingRef.current = true;
     try {
       if (!hasCreatedRequest) {
         setIsCreatingRequest(true);
@@ -66,6 +82,7 @@ export function ChangeRequestDialog({
           body: trimmedBody,
         }, { silent: true });
         setHasCreatedRequest(true);
+        onRequestCreated?.(trimmedBody);
       }
       setIsCreatingRequest(false);
       await onMoveIssueReady();
@@ -75,8 +92,14 @@ export function ChangeRequestDialog({
         caught instanceof Error ? caught.message : t(`${translationKey}.errors.submitFailed`),
       );
     } finally {
+      isSubmittingRef.current = false;
       setIsCreatingRequest(false);
     }
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await submit(body);
   }
 
   const errorMessage = validationError || submitError || error || "";
@@ -104,9 +127,31 @@ export function ChangeRequestDialog({
 
           <p className={styles.issueTitle}>{issueTitle}</p>
 
+          {context}
+
+          {shortcuts.length > 0 ? (
+            <div className={styles.shortcuts} aria-label={t(`${translationKey}.shortcuts`)}>
+              {shortcuts.map((shortcut) => (
+                <button
+                  key={shortcut.id}
+                  type="button"
+                  disabled={isSubmitting || isSubmissionDisabled}
+                  onClick={() => {
+                    setBody(shortcut.body);
+                    setEditorRevision((current) => current + 1);
+                    void submit(shortcut.body);
+                  }}
+                >
+                  {shortcut.label}
+                </button>
+              ))}
+            </div>
+          ) : null}
+
           <div className={styles.markdownEditorField}>
             <span>{t(`${translationKey}.fields.body`)}</span>
             <MarkdownEditor
+              key={`${editorRevision}-${hasCreatedRequest ? `submitted-${body}` : "editable"}`}
               initialMode="edit"
               initialTab="raw"
               labels={{
@@ -137,7 +182,7 @@ export function ChangeRequestDialog({
             <button type="button" disabled={isSubmitting} onClick={onCancel}>
               {t(`${translationKey}.cancel`)}
             </button>
-            <button type="submit" disabled={isSubmitting}>
+            <button type="submit" disabled={isSubmitting || isSubmissionDisabled}>
               {isSubmitting ? t(`${translationKey}.saving`) : t(`${translationKey}.submit`)}
             </button>
           </div>
