@@ -23,6 +23,7 @@ export function MarkdownEditor({
   initialTab = "raw",
   isSaving = false,
   labels,
+  readOnly = false,
   rows = 12,
   showActions = true,
   stablePanelRows,
@@ -37,6 +38,7 @@ export function MarkdownEditor({
   initialTab?: MarkdownEditorTab;
   isSaving?: boolean;
   labels: MarkdownEditorLabels;
+  readOnly?: boolean;
   rows?: number;
   showActions?: boolean;
   stablePanelRows?: number;
@@ -176,6 +178,7 @@ export function MarkdownEditor({
                 aria-label={labels.textarea}
                 className={styles.textarea}
                 rows={rows}
+                readOnly={readOnly}
                 value={draft}
                 onChange={(event) => handleDraftChange(event.target.value)}
               />

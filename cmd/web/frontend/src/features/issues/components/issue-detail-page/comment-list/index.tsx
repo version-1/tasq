@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import type { Comment } from "@/lib/types";
+import type { ChangeRequestShortcut } from "@/features/issues/change-request-shortcuts";
 import { CommentCard } from "../comment-card";
 import styles from "./index.module.css";
 
@@ -18,7 +19,7 @@ export function CommentList({
   isLoading: boolean;
   latestActionableBlockerCommentID?: number;
   onLoadMore: () => void;
-  onContinueWithComment?: () => void;
+  onContinueWithComment?: (shortcut?: ChangeRequestShortcut) => Promise<void>;
 }) {
   const { t } = useTranslation();
 

@@ -14,6 +14,8 @@ import { toast } from "@/lib/toast";
 import { PriorityBadge } from "@/features/issues/components/priority-badge";
 import { ProjectBadge } from "@/features/issues/components/project-badge";
 import { StatusBadge } from "@/features/issues/components/status-badge";
+import { RejectAction } from "@/features/issues/components/reject-action";
+import type { ChangeRequestShortcut } from "@/features/issues/change-request-shortcuts";
 import { useIssueThreadID } from "@/features/issues/hooks/use-issue-thread-id";
 import { pullRequestArtifact } from "@/features/issues/artifacts";
 import { PendingBadge } from "./pending-badge";
@@ -21,6 +23,7 @@ import styles from "./index.module.css";
 
 type IssueStatusChangeHandler = (id: number, status: IssueStatus) => Promise<void>;
 type IssueRejectHandler = (id: number) => void;
+type IssueRejectShortcutHandler = (id: number, shortcut: ChangeRequestShortcut) => Promise<void>;
 
 type IssueMetric = {
   icon: IconProxyName;
@@ -45,12 +48,14 @@ export function IssueCard({
   issue,
   onStatusChange,
   onRejectIssue,
+  onRejectShortcut,
   readonly = false,
   runCount,
 }: {
   issue: IssueSummary;
   onStatusChange: IssueStatusChangeHandler;
   onRejectIssue?: IssueRejectHandler;
+  onRejectShortcut?: IssueRejectShortcutHandler;
   readonly?: boolean;
   runCount?: number;
 }) {
@@ -58,7 +63,7 @@ export function IssueCard({
   const statusOptions = statusOptionsFor(issue.status);
   const canChangeStatus = !readonly && statusOptions.length > 1;
   const quickStatusTarget = readonly ? undefined : quickStatusTargets[issue.status];
-  const canReject = !readonly && issue.status === "review" && onRejectIssue !== undefined;
+  const canReject = !readonly && issue.status === "review" && onRejectIssue !== undefined && onRejectShortcut !== undefined;
   const cardRef = useRef<HTMLElement>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { isThreadIDLoading, threadID } = useIssueThreadID(issue.id, isMenuOpen);
@@ -219,13 +224,10 @@ export function IssueCard({
         {quickStatusTarget || canReject ? (
           <div className={styles.actionGroup}>
             {canReject ? (
-              <button
-                className={styles.rejectActionButton}
-                type="button"
-                onClick={() => onRejectIssue(issue.id)}
-              >
-                {t("issues.reject.action")}
-              </button>
+              <RejectAction
+                onOpenDialog={() => onRejectIssue(issue.id)}
+                onSelectShortcut={(shortcut) => onRejectShortcut(issue.id, shortcut)}
+              />
             ) : null}
             {quickStatusTarget ? (
               <button

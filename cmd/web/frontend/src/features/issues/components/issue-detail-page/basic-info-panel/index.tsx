@@ -7,6 +7,8 @@ import { issueStatuses } from "@/lib/types";
 import { PriorityBadge } from "@/features/issues/components/priority-badge";
 import { ProjectBadge } from "@/features/issues/components/project-badge";
 import { StatusBadge } from "@/features/issues/components/status-badge";
+import { RejectAction } from "@/features/issues/components/reject-action";
+import type { ChangeRequestShortcut } from "@/features/issues/change-request-shortcuts";
 import { formatDateTime } from "../format";
 import { MetaItem } from "./meta-item";
 import styles from "./index.module.css";
@@ -16,16 +18,20 @@ export function BasicInfoPanel({
   issue,
   issueOptions = [],
   onRejectIssue,
+  onRejectShortcut,
   onStatusChange,
 }: {
   disabled: boolean;
   issue: Issue;
   issueOptions?: IssueSummary[];
   onRejectIssue?: () => void;
+  onRejectShortcut?: (shortcut: ChangeRequestShortcut) => Promise<void>;
   onStatusChange: (status: IssueStatus) => Promise<void>;
 }) {
   const { t } = useTranslation();
   const dependencyIssues = dependencyIssueLinks(issue.dependency_ids, issueOptions);
+  const quickStatusAction = quickStatusActionFor(issue.status);
+  const canReject = issue.status === "review" && onRejectIssue && onRejectShortcut;
 
   return (
     <section className={styles.panel}>
@@ -63,20 +69,42 @@ export function BasicInfoPanel({
         <MetaItem label={t("issues.detailPage.createdAt")} value={formatDateTime(issue.createdAt)} />
         <MetaItem label={t("issues.detailPage.updatedAt")} value={formatDateTime(issue.updatedAt)} />
       </dl>
-      {issue.status === "review" && onRejectIssue ? (
-        <div className={styles.panelActions}>
-          <button
-            type="button"
-            className={styles.rejectButton}
-            disabled={disabled}
-            onClick={onRejectIssue}
-          >
-            {t("issues.reject.action")}
-          </button>
+      {quickStatusAction || canReject ? (
+        <div className={styles.quickActions}>
+          <h3>{t("issues.detailPage.quickActions")}</h3>
+          <div className={styles.panelActions}>
+            {quickStatusAction ? (
+              <button
+                className={styles.quickActionButton}
+                disabled={disabled}
+                type="button"
+                onClick={() => void onStatusChange(quickStatusAction.status)}
+              >
+                {t(quickStatusAction.labelKey)}
+              </button>
+            ) : null}
+            {canReject ? (
+              <RejectAction
+                disabled={disabled}
+                onOpenDialog={onRejectIssue}
+                onSelectShortcut={onRejectShortcut}
+              />
+            ) : null}
+          </div>
         </div>
       ) : null}
     </section>
   );
+}
+
+function quickStatusActionFor(status: IssueStatus): {
+  status: IssueStatus;
+  labelKey: "statuses.ready" | "issues.board.draft" | "statuses.done";
+} | null {
+  if (status === "backlog") return { status: "ready", labelKey: "statuses.ready" };
+  if (status === "ready") return { status: "backlog", labelKey: "issues.board.draft" };
+  if (status === "review") return { status: "done", labelKey: "statuses.done" };
+  return null;
 }
 
 function dependencyIssueLinks(

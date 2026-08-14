@@ -1,9 +1,10 @@
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ContextMenu, ContextMenuItem } from "@/components/ui/context-menu";
+import { ContextMenu, ContextMenuGroupLabel, ContextMenuItem } from "@/components/ui/context-menu";
 import { IconProxy } from "@/components/ui/icon-proxy";
 import { Markdown } from "@/components/ui/markdown";
 import { CommentTypeBadge } from "@/features/issues/components/comment-type-badge";
+import { builtInChangeRequestShortcuts, type ChangeRequestShortcut } from "@/features/issues/change-request-shortcuts";
 import type { Comment } from "@/lib/types";
 import { formatDateTime } from "../format";
 import styles from "./index.module.css";
@@ -11,14 +12,27 @@ import styles from "./index.module.css";
 export function CommentCard({
   comment,
   onContinueWithComment,
+  shortcuts = builtInChangeRequestShortcuts.continue,
 }: {
   comment: Comment;
-  onContinueWithComment?: () => void;
+  onContinueWithComment?: (shortcut?: ChangeRequestShortcut) => Promise<void>;
+  shortcuts?: readonly ChangeRequestShortcut[];
 }) {
   const { t } = useTranslation();
   const menuID = useId();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const menuLabel = t("issues.detailPage.commentActions", { author: comment.author });
+
+  async function handleShortcut(shortcut: ChangeRequestShortcut) {
+    setIsMenuOpen(false);
+    setIsSubmitting(true);
+    try {
+      await onContinueWithComment?.(shortcut);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   return (
     <article className={styles.comment}>
@@ -40,6 +54,7 @@ export function CommentCard({
                   {...triggerProps}
                   aria-label={menuLabel}
                   className={styles.menuButton}
+                  disabled={isSubmitting}
                   title={menuLabel}
                   type="button"
                 >
@@ -47,15 +62,26 @@ export function CommentCard({
                 </button>
               )}
             >
+              <ContextMenuGroupLabel>{t("issues.continueWithComment.action")}</ContextMenuGroupLabel>
               <ContextMenuItem
+                disabled={isSubmitting}
                 icon={<IconProxy name="arrow-right" />}
                 onSelect={() => {
                   setIsMenuOpen(false);
-                  onContinueWithComment();
+                  void onContinueWithComment();
                 }}
               >
-                {t("issues.continueWithComment.action")}
+                {t("issues.changeRequest.writeComment")}
               </ContextMenuItem>
+              {shortcuts.map((shortcut) => (
+                <ContextMenuItem
+                  key={shortcut.id}
+                  disabled={isSubmitting}
+                  onSelect={() => void handleShortcut(shortcut)}
+                >
+                  {shortcut.label}
+                </ContextMenuItem>
+              ))}
             </ContextMenu>
           ) : (
             <button

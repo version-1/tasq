@@ -13,6 +13,8 @@ export function ChangeRequestDialog({
   isMovingIssue,
   issueID,
   issueTitle,
+  initialBody = "",
+  initialRequestCreated = false,
   onCancel,
   onMoveIssueReady,
   onSuccess,
@@ -22,6 +24,8 @@ export function ChangeRequestDialog({
   isMovingIssue?: boolean;
   issueID: number;
   issueTitle: string;
+  initialBody?: string;
+  initialRequestCreated?: boolean;
   onCancel: () => void;
   onMoveIssueReady: () => Promise<void>;
   onSuccess: () => void;
@@ -29,20 +33,20 @@ export function ChangeRequestDialog({
 }) {
   const { t } = useTranslation();
   const translationKey = variant === "continue" ? "issues.continueWithComment" : "issues.reject";
-  const [body, setBody] = useState("");
+  const [body, setBody] = useState(initialBody);
   const [validationError, setValidationError] = useState("");
   const [submitError, setSubmitError] = useState("");
   const [isCreatingRequest, setIsCreatingRequest] = useState(false);
-  const [hasCreatedRequest, setHasCreatedRequest] = useState(false);
+  const [hasCreatedRequest, setHasCreatedRequest] = useState(initialRequestCreated);
   const isSubmitting = isCreatingRequest || isMovingIssue === true;
 
   useEffect(() => {
-    setBody("");
+    setBody(initialBody);
     setValidationError("");
     setSubmitError("");
     setIsCreatingRequest(false);
-    setHasCreatedRequest(false);
-  }, [issueID]);
+    setHasCreatedRequest(initialRequestCreated);
+  }, [initialBody, initialRequestCreated, issueID]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -115,6 +119,7 @@ export function ChangeRequestDialog({
                 saving: t("markdownEditor.saving"),
                 textarea: t(`${translationKey}.fields.body`),
               }}
+              readOnly={hasCreatedRequest}
               showActions={false}
               stablePanelRows={12}
               value={body}

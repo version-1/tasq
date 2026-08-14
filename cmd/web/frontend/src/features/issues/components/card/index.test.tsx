@@ -47,6 +47,7 @@ function issueWithCommentCount(commentCount: number): IssueSummary {
 
 function renderCard(props: Partial<Parameters<typeof IssueCard>[0]> = {}) {
   const onRejectIssue = vi.fn();
+  const onRejectShortcut = vi.fn(async () => undefined);
   const onStatusChange = vi.fn(async () => undefined);
   const rendered = render(
     <QueryClientProvider client={queryClient}>
@@ -54,13 +55,14 @@ function renderCard(props: Partial<Parameters<typeof IssueCard>[0]> = {}) {
         <IssueCard
           issue={issue}
           onRejectIssue={onRejectIssue}
+          onRejectShortcut={onRejectShortcut}
           onStatusChange={onStatusChange}
           {...props}
         />
       </MemoryRouter>
     </QueryClientProvider>,
   );
-  return { onRejectIssue, onStatusChange, unmount: rendered.unmount };
+  return { onRejectIssue, onRejectShortcut, onStatusChange, unmount: rendered.unmount };
 }
 
 describe("IssueCard", () => {

@@ -15,6 +15,7 @@ import { PanelMessage } from "@/components/ui/pannel-message";
 import { ToastStack } from "@/components/ui/toast";
 import {
   createIssue,
+  createChangeRequest,
   deleteProject,
   fetchProjects,
   fetchSummary,
@@ -35,6 +36,7 @@ import { AddIssueDialog } from "@/components/dialog/add-issue";
 import { AddProjectDialog } from "@/components/dialog/add-project";
 import { DeleteProjectDialog } from "@/components/dialog/delete-project";
 import { ChangeRequestDialog } from "@/features/issues/components/change-request-dialog";
+import type { ChangeRequestShortcut } from "@/features/issues/change-request-shortcuts";
 import { Header } from "./header";
 import { Sidebar } from "./sidebar";
 import { useTheme } from "./use-theme";
@@ -59,6 +61,7 @@ export type LayoutData = {
   onSelectIssue: (issueID: number) => void;
   onAddIssue: (status?: IssueStatus) => void;
   onRejectIssue: (issueID: number) => void;
+  onRejectShortcut: (issueID: number, shortcut: ChangeRequestShortcut) => Promise<void>;
   onStatusChange: (id: number, status: IssueStatus) => Promise<void>;
 };
 
@@ -78,6 +81,7 @@ export type LayoutShellData = {
   projects: Project[];
   rejectIssue: IssueSummary | null;
   rejectIssueError: string;
+  rejectRequestRecovery: { body: string; requestCreated: boolean };
   summary: Summary | null;
   title: string | null;
   onIssueDetailTitleChange: (title: string | null) => void;
@@ -123,6 +127,10 @@ function LayoutContent({ children }: { children: ReactNode }) {
   const [isDeletingProject, setIsDeletingProject] = useState(false);
   const [rejectIssueID, setRejectIssueID] = useState<number | null>(null);
   const [rejectIssueError, setRejectIssueError] = useState("");
+  const [rejectRequestRecovery, setRejectRequestRecovery] = useState<{
+    body: string;
+    requestCreated: boolean;
+  }>({ body: "", requestCreated: false });
   const [isMovingRejectedIssue, setIsMovingRejectedIssue] = useState(false);
   const [issueDetailTitleOverride, setIssueDetailTitleOverride] = useState<string | null>(null);
   const [refreshIntervalMs, setRefreshIntervalMs] = useState(
@@ -257,7 +265,39 @@ function LayoutContent({ children }: { children: ReactNode }) {
   function handleRejectIssue(issueID: number) {
     setRejectIssueID(issueID);
     setRejectIssueError("");
+    setRejectRequestRecovery({ body: "", requestCreated: false });
     modal.openModal(modalIDs.rejectIssue);
+  }
+
+  async function handleRejectShortcut(issueID: number, shortcut: ChangeRequestShortcut) {
+    try {
+      await createChangeRequest(issueID, {
+        author: "reviewer",
+        body: shortcut.body,
+      }, { silent: true });
+    } catch (error) {
+      toast.error({
+        message: error instanceof Error ? error.message : t("issues.reject.errors.submitFailed"),
+      });
+      return;
+    }
+
+    try {
+      await moveRejectedIssueReady(issueID);
+    } catch (error) {
+      setRejectIssueID(issueID);
+      setRejectRequestRecovery({ body: shortcut.body, requestCreated: true });
+      setRejectIssueError(
+        error instanceof Error ? error.message : t("layout.failedToRejectIssue"),
+      );
+      modal.openModal(modalIDs.rejectIssue);
+    }
+  }
+
+  async function moveRejectedIssueReady(issueID: number) {
+    await updateIssueStatus(issueID, "ready", { silent: true });
+    toast.success({ message: t("toast.success.issueRejected") });
+    void load({ silent: true });
   }
 
   async function handleMoveRejectedIssueReady() {
@@ -265,9 +305,7 @@ function LayoutContent({ children }: { children: ReactNode }) {
     setIsMovingRejectedIssue(true);
     setRejectIssueError("");
     try {
-      await updateIssueStatus(rejectIssueID, "ready", { silent: true });
-      await load({ silent: true });
-      toast.success({ message: t("toast.success.issueRejected") });
+      await moveRejectedIssueReady(rejectIssueID);
     } catch (error) {
       const message = error instanceof Error ? error.message : t("layout.failedToRejectIssue");
       setRejectIssueError(message);
@@ -336,6 +374,7 @@ function LayoutContent({ children }: { children: ReactNode }) {
         onSelectIssue: setSelectedIssueID,
         onAddIssue: handleAddIssue,
         onRejectIssue: handleRejectIssue,
+        onRejectShortcut: handleRejectShortcut,
         onStatusChange: handleStatusChange,
       }
     : null;
@@ -356,6 +395,7 @@ function LayoutContent({ children }: { children: ReactNode }) {
     projects,
     rejectIssue: issues.find((issue) => issue.id === rejectIssueID) ?? null,
     rejectIssueError,
+    rejectRequestRecovery,
     summary,
     title: issueDetailTitleOverride ?? issueDetailTitle ?? issueScopeTitle(
       issueScope,
@@ -508,6 +548,8 @@ function LayoutModalContent({ shellData }: { shellData: LayoutShellData }) {
         isMovingIssue={shellData.isMovingRejectedIssue}
         issueID={shellData.rejectIssue.id}
         issueTitle={shellData.rejectIssue.title}
+        initialBody={shellData.rejectRequestRecovery.body}
+        initialRequestCreated={shellData.rejectRequestRecovery.requestCreated}
         onCancel={shellData.onCloseModal}
         onMoveIssueReady={shellData.onMoveRejectedIssueReady}
         onSuccess={shellData.onCloseModal}

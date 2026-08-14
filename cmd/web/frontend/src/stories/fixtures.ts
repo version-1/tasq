@@ -108,6 +108,7 @@ export const storyShellData: LayoutShellData = {
     onSelectIssue: noop,
     onAddIssue: noop,
     onRejectIssue: noop,
+    onRejectShortcut: asyncNoop,
     onStatusChange: asyncNoop,
   },
   loadState: {
@@ -118,6 +119,7 @@ export const storyShellData: LayoutShellData = {
   projects: projectFixtures,
   rejectIssue: null,
   rejectIssueError: "",
+  rejectRequestRecovery: { body: "", requestCreated: false },
   summary: storySummary,
   title: "Tasq",
   onIssueDetailTitleChange: noop,

@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import "@/lib/i18n";
@@ -25,11 +25,43 @@ describe("CommentCard", () => {
 
     await user.click(screen.getByRole("button", { name: "Comment actions for codex" }));
     const menu = screen.getByRole("menu", { name: "Comment actions for codex" });
-    const action = within(menu).getByRole("menuitem", { name: "Continue with comment" });
+    const action = within(menu).getByRole("menuitem", { name: "Write a comment…" });
 
     expect(action.querySelector(".lucide-arrow-right")).toBeInTheDocument();
     await user.click(action);
     expect(onContinueWithComment).toHaveBeenCalledOnce();
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+  });
+
+  it("selects the Ok shortcut with its separate label and body", async () => {
+    const user = userEvent.setup();
+    const onContinueWithComment = vi.fn();
+
+    render(<CommentCard comment={comment} onContinueWithComment={onContinueWithComment} />);
+
+    await user.click(screen.getByRole("button", { name: "Comment actions for codex" }));
+    expect(screen.getByRole("menuitem", { name: "Retry" })).toBeVisible();
+    await user.click(screen.getByRole("menuitem", { name: "Ok" }));
+
+    expect(onContinueWithComment).toHaveBeenCalledWith({ id: "ok", label: "Ok", body: "Ok" });
+  });
+
+  it("prevents another shortcut selection while submitting", async () => {
+    const user = userEvent.setup();
+    let resolveSubmission: () => void = () => undefined;
+    const onContinueWithComment = vi.fn(
+      () => new Promise<void>((resolve) => { resolveSubmission = resolve; }),
+    );
+
+    render(<CommentCard comment={comment} onContinueWithComment={onContinueWithComment} />);
+
+    const trigger = screen.getByRole("button", { name: "Comment actions for codex" });
+    await user.click(trigger);
+    await user.click(screen.getByRole("menuitem", { name: "Ok" }));
+
+    expect(trigger).toBeDisabled();
+    expect(onContinueWithComment).toHaveBeenCalledTimes(1);
+    resolveSubmission();
+    await waitFor(() => expect(trigger).toBeEnabled());
   });
 });

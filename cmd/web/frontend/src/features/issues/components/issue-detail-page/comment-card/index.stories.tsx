@@ -22,6 +22,6 @@ export const WithContinueAction: Story = {
       ...storyComments[0],
       type: "blocker",
     },
-    onContinueWithComment: () => undefined,
+    onContinueWithComment: async () => undefined,
   },
 };

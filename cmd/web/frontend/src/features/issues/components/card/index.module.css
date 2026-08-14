@@ -142,6 +142,7 @@
 
 .quickActionButton {
   align-items: center;
+  block-size: 32px;
   background: var(--quick-action-bg);
   border: 1px solid var(--quick-action-border);
   border-radius: var(--radius-sm);
@@ -153,34 +154,12 @@
   gap: 6px;
   justify-content: center;
   line-height: 1;
-  min-height: 30px;
-  padding: 8px 12px;
+  padding: 0 12px;
 }
 
 .quickActionButton:hover,
 .quickActionButton:focus-visible {
   opacity: 0.9;
-}
-
-.rejectActionButton {
-  align-items: center;
-  background: var(--surface);
-  border: 1px solid var(--danger-border, #d4a1a1);
-  border-radius: var(--radius-sm);
-  color: var(--danger-text, #9f1d1d);
-  display: inline-flex;
-  flex-shrink: 0;
-  font-size: 13px;
-  font-weight: 500;
-  justify-content: center;
-  line-height: 1;
-  min-height: 30px;
-  padding: 8px 12px;
-}
-
-.rejectActionButton:hover,
-.rejectActionButton:focus-visible {
-  background: var(--danger-surface, #fff3f3);
 }
 
 .quickAction-ready {

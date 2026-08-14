@@ -178,6 +178,7 @@ const resources = {
         },
         reject: {
           action: "Reject",
+          shortcutMenu: "Reject の定型文",
           cancel: "キャンセル",
           close: "閉じる",
           emptyRequest: "リクエスト本文なし",
@@ -213,6 +214,9 @@ const resources = {
           submit: "コメントをつけて継続",
           title: "コメントをつけて継続 #{{id}}",
         },
+        changeRequest: {
+          writeComment: "コメントを入力…",
+        },
         detail: {
           issueStatus: "Issue ステータス",
           openDetail: "詳細ページを開く",
@@ -222,6 +226,7 @@ const resources = {
           workspace: "Workspace",
         },
         detailPage: {
+          quickActions: "Quick Action",
           backToIssue: "Issue に戻る",
           backToList: "一覧に戻る",
           approvalRequest: "承認リクエスト",
@@ -774,6 +779,7 @@ const resources = {
         },
         reject: {
           action: "Reject",
+          shortcutMenu: "Reject shortcuts",
           cancel: "Cancel",
           close: "Close",
           emptyRequest: "No request body",
@@ -809,6 +815,9 @@ const resources = {
           submit: "Continue with comment",
           title: "Continue with comment #{{id}}",
         },
+        changeRequest: {
+          writeComment: "Write a comment…",
+        },
         detail: {
           issueStatus: "Issue Status",
           openDetail: "Open detail page",
@@ -818,6 +827,7 @@ const resources = {
           workspace: "Workspace",
         },
         detailPage: {
+          quickActions: "Quick Action",
           backToIssue: "Back to issue",
           backToList: "Back to list",
           approvalRequest: "Approval request",

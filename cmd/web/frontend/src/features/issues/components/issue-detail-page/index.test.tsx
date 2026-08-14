@@ -120,6 +120,37 @@ describe("IssueDetailPage", () => {
     expect(screen.getByRole("button", { name: "Change status" })).toHaveTextContent("in_progress");
   });
 
+  it("shows status-specific quick actions in the sidebar", async () => {
+    const user = userEvent.setup();
+    api.updateIssueStatus.mockResolvedValueOnce({ ...issue, status: "backlog" });
+
+    renderIssueDetail();
+
+    expect(await screen.findByRole("heading", { name: "Quick Action" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Draft" }));
+    expect(api.updateIssueStatus).toHaveBeenCalledWith(42, "backlog");
+  });
+
+  it("shows Ready as the backlog quick action", async () => {
+    const user = userEvent.setup();
+    api.fetchIssue.mockResolvedValueOnce({ ...issue, status: "backlog" });
+    api.updateIssueStatus.mockResolvedValueOnce({ ...issue, status: "ready" });
+
+    renderIssueDetail();
+
+    await user.click(await screen.findByRole("button", { name: "Ready" }));
+    expect(api.updateIssueStatus).toHaveBeenCalledWith(42, "ready");
+  });
+
+  it("shows Done and Reject quick actions for review issues", async () => {
+    api.fetchIssue.mockResolvedValueOnce({ ...issue, status: "review" });
+
+    renderIssueDetail();
+
+    expect(await screen.findByRole("button", { name: "Done" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Reject" })).toBeInTheDocument();
+  });
+
   it("rejects a review issue with a change request", async () => {
     const user = userEvent.setup();
     api.fetchIssue.mockResolvedValueOnce({ ...issue, status: "review" });
@@ -197,6 +228,35 @@ describe("IssueDetailPage", () => {
     await waitFor(() => {
       expect(screen.queryByRole("dialog", { name: "Reject #42" })).not.toBeInTheDocument();
     });
+  });
+
+  it("sends a reject shortcut immediately and recovers without duplicating it", async () => {
+    const user = userEvent.setup();
+    api.fetchIssue.mockResolvedValueOnce({ ...issue, status: "review" });
+    api.updateIssueStatus
+      .mockRejectedValueOnce(new Error("failed to update status"))
+      .mockResolvedValueOnce({ ...issue, status: "ready" });
+
+    renderIssueDetail();
+
+    await user.click(await screen.findByRole("button", { name: "Reject shortcuts" }));
+    await user.click(screen.getByRole("menuitem", { name: "Fix CI & Conflict" }));
+
+    const dialog = await screen.findByRole("dialog", { name: "Reject #42" });
+    expect(within(dialog).getByRole("textbox", { name: "Request" })).toHaveValue(
+      "Fix CI & Conflict",
+    );
+    expect(screen.getByText(/already been created/)).toBeInTheDocument();
+
+    await user.click(within(dialog).getByRole("button", { name: "Reject" }));
+
+    expect(api.createChangeRequest).toHaveBeenCalledTimes(1);
+    expect(api.createChangeRequest).toHaveBeenCalledWith(
+      42,
+      { author: "reviewer", body: "Fix CI & Conflict" },
+      { silent: true },
+    );
+    expect(api.updateIssueStatus).toHaveBeenCalledTimes(2);
   });
 
   it("edits markdown descriptions", async () => {
@@ -322,7 +382,7 @@ describe("IssueDetailPage", () => {
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Comment actions for latest-runner" }));
-    await user.click(screen.getByRole("menuitem", { name: "Continue with comment" }));
+    await user.click(screen.getByRole("menuitem", { name: "Write a comment…" }));
 
     const dialog = screen.getByRole("dialog", { name: "Continue with comment #42" });
     const request = within(dialog).getByRole("textbox", { name: "Change request" });
