@@ -21,6 +21,7 @@ If the `tasq-cli` skill is available, use it as the preferred guidance for track
 - Do not call the issue tracker API directly with `curl`, `wget`, or a custom HTTP script. This restriction applies only to the issue tracker API, not to other services or local endpoint verification.
 - When work starts, move the issue to `in_progress` and leave a progress comment.
 - Add progress comments at meaningful milestones during the work.
+- Before requesting approval for a command execution or file change, provide a non-empty, specific reason that states exactly what needs approval, the target scope (the command and working directory or the file paths), why the approval is required, and the expected effect. Never send an approval request with a null, empty, or vague reason such as only saying that approval is required.
 - If work is blocked, leave a blocker comment that explains why, then move the issue to `blocked`.
 - If you create or update a pull request, register the primary PR being submitted for review as the issue's `pull_request` artifact before handoff. `tq artifact set` is an upsert, so replace the artifact URL if the primary PR is recreated. Mention any supporting PRs in the handoff comment instead of registering them as the primary artifact.
 - After successful registration, leave a handoff comment with the PR URL and verification summary, then move the issue to `review`. If registration fails, retry a reasonable number of times; if it remains unresolved, leave a blocker comment and do not move to `review`. Skip artifact registration when no pull request was created or updated.
@@ -52,6 +53,8 @@ orchestrator launches fall back to `tq`. Do not substitute another executable fr
 
 Template variables such as `{{ issue.id }}` are rendered after this prompt is prepended. Setting `tasq.task_work_prompt: false` disables this entire start prompt, including its tracker and artifact instructions; it does not change continuation behavior.
 
+The approval-reason contract makes blocked approval comments actionable because the runner already preserves the app-server request payload. It instructs the agent to populate the request reason with the operation, target scope, necessity, and expected effect; it does not add runtime validation or change Tasq's approval-denial policy.
+
 The pull-request artifact represents the primary PR currently submitted for review. Setting it again replaces the prior URL, while supporting PRs remain handoff-comment context. Artifact registration is conditional on creating or updating a PR. A registration failure must be retried reasonably and, if unresolved, reported as a blocker without a transition to `review`.
 
 ## Task Resume Prompt
@@ -61,7 +64,9 @@ On a resumed run, when `Task.ResumeThreadID` is set, the runner resumes the exis
 The injected resume prompt is:
 
 ```text
-First run `<tasq-command> issue update <issue-id> --status in_progress` to keep the issue tracker synchronized. Then continue the same task in this live thread without repeating completed work, and stop when it is ready for handoff. If this continuation creates or updates a pull request, register the primary PR before handoff with `<tasq-command> artifact set <issue-id> --type pull_request <pr-url>`. On success, add the handoff comment, then move the issue to `review`; on failure, retry a reasonable number of times, then leave a blocker comment and do not move to `review` if it remains unresolved. Otherwise, artifact registration is not required.
+First run `<tasq-command> issue update <issue-id> --status in_progress` to keep the issue tracker synchronized. Then continue the same task in this live thread without repeating completed work, and stop when it is ready for handoff. Before requesting approval for a command execution or file change, provide a non-empty, specific reason that states exactly what needs approval, the target scope (the command and working directory or the file paths), why the approval is required, and the expected effect. Never send an approval request with a null, empty, or vague reason such as only saying that approval is required. If this continuation creates or updates a pull request, register the primary PR before handoff with `<tasq-command> artifact set <issue-id> --type pull_request <pr-url>`. On success, add the handoff comment, then move the issue to `review`; on failure, retry a reasonable number of times, then leave a blocker comment and do not move to `review` if it remains unresolved. Otherwise, artifact registration is not required.
 ```
 
 `<tasq-command>` uses `"$TQ_EXECUTABLE"` in managed runs and `tq` otherwise. `<issue-id>` is filled from the current task issue ID before the turn starts. The same continuation prompt is also used for later turns in an enabled multi-turn run. It is sent only when the runner's existing resume or later-turn conditions select a continuation turn; the runner does not add an extra turn when continuation is disabled. Assigned change-request guidance, when present, remains appended after this reminder.
+
+The same approval-reason contract is repeated here because resumed threads and later turns do not receive the full task-start prompt again.
