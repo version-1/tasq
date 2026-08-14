@@ -51,7 +51,7 @@ Error responses use:
 | `GET` | `/api/v1/issues/{issueId}/change-requests` | List change requests for an issue. |
 | `POST` | `/api/v1/issues/{issueId}/change-requests` | Create an open change request. |
 | `GET` | `/api/v1/change-requests/{id}` | Read a change request. |
-| `PATCH` | `/api/v1/change-requests/{id}` | Edit its body or perform an allowed status transition. |
+| `PATCH` | `/api/v1/change-requests/{id}` | Edit the body while `open`, or perform an allowed status transition. |
 | `POST` | `/api/v1/change-requests/{id}/cancel` | Cancel an open or in-progress change request. |
 | `GET` | `/api/v1/attachments` | List attachments. |
 | `POST` | `/api/v1/attachments` | Upload an attachment. |
@@ -65,6 +65,8 @@ Issue listing supports filters for `states`, `project_id`, `project_ids`,
 
 Comment listing supports `cursor` and `limit`. Attachment listing supports
 `entity_type` and `entity_id`.
+
+Change-request listing supports an optional `status` filter and `limit` from `1` to `100`, defaulting to `50`.
 
 Issue responses always include an `artifacts` array, sorted by `type`, including `[]` when no artifacts exist. The initial `pull_request` artifact accepts only `data_value` on `PUT`; the server returns `type`, `data_type`, and `data_value`. `DELETE` returns an empty `204`. Invalid types or URLs return `400`; a missing issue or artifact returns `404`.
 

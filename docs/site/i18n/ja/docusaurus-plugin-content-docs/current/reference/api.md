@@ -51,7 +51,7 @@ Issue Tracker は利用者向けの Tasq API です。プロジェクト、課�
 | `GET` | `/api/v1/issues/{issueId}/change-requests` | 課題の change request を一覧表示します。 |
 | `POST` | `/api/v1/issues/{issueId}/change-requests` | `open` 状態の change request を作成します。 |
 | `GET` | `/api/v1/change-requests/{id}` | change request を取得します。 |
-| `PATCH` | `/api/v1/change-requests/{id}` | 本文を編集するか、許可された状態遷移を行います。 |
+| `PATCH` | `/api/v1/change-requests/{id}` | `open` の間に本文を編集するか、許可された状態遷移を行います。 |
 | `POST` | `/api/v1/change-requests/{id}/cancel` | `open` または `in_progress` の change request を取り消します。 |
 | `GET` | `/api/v1/attachments` | attachments を list します。 |
 | `POST` | `/api/v1/attachments` | attachment を upload します。 |
@@ -65,6 +65,8 @@ issue listing では `states`、`project_id`、`project_ids`、`priorities`、
 
 comment listing は `cursor` と `limit` を受け付けます。attachment listing は
 `entity_type` と `entity_id` を受け付けます。
+
+change request の一覧取得では、任意の `status` フィルターと `1`〜`100` の `limit` を指定できます。`limit` の既定値は `50` です。
 
 課題レスポンスには、Artifact がない場合も `[]` となる `artifacts` 配列が常に含まれ、`type` 昇順で返ります。初期の `pull_request` Artifact では、`PUT` に `data_value` だけを指定します。サーバーは `type`、`data_type`、`data_value` を返します。`DELETE` は本文のない `204` を返します。不正な type または URL は `400`、課題または Artifact が存在しない場合は `404` です。
 

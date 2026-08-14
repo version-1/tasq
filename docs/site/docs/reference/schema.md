@@ -15,7 +15,7 @@ Tasq validates entity data at the store layer on create and update operations. T
 | Issue | `projectId`, `title` | title 1-500 chars, description max 10,000 chars, assignee max 200 chars, immutable project ownership |
 | Artifact | `type`, `dataType`, `dataValue` | one per issue and type; initial type `pull_request` has data type `url`; URL is trimmed, absolute HTTP(S), host-required, userinfo-free, max 4,096 UTF-8 bytes |
 | Comment | `issueId`, `author`, `body` | body 1-10,000 chars, type defaults to `general` |
-| ChangeRequest | `issueId`, `author`, `body` | body 1-10,000 chars; status defaults to `open`; terminal requests are immutable |
+| ChangeRequest | `issueId`, `author`, `body` | body 1-10,000 chars and editable only while `open`; status defaults to `open`; terminal requests are immutable |
 | Attachment | `entityType`, `entityId`, `file` | image PNG/JPEG/GIF/WebP, max 5 MiB |
 | Project | `key`, `name`, `location` | key format, name 1-200 chars, description max 10,000 chars, absolute location |
 | ProjectWorkflow | `projectId`, `frontmatter`, `body`, `checksum` | one workflow override per project, checksum is SHA256 hex |

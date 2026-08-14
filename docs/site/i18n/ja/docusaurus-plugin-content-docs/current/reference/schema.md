@@ -15,7 +15,7 @@ Tasq は作成・更新時に、ストア層でエンティティのデータを
 | Issue | `projectId`, `title` | title 1-500 chars、description max 10,000 chars、assignee max 200 chars、immutable project ownership |
 | Artifact | `type`, `dataType`, `dataValue` | 課題と type の組み合わせごとに 1 件。初期 type の `pull_request` は data type `url`。URL は前後の空白を除去し、絶対 HTTP(S) URL、host 必須、userinfo なし、UTF-8 で最大 4,096 bytes |
 | Comment | `issueId`, `author`, `body` | body 1-10,000 chars、type defaults to `general` |
-| ChangeRequest | `issueId`, `author`, `body` | 本文は 1〜10,000 文字。状態の既定値は `open`。終端状態では変更不可 |
+| ChangeRequest | `issueId`, `author`, `body` | 本文は 1〜10,000 文字で、`open` の間だけ編集可能。状態の既定値は `open`。終端状態では変更不可 |
 | Attachment | `entityType`, `entityId`, `file` | image PNG/JPEG/GIF/WebP、max 5 MiB |
 | Project | `key`, `name`, `location` | key format、name 1-200 chars、description max 10,000 chars、absolute location |
 | ProjectWorkflow | `projectId`, `frontmatter`, `body`, `checksum` | one workflow override per project、checksum は SHA256 hex |
