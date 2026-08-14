@@ -25,11 +25,23 @@ describe("CommentCard", () => {
 
     await user.click(screen.getByRole("button", { name: "Comment actions for codex" }));
     const menu = screen.getByRole("menu", { name: "Comment actions for codex" });
-    const action = within(menu).getByRole("menuitem", { name: "Continue with comment" });
+    const action = within(menu).getByRole("menuitem", { name: "Write a comment…" });
 
     expect(action.querySelector(".lucide-arrow-right")).toBeInTheDocument();
     await user.click(action);
     expect(onContinueWithComment).toHaveBeenCalledOnce();
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+  });
+
+  it("selects the Ok shortcut with its separate label and body", async () => {
+    const user = userEvent.setup();
+    const onContinueWithComment = vi.fn();
+
+    render(<CommentCard comment={comment} onContinueWithComment={onContinueWithComment} />);
+
+    await user.click(screen.getByRole("button", { name: "Comment actions for codex" }));
+    await user.click(screen.getByRole("menuitem", { name: "Ok" }));
+
+    expect(onContinueWithComment).toHaveBeenCalledWith({ id: "ok", label: "Ok", body: "Ok" });
   });
 });

@@ -1,0 +1,45 @@
+.splitButton {
+  display: inline-flex;
+}
+
+.primaryButton,
+.menuButton {
+  background: var(--surface);
+  border: 1px solid var(--danger-border, #d4a1a1);
+  color: var(--danger-text, #9f1d1d);
+  font-weight: 600;
+  min-block-size: 38px;
+}
+
+.primaryButton {
+  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+  padding: var(--space-0) var(--space-3-5);
+}
+
+.menuButton {
+  align-items: center;
+  border-left: 0;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  display: inline-flex;
+  justify-content: center;
+  padding: var(--space-0) var(--space-2-5);
+}
+
+.primaryButton:hover:not(:disabled),
+.primaryButton:focus-visible:not(:disabled),
+.menuButton:hover:not(:disabled),
+.menuButton:focus-visible:not(:disabled) {
+  background: var(--danger-surface, #fff3f3);
+}
+
+.primaryButton:focus-visible,
+.menuButton:focus-visible {
+  outline: 2px solid var(--danger);
+  outline-offset: 2px;
+}
+
+.primaryButton:disabled,
+.menuButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}

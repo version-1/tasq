@@ -634,6 +634,13 @@ palette:
   link is a 3-column inner grid with monospace IDs and ledger-muted timestamps.
 - `comment-list` reuses the card shape and prefixes each comment with a
   `border-top` separator.
+- Change-request actions expose a labelled menu group. `Write a comment…`
+  opens the editor, while configured shortcuts submit their instruction body
+  immediately. Shortcut labels and bodies are separate values so future
+  configuration can keep compact labels for longer agent instructions.
+- Reject actions use a split button: the primary segment opens the editor and
+  the chevron segment opens the shortcut menu. Both segments share disabled
+  and submitting states.
 - `status-actions` is a wrap-flex action row inside the same card.
 - `issue-description` uses the shared markdown renderer with `1.65` line
   height, anchor color `--primary-black`, and bordered inline images.

@@ -15,26 +15,6 @@
   padding-top: var(--space-4);
 }
 
-.rejectButton {
-  background: var(--surface);
-  border: 1px solid var(--danger-border, #d4a1a1);
-  border-radius: var(--radius-sm);
-  color: var(--danger-text, #9f1d1d);
-  font-weight: 600;
-  min-block-size: 38px;
-  padding: var(--space-0) var(--space-3-5);
-}
-
-.rejectButton:hover,
-.rejectButton:focus-visible {
-  background: var(--danger-surface, #fff3f3);
-}
-
-.rejectButton:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
 .metaGrid {
   display: grid;
   gap: 12px;

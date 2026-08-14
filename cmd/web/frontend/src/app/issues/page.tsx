@@ -4,7 +4,7 @@ import { useLayoutData, useLayoutShellData } from "@/components/layout";
 import { IssuesView } from "@/features/issues/components/issues-view";
 
 export default function IssuesPage() {
-  const { summary, onAddIssue, onRejectIssue, onStatusChange } = useLayoutData();
+  const { summary, onAddIssue, onRejectIssue, onRejectShortcut, onStatusChange } = useLayoutData();
   const { isProjectIssueScope } = useLayoutShellData();
 
   return (
@@ -13,6 +13,7 @@ export default function IssuesPage() {
       summary={summary}
       onAddIssue={onAddIssue}
       onRejectIssue={onRejectIssue}
+      onRejectShortcut={onRejectShortcut}
       onStatusChange={onStatusChange}
     />
   );

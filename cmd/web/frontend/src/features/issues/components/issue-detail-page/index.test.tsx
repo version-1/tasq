@@ -199,6 +199,35 @@ describe("IssueDetailPage", () => {
     });
   });
 
+  it("sends a reject shortcut immediately and recovers without duplicating it", async () => {
+    const user = userEvent.setup();
+    api.fetchIssue.mockResolvedValueOnce({ ...issue, status: "review" });
+    api.updateIssueStatus
+      .mockRejectedValueOnce(new Error("failed to update status"))
+      .mockResolvedValueOnce({ ...issue, status: "ready" });
+
+    renderIssueDetail();
+
+    await user.click(await screen.findByRole("button", { name: "Reject shortcuts" }));
+    await user.click(screen.getByRole("menuitem", { name: "Fix CI & Conflict" }));
+
+    const dialog = await screen.findByRole("dialog", { name: "Reject #42" });
+    expect(within(dialog).getByRole("textbox", { name: "Request" })).toHaveValue(
+      "Fix CI & Conflict",
+    );
+    expect(screen.getByText(/already been created/)).toBeInTheDocument();
+
+    await user.click(within(dialog).getByRole("button", { name: "Reject" }));
+
+    expect(api.createChangeRequest).toHaveBeenCalledTimes(1);
+    expect(api.createChangeRequest).toHaveBeenCalledWith(
+      42,
+      { author: "reviewer", body: "Fix CI & Conflict" },
+      { silent: true },
+    );
+    expect(api.updateIssueStatus).toHaveBeenCalledTimes(2);
+  });
+
   it("edits markdown descriptions", async () => {
     const user = userEvent.setup();
     renderIssueDetail();
@@ -322,7 +351,7 @@ describe("IssueDetailPage", () => {
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Comment actions for latest-runner" }));
-    await user.click(screen.getByRole("menuitem", { name: "Continue with comment" }));
+    await user.click(screen.getByRole("menuitem", { name: "Write a comment…" }));
 
     const dialog = screen.getByRole("dialog", { name: "Continue with comment #42" });
     const request = within(dialog).getByRole("textbox", { name: "Change request" });

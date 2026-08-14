@@ -633,6 +633,13 @@ gap: 14px;
   リンクは等幅 ID と ledger-muted タイムスタンプを持つ 3 カラム内 grid です。
 - `comment-list` はカード形状を再利用し、各コメントの前に
   `border-top` separator を入れます。
+- Change request 操作はラベル付きメニューグループとして表示します。
+  `コメントを入力…` はエディターを開き、設定済みショートカットは指示本文を
+  即時送信します。将来、短い表示名に長い agent 指示を割り当てられるよう、
+  ショートカットの表示名と本文は別々の値として扱います。
+- Reject 操作は split button を使用します。主ボタンはエディターを開き、
+  chevron 側はショートカットメニューを開きます。両方で disabled と送信中の
+  状態を共有します。
 - `status-actions` は同じカード内の wrap-flex アクション行です。
 - `issue-description` は共有 markdown レンダラーを使い、line-height
   `1.65`、アンカー色 `--primary-black`、インライン画像に border を付けます。

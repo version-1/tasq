@@ -1,9 +1,10 @@
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ContextMenu, ContextMenuItem } from "@/components/ui/context-menu";
+import { ContextMenu, ContextMenuGroupLabel, ContextMenuItem } from "@/components/ui/context-menu";
 import { IconProxy } from "@/components/ui/icon-proxy";
 import { Markdown } from "@/components/ui/markdown";
 import { CommentTypeBadge } from "@/features/issues/components/comment-type-badge";
+import { builtInChangeRequestShortcuts, type ChangeRequestShortcut } from "@/features/issues/change-request-shortcuts";
 import type { Comment } from "@/lib/types";
 import { formatDateTime } from "../format";
 import styles from "./index.module.css";
@@ -11,9 +12,11 @@ import styles from "./index.module.css";
 export function CommentCard({
   comment,
   onContinueWithComment,
+  shortcuts = builtInChangeRequestShortcuts.continue,
 }: {
   comment: Comment;
-  onContinueWithComment?: () => void;
+  onContinueWithComment?: (shortcut?: ChangeRequestShortcut) => void;
+  shortcuts?: readonly ChangeRequestShortcut[];
 }) {
   const { t } = useTranslation();
   const menuID = useId();
@@ -47,6 +50,7 @@ export function CommentCard({
                 </button>
               )}
             >
+              <ContextMenuGroupLabel>{t("issues.continueWithComment.action")}</ContextMenuGroupLabel>
               <ContextMenuItem
                 icon={<IconProxy name="arrow-right" />}
                 onSelect={() => {
@@ -54,8 +58,19 @@ export function CommentCard({
                   onContinueWithComment();
                 }}
               >
-                {t("issues.continueWithComment.action")}
+                {t("issues.changeRequest.writeComment")}
               </ContextMenuItem>
+              {shortcuts.map((shortcut) => (
+                <ContextMenuItem
+                  key={shortcut.id}
+                  onSelect={() => {
+                    setIsMenuOpen(false);
+                    onContinueWithComment(shortcut);
+                  }}
+                >
+                  {shortcut.label}
+                </ContextMenuItem>
+              ))}
             </ContextMenu>
           ) : (
             <button

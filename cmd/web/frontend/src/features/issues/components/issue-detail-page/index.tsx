@@ -8,6 +8,7 @@ import { useOptionalLayoutShellData } from "@/components/layout";
 import { PanelMessage } from "@/components/ui/pannel-message";
 import {
   fetchChangeRequests,
+  createChangeRequest,
   fetchComments,
   fetchIssueAttachments,
   fetchIssue,
@@ -34,12 +35,20 @@ import { IssueDescription } from "./issue-description";
 import { BasicInfoPanel } from "./basic-info-panel";
 import { RunsSection } from "./runs-section";
 import { ChangeRequestDialog } from "../change-request-dialog";
+import type {
+  ChangeRequestShortcut,
+  ChangeRequestVariant,
+} from "@/features/issues/change-request-shortcuts";
 import styles from "./index.module.css";
 
 const commentPageSize = 20;
 const validTabs = ["details", "comments", "conversation"] as const;
 type IssueDetailTab = (typeof validTabs)[number];
-type ChangeRequestDialogVariant = "continue" | "reject";
+type ChangeRequestDialogState = {
+  variant: ChangeRequestVariant;
+  initialBody?: string;
+  initialRequestCreated?: boolean;
+};
 
 type IssueLoadState =
   | { kind: "loading" }
@@ -77,8 +86,8 @@ export function IssueDetailPage() {
   const [isLoadingConversation, setIsLoadingConversation] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [isUpdatingDescription, setIsUpdatingDescription] = useState(false);
-  const [changeRequestDialogVariant, setChangeRequestDialogVariant] =
-    useState<ChangeRequestDialogVariant | null>(null);
+  const [changeRequestDialog, setChangeRequestDialog] =
+    useState<ChangeRequestDialogState | null>(null);
   const [changeRequestError, setChangeRequestError] = useState("");
 
   const updateSearchParams = useCallback(
@@ -327,7 +336,7 @@ export function IssueDetailPage() {
     }
   }
 
-  async function handleMoveIssueReady() {
+  async function handleMoveIssueReady(variant: ChangeRequestVariant) {
     if (issueState.kind !== "ready") return;
 
     setIsUpdatingStatus(true);
@@ -337,7 +346,7 @@ export function IssueDetailPage() {
       setIssueState({ kind: "ready", issue });
       toast.success({
         message:
-          changeRequestDialogVariant === "continue"
+          variant === "continue"
             ? t("toast.success.continuedWithComment")
             : t("toast.success.issueRejected"),
       });
@@ -346,7 +355,7 @@ export function IssueDetailPage() {
         error instanceof Error
           ? error.message
           : t(
-              changeRequestDialogVariant === "continue"
+              variant === "continue"
                 ? "issues.continueWithComment.errors.statusUpdateFailed"
                 : "issues.reject.errors.statusUpdateFailed",
             );
@@ -354,6 +363,43 @@ export function IssueDetailPage() {
       throw new Error(message);
     } finally {
       setIsUpdatingStatus(false);
+    }
+  }
+
+  async function handleChangeRequestShortcut(
+    variant: ChangeRequestVariant,
+    shortcut: ChangeRequestShortcut,
+  ) {
+    if (issueState.kind !== "ready") return;
+
+    try {
+      await createChangeRequest(issueState.issue.id, {
+        author: "reviewer",
+        body: shortcut.body,
+      }, { silent: true });
+    } catch (error) {
+      toast.error({
+        message:
+          error instanceof Error
+            ? error.message
+            : t(
+                `issues.${variant === "continue" ? "continueWithComment" : "reject"}.errors.submitFailed`,
+              ),
+      });
+      return;
+    }
+
+    try {
+      await handleMoveIssueReady(variant);
+      if (variant === "continue") {
+        await loadChangeRequests();
+      }
+    } catch {
+      setChangeRequestDialog({
+        variant,
+        initialBody: shortcut.body,
+        initialRequestCreated: true,
+      });
     }
   }
 
@@ -427,8 +473,9 @@ export function IssueDetailPage() {
                     issueOptions={layoutShellData?.issues ?? []}
                     onRejectIssue={() => {
                       setChangeRequestError("");
-                      setChangeRequestDialogVariant("reject");
+                      setChangeRequestDialog({ variant: "reject" });
                     }}
+                    onRejectShortcut={(shortcut) => handleChangeRequestShortcut("reject", shortcut)}
                     onStatusChange={handleStatusChange}
                   />
                   <ArtifactsSection artifacts={issueState.issue.artifacts} />
@@ -460,9 +507,13 @@ export function IssueDetailPage() {
                     : undefined
                 }
                 onLoadMore={() => void loadComments(nextCursor ?? undefined)}
-                onContinueWithComment={() => {
+                onContinueWithComment={(shortcut) => {
                   setChangeRequestError("");
-                  setChangeRequestDialogVariant("continue");
+                  if (shortcut) {
+                    void handleChangeRequestShortcut("continue", shortcut);
+                    return;
+                  }
+                  setChangeRequestDialog({ variant: "continue" });
                 }}
               />
             </div>
@@ -483,25 +534,27 @@ export function IssueDetailPage() {
           ) : null}
         </>
       ) : null}
-      {issueState.kind === "ready" && changeRequestDialogVariant ? (
+      {issueState.kind === "ready" && changeRequestDialog ? (
         <ChangeRequestDialog
           error={changeRequestError}
           isMovingIssue={isUpdatingStatus}
           issueID={issueState.issue.id}
           issueTitle={issueState.issue.title}
+          initialBody={changeRequestDialog.initialBody}
+          initialRequestCreated={changeRequestDialog.initialRequestCreated}
           onCancel={() => {
             setChangeRequestError("");
-            setChangeRequestDialogVariant(null);
+            setChangeRequestDialog(null);
           }}
-          onMoveIssueReady={handleMoveIssueReady}
+          onMoveIssueReady={() => handleMoveIssueReady(changeRequestDialog.variant)}
           onSuccess={() => {
             setChangeRequestError("");
-            setChangeRequestDialogVariant(null);
-            if (changeRequestDialogVariant === "continue") {
+            setChangeRequestDialog(null);
+            if (changeRequestDialog.variant === "continue") {
               void loadChangeRequests();
             }
           }}
-          variant={changeRequestDialogVariant}
+          variant={changeRequestDialog.variant}
         />
       ) : null}
     </div>
