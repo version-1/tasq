@@ -17,6 +17,7 @@ export function ResolveIssueDialog({
   isMovingIssue,
   issueID,
   issueTitle,
+  loadLatestBlocker = fetchLatestBlockerComment,
   onCancel,
   onMoveIssueReady,
   onSuccess,
@@ -25,6 +26,7 @@ export function ResolveIssueDialog({
   isMovingIssue?: boolean;
   issueID: number;
   issueTitle: string;
+  loadLatestBlocker?: (issueID: number) => Promise<Comment | null>;
   onCancel: () => void;
   onMoveIssueReady: () => Promise<void>;
   onSuccess: () => void;
@@ -35,7 +37,7 @@ export function ResolveIssueDialog({
   const loadBlocker = useCallback(async () => {
     setBlockerState({ kind: "loading" });
     try {
-      const comment = await fetchLatestBlockerComment(issueID);
+      const comment = await loadLatestBlocker(issueID);
       setBlockerState(
         comment
           ? { kind: "ready", comment }
@@ -48,7 +50,7 @@ export function ResolveIssueDialog({
           caught instanceof Error ? caught.message : t("issues.resolve.blockerLoadFailed"),
       });
     }
-  }, [issueID, t]);
+  }, [issueID, loadLatestBlocker, t]);
 
   useEffect(() => {
     void loadBlocker();
