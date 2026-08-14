@@ -19,7 +19,7 @@ export function CommentList({
   isLoading: boolean;
   latestActionableBlockerCommentID?: number;
   onLoadMore: () => void;
-  onContinueWithComment?: (shortcut?: ChangeRequestShortcut) => void;
+  onContinueWithComment?: (shortcut?: ChangeRequestShortcut) => Promise<void>;
 }) {
   const { t } = useTranslation();
 

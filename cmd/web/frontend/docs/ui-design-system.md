@@ -641,6 +641,9 @@ palette:
 - Reject actions use a split button: the primary segment opens the editor and
   the chevron segment opens the shortcut menu. Both segments share disabled
   and submitting states.
+- The issue-detail sidebar labels its status shortcuts as `Quick Action`:
+  backlog shows `Ready`, ready shows `Draft`, and review shows `Done` together
+  with the red Reject split button.
 - `status-actions` is a wrap-flex action row inside the same card.
 - `issue-description` uses the shared markdown renderer with `1.65` line
   height, anchor color `--primary-black`, and bordered inline images.

@@ -7,7 +7,10 @@ export type ChangeRequestShortcut = {
 };
 
 export const builtInChangeRequestShortcuts = {
-  continue: [{ id: "ok", label: "Ok", body: "Ok" }],
+  continue: [
+    { id: "ok", label: "Ok", body: "Ok" },
+    { id: "retry", label: "Retry", body: "Retry" },
+  ],
   reject: [
     {
       id: "fix-ci-conflict",

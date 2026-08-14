@@ -30,6 +30,8 @@ export function BasicInfoPanel({
 }) {
   const { t } = useTranslation();
   const dependencyIssues = dependencyIssueLinks(issue.dependency_ids, issueOptions);
+  const quickStatusAction = quickStatusActionFor(issue.status);
+  const canReject = issue.status === "review" && onRejectIssue && onRejectShortcut;
 
   return (
     <section className={styles.panel}>
@@ -67,17 +69,42 @@ export function BasicInfoPanel({
         <MetaItem label={t("issues.detailPage.createdAt")} value={formatDateTime(issue.createdAt)} />
         <MetaItem label={t("issues.detailPage.updatedAt")} value={formatDateTime(issue.updatedAt)} />
       </dl>
-      {issue.status === "review" && onRejectIssue && onRejectShortcut ? (
-        <div className={styles.panelActions}>
-          <RejectAction
-            disabled={disabled}
-            onOpenDialog={onRejectIssue}
-            onSelectShortcut={onRejectShortcut}
-          />
+      {quickStatusAction || canReject ? (
+        <div className={styles.quickActions}>
+          <h3>{t("issues.detailPage.quickActions")}</h3>
+          <div className={styles.panelActions}>
+            {quickStatusAction ? (
+              <button
+                className={styles.quickActionButton}
+                disabled={disabled}
+                type="button"
+                onClick={() => void onStatusChange(quickStatusAction.status)}
+              >
+                {t(quickStatusAction.labelKey)}
+              </button>
+            ) : null}
+            {canReject ? (
+              <RejectAction
+                disabled={disabled}
+                onOpenDialog={onRejectIssue}
+                onSelectShortcut={onRejectShortcut}
+              />
+            ) : null}
+          </div>
         </div>
       ) : null}
     </section>
   );
+}
+
+function quickStatusActionFor(status: IssueStatus): {
+  status: IssueStatus;
+  labelKey: "statuses.ready" | "issues.board.draft" | "statuses.done";
+} | null {
+  if (status === "backlog") return { status: "ready", labelKey: "statuses.ready" };
+  if (status === "ready") return { status: "backlog", labelKey: "issues.board.draft" };
+  if (status === "review") return { status: "done", labelKey: "statuses.done" };
+  return null;
 }
 
 function dependencyIssueLinks(

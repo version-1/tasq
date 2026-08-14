@@ -4,16 +4,17 @@
 
 .primaryButton,
 .menuButton {
-  background: var(--surface);
-  border: 1px solid var(--danger-border, #d4a1a1);
-  color: var(--danger-text, #9f1d1d);
-  font-weight: 600;
-  min-block-size: 38px;
+  background: var(--danger);
+  border: 1px solid var(--danger);
+  color: var(--white);
+  font-size: 13px;
+  font-weight: 500;
+  min-block-size: 30px;
 }
 
 .primaryButton {
   border-radius: var(--radius-sm) 0 0 var(--radius-sm);
-  padding: var(--space-0) var(--space-3-5);
+  padding: 8px 12px;
 }
 
 .menuButton {
@@ -22,14 +23,14 @@
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   display: inline-flex;
   justify-content: center;
-  padding: var(--space-0) var(--space-2-5);
+  padding: 8px var(--space-2-5);
 }
 
 .primaryButton:hover:not(:disabled),
 .primaryButton:focus-visible:not(:disabled),
 .menuButton:hover:not(:disabled),
 .menuButton:focus-visible:not(:disabled) {
-  background: var(--danger-surface, #fff3f3);
+  background: var(--danger-text, #9f1d1d);
 }
 
 .primaryButton:focus-visible,

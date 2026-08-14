@@ -120,6 +120,37 @@ describe("IssueDetailPage", () => {
     expect(screen.getByRole("button", { name: "Change status" })).toHaveTextContent("in_progress");
   });
 
+  it("shows status-specific quick actions in the sidebar", async () => {
+    const user = userEvent.setup();
+    api.updateIssueStatus.mockResolvedValueOnce({ ...issue, status: "backlog" });
+
+    renderIssueDetail();
+
+    expect(await screen.findByRole("heading", { name: "Quick Action" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Draft" }));
+    expect(api.updateIssueStatus).toHaveBeenCalledWith(42, "backlog");
+  });
+
+  it("shows Ready as the backlog quick action", async () => {
+    const user = userEvent.setup();
+    api.fetchIssue.mockResolvedValueOnce({ ...issue, status: "backlog" });
+    api.updateIssueStatus.mockResolvedValueOnce({ ...issue, status: "ready" });
+
+    renderIssueDetail();
+
+    await user.click(await screen.findByRole("button", { name: "Ready" }));
+    expect(api.updateIssueStatus).toHaveBeenCalledWith(42, "ready");
+  });
+
+  it("shows Done and Reject quick actions for review issues", async () => {
+    api.fetchIssue.mockResolvedValueOnce({ ...issue, status: "review" });
+
+    renderIssueDetail();
+
+    expect(await screen.findByRole("button", { name: "Done" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Reject" })).toBeInTheDocument();
+  });
+
   it("rejects a review issue with a change request", async () => {
     const user = userEvent.setup();
     api.fetchIssue.mockResolvedValueOnce({ ...issue, status: "review" });

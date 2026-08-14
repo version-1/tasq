@@ -296,8 +296,8 @@ function LayoutContent({ children }: { children: ReactNode }) {
 
   async function moveRejectedIssueReady(issueID: number) {
     await updateIssueStatus(issueID, "ready", { silent: true });
-    await load({ silent: true });
     toast.success({ message: t("toast.success.issueRejected") });
+    void load({ silent: true });
   }
 
   async function handleMoveRejectedIssueReady() {

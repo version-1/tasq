@@ -119,6 +119,7 @@ export function ChangeRequestDialog({
                 saving: t("markdownEditor.saving"),
                 textarea: t(`${translationKey}.fields.body`),
               }}
+              readOnly={hasCreatedRequest}
               showActions={false}
               stablePanelRows={12}
               value={body}

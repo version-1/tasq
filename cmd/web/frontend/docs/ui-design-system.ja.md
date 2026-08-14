@@ -640,6 +640,9 @@ gap: 14px;
 - Reject 操作は split button を使用します。主ボタンはエディターを開き、
   chevron 側はショートカットメニューを開きます。両方で disabled と送信中の
   状態を共有します。
+- Issue 詳細 sidebar の status shortcut には `Quick Action` の見出しを付けます。
+  backlog では `Ready`、ready では `Draft`、review では `Done` と赤色の Reject
+  split button を表示します。
 - `status-actions` は同じカード内の wrap-flex アクション行です。
 - `issue-description` は共有 markdown レンダラーを使い、line-height
   `1.65`、アンカー色 `--primary-black`、インライン画像に border を付けます。

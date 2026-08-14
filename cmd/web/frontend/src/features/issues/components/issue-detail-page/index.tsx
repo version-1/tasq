@@ -391,15 +391,16 @@ export function IssueDetailPage() {
 
     try {
       await handleMoveIssueReady(variant);
-      if (variant === "continue") {
-        await loadChangeRequests();
-      }
     } catch {
       setChangeRequestDialog({
         variant,
         initialBody: shortcut.body,
         initialRequestCreated: true,
       });
+      return;
+    }
+    if (variant === "continue") {
+      await loadChangeRequests();
     }
   }
 
@@ -507,10 +508,10 @@ export function IssueDetailPage() {
                     : undefined
                 }
                 onLoadMore={() => void loadComments(nextCursor ?? undefined)}
-                onContinueWithComment={(shortcut) => {
+                onContinueWithComment={async (shortcut) => {
                   setChangeRequestError("");
                   if (shortcut) {
-                    void handleChangeRequestShortcut("continue", shortcut);
+                    await handleChangeRequestShortcut("continue", shortcut);
                     return;
                   }
                   setChangeRequestDialog({ variant: "continue" });

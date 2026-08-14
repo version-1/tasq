@@ -226,6 +226,7 @@ const resources = {
           workspace: "Workspace",
         },
         detailPage: {
+          quickActions: "Quick Action",
           backToIssue: "Issue に戻る",
           backToList: "一覧に戻る",
           approvalRequest: "承認リクエスト",
@@ -826,6 +827,7 @@ const resources = {
           workspace: "Workspace",
         },
         detailPage: {
+          quickActions: "Quick Action",
           backToIssue: "Back to issue",
           backToList: "Back to list",
           approvalRequest: "Approval request",
