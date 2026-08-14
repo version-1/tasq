@@ -6,7 +6,7 @@ sidebar_position: 2
 
 # API
 
-The issue-tracker is the user-facing Tasq API. It owns project, issue, comment, attachment, workflow, and summary data.
+The issue-tracker is the user-facing Tasq API. It owns project, issue, artifact, comment, change-request, attachment, workflow, and summary data.
 
 ## Response Envelope
 
@@ -48,6 +48,11 @@ Error responses use:
 | `GET` | `/api/v1/issues/{issueId}/comments` | List comments. |
 | `POST` | `/api/v1/issues/{issueId}/comments` | Add a comment. |
 | `PATCH` | `/api/v1/comments/{id}` | Update a comment. |
+| `GET` | `/api/v1/issues/{issueId}/change-requests` | List change requests for an issue. |
+| `POST` | `/api/v1/issues/{issueId}/change-requests` | Create an open change request. |
+| `GET` | `/api/v1/change-requests/{id}` | Read a change request. |
+| `PATCH` | `/api/v1/change-requests/{id}` | Edit its body or perform an allowed status transition. |
+| `POST` | `/api/v1/change-requests/{id}/cancel` | Cancel an open or in-progress change request. |
 | `GET` | `/api/v1/attachments` | List attachments. |
 | `POST` | `/api/v1/attachments` | Upload an attachment. |
 | `GET` | `/api/v1/attachments/{id}/content` | Download attachment bytes. |
@@ -62,6 +67,12 @@ Comment listing supports `cursor` and `limit`. Attachment listing supports
 `entity_type` and `entity_id`.
 
 Issue responses always include an `artifacts` array, sorted by `type`, including `[]` when no artifacts exist. The initial `pull_request` artifact accepts only `data_value` on `PUT`; the server returns `type`, `data_type`, and `data_value`. `DELETE` returns an empty `204`. Invalid types or URLs return `400`; a missing issue or artifact returns `404`.
+
+Change requests capture additional work for a later agent run. Creation sets the status to `open`. Allowed transitions are `open` to `in_progress` or `canceled`, and `in_progress` to `resolved` or `canceled`. Resolved and canceled requests are immutable. Cancellation is a state transition; there is no physical delete endpoint.
+
+## Contract Sources
+
+The [issue-tracker OpenAPI document](https://github.com/version-1/tasq/blob/main/docs/openapi/issue-tracker.yml) and [orchestrator OpenAPI document](https://github.com/version-1/tasq/blob/main/docs/openapi/orchestrator.yml) define request parameters, bodies, responses, and error status codes. This page is the concise endpoint and behavior reference.
 
 ## Attachments
 

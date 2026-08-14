@@ -4,9 +4,9 @@ title: CLI Reference
 sidebar_position: 1
 ---
 
-# CLI Reference
+# CLI リファレンス
 
-`tq` は issue management、project setup、workflow configuration、local services、logs、migrations、Web UI のための command-line interface です。
+`tq` は、課題管理、プロジェクト設定、ワークフロー設定、API への直接アクセス、ローカルサービス、ログ、マイグレーション、Web UI、ターミナル UI を操作するコマンドラインインターフェースです。
 
 ## 全体の形式
 
@@ -14,37 +14,35 @@ sidebar_position: 1
 tq [--api-url URL] [--output text|json] <resource> <action> [flags]
 ```
 
-| Flag | Description |
+| フラグ | 説明 |
 | --- | --- |
-| `--api-url URL` | Issue-tracker API URL。environment と state discovery を override します。 |
-| `--output text\|json` | Output format。default は `text` です。 |
+| `--api-url URL` | Issue Tracker API の URL。環境変数と状態ファイルによる検出を上書きします。 |
+| `--output text\|json` | 出力形式。既定値は `text` です。 |
 
-API URL resolution order は `--api-url`、`TQ_API_URL`、`$TQ_HOME/system/state.json`、最後に `http://localhost:37651` です。
+API URL は `--api-url`、`TQ_API_URL`、`$TQ_HOME/system/state.json`、`http://localhost:37651` の順で解決します。
 
-## Issue Commands
+## 課題コマンド
 
-| Command | Purpose |
+| コマンド | 用途 |
 | --- | --- |
-| `tq issue list [--project <key>]` | issues を list します。任意で 1 project に scope できます。 |
-| `tq issue get <id>` | 1 つの issue を表示します。 |
-| `tq issue create --project <key> --title <title>` | issue を作成します。 |
-| `tq issue update <id> [flags]` | issue fields を更新します。 |
-| `tq issue watch [--interval <duration>] [--seen-ttl <duration>] [--verbose]` | ready な issue を polling し、JSON event envelopes を出力します。 |
-| `tq issue close <id>` | issue を `done` に移動します。 |
-| `tq issue cancel <id>` | issue を `failed` に移動します。 |
-| `tq issue ready <id>` | issue を `ready` に移動します。 |
-| `tq issue draft <id>` | issue を `backlog` に移動します。 |
-| `tq issue rename <id> <title>` | title を更新します。 |
-| `tq issue edit <id> <description>` | description を更新します。 |
+| `tq issue list [--project <key>]` | 課題を一覧表示します。プロジェクトを指定して絞り込めます。 |
+| `tq issue get <id>` | 1 件の課題を表示します。 |
+| `tq issue create --project <key> --title <title>` | 課題を作成します。 |
+| `tq issue update <id> [flags]` | 課題のフィールドを更新します。 |
+| `tq issue watch [--interval <duration>] [--seen-ttl <duration>] [--verbose]` | 実行可能な課題を定期取得し、JSON イベントを出力します。 |
+| `tq issue close <id>` | 課題を `done` に移動します。 |
+| `tq issue cancel <id>` | 課題を `cancelled` に移動します。 |
+| `tq issue ready <id>` | 課題を `ready` に移動します。 |
+| `tq issue draft <id>` | 課題を `backlog` に移動します。 |
+| `tq issue rename <id> <title>` | タイトルを更新します。 |
+| `tq issue edit <id> <description>` | 説明を更新します。 |
 
 create と update は、該当する場合に `--title`、`--description`、`--status`、
 `--priority`、`--assignee`、`--attach` を受け付けます。update では、依存関係を
 置き換える `--dependency <comma-separated-ids>` と、依存関係を削除する
 `--clear-dependencies` も指定できます。
 
-`tq issue watch` はエージェントの loop で使うことを想定しています。ready queue を
-読み、設定された seen TTL の間は同じ issue の出力を重複排除し、`issue-ready` event
-を出力します。一時的な API error が起きても polling を継続します。
+`tq issue watch` はエージェントのループ処理向けです。実行待ちキューを読み、設定された TTL の間は同じ課題を重複して出力せず、`issue-ready` イベントを出力します。一時的な API エラーが起きても取得を継続します。
 
 ## Artifact コマンド
 
@@ -55,30 +53,30 @@ create と update は、該当する場合に `--title`、`--description`、`--s
 
 どちらのコマンドも正の課題 ID と `--type` を必要とし、グローバルな text / JSON 出力モードに対応します。
 
-## Comment Commands
+## コメントコマンド
 
-| Command | Purpose |
+| コマンド | 用途 |
 | --- | --- |
-| `tq comment add <issue-id> --body <body>` | comment を追加します。 |
-| `tq comment list <issue-id>` | issue の comments を list します。 |
+| `tq comment add <issue-id> --body <body>` | コメントを追加します。 |
+| `tq comment list <issue-id>` | 課題のコメントを一覧表示します。 |
 
-許可される comment types は `progress`、`blocker`、`handoff`、`general` です。
+コメント種別には `progress`、`blocker`、`handoff`、`general` を指定できます。
 
-## Project and Workflow Commands
+## プロジェクトとワークフローのコマンド
 
-| Command | Purpose |
+| コマンド | 用途 |
 | --- | --- |
-| `tq project add [path] [--key <key>]` | repository を登録します。 |
-| `tq project remove [-y] <key>` | key 入力確認後に project を削除します。`-y` で prompt を skip できます。 |
-| `tq project check [key]` | project setup を validate します。 |
-| `tq project list` | registered projects を list します。 |
-| `tq workflow add --project <key> (--file <path> \| --body <text>)` | workflow override を保存します。 |
-| `tq workflow remove --project <key>` | stored override を削除します。 |
-| `tq workflow show --project <key> [--json]` | resolved workflow を表示します。 |
+| `tq project add [path] [--key <key>]` | リポジトリを登録します。 |
+| `tq project remove [-y] <key>` | キー入力による確認後にプロジェクトを削除します。`-y` で確認を省略できます。 |
+| `tq project check [key]` | プロジェクト設定を検証します。 |
+| `tq project list` | 登録済みプロジェクトを一覧表示します。 |
+| `tq workflow add --project <key> (--file <path> \| --body <text>)` | ワークフローの上書きを保存します。 |
+| `tq workflow remove --project <key>` | 保存済みの上書きを削除します。 |
+| `tq workflow show --project <key> [--json]` | 解決済みワークフローを表示します。 |
 
-## Runtime Commands
+## 実行環境のコマンド
 
-| Command | Purpose |
+| コマンド | 用途 |
 | --- | --- |
 | `tq service start` | issue-tracker、orchestrator、Web UI を起動します。 |
 | `tq service stop` | local services を停止します。 |
@@ -88,11 +86,34 @@ create と update は、該当する場合に `--title`、`--description`、`--s
 | `tq migrate down` | migrations を rollback します。 |
 | `tq migrate status` | migration status を表示します。 |
 | `tq web` | 実行中の Web UI を開きます。 |
-| `tq version` | version information を出力します。 |
-| `tq update [-y] [--tag <tag>]` | release を install し、databases を migrate して services を再起動します。 |
+| `tq tui` | 実験的な読み取り専用ターミナル UI を開きます。別名は `tq console` と `tq c` です。 |
+| `tq config` | ビルド、ホームディレクトリ、解決済み設定を表示します。 |
+| `tq version` | バージョン情報を出力します。 |
+| `tq update [-y] [--tag <tag>]` | リリースをインストールし、データベースを移行してサービスを再起動します。 |
 
-log service には `tracker` または `issue-tracker`、`orchestrator`、`web` を指定できます。
+ログ対象には `tracker` または `issue-tracker`、`orchestrator`、`web` を指定できます。
+
+`tq tui [--orchestrator-url URL]` はターミナルを必要とし、テキスト出力だけに対応します。課題、コメント、Artifact、実行状態を読み取りますが、変更リクエストは送信しません。`--orchestrator-url` を指定すると、`state.json` による orchestrator の検出を上書きできます。
+
+`tq config` は、バージョン、ビルドプロファイル、`TQ_HOME` の上書き、解決済みホームディレクトリ、設定ファイルのパス、解決済みの値を表示します。YAML の生データは表示しません。スクリプトではグローバルオプションの `--output json` を使用します。
 
 `tq update` は現在のバージョンと更新先のバージョンを表示し、ローカルサービスの停止と再起動が入ることを確認してから、既定では最新の正式リリースをインストールします。その後、新しくインストールされた `tq version` を確認し、マイグレーションを実行してサービスを起動します。`-y` は確認プロンプトを省略します。`--tag` は特定のリリースまたはプレリリースのタグをインストールします。
 
 具体的な手順とサービス停止時の注意事項は、[Tasq を更新する](pathname:///guides/update-tasq)を参照してください。
+
+## API 直接実行コマンド
+
+型付きコマンドがない Issue Tracker 操作には `tq api` を使用します。
+
+```sh
+tq api GET /api/v1/issues --query states=ready
+tq api POST /api/v1/issues --header 'X-Request-ID: local-123' --data @request.json
+```
+
+```text
+tq api <method> <path> [--query key=value] [--header 'Name: value'] [--data value|@file|-]
+```
+
+パスには許可リストに含まれる、エンコードされていない絶対 `/api/v1/...` パスを指定します。完全な URL、フラグメント、ドットセグメント、空セグメント、末尾のスラッシュは拒否されます。`--query` と `--header` は繰り返し指定できます。`--data` にはリテラル値、`@file`、または標準入力を表す `-` を指定でき、`POST`、`PUT`、`PATCH` でだけ使用できます。
+
+書き込みや削除の前に確認プロンプトは表示されず、リダイレクトにも追従しません。タイムアウトは 10 秒です。レスポンスのバイト列をそのまま出力するため、グローバルな `--output` は変換に使われません。終了コードは HTTP `2xx` で `0`、HTTP または通信エラーで `1`、使い方、入力、許可リストの検証エラーで `2` です。

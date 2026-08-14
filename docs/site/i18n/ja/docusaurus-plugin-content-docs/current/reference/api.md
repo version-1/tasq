@@ -4,25 +4,25 @@ title: API
 sidebar_position: 2
 ---
 
-# API
+# API リファレンス
 
-issue-tracker は user-facing Tasq API です。project、issue、comment、attachment、workflow、summary data を所有します。
+Issue Tracker は利用者向けの Tasq API です。プロジェクト、課題、Artifact、コメント、change request、添付ファイル、ワークフロー、サマリーのデータを所有します。
 
-## Response Envelope
+## レスポンス形式
 
-success responses は次を使います。
+成功時のレスポンスは次の形式です。
 
 ```json
 { "data": {}, "meta": {} }
 ```
 
-error responses は次を使います。
+エラー時のレスポンスは次の形式です。
 
 ```json
 { "error": { "code": "invalid_request", "message": "..." }, "meta": {} }
 ```
 
-## Issue-Tracker Endpoints
+## Issue Tracker エンドポイント
 
 | Method | Path | Purpose |
 | --- | --- | --- |
@@ -48,6 +48,11 @@ error responses は次を使います。
 | `GET` | `/api/v1/issues/{issueId}/comments` | comments を list します。 |
 | `POST` | `/api/v1/issues/{issueId}/comments` | comment を追加します。 |
 | `PATCH` | `/api/v1/comments/{id}` | comment を更新します。 |
+| `GET` | `/api/v1/issues/{issueId}/change-requests` | 課題の change request を一覧表示します。 |
+| `POST` | `/api/v1/issues/{issueId}/change-requests` | `open` 状態の change request を作成します。 |
+| `GET` | `/api/v1/change-requests/{id}` | change request を取得します。 |
+| `PATCH` | `/api/v1/change-requests/{id}` | 本文を編集するか、許可された状態遷移を行います。 |
+| `POST` | `/api/v1/change-requests/{id}/cancel` | `open` または `in_progress` の change request を取り消します。 |
 | `GET` | `/api/v1/attachments` | attachments を list します。 |
 | `POST` | `/api/v1/attachments` | attachment を upload します。 |
 | `GET` | `/api/v1/attachments/{id}/content` | attachment bytes を download します。 |
@@ -63,7 +68,13 @@ comment listing は `cursor` と `limit` を受け付けます。attachment list
 
 課題レスポンスには、Artifact がない場合も `[]` となる `artifacts` 配列が常に含まれ、`type` 昇順で返ります。初期の `pull_request` Artifact では、`PUT` に `data_value` だけを指定します。サーバーは `type`、`data_type`、`data_value` を返します。`DELETE` は本文のない `204` を返します。不正な type または URL は `400`、課題または Artifact が存在しない場合は `404` です。
 
-## Attachments
+change request は、後続のエージェント実行で対応する追加作業を記録します。作成時の状態は `open` です。許可される状態遷移は `open` から `in_progress` または `canceled`、`in_progress` から `resolved` または `canceled` です。`resolved` と `canceled` は変更できません。取り消しは状態遷移として扱われ、物理削除のエンドポイントはありません。
+
+## コントラクトの参照先
+
+[Issue Tracker の OpenAPI 文書](https://github.com/version-1/tasq/blob/main/docs/openapi/issue-tracker.yml)と [orchestrator の OpenAPI 文書](https://github.com/version-1/tasq/blob/main/docs/openapi/orchestrator.yml)が、リクエストパラメーター、本文、レスポンス、エラーステータスを定義します。このページはエンドポイントと動作の要約です。
+
+## 添付ファイル
 
 Attachment uploads は `entity_type`、`entity_id`、`file` を含む multipart form data を使います。supported image types は PNG、JPEG、GIF、WebP で、上限は 5 MiB です。
 
