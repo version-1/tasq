@@ -4,9 +4,9 @@ title: Schema
 sidebar_position: 4
 ---
 
-# Schema
+# スキーマリファレンス
 
-Tasq は create と update operations において store layer で entity data を validate します。この reference は clients が守るべき public field constraints を要約します。
+Tasq は作成・更新時に、ストア層でエンティティのデータを検証します。このページでは、クライアントが守るべき公開フィールドの制約を要約します。
 
 ## Issue Tracker Entities
 
@@ -15,6 +15,7 @@ Tasq は create と update operations において store layer で entity data �
 | Issue | `projectId`, `title` | title 1-500 chars、description max 10,000 chars、assignee max 200 chars、immutable project ownership |
 | Artifact | `type`, `dataType`, `dataValue` | 課題と type の組み合わせごとに 1 件。初期 type の `pull_request` は data type `url`。URL は前後の空白を除去し、絶対 HTTP(S) URL、host 必須、userinfo なし、UTF-8 で最大 4,096 bytes |
 | Comment | `issueId`, `author`, `body` | body 1-10,000 chars、type defaults to `general` |
+| ChangeRequest | `issueId`, `author`, `body` | 本文は 1〜10,000 文字で、`open` の間だけ編集可能。状態の既定値は `open`。終端状態では変更不可 |
 | Attachment | `entityType`, `entityId`, `file` | image PNG/JPEG/GIF/WebP、max 5 MiB |
 | Project | `key`, `name`, `location` | key format、name 1-200 chars、description max 10,000 chars、absolute location |
 | ProjectWorkflow | `projectId`, `frontmatter`, `body`, `checksum` | one workflow override per project、checksum は SHA256 hex |
@@ -36,6 +37,7 @@ Tasq は create と update operations において store layer で entity data �
 | Queue status | `backlog`, `pending`, `queued`, `processing`, `completed`, `inactive` |
 | Issue priority | `low`, `normal`, `high`, `urgent` |
 | Comment type | `progress`, `blocker`, `handoff`, `general` |
+| Change request status | `open`, `in_progress`, `resolved`, `canceled` |
 | Attachment entity type | `issue`, `comment` |
 | Artifact type | `pull_request` |
 | Artifact data type | `url` |
@@ -52,4 +54,8 @@ flowchart TD
   Payload[50,000 chars] --> JSON[runner event payload JSON]
 ```
 
-absolute path fields は `/` で始まる必要があります。`tq project add` のような clients は、target filesystem に access できる場合に local directory existence を確認します。
+絶対パスのフィールドは `/` で始まる必要があります。`tq project add` などのクライアントは、対象ファイルシステムへアクセスできる場合にローカルディレクトリの存在を確認します。
+
+## 状態遷移
+
+change request は `open` から `in_progress` または `canceled`、`in_progress` から `resolved` または `canceled` へ遷移できます。解決時には orchestrator の実行 ID と、同じ課題に属する結果コメントを記録できます。`resolved` と `canceled` は終端状態です。

@@ -4,15 +4,17 @@ title: Configuration
 sidebar_position: 3
 ---
 
-# Configuration
+# 設定リファレンス
 
-Tasq は machine-level configuration、runtime state、service logs、SQLite data の local home directory として `TQ_HOME` を使います。
+Tasq は、マシン単位の設定、実行状態、サービスログ、SQLite データを保存するローカルホームディレクトリとして `TQ_HOME` を使います。
 
-default では `TQ_HOME` は `~/.tasq` に解決されます。repository-local development では workspace directory に設定してください。
+既定では `TQ_HOME` は `~/.tasq` です。リポジトリ内で開発する場合は、ワークスペース内のディレクトリを指定してください。
 
 ```sh
 export TQ_HOME="$PWD/.tasq"
 ```
+
+開発用バイナリには、`dev` のような小文字のビルドプロファイルを埋め込めます。この場合、既定のホームは `~/.tasq-dev` になります。`TQ_HOME` を明示した場合は常にそちらが優先されます。`tq`、Issue Tracker、orchestrator、Web UI が同じ状態を検出できるよう、すべてのバイナリで同じプロファイルを使用してください。
 
 ## Directory Layout
 
@@ -32,7 +34,9 @@ $TQ_HOME/
         └── attachments/
 ```
 
-`config/` は user-editable です。`system/` は Tasq processes が管理します。
+`config/` は利用者が編集します。`system/` は Tasq のプロセスが管理します。
+
+`tq config` を実行すると、バージョン、ビルドプロファイル、`TQ_HOME` の上書き、解決済みホーム、設定ファイルのパス、解決済みの値を確認できます。機械可読な出力には `tq --output json config` を使用します。
 
 ## config.yaml
 

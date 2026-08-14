@@ -6,7 +6,7 @@ sidebar_position: 1
 
 # CLI Reference
 
-`tq` is the command-line interface for issue management, project setup, workflow configuration, local services, logs, migrations, and the Web UI.
+`tq` is the command-line interface for issue management, project setup, workflow configuration, raw API access, local services, logs, migrations, and the Web and terminal UIs.
 
 ## Global Form
 
@@ -31,7 +31,7 @@ API URL resolution order is `--api-url`, `TQ_API_URL`, `$TQ_HOME/system/state.js
 | `tq issue update <id> [flags]` | Update issue fields. |
 | `tq issue watch [--interval <duration>] [--seen-ttl <duration>] [--verbose]` | Poll ready issues and emit JSON event envelopes. |
 | `tq issue close <id>` | Move an issue to `done`. |
-| `tq issue cancel <id>` | Move an issue to `failed`. |
+| `tq issue cancel <id>` | Move an issue to `cancelled`. |
 | `tq issue ready <id>` | Move an issue to `ready`. |
 | `tq issue draft <id>` | Move an issue to `backlog`. |
 | `tq issue rename <id> <title>` | Update the title. |
@@ -88,12 +88,37 @@ Allowed comment types are `progress`, `blocker`, `handoff`, and `general`.
 | `tq migrate down` | Roll back migrations. |
 | `tq migrate status` | Show migration status. |
 | `tq web` | Open the running Web UI. |
+| `tq tui` | Open the experimental read-only terminal UI. Aliases: `tq console`, `tq c`. |
+| `tq config` | Show build, home-directory, and resolved configuration information. |
 | `tq version` | Print version information. |
 | `tq update [-y] [--tag <tag>]` | Install a release, migrate databases, and restart services. |
 
 Log services are `tracker` or `issue-tracker`, `orchestrator`, and `web`.
 
+`tq tui [--orchestrator-url URL]` requires a terminal and supports only text output. It reads issues, comments, artifacts, and run state without sending mutation requests. Use `--orchestrator-url` to override orchestrator discovery from `state.json`.
+
+`tq config` prints the version, build profile, `TQ_HOME` override, resolved home directory, configuration file path, and resolved values. It does not print the raw YAML. Use global `--output json` for scripts.
+
 `tq update` prints the current and target versions, confirms that local services will stop and restart, installs the latest formal release by default, verifies the newly installed `tq version`, runs migrations, and starts services. `-y` skips the confirmation prompt. `--tag` installs a specific release or prerelease tag.
+
+`tq update` is unavailable when the binary has a non-empty build profile such as `dev`, because generic release artifacts do not retain that profile.
 
 For step-by-step examples and service interruption guidance, see
 [Update Tasq](pathname:///guides/update-tasq).
+
+## Raw API Command
+
+Use `tq api` for an issue-tracker operation that has no typed command:
+
+```sh
+tq api GET /api/v1/issues --query states=ready
+tq api POST /api/v1/issues --header 'X-Request-ID: local-123' --data @request.json
+```
+
+```text
+tq api <method> <path> [--query key=value] [--header 'Name: value'] [--data value|@file|-]
+```
+
+The path must be an allowlisted, unencoded absolute `/api/v1/...` path. Complete URLs, fragments, dot segments, empty segments, and trailing slashes are rejected. `--query` and `--header` are repeatable. `--data` accepts a literal value, `@file`, or `-` for standard input and is available only for `POST`, `PUT`, and `PATCH`.
+
+The command does not prompt before writes or deletes, does not follow redirects, and times out after 10 seconds. Response bytes are written unchanged, so global `--output` does not transform them. Exit status is `0` for HTTP `2xx`, `1` for HTTP or transport failures, and `2` for invalid usage, input, or a request outside the allowlist.

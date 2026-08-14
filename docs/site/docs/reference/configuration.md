@@ -14,6 +14,8 @@ By default, `TQ_HOME` resolves to `~/.tasq`. For repository-local development, s
 export TQ_HOME="$PWD/.tasq"
 ```
 
+Development binaries may embed a lowercase build profile such as `dev`, which changes the default home to `~/.tasq-dev`. An explicit `TQ_HOME` always wins. All sibling executables must use the same profile so `tq`, issue-tracker, orchestrator, and Web UI discover the same state.
+
 ## Directory Layout
 
 ```text
@@ -33,6 +35,8 @@ $TQ_HOME/
 ```
 
 `config/` is user-editable. `system/` is managed by Tasq processes.
+
+Run `tq config` to inspect the version, build profile, `TQ_HOME` override, resolved home, configuration path, and resolved values. Use `tq --output json config` for machine-readable output.
 
 ## config.yaml
 
