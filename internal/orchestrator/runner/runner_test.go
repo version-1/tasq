@@ -726,6 +726,7 @@ func TestContinuationGuidanceIncludesChangeRequests(t *testing.T) {
 		"Otherwise, artifact registration is not required.",
 		"Before requesting approval for a command execution or file change",
 		"the command and working directory or the file paths",
+		"why the approval is required, and the expected effect",
 		"Never send an approval request with a null, empty, or vague reason",
 		"Change requests assigned to this continuation:",
 		"#1 by user: Update the tests.",
