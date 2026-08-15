@@ -13,10 +13,10 @@ The orchestrator resolves the Tasq CLI command from its build profile before dis
 | empty (production) | `tq` |
 | `dev` | `tqdev` |
 
-Any other profile is rejected. Both `tq service start` and standalone orchestrator startup require the selected command to resolve on `PATH`.
+Any other profile is rejected. Both the `service start` subcommand and standalone orchestrator startup require the selected command to resolve on `PATH`.
 
-When default task-work injection is enabled, development prompts add this guidance before the
-turn-specific text:
+On initial turns with default task-work injection enabled, development prompts add this guidance
+before the turn-specific text. Development continuation turns always add it.
 
 ```text
 Use the `tqdev` command instead of `tq`.
