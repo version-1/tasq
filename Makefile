@@ -71,7 +71,7 @@ build-tq-dev: ## Build tq and service binaries with the dev profile.
 	mkdir -p "$(HOME)/.tasq-dev/system/bin"
 	go build -ldflags "-X github.com/version-1/tasq/internal/buildinfo.commit=$(TQ_BUILD_COMMIT) -X github.com/version-1/tasq/internal/config.defaultHomeProfile=dev" -o ./tqdev ./cmd/tq
 	go build -o "$(HOME)/.tasq-dev/system/bin/issue-tracker" ./cmd/issue-tracker
-	go build -o "$(HOME)/.tasq-dev/system/bin/orchestrator" ./cmd/orchestrator
+	go build -ldflags "-X github.com/version-1/tasq/internal/config.defaultHomeProfile=dev" -o "$(HOME)/.tasq-dev/system/bin/orchestrator" ./cmd/orchestrator
 	go build -ldflags "-X github.com/version-1/tasq/internal/buildinfo.commit=$(TQ_BUILD_COMMIT)" -o "$(HOME)/.tasq-dev/system/bin/web" ./cmd/web
 
 .PHONY: deploy-tq-dev

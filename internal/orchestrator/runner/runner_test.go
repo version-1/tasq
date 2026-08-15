@@ -627,21 +627,21 @@ func TestRenderPromptInjectsTaskWorkPromptByDefault(t *testing.T) {
 	}
 }
 
-func TestRenderPromptUsesManagedServiceExecutable(t *testing.T) {
-	t.Setenv("TQ_EXECUTABLE", "/tmp/tqdev")
-	t.Setenv("TQ_MANAGED_RUN", "1")
-
+func TestRenderPromptUsesDevelopmentCommand(t *testing.T) {
 	prompt, err := renderPrompt(Task{
 		PromptTemplate: "Work on {{ issue.id }}.",
+		TasqCommand:    "tqdev",
 		Issue:          entity.Issue{ID: 7},
 	})
 	if err != nil {
 		t.Fatalf("render prompt: %v", err)
 	}
 	for _, want := range []string{
-		"Use `\"$TQ_EXECUTABLE\"` to keep the issue tracker synchronized",
-		`"$TQ_EXECUTABLE" issue update 7 --status in_progress`,
-		`"$TQ_EXECUTABLE" artifact set 7 --type pull_request <pr-url>`,
+		"Use the `tqdev` command instead of `tq`.",
+		"When using the `tasq-cli` skill, interpret every `tq` command as `tqdev`.",
+		"Use `tqdev` to keep the issue tracker synchronized",
+		`tqdev issue update 7 --status in_progress`,
+		`tqdev artifact set 7 --type pull_request <pr-url>`,
 	} {
 		if !strings.Contains(prompt, want) {
 			t.Fatalf("prompt missing %q: %q", want, prompt)
@@ -649,16 +649,13 @@ func TestRenderPromptUsesManagedServiceExecutable(t *testing.T) {
 	}
 }
 
-func TestRenderPromptIgnoresExecutableOutsideManagedRun(t *testing.T) {
-	t.Setenv("TQ_EXECUTABLE", "/tmp/stale-tqdev")
-	t.Setenv("TQ_MANAGED_RUN", "")
-
+func TestRenderPromptDefaultsToProductionCommand(t *testing.T) {
 	prompt, err := renderPrompt(Task{PromptTemplate: "Work on {{ issue.id }}.", Issue: entity.Issue{ID: 7}})
 	if err != nil {
 		t.Fatalf("render prompt: %v", err)
 	}
-	if strings.Contains(prompt, "TQ_EXECUTABLE") || !strings.Contains(prompt, "tq issue update 7 --status in_progress") {
-		t.Fatalf("prompt did not fall back to tq: %q", prompt)
+	if strings.Contains(prompt, "tqdev") || !strings.Contains(prompt, "tq issue update 7 --status in_progress") {
+		t.Fatalf("prompt did not use tq: %q", prompt)
 	}
 }
 
@@ -668,6 +665,7 @@ func TestRenderPromptSkipsTaskWorkPromptWhenDisabled(t *testing.T) {
 	prompt, err := renderPrompt(Task{
 		PromptTemplate: "Work on {{ issue.id }}.",
 		TaskWorkPrompt: boolPtr(false),
+		TasqCommand:    "tqdev",
 		Issue:          entity.Issue{ID: 7},
 	})
 	if err != nil {
@@ -676,7 +674,7 @@ func TestRenderPromptSkipsTaskWorkPromptWhenDisabled(t *testing.T) {
 	if prompt != "Work on 7." {
 		t.Fatalf("prompt = %q", prompt)
 	}
-	for _, unexpected := range []string{"Prefer typed `tq` commands", "tq api", "tq artifact set", "pull_request"} {
+	for _, unexpected := range []string{"tqdev", "Prefer typed `tq` commands", "tq api", "tq artifact set", "pull_request"} {
 		if strings.Contains(prompt, unexpected) {
 			t.Fatalf("disabled prompt contains %q: %q", unexpected, prompt)
 		}
@@ -745,15 +743,14 @@ func TestContinuationGuidanceIncludesChangeRequests(t *testing.T) {
 	}
 }
 
-func TestContinuationGuidanceUsesManagedServiceExecutable(t *testing.T) {
-	t.Setenv("TQ_EXECUTABLE", "/tmp/tqdev")
-	t.Setenv("TQ_MANAGED_RUN", "1")
-
-	prompt := continuationPrompt(Task{Issue: entity.Issue{ID: 7}})
+func TestContinuationGuidanceUsesDevelopmentCommand(t *testing.T) {
+	prompt := continuationPrompt(Task{TasqCommand: "tqdev", Issue: entity.Issue{ID: 7}})
 
 	for _, want := range []string{
-		`"$TQ_EXECUTABLE" issue update 7 --status in_progress`,
-		`"$TQ_EXECUTABLE" artifact set 7 --type pull_request <pr-url>`,
+		"Use the `tqdev` command instead of `tq`.",
+		"When using the `tasq-cli` skill, interpret every `tq` command as `tqdev`.",
+		`tqdev issue update 7 --status in_progress`,
+		`tqdev artifact set 7 --type pull_request <pr-url>`,
 	} {
 		if !strings.Contains(prompt, want) {
 			t.Fatalf("prompt missing %q: %q", want, prompt)

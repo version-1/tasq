@@ -115,7 +115,7 @@ make run-logs
 | `make install-tq version=v0.1.0` | 特定のリリースタグから `tq` と管理対象サービスの実行ファイルをインストールします。 |
 | `make install-tq-prerelease` | 最新の prerelease から `tq` と管理対象サービスの実行ファイルをインストールします。`gh` が必要です。 |
 | `make install-tq-prerelease version=v0.1.0-pre.1` | 特定の prerelease タグから `tq` と管理対象サービスの実行ファイルをインストールします。 |
-| `make build-tq-dev` | `dev` profile を埋め込んだ `tqdev` バイナリをカレントディレクトリに build します。 |
+| `make build-tq-dev` | `dev` プロファイルを埋め込んだ `tqdev` とサービスバイナリをビルドします。サービス起動前に `tqdev` を `PATH` へ配置する必要があります。 |
 | `make deploy-tq-dev` | `tqdev` のサービスを停止し、`build-tq-dev` を実行して、生成された `tqdev` バイナリを `$HOME/.local/bin` に移動した後、サービスを再起動します。 |
 | `make deploy-tq-dev ARGS=/path/to/bin` | 生成された `tqdev` バイナリを `$HOME/.local/bin` の代わりに指定したディレクトリへ配置します。 |
 

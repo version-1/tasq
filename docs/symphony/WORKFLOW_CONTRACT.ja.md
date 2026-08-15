@@ -98,10 +98,10 @@ front matter の閉じ `---` 以降がすべてプロンプトテンプレート
 #### Issue ステータス更新
 
 デフォルトでは、Tasq はエージェントに `{{ tq.command }}` が表す CLI command で progress comment と
-issue status update を行うよう指示を注入します。`tq service start` で起動した service は、起動元の
-CLI を `TQ_HOME` 配下の永続 managed executable へコピーし、その path を `TQ_EXECUTABLE` で継承します。そのため `tqdev` から起動した場合は、
-`PATH` 上で別の `tq` が先に見つかっても同じ `tqdev` executable を使い続けます。この環境契約を持たずに
-orchestrator を直接起動した場合は、後方互換性のため `tq` に fallback します。
+課題の状態を更新するよう指示を注入します。本番の Orchestrator ビルドではこのコマンドを `tq`、開発ビルドでは
+`tqdev` として展開し、`tasq-cli` スキル内の `tq` の例を `tqdev` へ読み替えるようエージェントへ指示します。
+選択されたコマンドは `PATH` から解決できる必要があります。見つからない場合、`tq service start` と Orchestrator の
+起動はどちらも課題を割り当てる前に失敗します。未対応のビルドプロファイルも、実行ファイル名を推測せずエラーになります。
 
 managed agent run は `TQ_MANAGED_RUN=1` も継承します。この文脈では、run を所有する orchestrator を
 終了させる可能性があるため、`tq update` と `tq service stop` は service state を変更する前に失敗します。
