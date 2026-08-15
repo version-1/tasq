@@ -100,12 +100,11 @@ interacting with the issue-tracker.
 #### Issue Status Updates
 
 By default, Tasq injects instructions that tell the agent to use the CLI command represented by
-`{{ tq.command }}` for progress comments and issue status updates. Services started by
-`tq service start` copy the starter into a persistent managed executable under `TQ_HOME` and
-inherit that path through `TQ_EXECUTABLE`; a
-`tqdev` starter therefore keeps using that same `tqdev` executable even if another `tq` appears
-earlier on `PATH`. Direct orchestrator launches without this environment contract fall back to
-`tq` for backward compatibility.
+`{{ tq.command }}` for progress comments and issue status updates. Production orchestrator builds
+render this command as `tq`, while development builds render it as `tqdev` and tell the agent to
+reinterpret `tq` examples in the `tasq-cli` skill as `tqdev`. The selected command must resolve on
+`PATH`; both `tq service start` and orchestrator startup fail before dispatch when it does not.
+Unsupported build profiles also fail instead of deriving an executable name.
 
 Managed agent runs also inherit `TQ_MANAGED_RUN=1`. In that context, `tq update` and
 `tq service stop` fail before changing service state because either command could terminate the

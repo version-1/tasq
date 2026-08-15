@@ -54,6 +54,51 @@ func TestDefaultHomeProfileRejectsInvalidValue(t *testing.T) {
 	}
 }
 
+func TestTasqCommandUsesBuildProfile(t *testing.T) {
+	tests := []struct {
+		name    string
+		profile string
+		want    string
+		wantErr bool
+	}{
+		{name: "production", profile: "", want: "tq"},
+		{name: "development", profile: "dev", want: "tqdev"},
+		{name: "unsupported", profile: "preview", wantErr: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			originalProfile := defaultHomeProfile
+			defaultHomeProfile = tt.profile
+			t.Cleanup(func() { defaultHomeProfile = originalProfile })
+
+			got, err := TasqCommand()
+			if tt.wantErr {
+				if err == nil {
+					t.Fatal("TasqCommand() error = nil")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("TasqCommand: %v", err)
+			}
+			if got != tt.want {
+				t.Fatalf("TasqCommand() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestValidateTasqCommandRequiresCommandOnPath(t *testing.T) {
+	originalProfile := defaultHomeProfile
+	defaultHomeProfile = "dev"
+	t.Cleanup(func() { defaultHomeProfile = originalProfile })
+	t.Setenv("PATH", t.TempDir())
+
+	if _, err := ValidateTasqCommand(); err == nil || !strings.Contains(err.Error(), `"tqdev"`) {
+		t.Fatalf("ValidateTasqCommand() error = %v", err)
+	}
+}
+
 func TestEnsureHomeCreatesLayout(t *testing.T) {
 	home := filepath.Join(t.TempDir(), ".tasq")
 	t.Setenv(EnvHome, home)

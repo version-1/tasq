@@ -49,6 +49,15 @@ Lifecycle:
 
 Template variables such as `{{ issue.id }}` are rendered after this prompt is prepended. Setting `tasq.task_work_prompt: false` disables this entire start prompt, including its tracker and artifact instructions; it does not change continuation behavior.
 
+Production builds render `{{ tq.command }}` as `tq`. Development builds render it as `tqdev` and prepend these two lines before the default task-work prompt:
+
+```text
+Use the `tqdev` command instead of `tq`.
+When using the `tasq-cli` skill, interpret every `tq` command as `tqdev`.
+```
+
+The development guidance is part of the default task-work prompt injection, so `tasq.task_work_prompt: false` disables it on the first turn as well.
+
 The approval-reason contract makes blocked approval comments actionable because the runner already preserves the app-server request payload. It instructs the agent to populate the request reason with the operation, target scope, necessity, and expected effect; it does not add runtime validation or change Tasq's approval-denial policy.
 
 The pull-request artifact represents the primary PR currently submitted for review. Setting it again replaces the prior URL, while supporting PRs remain handoff-comment context. Artifact registration is conditional on creating or updating a PR. A registration failure must be retried reasonably and, if unresolved, reported as a blocker without a transition to `review`.
@@ -63,6 +72,6 @@ The injected resume prompt is:
 First run `<tasq-command> issue update <issue-id> --status in_progress` to keep the issue tracker synchronized. Then continue the same task in this live thread without repeating completed work, and stop when it is ready for handoff. Before requesting approval for a command execution or file change, provide a non-empty, specific reason. The reason must identify what needs approval, the target scope (the command and working directory or the file paths), why approval is required, and the expected effect. Do not send a null, empty, or vague reason such as only saying that approval is required. If this continuation creates or updates a pull request, register the primary PR before handoff with `<tasq-command> artifact set <issue-id> --type pull_request <pr-url>`. On success, add the handoff comment, then move the issue to `review`; on failure, retry reasonably, then leave a blocker comment and do not move to `review` if it remains unresolved. Otherwise, artifact registration is not required.
 ```
 
-`<tasq-command>` uses `"$TQ_EXECUTABLE"` in managed runs and `tq` otherwise. `<issue-id>` is filled from the current task issue ID before the turn starts. The same continuation prompt is also used for later turns in an enabled multi-turn run. It is sent only when the runner's existing resume or later-turn conditions select a continuation turn; the runner does not add an extra turn when continuation is disabled. Assigned change-request guidance, when present, remains appended after this reminder.
+`<tasq-command>` uses `tq` in production builds and `tqdev` in development builds. Development continuations prepend the same two-line command and `tasq-cli` reinterpretation guidance shown above. `<issue-id>` is filled from the current task issue ID before the turn starts. The same continuation prompt is also used for later turns in an enabled multi-turn run. It is sent only when the runner's existing resume or later-turn conditions select a continuation turn; the runner does not add an extra turn when continuation is disabled. Assigned change-request guidance, when present, remains appended after this reminder.
 
 The same approval-reason contract is repeated here because resumed threads and later turns do not receive the full task-start prompt again.

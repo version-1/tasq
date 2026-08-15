@@ -56,6 +56,7 @@ type Dispatcher struct {
 	store             DispatchStore
 	runner            runner.Runner
 	workflowResolver  WorkflowResolver
+	tasqCommand       string
 	maxConcurrentRuns int
 
 	mu      sync.Mutex
@@ -70,6 +71,7 @@ type DispatcherConfig struct {
 	Store             DispatchStore
 	Runner            runner.Runner
 	WorkflowResolver  WorkflowResolver
+	TasqCommand       string
 	MaxConcurrentRuns int
 }
 
@@ -89,12 +91,16 @@ func NewDispatcher(config DispatcherConfig) (*Dispatcher, error) {
 	if config.MaxConcurrentRuns <= 0 {
 		return nil, errors.New("max concurrent runs must be positive")
 	}
+	if config.TasqCommand == "" {
+		config.TasqCommand = "tq"
+	}
 	runCtx, cancel := context.WithCancel(context.Background())
 	return &Dispatcher{
 		tracker:           config.Tracker,
 		store:             config.Store,
 		runner:            config.Runner,
 		workflowResolver:  config.WorkflowResolver,
+		tasqCommand:       config.TasqCommand,
 		maxConcurrentRuns: config.MaxConcurrentRuns,
 		claimed:           make(map[string]struct{}),
 		runCtx:            runCtx,
@@ -243,6 +249,7 @@ func (d *Dispatcher) taskForRun(ctx context.Context, storedRun run.Run, issue en
 		Workspace:      workspace.Workspace{Path: storedRun.Workspace, WorkspaceKey: issueIdentifier(storedRun.IssueID)},
 		PromptTemplate: definition.PromptTemplate,
 		TaskWorkPrompt: definition.Config.Tasq.TaskWorkPrompt,
+		TasqCommand:    d.tasqCommand,
 		ResumeThreadID: resumeThreadID,
 		ChangeRequests: changeRequests,
 		MaxTurns:       definition.Config.MaxTurns,

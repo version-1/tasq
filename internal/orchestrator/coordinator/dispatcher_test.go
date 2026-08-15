@@ -241,6 +241,7 @@ func TestDispatcherResolvesWorkflowForEachRunProject(t *testing.T) {
 		Store:             store,
 		Runner:            testRunner,
 		WorkflowResolver:  resolver,
+		TasqCommand:       "tqdev",
 		MaxConcurrentRuns: 2,
 	})
 	if err != nil {
@@ -260,9 +261,15 @@ func TestDispatcherResolvesWorkflowForEachRunProject(t *testing.T) {
 	if firstTask.TaskWorkPrompt == nil || *firstTask.TaskWorkPrompt {
 		t.Fatalf("first task task_work_prompt = %v", firstTask.TaskWorkPrompt)
 	}
+	if firstTask.TasqCommand != "tqdev" {
+		t.Fatalf("first task Tasq command = %q", firstTask.TasqCommand)
+	}
 	secondTask := tasks[43]
 	if secondTask.PromptTemplate != "Project B prompt" || secondTask.MaxTurns != 5 || secondTask.ContinueTurns || secondTask.Command != "codex app-server --project-b" {
 		t.Fatalf("second task workflow = %+v", secondTask)
+	}
+	if secondTask.TasqCommand != "tqdev" {
+		t.Fatalf("second task Tasq command = %q", secondTask.TasqCommand)
 	}
 }
 

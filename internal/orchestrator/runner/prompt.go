@@ -3,12 +3,9 @@ package runner
 import (
 	"errors"
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 	"time"
-
-	tqconfig "github.com/version-1/tasq/internal/config"
 )
 
 const approvalRequestGuidance = "Before requesting approval for a command execution or file change, provide a non-empty, specific reason. The reason must identify what needs approval, the target scope (the command and working directory or the file paths), why approval is required, and the expected effect. Do not send a null, empty, or vague reason such as only saying that approval is required."
@@ -50,7 +47,10 @@ const defaultTaskWorkPrompt = "Use `{{ tq.command }}` to keep the issue tracker 
 const continuationGuidance = "First run `%[1]s issue update %[2]d --status in_progress` to keep the issue tracker synchronized. Then continue the same task in this live thread without repeating completed work, and stop when it is ready for handoff. " + approvalRequestGuidance + " If this continuation creates or updates a pull request, register the primary PR before handoff with `%[1]s artifact set %[2]d --type pull_request <pr-url>`. On success, add the handoff comment, then move the issue to `review`; on failure, retry reasonably, then leave a blocker comment and do not move to `review` if it remains unresolved. Otherwise, artifact registration is not required."
 
 func continuationPrompt(task Task) string {
-	prompt := fmt.Sprintf(continuationGuidance, tasqCommand(), task.Issue.ID)
+	prompt := fmt.Sprintf(continuationGuidance, tasqCommand(task), task.Issue.ID)
+	if guidance := alternateTasqCommandGuidance(task); guidance != "" {
+		prompt = guidance + "\n\n" + prompt
+	}
 	changeRequestGuidance := changeRequestGuidanceForTask(task)
 	if changeRequestGuidance == "" {
 		return prompt
@@ -90,6 +90,9 @@ func renderPrompt(task Task) (string, error) {
 	}
 	if shouldInjectTaskWorkPrompt(task.TaskWorkPrompt) {
 		prompt = defaultTaskWorkPrompt + "\n\n" + prompt
+		if guidance := alternateTasqCommandGuidance(task); guidance != "" {
+			prompt = guidance + "\n\n" + prompt
+		}
 	}
 	if strings.Count(prompt, "{{") != strings.Count(prompt, "}}") {
 		return "", errors.New("template_parse_error: unbalanced template delimiters")
@@ -142,7 +145,7 @@ func templateVariables(task Task) map[string]string {
 		attempt = task.Attempt
 	}
 	return map[string]string{
-		"tq.command":        tasqCommand(),
+		"tq.command":        tasqCommand(task),
 		"issue.id":          strconv.FormatInt(task.Issue.ID, 10),
 		"issue.title":       task.Issue.Title,
 		"issue.description": task.Issue.Description,
@@ -155,9 +158,17 @@ func templateVariables(task Task) map[string]string {
 	}
 }
 
-func tasqCommand() string {
-	if os.Getenv(tqconfig.EnvManagedRun) == "1" && strings.TrimSpace(os.Getenv(tqconfig.EnvExecutable)) != "" {
-		return `"$TQ_EXECUTABLE"`
+func tasqCommand(task Task) string {
+	if task.TasqCommand != "" {
+		return task.TasqCommand
 	}
 	return "tq"
+}
+
+func alternateTasqCommandGuidance(task Task) string {
+	command := tasqCommand(task)
+	if command == "tq" {
+		return ""
+	}
+	return fmt.Sprintf("Use the `%[1]s` command instead of `tq`.\nWhen using the `tasq-cli` skill, interpret every `tq` command as `%[1]s`.", command)
 }

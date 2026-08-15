@@ -38,6 +38,10 @@ func main() {
 	if err != nil {
 		log.Fatalf("load TQ_HOME config: %v", err)
 	}
+	tasqCommand, err := tqconfig.ValidateTasqCommand()
+	if err != nil {
+		log.Fatalf("validate Tasq CLI command: %v", err)
+	}
 	resolvedDBPath := *dbPath
 	if resolvedDBPath == "" {
 		resolvedDBPath = tqconfig.OrchestratorDBPath(home)
@@ -80,6 +84,7 @@ func main() {
 			Store:             store,
 			Runner:            runner.CodexRunner{},
 			WorkflowResolver:  workflowResolver,
+			TasqCommand:       tasqCommand,
 			MaxConcurrentRuns: effectiveMaxConcurrentRuns,
 		})
 		if err != nil {

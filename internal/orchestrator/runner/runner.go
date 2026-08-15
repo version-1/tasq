@@ -22,6 +22,7 @@ type Task struct {
 	Workspace      workspace.Workspace
 	PromptTemplate string
 	TaskWorkPrompt *bool
+	TasqCommand    string
 	ResumeThreadID string
 	ChangeRequests []entity.ChangeRequest
 	MaxTurns       int

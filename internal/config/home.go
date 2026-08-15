@@ -4,13 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 )
 
 const (
 	EnvHome       = "TQ_HOME"
-	EnvExecutable = "TQ_EXECUTABLE"
 	EnvManagedRun = "TQ_MANAGED_RUN"
 )
 
@@ -27,6 +27,32 @@ func DefaultHomeProfile() (string, error) {
 		}
 	}
 	return profile, nil
+}
+
+func TasqCommand() (string, error) {
+	profile, err := DefaultHomeProfile()
+	if err != nil {
+		return "", err
+	}
+	switch profile {
+	case "":
+		return "tq", nil
+	case "dev":
+		return "tqdev", nil
+	default:
+		return "", fmt.Errorf("unsupported build profile %q for Tasq CLI command", profile)
+	}
+}
+
+func ValidateTasqCommand() (string, error) {
+	command, err := TasqCommand()
+	if err != nil {
+		return "", err
+	}
+	if _, err := exec.LookPath(command); err != nil {
+		return "", fmt.Errorf("resolve Tasq CLI command %q from PATH: %w", command, err)
+	}
+	return command, nil
 }
 
 func Home() (string, error) {
