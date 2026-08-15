@@ -578,6 +578,7 @@ export function IssueDetailPage() {
           onSuccess={() => {
             setChangeRequestError("");
             setIsResolveDialogOpen(false);
+            void loadChangeRequests();
           }}
         />
       ) : null}

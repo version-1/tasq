@@ -159,6 +159,18 @@ describe("IssueDetailPage", () => {
   it("shows Resolve as the blocked issue quick action", async () => {
     const user = userEvent.setup();
     api.fetchIssue.mockResolvedValueOnce({ ...issue, status: "blocked" });
+    api.fetchComments.mockResolvedValueOnce({
+      data: [{
+        id: 7,
+        issueId: 42,
+        author: "runner",
+        type: "blocker",
+        body: "Configure credentials before continuing.",
+        createdAt: "2026-06-21T03:00:00.000Z",
+      }],
+      meta: { cursor: 0, limit: 20, direction: "forward", nextCursor: null },
+    } satisfies CommentListResponse);
+    api.updateIssueStatus.mockResolvedValueOnce({ ...issue, status: "ready" });
 
     renderIssueDetail();
 
@@ -167,7 +179,17 @@ describe("IssueDetailPage", () => {
 
     await user.click(resolve);
 
-    expect(await screen.findByRole("dialog", { name: "Continue with comment #42" })).toBeInTheDocument();
+    const dialog = await screen.findByRole("dialog", { name: "Continue with comment #42" });
+    expect(await within(dialog).findByText("Configure credentials before continuing.")).toBeInTheDocument();
+    await user.type(
+      within(dialog).getByRole("textbox", { name: "Change request" }),
+      "Credentials are configured",
+    );
+    await user.click(within(dialog).getByRole("button", { name: "Continue with comment" }));
+
+    await waitFor(() => {
+      expect(api.fetchChangeRequests).toHaveBeenCalledWith(42, 100, { silent: true });
+    });
   });
 
   it("rejects a review issue with a change request", async () => {
