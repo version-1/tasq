@@ -35,6 +35,7 @@ import { IssueDescription } from "./issue-description";
 import { BasicInfoPanel } from "./basic-info-panel";
 import { RunsSection } from "./runs-section";
 import { ChangeRequestDialog } from "../change-request-dialog";
+import { ResolveIssueDialog } from "../resolve-issue-dialog";
 import type {
   ChangeRequestShortcut,
   ChangeRequestVariant,
@@ -88,6 +89,7 @@ export function IssueDetailPage() {
   const [isUpdatingDescription, setIsUpdatingDescription] = useState(false);
   const [changeRequestDialog, setChangeRequestDialog] =
     useState<ChangeRequestDialogState | null>(null);
+  const [isResolveDialogOpen, setIsResolveDialogOpen] = useState(false);
   const [changeRequestError, setChangeRequestError] = useState("");
 
   const updateSearchParams = useCallback(
@@ -477,6 +479,10 @@ export function IssueDetailPage() {
                       setChangeRequestDialog({ variant: "reject" });
                     }}
                     onRejectShortcut={(shortcut) => handleChangeRequestShortcut("reject", shortcut)}
+                    onResolveIssue={() => {
+                      setChangeRequestError("");
+                      setIsResolveDialogOpen(true);
+                    }}
                     onStatusChange={handleStatusChange}
                   />
                   <ArtifactsSection artifacts={issueState.issue.artifacts} />
@@ -556,6 +562,23 @@ export function IssueDetailPage() {
             }
           }}
           variant={changeRequestDialog.variant}
+        />
+      ) : null}
+      {issueState.kind === "ready" && isResolveDialogOpen ? (
+        <ResolveIssueDialog
+          error={changeRequestError}
+          isMovingIssue={isUpdatingStatus}
+          issueID={issueState.issue.id}
+          issueTitle={issueState.issue.title}
+          onCancel={() => {
+            setChangeRequestError("");
+            setIsResolveDialogOpen(false);
+          }}
+          onMoveIssueReady={() => handleMoveIssueReady("continue")}
+          onSuccess={() => {
+            setChangeRequestError("");
+            setIsResolveDialogOpen(false);
+          }}
         />
       ) : null}
     </div>

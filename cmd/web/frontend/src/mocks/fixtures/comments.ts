@@ -25,4 +25,12 @@ export const commentFixtures: Comment[] = [
     body: "Detail page comments are loaded through the generated issue-tracker client.",
     createdAt: "2026-06-01T04:20:00.000Z",
   },
+  {
+    id: 4,
+    issueId: 9,
+    author: "agent",
+    type: "blocker",
+    body: "GitHub credentials are not configured in the development environment.",
+    createdAt: "2026-06-01T09:15:00.000Z",
+  },
 ];

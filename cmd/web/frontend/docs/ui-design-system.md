@@ -404,11 +404,14 @@ must remain reusable.
 
 ### Button (`ui/button`)
 
-- Default primitive: `Button` renders a primary action button with
-  `--primary-black` background, white text, `40px` height, `6px` radius, and a
-  `0 16px` horizontal padding.
-- A companion `.splitButton` selector reuses the same look in a `40px` square
-  trailing chevron slot.
+- `Button` exposes `primary`, `positive`, `secondary`, and `tertiary` variants.
+  Primary uses a black fill, positive uses the ready-state green fill,
+  secondary uses a neutral outline, and tertiary uses muted text without a
+  visible border.
+- The default size is `40px` high with `0 16px` horizontal padding. The
+  `compact` size matches Issue Card quick actions at `32px` high with `0 12px`
+  horizontal padding.
+- Storybook exposes each variant independently and together for visual comparison.
 - The global `button` reset gives every other native button a neutral
   surface with `1px` border, `6px` radius, `8px 10px` padding, and a disabled
   state in `--muted`.
@@ -579,14 +582,14 @@ This is the recurring shape for `runs-section`, `comment-list`,
 - `8px` radius card with a heavier `0 12px 32px rgb(0 0 0 / 8%)` shadow.
 - Title row: `16px / 500` link plus a `32px` menu trigger.
 - Metric row: icon + value pairs separated by `1px` left border per metric.
-- Quick action button uses scoped variables (`--quick-action-bg`,
-  `--quick-action-border`, `--quick-action-text`) so each variant
-  (`quickAction-ready`, `quickAction-done`) only overrides colors.
+- Quick actions use the shared compact `Button`: Ready uses `positive`, Done
+  uses `primary`, and Resolve uses `secondary`.
 - A blocked card replaces the direct `Ready` transition with `Resolve`. The
-  action loads the latest blocker comment across all comment pages and opens a
-  continue-with-comment dialog. The blocker is read-only context; free text or
-  the built-in `Ok` / `Retry` shortcuts create the change request before the
-  issue moves to `ready`.
+  text-only neutral outlined button distinguishes this dialog-opening action
+  from the direct green `Ready` transition. The action loads the latest blocker
+  comment across all comment pages and opens a continue-with-comment dialog.
+  The blocker is read-only context; free text or the built-in `Ok` / `Retry`
+  shortcuts create the change request before the issue moves to `ready`.
 
 ### Issue Board
 
@@ -633,6 +636,8 @@ palette:
   content under `900px`.
 - `basic-info-panel` uses a one-column meta grid for issue ID, project,
   priority, status, assignee, created date, and updated date.
+- `artifacts-section` presents a pull request as a compact text link with a type
+  icon and an inline label, repository, and PR number reference.
 - `meta-item` renders each entry with a top rule, `12px` muted `dt`, normal
   weight `dd`, and `overflow-wrap: anywhere` for IDs.
 - `runs-section` wraps run rows in a single `8px` bordered group.
@@ -644,12 +649,14 @@ palette:
   opens the editor, while configured shortcuts submit their instruction body
   immediately. Shortcut labels and bodies are separate values so future
   configuration can keep compact labels for longer agent instructions.
-- Reject actions use a split button: the primary segment opens the editor and
-  the chevron segment opens the shortcut menu. Both segments share disabled
-  and submitting states.
+- Reject actions use a neutral secondary split button so they remain weaker
+  than the primary Done action. The main segment opens the editor and the
+  chevron segment opens the shortcut menu. Both segments share disabled and
+  submitting states.
 - The issue-detail sidebar labels its status shortcuts as `Quick Action`:
-  backlog shows `Ready`, ready shows `Draft`, and review shows `Done` together
-  with the red Reject split button.
+  backlog shows positive `Ready`, ready shows secondary `Draft`, and review
+  shows the secondary Reject split button before primary `Done`. Blocked issues
+  show secondary `Resolve`.
 - `status-actions` is a wrap-flex action row inside the same card.
 - `issue-description` uses the shared markdown renderer with `1.65` line
   height, anchor color `--primary-black`, and bordered inline images.

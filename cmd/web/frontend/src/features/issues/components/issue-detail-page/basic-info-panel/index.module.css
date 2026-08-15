@@ -18,9 +18,8 @@
 .quickActions h3 {
   color: var(--muted);
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 400;
   margin: 0;
-  text-transform: uppercase;
 }
 
 .panelActions {
@@ -28,28 +27,6 @@
   flex-wrap: wrap;
   gap: var(--space-2);
   justify-content: flex-end;
-}
-
-.quickActionButton {
-  block-size: 32px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  color: var(--primary-black);
-  font-size: 13px;
-  font-weight: 500;
-  line-height: 1;
-  padding: 0 12px;
-}
-
-.quickActionButton:hover:not(:disabled),
-.quickActionButton:focus-visible:not(:disabled) {
-  background: var(--surface-hover);
-}
-
-.quickActionButton:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
 }
 
 .metaGrid {

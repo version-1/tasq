@@ -112,7 +112,7 @@
 }
 
 .version {
-  align-self: flex-end;
+  align-self: flex-start;
   color: var(--medium-gray);
   font-size: 11px;
   line-height: 1;

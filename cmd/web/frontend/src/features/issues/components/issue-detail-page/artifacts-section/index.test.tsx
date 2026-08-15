@@ -27,6 +27,10 @@ describe("ArtifactsSection", () => {
       "rel",
       "noopener noreferrer",
     );
+    expect(screen.getByText("version-1/tasq #14")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Pull request" }).querySelector(".lucide-git-pull-request"),
+    ).toBeInTheDocument();
   });
 
   it("does not render an empty section when no pull request artifact exists", () => {
