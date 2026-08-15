@@ -115,7 +115,7 @@ make run-logs
 | `make install-tq version=v0.1.0` | Install `tq` and its managed service executables from a specific release tag. |
 | `make install-tq-prerelease` | Install `tq` and its managed service executables from the latest prerelease. Requires `gh`. |
 | `make install-tq-prerelease version=v0.1.0-pre.1` | Install `tq` and its managed service executables from a specific prerelease tag. |
-| `make build-tq-dev` | Build `tqdev` and service binaries with the `dev` profile. `tqdev` must be on `PATH` before starting services. |
+| `make build-tq-dev` | Build `tqdev` and the managed service binaries with the `dev` profile. `tqdev` must be on `PATH` before starting services. |
 | `make deploy-tq-dev` | Stop the `tqdev` services, run `build-tq-dev`, move the resulting `tqdev` binary to `$HOME/.local/bin`, and restart the services. |
 | `make deploy-tq-dev ARGS=/path/to/bin` | Deploy the resulting `tqdev` binary to the specified directory instead of `$HOME/.local/bin`. |
 

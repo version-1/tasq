@@ -43,7 +43,8 @@ hooks:
 
 `tasq.task_work_prompt` controls the default Tasq task-work instructions that the orchestrator
 prepends to the rendered agent prompt. It defaults to `true` when omitted. Set it to `false` only
-when the workflow template provides its own issue-tracker synchronization instructions.
+when the workflow template provides its own issue-tracker synchronization instructions. See
+[System Prompts](../design/system-prompts.md) for the exact injected text and continuation behavior.
 
 Relative `workspace.root` values resolve relative to the selected workflow file. Environment
 variable indirection and `~` expansion are supported for path fields.
@@ -75,8 +76,8 @@ Because front matter is YAML, multiline hook scripts can use literal block scala
 
 Everything after the closing `---` of the front matter is the prompt template. The orchestrator
 renders it once per agent attempt and sends the result as the initial message to the coding agent.
-When `tasq.task_work_prompt` is omitted or `true`, the orchestrator prepends the default `tq`
-issue-tracker synchronization instructions before template variable expansion, so variables such as
+When `tasq.task_work_prompt` is omitted or `true`, the orchestrator prepends the default Tasq
+task-work instructions before template variable expansion, so variables such as
 `{{ issue.id }}` are rendered inside both the default instructions and the workflow template.
 
 ### Available Variables
@@ -87,7 +88,7 @@ issue-tracker synchronization instructions before template variable expansion, s
 | `{{ issue.title }}`      | string | Issue title                                       |
 | `{{ issue.description }}`| string | Issue description body                            |
 | `{{ attempt }}`          | int    | Attempt number (0 for first run, >=1 for retries) |
-| `{{ tq.command }}`       | string | CLI command inherited from the service starter    |
+| `{{ tq.command }}`       | string | `tq` for production builds or `tqdev` for development builds |
 
 Variables are replaced by simple string substitution. Unrecognized `{{ ... }}` tokens are left
 as-is.
@@ -97,22 +98,16 @@ as-is.
 A prompt template should tell the agent **what to do** and **what tools are available** for
 interacting with the issue-tracker.
 
-#### Issue Status Updates
+#### Tracker Synchronization
 
-By default, Tasq injects instructions that tell the agent to use the CLI command represented by
-`{{ tq.command }}` for progress comments and issue status updates. Production orchestrator builds
-render this command as `tq`, while development builds render it as `tqdev` and tell the agent to
-reinterpret `tq` examples in the `tasq-cli` skill as `tqdev`. The selected command must resolve on
-`PATH`; both `tq service start` and orchestrator startup fail before dispatch when it does not.
-Unsupported build profiles also fail instead of deriving an executable name.
+The default task-work prompt covers progress comments, issue status updates, PR artifact
+registration, and handoff. Workflow authors should not repeat those instructions in the project
+template.
 
-Managed agent runs also inherit `TQ_MANAGED_RUN=1`. In that context, `tq update` and
-`tq service stop` fail before changing service state because either command could terminate the
-orchestrator that owns the run. Run lifecycle and update commands from a user shell instead.
-
-Workflow authors normally do not need to repeat these `tq` instructions in the prompt template. If
-`tasq.task_work_prompt` is set to `false`, the workflow template is responsible for providing
-equivalent issue-tracker synchronization guidance.
+Managed agent runs also inherit `TQ_MANAGED_RUN=1`. In that context, the `update` and
+`service stop` subcommands fail before changing service state because either operation could
+terminate the orchestrator that owns the run. Run lifecycle and update commands from a user shell
+instead.
 
 #### Deliverables
 
