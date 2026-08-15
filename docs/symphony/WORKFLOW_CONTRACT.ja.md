@@ -43,7 +43,8 @@ hooks:
 
 `tasq.task_work_prompt` は、orchestrator がレンダリング済みのエージェントプロンプトの先頭に追加する
 Tasq の既定の作業指示を制御します。省略時の既定値は `true` です。ワークフローテンプレートが
-独自の issue-tracker 同期指示を提供する場合にのみ `false` に設定してください。
+独自の Issue Tracker 同期指示を提供する場合にのみ `false` に設定してください。注入する正確な文言と
+継続時の動作は、[システムプロンプト](../design/system-prompts.ja.md)を参照してください。
 
 `workspace.root` の相対パスは、選択されたワークフローファイルからの相対パスとして解決されます。
 path フィールドでは環境変数の間接参照と `~` 展開がサポートされています。
@@ -86,7 +87,7 @@ front matter の閉じ `---` 以降がすべてプロンプトテンプレート
 | `{{ issue.title }}`      | string | 課題タイトル                                   |
 | `{{ issue.description }}`| string | 課題説明本文                                   |
 | `{{ attempt }}`          | int    | attempt 番号（初回は 0、リトライは 1 以上）         |
-| `{{ tq.command }}`       | string | service 起動元から継承した CLI command         |
+| `{{ tq.command }}`       | string | 本番ビルドでは `tq`、開発ビルドでは `tqdev`   |
 
 変数は単純な文字列置換で展開されます。認識されない `{{ ... }}` トークンはそのまま残ります。
 
@@ -95,21 +96,11 @@ front matter の閉じ `---` 以降がすべてプロンプトテンプレート
 プロンプトテンプレートには、エージェントに **何をすべきか** と、issue-tracker とやり取りするための
 **利用可能なツール** を記述します。
 
-#### Issue ステータス更新
+#### Issue Tracker の同期
 
-デフォルトでは、Tasq はエージェントに `{{ tq.command }}` が表す CLI command で progress comment と
-課題の状態を更新するよう指示を注入します。本番の Orchestrator ビルドではこのコマンドを `tq`、開発ビルドでは
-`tqdev` として展開し、`tasq-cli` スキル内の `tq` の例を `tqdev` へ読み替えるようエージェントへ指示します。
-選択されたコマンドは `PATH` から解決できる必要があります。見つからない場合、`tq service start` と Orchestrator の
-起動はどちらも課題を割り当てる前に失敗します。未対応のビルドプロファイルも、実行ファイル名を推測せずエラーになります。
+既定のタスク作業プロンプトには、進捗コメント、課題の状態更新、PR Artifact の登録、ハンドオフに関する指示が含まれます。ワークフロー作成者は、これらの指示をプロジェクトのテンプレートで繰り返さないでください。
 
-managed agent run は `TQ_MANAGED_RUN=1` も継承します。この文脈では、run を所有する orchestrator を
-終了させる可能性があるため、`tq update` と `tq service stop` は service state を変更する前に失敗します。
-service lifecycle command と update command は user shell から実行してください。
-
-ワークフロー作成者は通常、これらの `tq` 指示をプロンプトテンプレートで繰り返す必要はありません。
-`tasq.task_work_prompt` を `false` に設定した場合、ワークフローテンプレート側で同等の issue-tracker
-同期ガイダンスを提供する責任があります。
+管理下のエージェント実行は `TQ_MANAGED_RUN=1` も継承します。この実行中に `tq update` または `tq service stop` を呼ぶと、実行を所有するオーケストレーターを終了させる可能性があるため、サービス状態を変更する前に失敗します。サービスのライフサイクル操作と更新は、ユーザーのシェルから実行してください。
 
 #### 成果物
 
