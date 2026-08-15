@@ -80,7 +80,7 @@ deploy-tq-dev: ## Stop services, build tqdev, deploy it, and restart services. U
 	$(MAKE) build-tq-dev
 	mkdir -p "$(if $(strip $(ARGS)),$(ARGS),$(HOME)/.local/bin)"
 	mv ./tqdev "$(if $(strip $(ARGS)),$(ARGS),$(HOME)/.local/bin)/tqdev"
-	tqdev service start
+	"$(if $(strip $(ARGS)),$(ARGS),$(HOME)/.local/bin)/tqdev" service start
 
 .PHONY: dev-check
 dev-check:
