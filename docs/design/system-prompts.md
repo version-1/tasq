@@ -15,7 +15,8 @@ The orchestrator resolves the Tasq CLI command from its build profile before dis
 
 Any other profile is rejected. Both `tq service start` and standalone orchestrator startup require the selected command to resolve on `PATH`.
 
-Development prompts add this guidance before the turn-specific text:
+When default task-work injection is enabled, development prompts add this guidance before the
+turn-specific text:
 
 ```text
 Use the `tqdev` command instead of `tq`.

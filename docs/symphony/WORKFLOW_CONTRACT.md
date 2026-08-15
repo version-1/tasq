@@ -76,8 +76,8 @@ Because front matter is YAML, multiline hook scripts can use literal block scala
 
 Everything after the closing `---` of the front matter is the prompt template. The orchestrator
 renders it once per agent attempt and sends the result as the initial message to the coding agent.
-When `tasq.task_work_prompt` is omitted or `true`, the orchestrator prepends the default `tq`
-issue-tracker synchronization instructions before template variable expansion, so variables such as
+When `tasq.task_work_prompt` is omitted or `true`, the orchestrator prepends the default Tasq
+task-work instructions before template variable expansion, so variables such as
 `{{ issue.id }}` are rendered inside both the default instructions and the workflow template.
 
 ### Available Variables
@@ -104,9 +104,10 @@ The default task-work prompt covers progress comments, issue status updates, PR 
 registration, and handoff. Workflow authors should not repeat those instructions in the project
 template.
 
-Managed agent runs also inherit `TQ_MANAGED_RUN=1`. In that context, `tq update` and
-`tq service stop` fail before changing service state because either command could terminate the
-orchestrator that owns the run. Run lifecycle and update commands from a user shell instead.
+Managed agent runs also inherit `TQ_MANAGED_RUN=1`. In that context, the `update` and
+`service stop` subcommands fail before changing service state because either operation could
+terminate the orchestrator that owns the run. Run lifecycle and update commands from a user shell
+instead.
 
 #### Deliverables
 
