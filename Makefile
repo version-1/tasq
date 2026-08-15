@@ -34,7 +34,7 @@ help: ## Show target prefixes and available targets.
 	@printf "  run-*  Processes and commands that run inside the dev container.\n"
 	@printf "\nGeneral:\n"
 	@awk 'BEGIN {FS = ":.*## "}; /^help:.*## / {printf "%-28s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
-	@awk 'BEGIN {FS = ":.*## "}; /^build-[a-zA-Z0-9_-]+:.*## / {printf "%-28s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+	@awk 'BEGIN {FS = ":.*## "}; /^(build|deploy)-[a-zA-Z0-9_-]+:.*## / {printf "%-28s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 	@printf "\ndev-* targets:\n"
 	@awk 'BEGIN {FS = ":.*## "}; /^dev-[a-zA-Z0-9_-]+:.*## / {printf "%-28s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 	@printf "\ndc-* targets:\n"
@@ -73,6 +73,14 @@ build-tq-dev: ## Build tq and service binaries with the dev profile.
 	go build -o "$(HOME)/.tasq-dev/system/bin/issue-tracker" ./cmd/issue-tracker
 	go build -o "$(HOME)/.tasq-dev/system/bin/orchestrator" ./cmd/orchestrator
 	go build -ldflags "-X github.com/version-1/tasq/internal/buildinfo.commit=$(TQ_BUILD_COMMIT)" -o "$(HOME)/.tasq-dev/system/bin/web" ./cmd/web
+
+.PHONY: deploy-tq-dev
+deploy-tq-dev: ## Stop services, build tqdev, deploy it, and restart services. Usage: make deploy-tq-dev [ARGS=/path/to/bin]
+	tqdev service stop
+	$(MAKE) build-tq-dev
+	mkdir -p "$(if $(strip $(ARGS)),$(ARGS),$(HOME)/.local/bin)"
+	mv ./tqdev "$(if $(strip $(ARGS)),$(ARGS),$(HOME)/.local/bin)/tqdev"
+	tqdev service start
 
 .PHONY: dev-check
 dev-check:
