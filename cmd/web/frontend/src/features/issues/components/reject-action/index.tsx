@@ -5,6 +5,7 @@ import {
   ContextMenuGroupLabel,
   ContextMenuItem,
 } from "@/components/ui/context-menu";
+import { Button } from "@/components/ui/button";
 import { IconProxy } from "@/components/ui/icon-proxy";
 import {
   builtInChangeRequestShortcuts,
@@ -41,14 +42,15 @@ export function RejectAction({
 
   return (
     <div className={styles.splitButton}>
-      <button
+      <Button
         className={styles.primaryButton}
         disabled={isDisabled}
-        type="button"
+        size="compact"
+        variant="secondary"
         onClick={onOpenDialog}
       >
         {t("issues.reject.action")}
-      </button>
+      </Button>
       <ContextMenu
         id={menuID}
         isOpen={isMenuOpen}

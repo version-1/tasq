@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useEffect, useRef, useState } from "react";
+import { Button, type ButtonVariant } from "@/components/ui/button";
 import { IconProxy } from "@/components/ui/icon-proxy";
 import type { Issue, IssueStatus, IssueSummary } from "@/lib/types";
 import { issueStatuses } from "@/lib/types";
@@ -19,6 +20,7 @@ export function BasicInfoPanel({
   issueOptions = [],
   onRejectIssue,
   onRejectShortcut,
+  onResolveIssue,
   onStatusChange,
 }: {
   disabled: boolean;
@@ -26,12 +28,14 @@ export function BasicInfoPanel({
   issueOptions?: IssueSummary[];
   onRejectIssue?: () => void;
   onRejectShortcut?: (shortcut: ChangeRequestShortcut) => Promise<void>;
+  onResolveIssue?: () => void;
   onStatusChange: (status: IssueStatus) => Promise<void>;
 }) {
   const { t } = useTranslation();
   const dependencyIssues = dependencyIssueLinks(issue.dependency_ids, issueOptions);
   const quickStatusAction = quickStatusActionFor(issue.status);
   const canReject = issue.status === "review" && onRejectIssue && onRejectShortcut;
+  const canResolve = issue.status === "blocked" && onResolveIssue;
 
   return (
     <section className={styles.panel}>
@@ -69,26 +73,31 @@ export function BasicInfoPanel({
         <MetaItem label={t("issues.detailPage.createdAt")} value={formatDateTime(issue.createdAt)} />
         <MetaItem label={t("issues.detailPage.updatedAt")} value={formatDateTime(issue.updatedAt)} />
       </dl>
-      {quickStatusAction || canReject ? (
+      {quickStatusAction || canReject || canResolve ? (
         <div className={styles.quickActions}>
           <h3>{t("issues.detailPage.quickActions")}</h3>
           <div className={styles.panelActions}>
-            {quickStatusAction ? (
-              <button
-                className={styles.quickActionButton}
-                disabled={disabled}
-                type="button"
-                onClick={() => void onStatusChange(quickStatusAction.status)}
-              >
-                {t(quickStatusAction.labelKey)}
-              </button>
-            ) : null}
             {canReject ? (
               <RejectAction
                 disabled={disabled}
                 onOpenDialog={onRejectIssue}
                 onSelectShortcut={onRejectShortcut}
               />
+            ) : null}
+            {quickStatusAction ? (
+              <Button
+                disabled={disabled}
+                size="compact"
+                variant={quickStatusAction.variant}
+                onClick={() => void onStatusChange(quickStatusAction.status)}
+              >
+                {t(quickStatusAction.labelKey)}
+              </Button>
+            ) : null}
+            {canResolve ? (
+              <Button disabled={disabled} size="compact" variant="secondary" onClick={onResolveIssue}>
+                {t("issues.resolve.action")}
+              </Button>
             ) : null}
           </div>
         </div>
@@ -100,10 +109,17 @@ export function BasicInfoPanel({
 function quickStatusActionFor(status: IssueStatus): {
   status: IssueStatus;
   labelKey: "statuses.ready" | "issues.board.draft" | "statuses.done";
+  variant: ButtonVariant;
 } | null {
-  if (status === "backlog") return { status: "ready", labelKey: "statuses.ready" };
-  if (status === "ready") return { status: "backlog", labelKey: "issues.board.draft" };
-  if (status === "review") return { status: "done", labelKey: "statuses.done" };
+  if (status === "backlog") {
+    return { status: "ready", labelKey: "statuses.ready", variant: "positive" };
+  }
+  if (status === "ready") {
+    return { status: "backlog", labelKey: "issues.board.draft", variant: "secondary" };
+  }
+  if (status === "review") {
+    return { status: "done", labelKey: "statuses.done", variant: "primary" };
+  }
   return null;
 }
 

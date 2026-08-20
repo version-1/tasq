@@ -282,4 +282,30 @@ If a project key is unknown, the board should not fall back to all issues; it sh
     createdAt: "2026-06-01T08:00:00.000Z",
     updatedAt: "2026-06-01T08:00:00.000Z",
   },
+  {
+    id: 9,
+    projectId: 1,
+    projectKey: "tasq",
+    title: "Resume agent after credentials are configured",
+    description: `## Goal
+
+Exercise the blocked issue card and its Resolve flow in the standalone mock UI.
+
+### Blocker
+
+The agent cannot continue until the required GitHub credentials are available in the development environment.
+
+### Manual checks
+
+- Confirm the card appears in the blocked section of the board.
+- Open Resolve and verify the latest blocker comment is shown as context.
+- Submit a response and confirm the issue moves to Ready.`,
+    status: "blocked",
+    priority: "high",
+    assignee: "agent",
+    dependency_ids: [],
+    artifacts: [],
+    createdAt: "2026-06-01T09:00:00.000Z",
+    updatedAt: "2026-06-01T09:15:00.000Z",
+  },
 ];

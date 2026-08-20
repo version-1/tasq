@@ -2,13 +2,12 @@
   display: inline-flex;
 }
 
-.primaryButton,
 .menuButton {
   align-items: center;
   block-size: 32px;
-  background: var(--danger);
-  border: 1px solid var(--danger);
-  color: var(--white);
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--primary-black);
   display: inline-flex;
   font-size: 13px;
   font-weight: 500;
@@ -18,7 +17,6 @@
 
 .primaryButton {
   border-radius: var(--radius-sm) 0 0 var(--radius-sm);
-  padding: 0 12px;
 }
 
 .menuButton {
@@ -31,12 +29,14 @@
 .primaryButton:focus-visible:not(:disabled),
 .menuButton:hover:not(:disabled),
 .menuButton:focus-visible:not(:disabled) {
-  background: var(--danger-text, #9f1d1d);
+  background: var(--surface-hover);
+  color: var(--primary-black);
+  opacity: 1;
 }
 
 .primaryButton:focus-visible,
 .menuButton:focus-visible {
-  outline: 2px solid var(--danger);
+  outline: 2px solid var(--primary-black);
   outline-offset: 2px;
 }
 

@@ -9,6 +9,7 @@ import {
   ContextMenuItem,
   ContextMenuSeparator,
 } from "@/components/ui/context-menu";
+import { Button, type ButtonVariant } from "@/components/ui/button";
 import { IconProxy, type IconProxyName } from "@/components/ui/icon-proxy";
 import { toast } from "@/lib/toast";
 import { PriorityBadge } from "@/features/issues/components/priority-badge";
@@ -233,18 +234,17 @@ export function IssueCard({
               />
             ) : null}
             {canResolve ? (
-              <button
-                className={quickActionClassName("ready")}
-                type="button"
+              <Button
+                size="compact"
+                variant="secondary"
                 onClick={() => onResolveIssue(issue.id)}
               >
                 {t("issues.resolve.action")}
-                <IconProxy className={styles.quickActionIcon} name="arrow-right" size={14} strokeWidth={2.4} />
-              </button>
+              </Button>
             ) : quickStatusTarget ? (
-              <button
-                className={quickActionClassName(quickStatusTarget)}
-                type="button"
+              <Button
+                size="compact"
+                variant={quickActionVariant(quickStatusTarget)}
                 onClick={() => {
                   void onStatusChange(issue.id, quickStatusTarget);
                 }}
@@ -253,7 +253,7 @@ export function IssueCard({
                 {quickActionShowsIcon(quickStatusTarget) ? (
                   <IconProxy className={styles.quickActionIcon} name="arrow-right" size={14} strokeWidth={2.4} />
                 ) : null}
-              </button>
+              </Button>
             ) : null}
           </div>
         ) : null}
@@ -295,8 +295,8 @@ function statusIconClassName(status: IssueStatus): string {
   return styles.statusIconMuted;
 }
 
-function quickActionClassName(status: IssueStatus): string {
-  return `${styles.quickActionButton} ${styles[`quickAction-${status}`]}`;
+function quickActionVariant(status: IssueStatus): ButtonVariant {
+  return status === "ready" ? "positive" : "primary";
 }
 
 function quickActionShowsIcon(status: IssueStatus): boolean {

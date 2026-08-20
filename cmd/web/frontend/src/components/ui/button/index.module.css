@@ -1,22 +1,68 @@
-.primaryButton,
-.splitButton {
-  background: var(--primary-black);
-  border-color: var(--primary-black);
-  color: var(--white);
-  height: 40px;
+.button {
+  align-items: center;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: inline-flex;
+  flex-shrink: 0;
+  font-weight: 500;
+  justify-content: center;
+  line-height: 1;
 }
 
-.primaryButton {
-  align-items: center;
-  border-radius: var(--radius-sm);
-  display: inline-flex;
+.default {
+  block-size: 40px;
+  font-size: 14px;
   gap: var(--space-2);
   padding: var(--space-0) var(--space-4);
 }
 
-.splitButton {
-  border-left-color: var(--dark-gray);
-  border-radius: var(--space-0) var(--radius-sm) var(--radius-sm) var(--space-0);
-  margin-left: calc(var(--space-2) * -1);
-  width: 40px;
+.compact {
+  block-size: 32px;
+  font-size: 13px;
+  gap: 6px;
+  padding: var(--space-0) var(--space-3);
+}
+
+.primary {
+  background: var(--primary-black);
+  border-color: var(--primary-black);
+  color: var(--white);
+}
+
+.positive {
+  background: var(--status-ready-text);
+  border-color: var(--status-ready-text);
+  color: var(--white);
+}
+
+.secondary {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--primary-black);
+}
+
+.tertiary {
+  background: transparent;
+  border-color: transparent;
+  color: var(--muted);
+}
+
+.button:hover:not(:disabled),
+.button:focus-visible:not(:disabled) {
+  opacity: 0.9;
+}
+
+.secondary:hover:not(:disabled),
+.secondary:focus-visible:not(:disabled),
+.tertiary:hover:not(:disabled),
+.tertiary:focus-visible:not(:disabled) {
+  background: var(--surface-hover);
+  color: var(--primary-black);
+  opacity: 1;
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }

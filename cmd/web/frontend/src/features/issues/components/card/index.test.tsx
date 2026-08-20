@@ -3,6 +3,7 @@ import { QueryClientProvider, type QueryClient } from "@tanstack/react-query";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import buttonStyles from "@/components/ui/button/index.module.css";
 import * as api from "@/lib/api";
 import { createAppQueryClient } from "@/lib/query-client";
 import { toastStore } from "@/lib/toast";
@@ -247,6 +248,7 @@ describe("IssueCard", () => {
     const quickAction = screen.getByRole("button", { name: "Ready" });
 
     expect(quickAction).toHaveTextContent("Ready");
+    expect(quickAction).toHaveClass(buttonStyles.positive, buttonStyles.compact);
     expect(quickAction.querySelector("svg")).toBeInTheDocument();
     await user.click(quickAction);
 
@@ -263,6 +265,9 @@ describe("IssueCard", () => {
     });
 
     const quickAction = screen.getByRole("button", { name: "Resolve" });
+
+    expect(quickAction).toHaveClass(buttonStyles.secondary, buttonStyles.compact);
+    expect(quickAction.querySelector("svg")).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", {
       name: "Issue actions for Wire issue board to generated client",
@@ -292,6 +297,7 @@ describe("IssueCard", () => {
     const quickAction = screen.getByRole("button", { name: "Done" });
 
     expect(quickAction).toHaveTextContent("Done");
+    expect(quickAction).toHaveClass(buttonStyles.primary, buttonStyles.compact);
     expect(quickAction.querySelector("svg")).not.toBeInTheDocument();
     await user.click(quickAction);
 

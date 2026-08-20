@@ -2,6 +2,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import buttonStyles from "@/components/ui/button/index.module.css";
 import type {
   AttachmentListResponse,
   ChangeRequestListResponse,
@@ -147,8 +148,48 @@ describe("IssueDetailPage", () => {
 
     renderIssueDetail();
 
-    expect(await screen.findByRole("button", { name: "Done" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Reject" })).toBeInTheDocument();
+    const done = await screen.findByRole("button", { name: "Done" });
+    const reject = screen.getByRole("button", { name: "Reject" });
+
+    expect(done).toHaveClass(buttonStyles.primary, buttonStyles.compact);
+    expect(reject).toHaveClass(buttonStyles.secondary, buttonStyles.compact);
+    expect(reject.compareDocumentPosition(done)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+  });
+
+  it("shows Resolve as the blocked issue quick action", async () => {
+    const user = userEvent.setup();
+    api.fetchIssue.mockResolvedValueOnce({ ...issue, status: "blocked" });
+    api.fetchComments.mockResolvedValueOnce({
+      data: [{
+        id: 7,
+        issueId: 42,
+        author: "runner",
+        type: "blocker",
+        body: "Configure credentials before continuing.",
+        createdAt: "2026-06-21T03:00:00.000Z",
+      }],
+      meta: { cursor: 0, limit: 20, direction: "forward", nextCursor: null },
+    } satisfies CommentListResponse);
+    api.updateIssueStatus.mockResolvedValueOnce({ ...issue, status: "ready" });
+
+    renderIssueDetail();
+
+    const resolve = await screen.findByRole("button", { name: "Resolve" });
+    expect(resolve).toHaveClass(buttonStyles.secondary, buttonStyles.compact);
+
+    await user.click(resolve);
+
+    const dialog = await screen.findByRole("dialog", { name: "Continue with comment #42" });
+    expect(await within(dialog).findByText("Configure credentials before continuing.")).toBeInTheDocument();
+    await user.type(
+      within(dialog).getByRole("textbox", { name: "Change request" }),
+      "Credentials are configured",
+    );
+    await user.click(within(dialog).getByRole("button", { name: "Continue with comment" }));
+
+    await waitFor(() => {
+      expect(api.fetchChangeRequests).toHaveBeenCalledWith(42, 100, { silent: true });
+    });
   });
 
   it("rejects a review issue with a change request", async () => {

@@ -402,11 +402,12 @@ UI primitive は `src/components/ui/` 配下に置きます。domain に依存�
 
 ### Button (`ui/button`)
 
-- 既定の primitive: `Button` は `--primary-black` 背景、白文字、
-  高さ `40px`、radius `6px`、横 padding `0 16px` の primary アクションを
-  描画します。
-- 同伴の `.splitButton` セレクターは、末尾の `40px` 正方形 chevron スロットで
-  同じ見た目を再利用します。
+- `Button` は `primary`、`positive`、`secondary`、`tertiary` variant を提供します。
+  Primary は黒塗り、positive は ready 状態の緑塗り、secondary は neutral な
+  アウトライン、tertiary は visible border のない muted text を使います。
+- default size は高さ `40px`、横 padding `0 16px` です。`compact` size は
+  Issue Card のクイックアクションに合わせた高さ `32px`、横 padding `0 12px` です。
+- Storybook で各 variant の個別表示と一覧比較を確認できます。
 - グローバルな `button` リセットは、それ以外のすべての native button に
   中立の surface、`1px` border、radius `6px`、padding `8px 10px`、
   `--muted` の disabled 状態を与えます。
@@ -577,10 +578,11 @@ gap: 14px;
 - radius `8px` のカード、`0 12px 32px rgb(0 0 0 / 8%)` の濃いめの shadow。
 - タイトル行: `16px / 500` リンク + `32px` の menu トリガー。
 - メトリック行: icon + value ペア。各メトリックを `1px` 左 border で区切ります。
-- クイックアクションボタンはスコープ付き変数 (`--quick-action-bg`、
-  `--quick-action-border`、`--quick-action-text`) を使い、各バリアント
-  (`quickAction-ready`、`quickAction-done`) は色だけを上書きします。
+- クイックアクションは共有の compact `Button` を使います。Ready は `positive`、
+  Done は `primary`、Resolve は `secondary` です。
 - blocked のカードでは、`Ready` への直接遷移を `Resolve` に置き換えます。
+  neutral なアウトラインを使ったテキストのみのボタンにより、ダイアログを開く
+  この操作を、緑色で直接遷移する `Ready` と区別します。
   この操作は comment の全ページから最新の blocker comment を取得し、
   Continue with Comment ダイアログを開きます。blocker は読み取り専用の文脈として
   表示し、フリーテキストまたは組み込みの `Ok` / `Retry` ショートカットで
@@ -632,6 +634,8 @@ gap: 14px;
   の上に積みます。
 - `basic-info-panel` は issue ID、project、priority、status、assignee、
   作成日、更新日を 1 カラム meta grid で表示します。
+- `artifacts-section` は pull request を、種別 icon、label、repository と PR 番号、
+  を横並びにした compact な text link として表示します。
 - `meta-item` は各エントリを top rule、`12px` muted `dt`、通常 weight の
   `dd`、ID のための `overflow-wrap: anywhere` で描画します。
 - `runs-section` は run 行を `8px` border のグループで囲みます。
@@ -643,12 +647,13 @@ gap: 14px;
   `コメントを入力…` はエディターを開き、設定済みショートカットは指示本文を
   即時送信します。将来、短い表示名に長い agent 指示を割り当てられるよう、
   ショートカットの表示名と本文は別々の値として扱います。
-- Reject 操作は split button を使用します。主ボタンはエディターを開き、
-  chevron 側はショートカットメニューを開きます。両方で disabled と送信中の
-  状態を共有します。
+- Reject 操作は primary の Done より主張を弱めた neutral な secondary split button を
+  使用します。主ボタンはエディターを開き、chevron 側はショートカットメニューを
+  開きます。両方で disabled と送信中の状態を共有します。
 - Issue 詳細 sidebar の status shortcut には `Quick Action` の見出しを付けます。
-  backlog では `Ready`、ready では `Draft`、review では `Done` と赤色の Reject
-  split button を表示します。
+  backlog では positive の `Ready`、ready では secondary の `Draft`、review では
+  secondary の Reject split button、primary の `Done` の順で表示します。blocked では
+  secondary の `Resolve` を表示します。
 - `status-actions` は同じカード内の wrap-flex アクション行です。
 - `issue-description` は共有 markdown レンダラーを使い、line-height
   `1.65`、アンカー色 `--primary-black`、インライン画像に border を付けます。

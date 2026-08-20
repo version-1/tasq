@@ -140,40 +140,6 @@
   min-width: 0;
 }
 
-.quickActionButton {
-  align-items: center;
-  block-size: 32px;
-  background: var(--quick-action-bg);
-  border: 1px solid var(--quick-action-border);
-  border-radius: var(--radius-sm);
-  color: var(--quick-action-text);
-  display: inline-flex;
-  flex-shrink: 0;
-  font-size: 13px;
-  font-weight: 500;
-  gap: 6px;
-  justify-content: center;
-  line-height: 1;
-  padding: 0 12px;
-}
-
-.quickActionButton:hover,
-.quickActionButton:focus-visible {
-  opacity: 0.9;
-}
-
-.quickAction-ready {
-  --quick-action-bg: var(--status-ready-text);
-  --quick-action-border: transparent;
-  --quick-action-text: var(--white);
-}
-
-.quickAction-done {
-  --quick-action-bg: transparent;
-  --quick-action-border: var(--border);
-  --quick-action-text: var(--primary-black);
-}
-
 .quickActionIcon {
   color: currentcolor;
   flex-shrink: 0;
