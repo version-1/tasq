@@ -47,6 +47,17 @@ ISSUE_TRACKER_PORT=8080 ORCHESTRATOR_PORT=8081 OPENAPI_PORT=8082 WEB_PORT=3000 m
 
 `dev-up` は既定でホストポートを自動割り当てします。割り当てられた URL は表示しますが、ブラウザーは開きません。ブラウザーを開く場合は `make dev-open` を明示的に実行してください。
 
+## ドキュメント用ターゲット
+
+Docusaurus のドキュメントサイトを起動またはビルドするには、次のターゲットを使います。いずれも実行前に `docs/site` の依存関係をインストールします。
+
+| ターゲット | 用途 |
+|---|---|
+| `make dev-docs` | 英語版 Docusaurus 開発サーバーを起動します。 |
+| `make dev-docs-ja` | 日本語版 Docusaurus 開発サーバーを起動します。 |
+| `make dev-docs-build` | 静的ドキュメントサイトをビルドします。 |
+| `make dev-docs-open` | `BROWSER_OPEN` を使ってドキュメント開発サーバーを開きます。 |
+
 ## Container ターゲット
 
 `dc-*` ターゲットは、Docker Compose サービスの状態確認と dev container 自体に対する操作に使います。
@@ -85,6 +96,8 @@ make dc-exec CMD="go test ./internal/config"
 | `make run-tq ARGS="..."` | サービスプロセスを変更せず、起動済み dev container 内でインストール済みの `tq $(ARGS)` バイナリを実行します。 |
 | `make run-ps` | dev container 内で動いている開発用プロセスを表示します。 |
 | `make run-logs` | `$TQ_HOME/system/log/*.log` を追跡表示します。 |
+
+`run-orchestrator` と `run-web` は issue-tracker の起動を確認しますが、互いを起動しません。3つのサービスすべてが必要な場合は `run-all` を使います。
 
 よく使う例:
 

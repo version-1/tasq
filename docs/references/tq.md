@@ -302,7 +302,7 @@ TQ_HOME=./.tasq go run ./cmd/tq --output json service status
 
 ### `service stop`
 
-Stop orchestrator first and issue-tracker second. Each process receives `SIGTERM`; if it does not exit within the grace period, it is killed.
+Stop web first, then orchestrator, then issue-tracker. Each process receives `SIGTERM`; if it does not exit within its grace period, it is killed. The orchestrator has a longer grace period so it can finish its dispatcher shutdown.
 
 ```sh
 TQ_HOME=./.tasq go run ./cmd/tq service stop
@@ -312,7 +312,7 @@ TQ_HOME=./.tasq go run ./cmd/tq service stop
 
 Manage only the orchestrator recorded in `$TQ_HOME/system/state.json`. `start` requires a running local issue-tracker, starts the managed orchestrator on port `37652`, and leaves the issue-tracker and web service unchanged. It fails when the orchestrator is already running or the default port is unavailable. Pending orchestrator migrations must be applied with `tq migrate` first.
 
-`stop` sends the orchestrator `SIGTERM`, waits for its graceful shutdown, then removes its local state. It succeeds when the orchestrator is already stopped. `status` displays one service row; use `--output json` for one status object suitable for scripts.
+`stop` sends the orchestrator `SIGTERM`, waits for its graceful shutdown, then removes its local state. Before starting, stopping, or reporting an orchestrator, `tq` verifies the recorded PID, process start time, and executable path; a stale record is removed without signaling its PID. `stop` succeeds when the orchestrator is already stopped. `status` displays one service row; use `--output json` for one status object suitable for scripts.
 
 ```sh
 TQ_HOME=./.tasq go run ./cmd/tq orchestrator start
