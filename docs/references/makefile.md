@@ -47,6 +47,17 @@ ISSUE_TRACKER_PORT=8080 ORCHESTRATOR_PORT=8081 OPENAPI_PORT=8082 WEB_PORT=3000 m
 
 `dev-up` uses automatic host port assignment by default. It prints the assigned URLs but does not open a browser. Run `make dev-open` when you want to open the browser explicitly.
 
+## Documentation Targets
+
+Use these targets to serve or build the Docusaurus documentation site. They install the documentation site's dependencies in `docs/site` before running.
+
+| Target | Purpose |
+|---|---|
+| `make dev-docs` | Start the English Docusaurus development server. |
+| `make dev-docs-ja` | Start the Japanese Docusaurus development server. |
+| `make dev-docs-build` | Build the static documentation site. |
+| `make dev-docs-open` | Open the documentation development server using `BROWSER_OPEN`. |
+
 ## Container Targets
 
 Use `dc-*` targets for Docker Compose service status and commands that operate on the dev container itself.
@@ -85,6 +96,8 @@ Use `run-*` targets for processes and commands that run inside an already-runnin
 | `make run-tq ARGS="..."` | Run the installed `tq $(ARGS)` binary inside the running dev container without changing service processes. |
 | `make run-ps` | Show dev processes running inside the dev container. |
 | `make run-logs` | Follow `$TQ_HOME/system/log/*.log`. |
+
+`run-orchestrator` and `run-web` ensure that issue-tracker is running, but they do not start each other. Use `run-all` when all three services are required.
 
 Useful examples:
 

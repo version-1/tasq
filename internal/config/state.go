@@ -19,10 +19,12 @@ type State struct {
 }
 
 type ServiceState struct {
-	PID       int       `json:"pid"`
-	Addr      string    `json:"addr"`
-	DB        string    `json:"db,omitempty"`
-	StartedAt time.Time `json:"started_at"`
+	PID              int       `json:"pid"`
+	Addr             string    `json:"addr"`
+	DB               string    `json:"db,omitempty"`
+	StartedAt        time.Time `json:"started_at"`
+	ProcessStartedAt time.Time `json:"process_started_at,omitempty"`
+	Executable       string    `json:"executable,omitempty"`
 }
 
 func ReadState() (State, error) {

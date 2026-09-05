@@ -40,6 +40,7 @@ tq [--api-url URL] [--output text|json] <command> [args] [flags]
 | `workflow` | `add`、`remove`、`show` |
 | `migrate` | 未適用マイグレーションの適用、`down` によるロールバック、`status` による状態確認 |
 | `service` | `start`、`stop`、`status` |
+| `orchestrator` | ローカル orchestrator だけを対象にした `start`、`stop`、`status` |
 | `logs` | サービスログの表示または追跡 |
 | `web` | 実行中の Web UI を開く |
 | `config` | ビルド、ホーム、解決済みの設定情報を表示 |
@@ -301,10 +302,22 @@ TQ_HOME=./.tasq go run ./cmd/tq --output json service status
 
 ### `service stop`
 
-オーケストレーターを先に停止し、その後 Issue Tracker を停止します。各プロセスに `SIGTERM` を送り、猶予期間内に終了しない場合は強制終了します。
+Web、オーケストレーター、Issue Tracker の順に停止します。各プロセスに `SIGTERM` を送り、それぞれの猶予期間内に終了しない場合は強制終了します。オーケストレーターには dispatcher の終了処理を完了できるよう、より長い猶予期間を設けています。
 
 ```sh
 TQ_HOME=./.tasq go run ./cmd/tq service stop
+```
+
+### `orchestrator`
+
+`$TQ_HOME/system/state.json` に記録されたオーケストレーターだけを管理します。`start` は起動中のローカル Issue Tracker を必須とし、管理対象のオーケストレーターをポート `37652` で起動します。Issue Tracker と Web サービスは変更しません。オーケストレーターがすでに起動中、または既定のポートが使用中の場合は失敗します。オーケストレーターの未適用マイグレーションがある場合は、先に `tq migrate` を実行します。
+
+`stop` はオーケストレーターに `SIGTERM` を送り、正常終了を待ってからローカル状態を削除します。`tq` はオーケストレーターの起動、停止、状態表示の前に、記録済み PID、プロセス開始時刻、実行ファイルのパスを照合します。記録が古い場合は、その PID にシグナルを送らずに削除します。オーケストレーターがすでに停止済みでも `stop` は成功します。`status` はサービスの行を 1 行だけ表示します。スクリプト向けには `--output json` で状態オブジェクトを 1 件出力します。
+
+```sh
+TQ_HOME=./.tasq go run ./cmd/tq orchestrator start
+TQ_HOME=./.tasq go run ./cmd/tq orchestrator status
+TQ_HOME=./.tasq go run ./cmd/tq orchestrator stop
 ```
 
 ## ログと Web UI

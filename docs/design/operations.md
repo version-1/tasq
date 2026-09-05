@@ -10,6 +10,8 @@ For host-only operation on a personal machine, `tq service start` runs issue-tra
 
 Run `tq migrate` before starting services when a database is new or migrations are pending. `tq service start` checks the issue-tracker and orchestrator databases before launching any service process and exits with guidance to run `tq migrate` if pending migrations exist. The services also fail fast with the same guidance instead of applying schema changes automatically.
 
+Use `tq orchestrator start`, `tq orchestrator stop`, and `tq orchestrator status` to manage only the state-recorded local orchestrator. Starting it requires the state-recorded issue-tracker to be running and uses the default orchestrator port; it does not start, stop, or reconfigure the issue-tracker or Web service. Stopping is idempotent and uses the same graceful shutdown path as `tq service stop`.
+
 Recommended commands:
 
 - `make run-issue-tracker`

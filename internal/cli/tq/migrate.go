@@ -170,6 +170,31 @@ func checkMigrationTargetsNoPending(ctx context.Context) error {
 	return nil
 }
 
+func checkOrchestratorMigrationTargetNoPending(ctx context.Context, home string) error {
+	target := migrateTarget{Name: "orchestrator", Path: tqconfig.OrchestratorDBPath(home), Dir: "orchestrator"}
+	if err := os.MkdirAll(filepath.Dir(target.Path), 0o755); err != nil {
+		return fmt.Errorf("create database directory: %w", err)
+	}
+	db, err := sql.Open("sqlite", target.Path)
+	if err != nil {
+		return fmt.Errorf("open orchestrator sqlite: %w", err)
+	}
+	db.SetMaxOpenConns(1)
+	defer db.Close()
+	pending, err := migration.NewManager(db, migrations.Files, target.Dir).Pending(ctx)
+	if err != nil {
+		return fmt.Errorf("orchestrator migrations: %w", err)
+	}
+	if len(pending) == 0 {
+		return nil
+	}
+	labels := make([]string, 0, len(pending))
+	for _, item := range pending {
+		labels = append(labels, target.Name+":"+migrationLabel(item.Version, item.Name))
+	}
+	return fmt.Errorf("pending migrations: %s; run `tq migrate` before starting services", strings.Join(labels, ", "))
+}
+
 func migrationLabel(version string, name string) string {
 	return version + "_" + name
 }
