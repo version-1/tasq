@@ -20,8 +20,9 @@ import (
 )
 
 const (
-	serviceHealthTimeout = 10 * time.Second
-	serviceStopGrace     = 5 * time.Second
+	serviceHealthTimeout         = 10 * time.Second
+	serviceStopGrace             = 5 * time.Second
+	orchestratorServiceStopGrace = 35 * time.Second
 )
 
 type serviceName string
@@ -79,6 +80,131 @@ func (a app) routeService(ctx context.Context, args []string, cfg config) error 
 	default:
 		return usageError("unknown service action %q", action)
 	}
+}
+
+func (a app) routeOrchestrator(ctx context.Context, args []string, cfg config) error {
+	if len(args) == 0 || args[0] == "help" || args[0] == "-help" || args[0] == "--help" {
+		printOrchestratorHelp(a.stdout)
+		return nil
+	}
+	action := args[0]
+	if action == "start" || action == "stop" {
+		if err := rejectManagedServiceMutation("orchestrator " + action); err != nil {
+			return err
+		}
+	}
+	switch action {
+	case "start":
+		return a.orchestratorStart(ctx, args[1:], cfg)
+	case "stop":
+		return a.orchestratorStop(ctx, args[1:], cfg)
+	case "status":
+		return a.orchestratorStatus(ctx, args[1:], cfg)
+	default:
+		return usageError("unknown orchestrator action %q", action)
+	}
+}
+
+func (a app) orchestratorStart(ctx context.Context, args []string, cfg config) error {
+	if len(args) != 0 {
+		return usageError("usage: tq orchestrator start")
+	}
+	home, err := tqconfig.EnsureHome()
+	if err != nil {
+		return err
+	}
+	lock, err := acquireServiceStartLock(home)
+	if err != nil {
+		return err
+	}
+	defer lock.Close()
+	if err := cleanupStaleServices(); err != nil {
+		return err
+	}
+	state, err := tqconfig.ReadState()
+	if err != nil {
+		return err
+	}
+	orchestratorRunning, err := serviceStateRunning(serviceOrchestrator, state.Orchestrator)
+	if err != nil {
+		return err
+	}
+	if orchestratorRunning {
+		return usageError("orchestrator is already running")
+	}
+	if state.IssueTracker == nil || !processAlive(state.IssueTracker.PID) {
+		return errors.New("issue-tracker is not running; run `tq service start` first")
+	}
+	if err := validateServiceExecutable(serviceOrchestrator, serviceExecutablePath(home, serviceOrchestrator)); err != nil {
+		return err
+	}
+	if err := checkOrchestratorMigrationTargetNoPending(ctx, home); err != nil {
+		return fmt.Errorf("migration pre-flight check failed: %w", err)
+	}
+	if err := confirmServicePortAvailable(defaultServiceAddresses().orchestrator); err != nil {
+		return err
+	}
+	issueTrackerURL, ok, err := tqconfig.IssueTrackerURLFromState()
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return errors.New("issue-tracker is not running; run `tq service start` first")
+	}
+	orchestrator := managedService{
+		name:    serviceOrchestrator,
+		logName: "orchestrator.log",
+		args: []string{
+			"-db", tqconfig.OrchestratorDBPath(home),
+			"-issue-tracker", issueTrackerURL,
+			"-port", strconv.Itoa(tqconfig.DefaultOrchestratorPort),
+		},
+	}
+	if _, err := startManagedService(ctx, home, orchestrator); err != nil {
+		return err
+	}
+	if err := waitServiceRunning(ctx, serviceOrchestrator); err != nil {
+		_ = stopServiceByName(context.Background(), serviceOrchestrator)
+		return fmt.Errorf("orchestrator startup failed: %w", err)
+	}
+	if cfg.output == "json" {
+		return a.orchestratorStatus(ctx, nil, cfg)
+	}
+	return writeSuccess(a.stdout, "Orchestrator started")
+}
+
+func (a app) orchestratorStop(ctx context.Context, args []string, cfg config) error {
+	if len(args) != 0 {
+		return usageError("usage: tq orchestrator stop")
+	}
+	if err := stopServiceByName(ctx, serviceOrchestrator); err != nil {
+		return err
+	}
+	if err := cleanupServiceState(serviceOrchestrator, true); err != nil {
+		return err
+	}
+	if cfg.output == "json" {
+		return a.orchestratorStatus(ctx, nil, cfg)
+	}
+	return writeSuccess(a.stdout, "Orchestrator stopped")
+}
+
+func (a app) orchestratorStatus(ctx context.Context, args []string, cfg config) error {
+	if len(args) != 0 {
+		return usageError("usage: tq orchestrator status")
+	}
+	if err := cleanupStaleServices(); err != nil {
+		return err
+	}
+	state, err := tqconfig.ReadState()
+	if err != nil {
+		return err
+	}
+	status := statusForService(serviceOrchestrator, state.Orchestrator)
+	if cfg.output == "json" {
+		return writeJSON(a.stdout, status)
+	}
+	return writeServiceStatuses(a.stdout, []serviceStatus{status})
 }
 
 func (a app) serviceStart(ctx context.Context, args []string, cfg config) error {
@@ -304,6 +430,17 @@ func confirmServicePortsAvailable(addresses serviceAddresses) error {
 		if err := listener.Close(); err != nil {
 			return fmt.Errorf("release service port %d: %w", index, err)
 		}
+	}
+	return nil
+}
+
+func confirmServicePortAvailable(address string) error {
+	listener, err := net.Listen("tcp", address)
+	if err != nil {
+		return fmt.Errorf("service port %s is unavailable: %w", address, err)
+	}
+	if err := listener.Close(); err != nil {
+		return fmt.Errorf("release service port %s: %w", address, err)
 	}
 	return nil
 }
@@ -551,13 +688,24 @@ func stopServiceByName(ctx context.Context, name serviceName) error {
 		return err
 	}
 	service := serviceStateByName(state, name)
-	if service == nil || service.PID <= 0 {
+	running, err := serviceStateRunning(name, service)
+	if err != nil {
+		return err
+	}
+	if !running {
 		return nil
 	}
-	return terminatePID(ctx, service.PID)
+	return terminatePID(ctx, service.PID, serviceStopGraceFor(name))
 }
 
-func terminatePID(ctx context.Context, pid int) error {
+func serviceStopGraceFor(name serviceName) time.Duration {
+	if name == serviceOrchestrator {
+		return orchestratorServiceStopGrace
+	}
+	return serviceStopGrace
+}
+
+func terminatePID(ctx context.Context, pid int, grace time.Duration) error {
 	process, err := os.FindProcess(pid)
 	if err != nil {
 		return nil
@@ -568,7 +716,7 @@ func terminatePID(ctx context.Context, pid int) error {
 	if err := process.Signal(syscall.SIGTERM); err != nil && !isProcessDone(err) {
 		return err
 	}
-	deadline := time.Now().Add(serviceStopGrace)
+	deadline := time.Now().Add(grace)
 	for time.Now().Before(deadline) {
 		if !processAlive(pid) {
 			return nil
@@ -587,17 +735,39 @@ func terminatePID(ctx context.Context, pid int) error {
 
 func cleanupStaleServices() error {
 	return tqconfig.UpdateState(func(state *tqconfig.State) error {
-		if state.IssueTracker != nil && !processAlive(state.IssueTracker.PID) {
+		issueTrackerRunning, err := serviceStateRunning(serviceIssueTracker, state.IssueTracker)
+		if err != nil {
+			return err
+		}
+		if !issueTrackerRunning {
 			state.IssueTracker = nil
 		}
-		if state.Orchestrator != nil && !processAlive(state.Orchestrator.PID) {
+		orchestratorRunning, err := serviceStateRunning(serviceOrchestrator, state.Orchestrator)
+		if err != nil {
+			return err
+		}
+		if !orchestratorRunning {
 			state.Orchestrator = nil
 		}
-		if state.Web != nil && !processAlive(state.Web.PID) {
+		webRunning, err := serviceStateRunning(serviceWeb, state.Web)
+		if err != nil {
+			return err
+		}
+		if !webRunning {
 			state.Web = nil
 		}
 		return nil
 	})
+}
+
+func serviceStateRunning(name serviceName, service *tqconfig.ServiceState) (bool, error) {
+	if service == nil || !processAlive(service.PID) {
+		return false, nil
+	}
+	if name != serviceOrchestrator {
+		return true, nil
+	}
+	return service.MatchesProcessIdentity()
 }
 
 func cleanupServiceState(name serviceName, force bool) error {
@@ -635,7 +805,8 @@ func serviceStateByName(state tqconfig.State, name serviceName) *tqconfig.Servic
 
 func statusForService(name serviceName, service *tqconfig.ServiceState) serviceStatus {
 	status := serviceStatus{Name: string(name), State: "stopped"}
-	if service == nil || !processAlive(service.PID) {
+	running, err := serviceStateRunning(name, service)
+	if err != nil || !running {
 		return status
 	}
 	status.State = "running"
@@ -684,4 +855,13 @@ func printServiceHelp(w io.Writer) {
 	fmt.Fprintln(w, "  start    Start issue-tracker, orchestrator, and web (-y skips fallback port confirmation)")
 	fmt.Fprintln(w, "  stop     Stop web, orchestrator, and issue-tracker")
 	fmt.Fprintln(w, "  status   Show service status")
+}
+
+func printOrchestratorHelp(w io.Writer) {
+	fmt.Fprintln(w, "Usage: tq orchestrator <action>")
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, "Actions:")
+	fmt.Fprintln(w, "  start    Start the local orchestrator using the running issue-tracker")
+	fmt.Fprintln(w, "  stop     Stop the local orchestrator")
+	fmt.Fprintln(w, "  status   Show local orchestrator status")
 }

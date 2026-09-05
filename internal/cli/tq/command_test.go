@@ -174,6 +174,102 @@ func TestServiceStopRejectsOrchestratorManagedRun(t *testing.T) {
 	}
 }
 
+func TestOrchestratorMutationsRejectOrchestratorManagedRun(t *testing.T) {
+	t.Setenv(tqconfig.EnvManagedRun, "1")
+
+	for _, action := range []string{"start", "stop"} {
+		t.Run(action, func(t *testing.T) {
+			_, stderr, code := runCLI(t, []string{"orchestrator", action})
+			if code != 1 {
+				t.Fatalf("code=%d stderr=%s", code, stderr)
+			}
+			if message := decodeCLIError(t, stderr); !strings.Contains(message, "orchestrator-managed run") {
+				t.Fatalf("error = %q", message)
+			}
+		})
+	}
+}
+
+func TestOrchestratorStartRequiresRunningIssueTracker(t *testing.T) {
+	t.Setenv(tqconfig.EnvHome, t.TempDir())
+
+	stdout, stderr, code := runCLI(t, []string{"orchestrator", "start"})
+	if code != 1 {
+		t.Fatalf("code=%d stderr=%s", code, stderr)
+	}
+	if stdout != "" {
+		t.Fatalf("stdout=%q, want empty", stdout)
+	}
+	if message := decodeCLIError(t, stderr); message != "issue-tracker is not running; run `tq service start` first" {
+		t.Fatalf("error=%q", message)
+	}
+}
+
+func TestOrchestratorStatusStopped(t *testing.T) {
+	t.Setenv(tqconfig.EnvHome, t.TempDir())
+
+	stdout, stderr, code := runCLI(t, []string{"orchestrator", "status"})
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr)
+	}
+	want := "SERVICE       STATE    PID  PORT  UPTIME\n" +
+		"orchestrator  stopped    -     -       -\n"
+	if got := stripANSI(stdout); got != want {
+		t.Fatalf("status table:\n%s\nwant:\n%s", got, want)
+	}
+}
+
+func TestOrchestratorStatusJSONStopped(t *testing.T) {
+	t.Setenv(tqconfig.EnvHome, t.TempDir())
+
+	stdout, stderr, code := runCLI(t, []string{"--output", "json", "orchestrator", "status"})
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr)
+	}
+	var status serviceStatus
+	if err := json.Unmarshal([]byte(stdout), &status); err != nil {
+		t.Fatalf("decode status: %v: %s", err, stdout)
+	}
+	if status.Name != "orchestrator" || status.State != "stopped" {
+		t.Fatalf("status=%+v", status)
+	}
+}
+
+func TestOrchestratorStopIsIdempotent(t *testing.T) {
+	t.Setenv(tqconfig.EnvHome, t.TempDir())
+
+	stdout, stderr, code := runCLI(t, []string{"orchestrator", "stop"})
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr)
+	}
+	if got := stripANSI(stdout); got != "✓ Orchestrator stopped\n" {
+		t.Fatalf("stdout=%q", got)
+	}
+}
+
+func TestOrchestratorStopDoesNotSignalUnverifiedProcess(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv(tqconfig.EnvHome, home)
+	if err := tqconfig.UpdateState(func(state *tqconfig.State) error {
+		state.Orchestrator = &tqconfig.ServiceState{PID: os.Getpid()}
+		return nil
+	}); err != nil {
+		t.Fatalf("write state: %v", err)
+	}
+
+	_, stderr, code := runCLI(t, []string{"orchestrator", "stop"})
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr)
+	}
+	state, err := tqconfig.ReadState()
+	if err != nil {
+		t.Fatalf("read state: %v", err)
+	}
+	if state.Orchestrator != nil {
+		t.Fatalf("orchestrator state was not cleared: %+v", state.Orchestrator)
+	}
+}
+
 func TestUpdateYesSkipsConfirmation(t *testing.T) {
 	runner := &fakeUpdateRunner{
 		current:   "tq v0.1.0 (commit: old)",

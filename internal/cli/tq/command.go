@@ -96,6 +96,8 @@ func (a app) route(ctx context.Context, args []string, cfg config) error {
 		return a.web(args[1:])
 	case "service":
 		return a.routeService(ctx, args[1:], cfg)
+	case "orchestrator":
+		return a.routeOrchestrator(ctx, args[1:], cfg)
 	case "logs":
 		return a.routeLogs(ctx, args[1:], cfg)
 	case "tui", "console", "c":

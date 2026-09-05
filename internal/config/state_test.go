@@ -87,6 +87,42 @@ func TestOrchestratorURLFromState(t *testing.T) {
 	}
 }
 
+func TestServiceStateMatchesCurrentProcessIdentity(t *testing.T) {
+	identity := ProcessIdentity{
+		StartedAt:  time.Date(2026, 9, 5, 12, 0, 0, 0, time.UTC),
+		Executable: "/tmp/orchestrator",
+	}
+	original := readProcessIdentity
+	readProcessIdentity = func(pid int) (ProcessIdentity, error) {
+		if pid != os.Getpid() {
+			t.Fatalf("pid=%d, want %d", pid, os.Getpid())
+		}
+		return identity, nil
+	}
+	t.Cleanup(func() { readProcessIdentity = original })
+	state := ServiceState{
+		PID:              os.Getpid(),
+		ProcessStartedAt: identity.StartedAt,
+		Executable:       identity.Executable,
+	}
+	matches, err := state.MatchesProcessIdentity()
+	if err != nil {
+		t.Fatalf("match current process identity: %v", err)
+	}
+	if !matches {
+		t.Fatal("current process identity did not match")
+	}
+
+	state.ProcessStartedAt = state.ProcessStartedAt.Add(time.Second)
+	matches, err = state.MatchesProcessIdentity()
+	if err != nil {
+		t.Fatalf("match changed process identity: %v", err)
+	}
+	if matches {
+		t.Fatal("changed process identity matched")
+	}
+}
+
 func TestReadStateParsesExistingFile(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv(EnvHome, home)

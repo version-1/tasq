@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	tqconfig "github.com/version-1/tasq/internal/config"
 )
@@ -54,6 +55,15 @@ func TestServiceStartAddressesUsesFallbackWhenDefaultPortIsUnavailable(t *testin
 	}
 	if addresses.issueTracker == defaults.issueTracker || addresses.orchestrator == defaults.orchestrator || addresses.web == defaults.web {
 		t.Fatalf("fallback addresses = %+v, want all service ports replaced", addresses)
+	}
+}
+
+func TestServiceStopGraceForOrchestratorAllowsDispatcherShutdown(t *testing.T) {
+	if got, want := serviceStopGraceFor(serviceOrchestrator), 35*time.Second; got != want {
+		t.Fatalf("orchestrator stop grace = %s, want %s", got, want)
+	}
+	if got, want := serviceStopGraceFor(serviceWeb), serviceStopGrace; got != want {
+		t.Fatalf("web stop grace = %s, want %s", got, want)
 	}
 }
 

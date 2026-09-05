@@ -125,11 +125,17 @@ func main() {
 		log.Printf("orchestrator http server disabled; set --port or workflow server.port to enable")
 	}
 	if err := tqconfig.UpdateState(func(state *tqconfig.State) error {
+		identity, err := tqconfig.CurrentProcessIdentity()
+		if err != nil {
+			return err
+		}
 		state.Orchestrator = &tqconfig.ServiceState{
-			PID:       os.Getpid(),
-			Addr:      orchestratorAddr,
-			DB:        resolvedDBPath,
-			StartedAt: time.Now().UTC(),
+			PID:              os.Getpid(),
+			Addr:             orchestratorAddr,
+			DB:               resolvedDBPath,
+			StartedAt:        time.Now().UTC(),
+			ProcessStartedAt: identity.StartedAt,
+			Executable:       identity.Executable,
 		}
 		return nil
 	}); err != nil {

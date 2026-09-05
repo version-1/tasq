@@ -40,6 +40,7 @@ tq [--api-url URL] [--output text|json] <command> [args] [flags]
 | `workflow` | `add`、`remove`、`show` |
 | `migrate` | 未適用マイグレーションの適用、`down` によるロールバック、`status` による状態確認 |
 | `service` | `start`、`stop`、`status` |
+| `orchestrator` | ローカル orchestrator だけを対象にした `start`、`stop`、`status` |
 | `logs` | サービスログの表示または追跡 |
 | `web` | 実行中の Web UI を開く |
 | `config` | ビルド、ホーム、解決済みの設定情報を表示 |
@@ -305,6 +306,18 @@ TQ_HOME=./.tasq go run ./cmd/tq --output json service status
 
 ```sh
 TQ_HOME=./.tasq go run ./cmd/tq service stop
+```
+
+### `orchestrator`
+
+`$TQ_HOME/system/state.json` に記録された orchestrator だけを管理します。`start` は起動中のローカル Issue Tracker を必須とし、managed orchestrator を port `37652` で起動します。Issue Tracker と Web service は変更しません。orchestrator がすでに起動中、または既定 port が使用中の場合は失敗します。orchestrator の未適用 migration がある場合は、先に `tq migrate` を実行します。
+
+`stop` は orchestrator に `SIGTERM` を送り、graceful shutdown を待ってからローカル state を削除します。orchestrator がすでに停止済みでも成功します。`status` は service row を 1 行だけ表示します。スクリプト向けには `--output json` で status object を 1 件出力します。
+
+```sh
+TQ_HOME=./.tasq go run ./cmd/tq orchestrator start
+TQ_HOME=./.tasq go run ./cmd/tq orchestrator status
+TQ_HOME=./.tasq go run ./cmd/tq orchestrator stop
 ```
 
 ## ログと Web UI

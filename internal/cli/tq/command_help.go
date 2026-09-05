@@ -18,6 +18,7 @@ func printRootHelp(w io.Writer) {
 	fmt.Fprintln(w, "  migrate  apply, roll back, and inspect local database migrations")
 	fmt.Fprintln(w, "  web      open the running Web UI in the default browser")
 	fmt.Fprintln(w, "  service  start, stop, and inspect local services")
+	fmt.Fprintln(w, "  orchestrator  start, stop, and inspect the local orchestrator")
 	fmt.Fprintln(w, "  logs     show and follow service logs")
 	fmt.Fprintln(w, "  config   show resolved local configuration")
 	fmt.Fprintln(w, "  version  show version information")

@@ -10,6 +10,8 @@ Docker Compose は、ローカル開発環境を長時間起動する `dev` cont
 
 データベースが新規の場合、または未適用のマイグレーションがある場合は、サービス起動前に `tq migrate` を実行します。`tq service start` はサービスプロセスを起動する前に issue-tracker と orchestrator のデータベースを確認し、未適用のマイグレーションがあれば `tq migrate` の実行を案内して終了します。サービス側もスキーマ変更を自動適用せず、同じ案内を出して fail fast します。
 
+state に記録されたローカル orchestrator だけを管理するには、`tq orchestrator start`、`tq orchestrator stop`、`tq orchestrator status` を使います。起動時には state に記録された Issue Tracker が起動中である必要があり、既定 orchestrator port を使います。Issue Tracker や Web service の起動、停止、再設定は行いません。停止は冪等で、`tq service stop` と同じ graceful shutdown 経路を使います。
+
 推奨コマンド:
 
 - `make run-issue-tracker`

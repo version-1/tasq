@@ -81,6 +81,9 @@ create と update は、該当する場合に `--title`、`--description`、`--s
 | `tq service start` | issue-tracker、orchestrator、Web UI を起動します。 |
 | `tq service stop` | local services を停止します。 |
 | `tq service status` | service status を表示します。 |
+| `tq orchestrator start` | ローカル orchestrator だけを起動します。起動中のローカル Issue Tracker が必要です。 |
+| `tq orchestrator stop` | ローカル orchestrator だけを graceful に停止します。 |
+| `tq orchestrator status` | ローカル orchestrator の status を表示します。 |
 | `tq logs <service> [-n <lines>] [-f]` | service logs を読みます。 |
 | `tq migrate` | migrations を適用します。 |
 | `tq migrate down` | migrations を rollback します。 |

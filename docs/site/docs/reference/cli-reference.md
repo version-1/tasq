@@ -83,6 +83,9 @@ Allowed comment types are `progress`, `blocker`, `handoff`, and `general`.
 | `tq service start` | Start issue-tracker, orchestrator, and Web UI. |
 | `tq service stop` | Stop local services. |
 | `tq service status` | Show service status. |
+| `tq orchestrator start` | Start only the local orchestrator; requires a running local issue-tracker. |
+| `tq orchestrator stop` | Gracefully stop only the local orchestrator. |
+| `tq orchestrator status` | Show local orchestrator status. |
 | `tq logs <service> [-n <lines>] [-f]` | Read service logs. |
 | `tq migrate` | Apply migrations. |
 | `tq migrate down` | Roll back migrations. |

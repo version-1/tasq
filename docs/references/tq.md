@@ -40,6 +40,7 @@ tq [--api-url URL] [--output text|json] <command> [args] [flags]
 | `workflow` | `add`, `remove`, `show` |
 | `migrate` | apply pending migrations, roll back with `down`, or inspect with `status` |
 | `service` | `start`, `stop`, `status` |
+| `orchestrator` | `start`, `stop`, `status` for the local orchestrator only |
 | `logs` | show or follow service logs |
 | `web` | open the running Web UI |
 | `config` | show build, home, and resolved configuration information |
@@ -305,6 +306,18 @@ Stop orchestrator first and issue-tracker second. Each process receives `SIGTERM
 
 ```sh
 TQ_HOME=./.tasq go run ./cmd/tq service stop
+```
+
+### `orchestrator`
+
+Manage only the orchestrator recorded in `$TQ_HOME/system/state.json`. `start` requires a running local issue-tracker, starts the managed orchestrator on port `37652`, and leaves the issue-tracker and web service unchanged. It fails when the orchestrator is already running or the default port is unavailable. Pending orchestrator migrations must be applied with `tq migrate` first.
+
+`stop` sends the orchestrator `SIGTERM`, waits for its graceful shutdown, then removes its local state. It succeeds when the orchestrator is already stopped. `status` displays one service row; use `--output json` for one status object suitable for scripts.
+
+```sh
+TQ_HOME=./.tasq go run ./cmd/tq orchestrator start
+TQ_HOME=./.tasq go run ./cmd/tq orchestrator status
+TQ_HOME=./.tasq go run ./cmd/tq orchestrator stop
 ```
 
 ## Logs and Web UI
