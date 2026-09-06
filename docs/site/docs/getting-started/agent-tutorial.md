@@ -53,8 +53,11 @@ one.
 ### Minimal Permission Setup
 
 Before queuing work, allow Codex to write to this tutorial repository and its
-Git metadata. Add the following minimal profile to `~/.codex/config.toml`,
-replacing `/absolute/path/to/tasq-todo` with the path of your clone.
+Git metadata. This profile follows the same shape as the
+[Minimal Codex Permissions](pathname:///getting-started/setup-guide#minimal-codex-permissions) example,
+scoped to this tutorial checkout. Add the following to
+`~/.codex/config.toml`, replacing `/absolute/path/to/tasq-todo` with the path
+of your clone.
 
 ```toml
 [projects."/absolute/path/to/tasq-todo"]

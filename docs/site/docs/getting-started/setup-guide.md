@@ -86,6 +86,8 @@ tq workflow show --project tasq-demo
 For resolution order and override behavior, see
 [Workflow Configuration](../guides/workflow-configuration).
 
+<a id="minimal-codex-permissions"></a>
+
 ## Minimal Codex Permissions
 
 Detailed autonomy setup belongs in

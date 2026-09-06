@@ -44,7 +44,7 @@ tq project check tasq-todo
 
 ### 最小権限の設定
 
-作業をキューに入れる前に、Codex がこのチュートリアル用リポジトリと Git メタデータへ書き込めるようにします。次の最小プロファイルを `~/.codex/config.toml` に追加してください。`/absolute/path/to/tasq-todo` はクローン先のパスに置き換えます。
+作業をキューに入れる前に、Codex がこのチュートリアル用リポジトリと Git メタデータへ書き込めるようにします。このプロファイルは、[最小限の Codex 権限設定](pathname:///getting-started/setup-guide#minimal-codex-permissions)の例と同じ形をこのチュートリアル用 checkout に合わせたものです。次の内容を `~/.codex/config.toml` に追加してください。`/absolute/path/to/tasq-todo` はクローン先のパスに置き換えます。
 
 ```toml
 [projects."/absolute/path/to/tasq-todo"]
