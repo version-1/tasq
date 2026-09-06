@@ -21,9 +21,9 @@ tasq のオーケストレータ層として issue tracker から ready な issu
 
 # 基本ワークフロー
 
-`tq issue watch` が ready な issue を検出し、orchestrator が dispatch した後、委譲先の agent は以下のワークフローに従う。プロジェクト固有の `WORKFLOW.md` がある場合はその内容を優先し、規定されていない事項にのみこの基本ワークフローを適用する。
+`tq issue watch` が ready な issue を検出した後、orchestrator と委譲先の agent は、dispatch された作業について以下のワークフローに従う。プロジェクト固有の `WORKFLOW.md` がある場合は、手順と Workflow Template の全体でその内容を優先し、規定されていない事項にのみこの基本ワークフローを適用する。
 
-1. `tq issue update <issue_id> --status in_progress` で issue のステータスを in_progress に変更する。
+1. dispatch が成功した直後に、orchestrator が `tq issue update <issue_id> --status in_progress` で issue のステータスを in_progress に変更する。
 2. 何らかの理由でタスクを完了できない場合は、`tq comment add <issue_id> --author claude-code --body "<comment>"` で阻害理由をコメントとして残し、`tq issue update <issue_id> --status blocked` で issue のステータスを blocked に変更する。
 3. タスクを完了したら、Pull Request を作成または更新する。
 4. Pull Request を作成できたら、`tq artifact set <issue_id> --type pull_request <pr_url>` でその URL を artifact として登録する。

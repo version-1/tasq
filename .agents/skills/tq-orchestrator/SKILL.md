@@ -21,9 +21,9 @@ Provide the orchestrator layer for tasq: poll ready issues from the issue tracke
 
 # Basic Workflow
 
-After `tq issue watch` detects a ready issue and the orchestrator dispatches it, the delegated agent must follow this workflow. If the project defines its own `WORKFLOW.md`, follow that project workflow first and use this workflow only as the default for anything it does not specify.
+After `tq issue watch` detects a ready issue, the orchestrator and delegated agent must follow this workflow for the dispatched work. If the project defines its own `WORKFLOW.md`, follow that project workflow first throughout the procedure and Workflow Template, and use this workflow only as the default for anything it does not specify.
 
-1. Change the issue status to in_progress with `tq issue update <issue_id> --status in_progress`.
+1. Immediately after a successful dispatch, the orchestrator changes the issue status to in_progress with `tq issue update <issue_id> --status in_progress`.
 2. If the task cannot be completed for any reason, leave a comment explaining the blocker with `tq comment add <issue_id> --author claude-code --body "<comment>"`, then change the issue status to blocked with `tq issue update <issue_id> --status blocked`.
 3. When the task is complete, create or update its pull request.
 4. After the pull request has been created, register its URL with `tq artifact set <issue_id> --type pull_request <pr_url>`.
