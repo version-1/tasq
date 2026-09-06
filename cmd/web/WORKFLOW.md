@@ -46,25 +46,16 @@ when the page reloads.
 
 ## API Generation
 
-The issue-tracker API client is generated from `docs/openapi/issue-tracker.yml`.
-The orchestrator API client is generated from `docs/openapi/orchestrator.yml`.
+See [../../docs/development.md](../../docs/development.md#api-generation) for the OpenAPI regeneration command and generated-file ownership.
 
-Run this command from `cmd/web/frontend` whenever either OpenAPI document changes:
-
-```sh
-npm run generate:api
-```
-
-Do not manually edit `cmd/web/frontend/src/lib/generated`.
 Update MSW handlers and fixtures under `cmd/web/frontend/src/mocks` when standalone frontend development uses the changed endpoint.
 
 ## Component Flow
 
-1. Put route-owned UI under the route's `_components` directory.
-2. Move components to `cmd/web/frontend/src/components` only when they are genuinely shared.
-3. Use the component directory shape defined in `docs/design/web.md`.
-4. Keep translated display strings in `cmd/web/frontend/src/lib/i18n.ts`.
-5. Keep API-facing types imported through `cmd/web/frontend/src/lib/types.ts` unless a generated operation is required directly.
+See [frontend/docs/design.md](frontend/docs/design.md) for frontend routing, feature/component placement, and directory ownership rules.
+
+- Keep translated display strings in `cmd/web/frontend/src/lib/i18n.ts`.
+- Keep API-facing types imported through `cmd/web/frontend/src/lib/types.ts` unless a generated operation is required directly.
 
 ## Verification
 
@@ -84,4 +75,4 @@ cd ../../..
 go build -o .tmp/tasq-web ./cmd/web
 ```
 
-Use `make dev-build` when verifying Go and Web UI changes together through Compose.
+See [../../docs/development.md](../../docs/development.md#verification) for the Compose-backed `make dev-build` check.

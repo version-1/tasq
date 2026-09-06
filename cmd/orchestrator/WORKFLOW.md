@@ -46,13 +46,7 @@ Run focused orchestrator tests while developing:
 go test ./internal/orchestrator/...
 ```
 
-Run broader checks before handing off behavior that changes runs, workspaces, or runtime inspection:
-
-```sh
-go test ./...
-```
-
-Use `make dev-test` when verifying through the Compose toolchain.
+Before handing off behavior that changes runs, workspaces, or runtime inspection, run the repository-wide checks in [../../docs/development.md](../../docs/development.md#verification).
 
 ## Operational Notes
 
