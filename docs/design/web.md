@@ -58,29 +58,11 @@ npm run generate:api
 
 Generated files live under `cmd/web/frontend/src/lib/generated` and must not be edited manually. Route-facing code should import API types through `cmd/web/frontend/src/lib/types.ts` unless it needs a generated operation directly.
 
-## Component Structure
+## Frontend Ownership
 
-Shared shell concerns, such as navigation, summary loading, refresh handling, and page selection, live outside route-specific component directories.
-
-Common components that are intentionally shared by multiple routes belong under `cmd/web/frontend/src/components`.
-
-Page-specific components live under the owning route's `_components` directory:
-
-- Issue page components belong in `cmd/web/frontend/src/app/issues/_components`.
-- Project detail tab components belong in `cmd/web/frontend/src/app/projects/[projectKey]/**/_components`.
-- Workspace page components belong in `cmd/web/frontend/src/app/workspace/_components`.
-- Settings page components belong in `cmd/web/frontend/src/app/settings/_components`.
-
-Keep components close to the route that owns their behavior. Move code to shared components only when it is genuinely shared across routes.
-
-Each component, whether shared or route-specific, must use a directory named after the component. Put the implementation, CSS Module, and component tests in that directory:
-
-```text
-<component-name>/
-├── index.tsx
-├── index.module.css
-└── index.test.tsx
-```
+The frontend component placement and directory-shape rules are maintained in
+[Frontend Design](../../cmd/web/frontend/docs/design.md). Use that document
+when adding or moving frontend UI.
 
 ## Internationalization
 
@@ -99,24 +81,10 @@ Issue cards show an `Open pull request` context-menu item only when the issue ha
 
 Both links open the external URL in a new tab without an opener. Artifact creation, updating, and deletion remain CLI and API operations; the Web UI is display-only for artifacts.
 
-## Theme
+## Theme and Tokens
 
-The Web UI supports light and dark themes. `cmd/web/frontend/index.html` resolves
-the initial theme before React mounts and sets `data-theme` on `html`, preventing
-the first paint from using the wrong token set.
-
-The resolution order is:
-
-1. A valid persisted value in `localStorage` under `tasq.theme` (`light` or
-   `dark`).
-2. The operating system preference from `prefers-color-scheme` when no valid
-   persisted value is available.
-
-`src/components/layout/use-theme.ts` owns the runtime behavior used by the
-layout sidebar switch. Changing the switch updates `html[data-theme]` and
-persists the explicit choice under `tasq.theme`. While no explicit choice is
-stored, the hook follows operating system preference changes; once a choice is
-stored, that choice takes precedence.
+Theme resolution, color tokens, and styling conventions are maintained in the
+[UI Design System](../../cmd/web/frontend/docs/ui-design-system.md).
 
 ## Styling
 
@@ -129,11 +97,12 @@ and shadow token values. Components must continue to consume semantic CSS
 variables rather than branching on the active theme or introducing theme-local
 color literals.
 
-See [Web UI Color Palette](web-color-pallete.md) for global color tokens.
+See the [UI Design System](../../cmd/web/frontend/docs/ui-design-system.md) for
+the complete global color-token palette.
 
 Examples:
 
 - `cmd/web/frontend/src/components/layout/index.module.css`
-- `cmd/web/frontend/src/app/issues/_components/issues-view/index.module.css`
+- `cmd/web/frontend/src/features/issues/components/issues-view/index.module.css`
 
 Do not add feature-specific class selectors to `cmd/web/frontend/src/app/globals.css`.

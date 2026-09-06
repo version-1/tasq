@@ -12,7 +12,9 @@ Web UI は Vite + React + TypeScript の single-page app を embed する Go HTT
 - User-facing strings は `cmd/web/frontend/src/lib/i18n.ts` に置きます。
 - Feature-specific styles は owning component または route の近くに置きます。
 
-Web UI structure と styling conventions は [docs/design/web.md](../../docs/design/web.md) を参照してください。
+Frontend の ownership と component placement rule は
+[Frontend Design](frontend/docs/design.ja.md) を、styling convention は
+[UI デザインシステム](frontend/docs/ui-design-system.ja.md) を参照してください。
 
 ## Local Run
 
@@ -52,7 +54,7 @@ OpenAPI 再生成コマンドと generated file の所有ルールは [../../doc
 
 ## Component Flow
 
-Frontend の routing、feature/component 配置、directory 所有ルールは [frontend/docs/design.md](frontend/docs/design.md) を参照してください。
+Frontend の routing、feature/component 配置、directory 所有ルールは [frontend/docs/design.ja.md](frontend/docs/design.ja.md) を参照してください。
 
 - Translated display strings は `cmd/web/frontend/src/lib/i18n.ts` に置きます。
 - Generated operation を直接使う必要がない限り、API-facing types は `cmd/web/frontend/src/lib/types.ts` 経由で import します。

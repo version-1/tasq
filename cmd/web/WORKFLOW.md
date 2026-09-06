@@ -12,7 +12,9 @@ Use this workflow when changing files under `cmd/web`.
 - Keep user-facing strings in `cmd/web/frontend/src/lib/i18n.ts`.
 - Keep feature-specific styles next to the owning component or route.
 
-See [docs/design/web.md](../../docs/design/web.md) for Web UI structure and styling conventions.
+See [Frontend Design](frontend/docs/design.md) for frontend ownership and
+component placement rules, and [UI Design System](frontend/docs/ui-design-system.md)
+for styling conventions.
 
 ## Local Run
 

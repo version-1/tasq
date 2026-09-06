@@ -188,27 +188,52 @@ component / feature token は、重複を減らす場合や feature palette を�
 | `--markdown-quote-border` | `#0075FF` | Markdown 本文内の blockquote 左 accent |
 | `--markdown-quote-text` | `#174A7C` | Markdown 本文内の blockquote 文字色 |
 
+次のグループは、上の semantic token の dark mode 値を記録します。
+
+| Token | Dark 値 |
+| --- | --- |
+| `--bg` / `--white` / `--surface-wash` | `#111315` |
+| `--surface` / `--surface-strong` | `#181B1F` / `#F0F3F6` |
+| `--border` / `--light-gray` | `#30363D` |
+| `--text` / `--accent` / `--primary-black` | `#F0F3F6` |
+| `--muted` / `--medium-gray` / `--control-divider` | `#9DA7B3` |
+| `--dark-gray` / `--extra-light-gray` | `#D0D7DE` / `#21262D` |
+| `--surface-hover` / `--surface-row-hover` | `#262C36` / `#1C2128` |
+| `--accent-color` / `--glow-color` | `#A78BFA` / `#C4B5FD` |
+| `--accent-strong` / `--control-strong` / `--control-strong-hover` | `#FFFFFF` / `#F0F3F6` / `#FFFFFF` |
+| `--danger` / `--warning` / `--ok` | `#FF7B72` / `#F2CC60` / `#3FB950` |
+| `--info-accent` / `--info-bg` / `--info-border` / `--info-text` | `#79C0FF` / `#12253D` / `#28547A` / `#B6D7FF` |
+| `--markdown-link` / `--markdown-link-hover` / `--markdown-link-visited` / `--markdown-checkbox` | `#79C0FF` / `#A5D6FF` / `#C4B5FD` / `#79C0FF` |
+| `--markdown-inline-code-bg` / `--markdown-inline-code-text` | `#1D2D3D` / `#A5D6FF` |
+| `--markdown-quote-bg` / `--markdown-quote-border` / `--markdown-quote-text` | `#172536` / `#58A6FF` / `#B6D7FF` |
+
 status、priority、project、approval、toast、filter-chip の tone は global
 token です。component は `--badge-bg` のような local variable へ代入できますが、
 元の値は `:root` から参照します。
 
-| 役割 | トークン |
-| ---- | -------- |
-| Priority high | `--priority-high-accent`, `--priority-high-bg`, `--priority-high-text` |
-| Priority normal | `--priority-normal-accent`, `--priority-normal-bg`, `--priority-normal-text` |
-| Priority low | `--priority-low-accent`, `--priority-low-bg`, `--priority-low-text` |
-| Status backlog | `--status-backlog-accent`, `--status-backlog-bg`, `--status-backlog-text` |
-| Status ready | `--status-ready-accent`, `--status-ready-bg`, `--status-ready-text` |
-| Status in progress | `--status-in-progress-accent`, `--status-in-progress-bg`, `--status-in-progress-text` |
-| Status review | `--status-review-accent`, `--status-review-bg`, `--status-review-text` |
-| Status done | `--status-done-accent`, `--status-done-bg`, `--status-done-text` |
-| Status blocked | `--status-blocked-accent`, `--status-blocked-bg`, `--status-blocked-text` |
-| Status failed | `--status-failed-accent`, `--status-failed-bg`, `--status-failed-text` |
-| Status muted | `--status-muted-accent`, `--status-muted-bg`, `--status-muted-text` |
-| Project | `--project-bg`, `--project-text` |
-| Approval | `--approval-bg`, `--warning`, request-approval event 強調用の `--info-*` |
-| Toast | `--toast-error-*`, `--toast-success-*` |
-| Filter chip | `--filter-chip-bg`, `--filter-chip-border` |
+各 3 値の state 行は `accent / background / text` の順です。この表と上の
+semantic token 表で完全なカラートークン一覧を構成します。実行可能な単一情報源は
+引き続き `src/app/globals.css` です。
+
+| 役割と Token | Light 値 | Dark 値 |
+| --- | --- | --- |
+| Priority high (`--priority-high-accent`, `--priority-high-bg`, `--priority-high-text`) | `#D97706` / `#FEF3C7` / `#92400E` | `#F2CC60` / `#3D310F` / `#F8E3A1` |
+| Priority normal (`--priority-normal-accent`, `--priority-normal-bg`, `--priority-normal-text`) | `#0284C7` / `#E0F2FE` / `#075985` | `#58A6FF` / `#112D4A` / `#A5D6FF` |
+| Priority low (`--priority-low-accent`, `--priority-low-bg`, `--priority-low-text`) | `#9CA3AF` / `#F3F4F6` / `#4B5563` | `#8B949E` / `#24292F` / `#C9D1D9` |
+| Status backlog (`--status-backlog-accent`, `--status-backlog-bg`, `--status-backlog-text`) | `#8A958D` / `#F3F4F6` / `#4B5563` | `#8B949E` / `#24292F` / `#C9D1D9` |
+| Status ready (`--status-ready-accent`, `--status-ready-bg`, `--status-ready-text`) | `#0E8F70` / `#DFF8EF` / `#047857` | `#56D364` / `#12372A` / `#7EE787` |
+| Status in progress (`--status-in-progress-accent`, `--status-in-progress-bg`, `--status-in-progress-text`) | `#2F6FB3` / `#E0F2FE` / `#075985` | `#58A6FF` / `#112D4A` / `#A5D6FF` |
+| Status review (`--status-review-accent`, `--status-review-bg`, `--status-review-text`) | `#B7791F` / `#FEF3C7` / `#92400E` | `#E3B341` / `#3D2E0C` / `#F2CC60` |
+| Status done (`--status-done-accent`, `--status-done-bg`, `--status-done-text`) | `#2F7D4F` / `#DCFCE7` / `#166534` | `#3FB950` / `#12372A` / `#7EE787` |
+| Status blocked (`--status-blocked-accent`, `--status-blocked-bg`, `--status-blocked-text`) | `#9A4F14` / `#FFEDD5` / `#9A3412` | `#F0883E` / `#3D260F` / `#F5B77A` |
+| Status failed (`--status-failed-accent`, `--status-failed-bg`, `--status-failed-text`) | `#B42318` / `#FEE2E2` / `#991B1B` | `#FF7B72` / `#3D1F22` / `#FFA198` |
+| Status muted (`--status-muted-accent`, `--status-muted-bg`, `--status-muted-text`) | `#667085` / `#F3F4F6` / `#4B5563` | `#8B949E` / `#24292F` / `#C9D1D9` |
+| Project (`--project-bg`, `--project-text`) | `#EEF6F8` / `#14636F` | `#12343B` / `#7DD3DC` |
+| Approval (`--approval-bg`) | `#FFF2CC` | `#3D310F` |
+| Toast error (`--toast-error-accent`, `--toast-error-bg`, `--toast-error-border`, `--toast-error-text`) | `#DC2626` / `#FEE2E2` / `#FECACA` / `#991B1B` | `#FF7B72` / `#3D1F22` / `#6E2B32` / `#FFA198` |
+| Toast success (`--toast-success-accent`, `--toast-success-bg`, `--toast-success-icon`) | `#16A34A` / `#DCFCE7` / `#15803D` | `#56D364` / `#12372A` / `#7EE787` |
+| Filter chip (`--filter-chip-bg`, `--filter-chip-border`) | `#F3F3F3` / `#EEEEEE` | `#24292F` / `#30363D` |
+| Backdrop (`--backdrop`) | `rgb(20 20 20 / 36%)` | `rgb(0 0 0 / 60%)` |
 
 table 行が利用する status tone (`statusToneClassName`) は、単一の
 `--status-color` にマッピングされます。
@@ -235,8 +260,12 @@ token を参照します。共通の table primitive は `var(--ledger-rule, var
 
 ライトテーマのトークンは `:root` に定義します。祖先要素（通常は `html`）に
 `data-theme="dark"` を付けると、コンポーネントトークンの参照を保ったまま、すべての色と
-shadow トークンを上書きします。ダークパレットの全体は
-[web-color-pallete.ja.md](design/web-color-pallete.ja.md) に記載します。
+shadow トークンを上書きします。この文書の semantic token 表と state 表には
+対応する dark 値も記載します。
+
+Dark mode では `--bg` と `--surface-wash` は `#111315`、`--surface` は
+`#181B1F` になります。暗い surface 上でも階層を維持するため、すべての shadow token
+もテーマ selector で上書きします。component ごとに shadow の色を直接指定してはいけません。
 
 `index.html` は React のマウント前に `html[data-theme]` を設定します。`localStorage` の
 `tasq.theme` に有効な値（`light` または `dark`）があればそれを優先し、保存値がない場合は
