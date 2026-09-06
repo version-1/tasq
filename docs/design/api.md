@@ -112,7 +112,7 @@ File bytes are stored below `$TQ_HOME/system/data/attachments`; SQLite stores me
 
 Use typed `tq` commands for routine issue, artifact, comment, project, and workflow operations. Use the allowlisted `tq api` command only when no typed command exposes the required issue-tracker operation.
 
-The raw command has its own fail-closed method-and-route allowlist. It does not automatically expose new OpenAPI routes, and it temporarily excludes `POST /api/v1/attachments` because multipart request construction is not supported. See the [tq command reference](../references/tq.md#raw-api-requests) for syntax, validation, output, and exit-status behavior.
+The raw command has its own fail-closed method-and-route allowlist. It does not automatically expose new OpenAPI routes, and it temporarily excludes `POST /api/v1/attachments` because multipart request construction is not supported. See the [CLI Reference](../site/docs/reference/cli-reference.md#raw-api-command) for syntax, validation, output, and exit-status behavior.
 
 ## Orchestrator inspection API
 

@@ -29,7 +29,7 @@ API URL resolution order is `--api-url`, `TQ_API_URL`, `$TQ_HOME/system/state.js
 | `tq issue get <id>` | Show one issue. |
 | `tq issue create --project <key> --title <title>` | Create an issue. |
 | `tq issue update <id> [flags]` | Update issue fields. |
-| `tq issue watch [--interval <duration>] [--seen-ttl <duration>] [--verbose]` | Poll ready issues and emit JSON event envelopes. |
+| `tq issue watch [--interval <seconds>] [--seen-ttl <seconds>] [--verbose]` | Poll ready issues and emit JSON event envelopes. |
 | `tq issue close <id>` | Move an issue to `done`. |
 | `tq issue cancel <id>` | Move an issue to `cancelled`. |
 | `tq issue ready <id>` | Move an issue to `ready`. |
@@ -37,14 +37,23 @@ API URL resolution order is `--api-url`, `TQ_API_URL`, `$TQ_HOME/system/state.js
 | `tq issue rename <id> <title>` | Update the title. |
 | `tq issue edit <id> <description>` | Update the description. |
 
-Create and update accept `--title`, `--description`, `--status`, `--priority`,
-`--assignee`, and `--attach` where applicable. Update also accepts
-`--dependency <comma-separated-ids>` to replace dependencies and
-`--clear-dependencies` to remove them.
+`issue create` requires `--project` and `--title`. It accepts `--description`,
+`--status`, `--priority`, `--assignee`, `--dependency <comma-separated-ids>`,
+and `--attach`; omitted status and priority default to `backlog` and `normal`.
+`issue update` requires at least one update flag. It accepts the same mutable
+fields, uses `--dependency` to replace dependencies, and uses
+`--clear-dependencies` to remove them; those two dependency flags cannot be
+combined. Empty dependency values are rejected.
 
-`tq issue watch` is intended for agent loops. It reads the ready queue,
-deduplicates emitted issues for the configured seen TTL, emits `issue-ready`
-events, and continues polling after transient API errors.
+`--attach` accepts PNG, JPEG, GIF, or WebP images and appends an
+`attachment://` Markdown reference. If updating that reference fails after an
+upload, the CLI removes the uploaded attachment.
+
+`tq issue watch` is intended for agent loops. It emits NDJSON event envelopes,
+reads the ready queue, deduplicates emitted issues for the configured seen TTL,
+and continues polling after transient API errors. `--interval` defaults to 30
+seconds and must be positive; `--seen-ttl` defaults to 900 seconds and must be
+greater than `--interval`. It ignores global `--output`.
 
 ## Artifact Commands
 
@@ -55,6 +64,10 @@ events, and continues polling after transient API errors.
 
 Both commands require a positive issue ID and `--type`, and support the global text and JSON output modes.
 
+Only `pull_request` is currently supported. The URL must be an absolute
+`http` or `https` URL with a host and no userinfo, up to 4,096 UTF-8 bytes.
+Repeating `artifact set` for an issue and type replaces its URL.
+
 ## Comment Commands
 
 | Command | Purpose |
@@ -62,7 +75,10 @@ Both commands require a positive issue ID and `--type`, and support the global t
 | `tq comment add <issue-id> --body <body>` | Add a comment. |
 | `tq comment list <issue-id>` | List comments for an issue. |
 
-Allowed comment types are `progress`, `blocker`, `handoff`, and `general`.
+`comment add` accepts `--type` (`general` by default; allowed values are
+`progress`, `blocker`, `handoff`, and `general`), `--author` (resolved from
+`TQ_AUTHOR`, the configuration's `author`, then `USER`), and `--attach` for a
+PNG, JPEG, GIF, or WebP image.
 
 ## Project and Workflow Commands
 
@@ -75,6 +91,15 @@ Allowed comment types are `progress`, `blocker`, `handoff`, and `general`.
 | `tq workflow add --project <key> (--file <path> \| --body <text>)` | Store a workflow override. |
 | `tq workflow remove --project <key>` | Remove the stored override. |
 | `tq workflow show --project <key> [--json]` | Show the resolved workflow. |
+
+`project add` resolves its path to a host-local absolute path and verifies it
+exists before registering it. `project remove` warns about deleting the
+project and descendant issues, comments, attachments, workflow overrides, and
+run data; it requires the exact project key unless `-y` is supplied. It fails
+when the project has running runs.
+
+`workflow show` resolves sources in this order: the registered project's
+`WORKFLOW.md`, the stored project override, then `$TQ_HOME/WORKFLOW.md`.
 
 ## Runtime Commands
 
@@ -97,6 +122,17 @@ Allowed comment types are `progress`, `blocker`, `handoff`, and `general`.
 | `tq update [-y] [--tag <tag>]` | Install a release, migrate databases, and restart services. |
 
 Log services are `tracker` or `issue-tracker`, `orchestrator`, and `web`.
+
+`service start` checks for pending issue-tracker and orchestrator migrations
+before launching processes and directs you to `tq migrate` if needed. It uses
+ports 37651, 37652, and 37653 by default; if any is occupied, it proposes
+loopback replacements and requires confirmation unless `-y` is provided.
+`service stop` stops Web, orchestrator, then issue-tracker. `service status`
+reports service state, PID, port, and uptime and supports JSON output.
+
+`logs` reads files under `$TQ_HOME/system/log/`, supports `-n` and `-f`, and
+does not support JSON output. `web` opens the URL from service state and fails
+if the Web UI is not running.
 
 `tq tui [--orchestrator-url URL]` requires a terminal and supports only text output. It reads issues, comments, artifacts, and run state without sending mutation requests. Use `--orchestrator-url` to override orchestrator discovery from `state.json`.
 

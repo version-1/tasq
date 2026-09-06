@@ -145,44 +145,10 @@ Documentation を更新するときは、英語版の `.md` と日本語版の `
 - Compose は Go module/build caches、`cmd/web/frontend/node_modules`、Codex login state、GitHub CLI login state を named Docker volumes に保存します。
 - Orchestrator は各 project の `WORKFLOW.md` から Symphony-oriented runtime settings と issue ごとの agent prompt を解決し、fallback として `$TQ_HOME/WORKFLOW.md` を使います。
 - Web UI は Go server の proxy paths `/tracker/*` と `/orchestrator/*` 経由で local backends を呼び出します。
-- `make run-tq` 経由で実行した `tq` は `$TQ_HOME/system/state.json` から issue-tracker API URL を解決します。
 - Codex を device auth で認証し、authentication を `codex-home` Docker volume に永続化するため、初回に `make dev-codex-login` を実行します。
 - GitHub CLI を認証し、Git が `gh` を HTTPS credential helper として使うよう設定し、credential を `gh-config` Docker volume に永続化するため、初回に `make dev-gh-login` を実行します。Dev container から push する場合は HTTPS Git remote を使います。
 - Codex または GitHub access が必要な agent workflow を実行する前に、`make dev-codex-status` と `make dev-gh-status` で dev container が認証済みであることを確認します。
 
 ## tq CLI
 
-issue を一覧表示します。
-
-```sh
-make run-tq ARGS="issue list"
-```
-
-issue を取得します。
-
-```sh
-make run-tq ARGS="issue get 1"
-```
-
-issue を作成します。
-
-```sh
-make run-tq ARGS='issue create --project tasq --title "Wire Symphony workflow" --description "Define the first workflow contract" --status ready --priority high'
-```
-
-よく使う status / text update には issue shortcut を使えます。
-
-```sh
-make run-tq ARGS="issue ready 1"
-make run-tq ARGS="issue close 1"
-make run-tq ARGS='issue rename 1 "Clarify workflow contract"'
-make run-tq ARGS='issue edit 1 "Updated description"'
-```
-
-machine-readable output が必要な場合は `--output json` を使います。
-
-```sh
-make run-tq ARGS="--output json issue list"
-```
-
-完全な command reference は [docs/references/tq.ja.md](references/tq.ja.md) を参照してください。
+利用者向けの [CLI リファレンス](site/i18n/ja/docusaurus-plugin-content-docs/current/reference/cli-reference.md)を `tq` の正典とします。Compose 固有の 1 つの実行方法と必要条件は、[Compose 開発環境での `tq`](references/tq.ja.md)を参照してください。

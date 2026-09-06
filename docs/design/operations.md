@@ -22,17 +22,7 @@ Recommended commands:
 - `make dev-ports`
 - `make dev-codex-login`
 
-CLI commands:
-
-- `make build-tq`
-- `make run-migrate`
-- `TQ_HOME=./.tasq go run ./cmd/tq migrate`
-- `make run-tq ARGS="issue list"`
-- `make run-tq ARGS="issue get 1"`
-- `TQ_HOME=./.tasq go run ./cmd/tq service status`
-- `tq tui` (aliases: `tq console`, `tq c`)
-
-`tq tui` requires an interactive terminal and text output. The issue-tracker URL follows the normal CLI resolution order. `--orchestrator-url` overrides the orchestrator address from service state. A missing or unavailable orchestrator degrades only the Run tab; tracker failures show a retry screen.
+For the `tq` command contract, see the user-facing [CLI Reference](../site/docs/reference/cli-reference.md). The Compose-specific invocation is documented in [tq in the Compose Development Environment](../references/tq.md); the [Makefile Reference](../references/makefile.md) lists development targets.
 
 `make build-tq` builds the host `tq` binary at `./bin/tq` and injects the current short commit hash into `tq version` through the shared build-info ldflags variable used by release builds.
 

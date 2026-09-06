@@ -145,44 +145,12 @@ This section is the single index of repository documentation. Do not duplicate t
 - Compose stores Go module/build caches, `cmd/web/frontend/node_modules`, Codex login state, and GitHub CLI login state in named Docker volumes.
 - The orchestrator resolves each project's `WORKFLOW.md` for Symphony-oriented runtime settings and the per-issue agent prompt, with `$TQ_HOME/WORKFLOW.md` as the fallback.
 - The Web UI calls local backends through the Go server proxy paths `/tracker/*` and `/orchestrator/*`.
-- `tq` resolves the issue-tracker API URL from `$TQ_HOME/system/state.json` when run through `make run-tq`.
 - Run `make dev-codex-login` once to authenticate Codex with device auth and persist credentials in the `codex-home` Docker volume.
 - Run `make dev-gh-login` once to authenticate GitHub CLI, configure Git to use `gh` as its HTTPS credential helper, and persist credentials in the `gh-config` Docker volume. Use an HTTPS Git remote for pushes from the dev container.
 - Use `make dev-codex-status` and `make dev-gh-status` to confirm the dev container is authenticated before running agent workflows that need Codex or GitHub access.
 
 ## tq CLI
 
-List issues:
-
-```sh
-make run-tq ARGS="issue list"
-```
-
-Get an issue:
-
-```sh
-make run-tq ARGS="issue get 1"
-```
-
-Create an issue:
-
-```sh
-make run-tq ARGS='issue create --project tasq --title "Wire Symphony workflow" --description "Define the first workflow contract" --status ready --priority high'
-```
-
-Use issue shortcuts for common status and text updates:
-
-```sh
-make run-tq ARGS="issue ready 1"
-make run-tq ARGS="issue close 1"
-make run-tq ARGS='issue rename 1 "Clarify workflow contract"'
-make run-tq ARGS='issue edit 1 "Updated description"'
-```
-
-Use `--output json` for machine-readable output:
-
-```sh
-make run-tq ARGS="--output json issue list"
-```
-
-For the full command reference, see [docs/references/tq.md](references/tq.md).
+The user-facing [CLI Reference](site/docs/reference/cli-reference.md) is the
+canonical specification for `tq`. For the one Compose-specific invocation and
+its prerequisites, see [tq in the Compose Development Environment](references/tq.md).

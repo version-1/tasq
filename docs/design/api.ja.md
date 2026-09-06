@@ -112,7 +112,7 @@ API を変更するときは、[development.ja.md](../development.ja.md)の手�
 
 通常の課題、Artifact、コメント、プロジェクト、ワークフロー操作には、型付きの `tq` コマンドを使用します。必要な Issue Tracker 操作が型付きコマンドにない場合に限り、許可リストで制限された `tq api` を使用します。
 
-生の API コマンドは、HTTP メソッドとルートの独自の許可リストを持ち、閉じた状態を既定とします。OpenAPI にルートを追加しても自動では公開しません。また、multipart リクエストの組み立てに対応していないため、`POST /api/v1/attachments` を一時的に除外しています。構文、入力検証、出力、終了ステータスについては、[tq コマンドリファレンス](../references/tq.ja.md#生の-api-リクエスト)を参照してください。
+生の API コマンドは、HTTP メソッドとルートの独自の許可リストを持ち、閉じた状態を既定とします。OpenAPI にルートを追加しても自動では公開しません。また、multipart リクエストの組み立てに対応していないため、`POST /api/v1/attachments` を一時的に除外しています。構文、入力検証、出力、終了ステータスについては、[CLI リファレンス](../site/i18n/ja/docusaurus-plugin-content-docs/current/reference/cli-reference.md#api-直接実行コマンド)を参照してください。
 
 ## オーケストレーター調査 API
 

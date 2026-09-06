@@ -29,7 +29,7 @@ API URL は `--api-url`、`TQ_API_URL`、`$TQ_HOME/system/state.json`、`http://
 | `tq issue get <id>` | 1 件の課題を表示します。 |
 | `tq issue create --project <key> --title <title>` | 課題を作成します。 |
 | `tq issue update <id> [flags]` | 課題のフィールドを更新します。 |
-| `tq issue watch [--interval <duration>] [--seen-ttl <duration>] [--verbose]` | 実行可能な課題を定期取得し、JSON イベントを出力します。 |
+| `tq issue watch [--interval <seconds>] [--seen-ttl <seconds>] [--verbose]` | 実行可能な課題を定期取得し、JSON イベントを出力します。 |
 | `tq issue close <id>` | 課題を `done` に移動します。 |
 | `tq issue cancel <id>` | 課題を `cancelled` に移動します。 |
 | `tq issue ready <id>` | 課題を `ready` に移動します。 |
@@ -37,12 +37,19 @@ API URL は `--api-url`、`TQ_API_URL`、`$TQ_HOME/system/state.json`、`http://
 | `tq issue rename <id> <title>` | タイトルを更新します。 |
 | `tq issue edit <id> <description>` | 説明を更新します。 |
 
-create と update は、該当する場合に `--title`、`--description`、`--status`、
-`--priority`、`--assignee`、`--attach` を受け付けます。update では、依存関係を
-置き換える `--dependency <comma-separated-ids>` と、依存関係を削除する
-`--clear-dependencies` も指定できます。
+`issue create` では `--project` と `--title` が必須です。`--description`、
+`--status`、`--priority`、`--assignee`、`--dependency <comma-separated-ids>`、
+`--attach` を指定でき、省略時のステータスと優先度はそれぞれ `backlog` と
+`normal` です。`issue update` では、少なくとも 1 つの更新フラグが必要です。
+同じ更新可能フィールドに加えて、依存関係を置き換える `--dependency` と、
+削除する `--clear-dependencies` を指定できます。これらは同時に指定できず、
+空の依存関係値は拒否されます。
 
-`tq issue watch` はエージェントのループ処理向けです。実行待ちキューを読み、設定された TTL の間は同じ課題を重複して出力せず、`issue-ready` イベントを出力します。一時的な API エラーが起きても取得を継続します。
+`--attach` では PNG、JPEG、GIF、WebP の画像を指定でき、`attachment://` の
+Markdown 参照を追記します。アップロード後に参照の更新が失敗した場合は、
+CLI がアップロード済みの添付ファイルを削除します。
+
+`tq issue watch` はエージェントのループ処理向けです。NDJSON のイベントエンベロープを出力し、実行待ちキューを読み、設定された TTL の間は同じ課題を重複して出力しません。一時的な API エラーが起きても取得を継続します。`--interval` の既定値は 30 秒で、正の値が必要です。`--seen-ttl` の既定値は 900 秒で、`--interval` より大きくなければなりません。グローバルな `--output` は使用しません。
 
 ## Artifact コマンド
 
@@ -53,6 +60,8 @@ create と update は、該当する場合に `--title`、`--description`、`--s
 
 どちらのコマンドも正の課題 ID と `--type` を必要とし、グローバルな text / JSON 出力モードに対応します。
 
+現在サポートする種別は `pull_request` だけです。URL はホストを含み userinfo を持たない絶対 `http` または `https` URL で、UTF-8 で 4,096 バイト以下でなければなりません。同じ課題と種別に対して `artifact set` を繰り返すと URL を置き換えます。
+
 ## コメントコマンド
 
 | コマンド | 用途 |
@@ -60,7 +69,7 @@ create と update は、該当する場合に `--title`、`--description`、`--s
 | `tq comment add <issue-id> --body <body>` | コメントを追加します。 |
 | `tq comment list <issue-id>` | 課題のコメントを一覧表示します。 |
 
-コメント種別には `progress`、`blocker`、`handoff`、`general` を指定できます。
+`comment add` には、`--type`（既定値は `general`。指定できる値は `progress`、`blocker`、`handoff`、`general`）、`--author`（`TQ_AUTHOR`、設定ファイルの `author`、`USER` の順に解決）、PNG、JPEG、GIF、WebP の画像を指定する `--attach` があります。
 
 ## プロジェクトとワークフローのコマンド
 
@@ -73,6 +82,10 @@ create と update は、該当する場合に `--title`、`--description`、`--s
 | `tq workflow add --project <key> (--file <path> \| --body <text>)` | ワークフローの上書きを保存します。 |
 | `tq workflow remove --project <key>` | 保存済みの上書きを削除します。 |
 | `tq workflow show --project <key> [--json]` | 解決済みワークフローを表示します。 |
+
+`project add` はパスをホスト上の絶対パスへ解決し、存在を確認してから登録します。`project remove` はプロジェクトと、その配下の課題、コメント、添付ファイル、ワークフロー上書き、実行データの削除を警告し、`-y` を指定しない限り正確なプロジェクトキーの入力を求めます。実行中の run があるプロジェクトでは失敗します。
+
+`workflow show` は、登録済みプロジェクトの `WORKFLOW.md`、保存済みプロジェクト上書き、`$TQ_HOME/WORKFLOW.md` の順に解決します。
 
 ## 実行環境のコマンド
 
@@ -95,6 +108,10 @@ create と update は、該当する場合に `--title`、`--description`、`--s
 | `tq update [-y] [--tag <tag>]` | リリースをインストールし、データベースを移行してサービスを再起動します。 |
 
 ログ対象には `tracker` または `issue-tracker`、`orchestrator`、`web` を指定できます。
+
+`service start` はプロセスを起動する前に Issue Tracker と orchestrator の未適用マイグレーションを確認し、必要な場合は `tq migrate` を案内します。既定ではポート 37651、37652、37653 を使います。いずれかが使用中の場合は loopback ポートを提案し、`-y` がない限り確認を求めます。`service stop` は Web、orchestrator、Issue Tracker の順に停止します。`service status` はサービスの状態、PID、ポート、稼働時間を表示し、JSON 出力にも対応します。
+
+`logs` は `$TQ_HOME/system/log/` 以下のファイルを読み、`-n` と `-f` を使えますが JSON 出力には対応しません。`web` はサービス状態から URL を開き、Web UI が起動していない場合は失敗します。
 
 `tq tui [--orchestrator-url URL]` はターミナルを必要とし、テキスト出力だけに対応します。課題、コメント、Artifact、実行状態を読み取りますが、データを変更するリクエストは送信しません。`--orchestrator-url` を指定すると、`state.json` による orchestrator の検出を上書きできます。
 
