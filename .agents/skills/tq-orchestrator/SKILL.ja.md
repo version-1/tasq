@@ -19,6 +19,16 @@ tasq のオーケストレータ層として issue tracker から ready な issu
 
 - issue を subagents に委譲せずに、スキルを実行したエージェント自身が issue を解決することは禁止する。
 
+# 基本ワークフロー
+
+`tq issue watch` が ready な issue を検出し、orchestrator が dispatch した後、委譲先の agent は以下のワークフローに従う。プロジェクト固有の `WORKFLOW.md` がある場合はその内容を優先し、規定されていない事項にのみこの基本ワークフローを適用する。
+
+1. `tq issue update <issue_id> --status in_progress` で issue のステータスを in_progress に変更する。
+2. 何らかの理由でタスクを完了できない場合は、`tq comment add <issue_id> --author claude-code --body "<comment>"` で阻害理由をコメントとして残し、`tq issue update <issue_id> --status blocked` で issue のステータスを blocked に変更する。
+3. タスクを完了したら、Pull Request を作成または更新する。
+4. Pull Request を作成できたら、`tq artifact set <issue_id> --type pull_request <pr_url>` でその URL を artifact として登録する。
+5. `tq issue update <issue_id> --status review` で issue のステータスを review に変更する。
+
 # 手順
 
 1. ユーザに polling の間隔（秒）を確認する。（デフォルト: 30）
@@ -58,6 +68,7 @@ tasq のオーケストレータ層として issue tracker から ready な issu
 6. Run the narrowest useful verification first, then broaden checks when shared behavior is affected.
 7. Commit the change and create or update a pull request.
   - 作成した pull request のタイトル・URL を issue に `tq comment add <issue_id> --author claude-code --body "<comment>"` でコメントとして残す。
+  - Pull Request を作成できたら、`tq artifact set <issue_id> --type pull_request <pr_url>` でその URL を artifact として登録する。
 8. 未対応事項など引き継ぐ内容がある場合は、`tq comment add <issue_id> --author claude-code --body "<comment>"` でコメントを残す.
 9. 作業が完了したら issue のステータスを `tq issue update <issue_id> --status review` で review に変更する。
 10. 作業が完了したら、作業に使用した Worktree/Branch を削除する。
@@ -69,4 +80,3 @@ tasq のオーケストレータ層として issue tracker から ready な issu
 タスクの実行中のエラーや実行許可が必要で作業が継続できない場合は、
   1. 継続不能な理由を `tq comment add <issue_id> --author claude-code --body "<comment>"` で issue にコメントを残す
   2. `tq issue update <issue_id> --status blocked` で issue のステータスを blocked に変更する
-

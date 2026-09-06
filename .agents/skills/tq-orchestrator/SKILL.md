@@ -19,6 +19,16 @@ Provide the orchestrator layer for tasq: poll ready issues from the issue tracke
 
 - The agent that runs this skill must not resolve issues itself. Issues must always be delegated to subagents.
 
+# Basic Workflow
+
+After `tq issue watch` detects a ready issue and the orchestrator dispatches it, the delegated agent must follow this workflow. If the project defines its own `WORKFLOW.md`, follow that project workflow first and use this workflow only as the default for anything it does not specify.
+
+1. Change the issue status to in_progress with `tq issue update <issue_id> --status in_progress`.
+2. If the task cannot be completed for any reason, leave a comment explaining the blocker with `tq comment add <issue_id> --author claude-code --body "<comment>"`, then change the issue status to blocked with `tq issue update <issue_id> --status blocked`.
+3. When the task is complete, create or update its pull request.
+4. After the pull request has been created, register its URL with `tq artifact set <issue_id> --type pull_request <pr_url>`.
+5. Change the issue status to review with `tq issue update <issue_id> --status review`.
+
 # Procedure
 
 1. Ask the user for the polling interval in seconds (default: 30).
@@ -58,6 +68,7 @@ The loop runs until it is stopped (SIGINT, kill, or the Monitor timeout); it doe
 6. Run the narrowest useful verification first, then broaden checks when shared behavior is affected.
 7. Commit the change and create or update a pull request.
   - Record the created pull request title and URL as a comment on the issue with `tq comment add <issue_id> --author claude-code --body "<comment>"`.
+  - After the pull request has been created, register its URL with `tq artifact set <issue_id> --type pull_request <pr_url>`.
 8. If there is anything to hand off, such as unresolved items, leave a comment with `tq comment add <issue_id> --author claude-code --body "<comment>"`.
 9. When the work is complete, change the issue status to review with `tq issue update <issue_id> --status review`.
 10. When the work is complete, delete the worktree/branch used for the work.
