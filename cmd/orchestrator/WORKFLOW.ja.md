@@ -46,13 +46,7 @@ go run ./cmd/orchestrator \
 go test ./internal/orchestrator/...
 ```
 
-Run、workspace、runtime inspection を変える behavior を渡す前に、broader checks を実行します。
-
-```sh
-go test ./...
-```
-
-Compose toolchain で確認するときは `make dev-test` を使います。
+Run、workspace、runtime inspection を変える behavior を渡す前に、[../../docs/development.md](../../docs/development.md#verification) にある repository 全体の checks を実行します。
 
 ## Operational Notes
 

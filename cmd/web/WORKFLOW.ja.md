@@ -46,25 +46,16 @@ Mock data は in-memory で、page reload 時に reset されます。
 
 ## API Generation
 
-Issue-tracker API client は `docs/openapi/issue-tracker.yml` から生成します。
-Orchestrator API client は `docs/openapi/orchestrator.yml` から生成します。
+OpenAPI 再生成コマンドと generated file の所有ルールは [../../docs/development.md](../../docs/development.md#api-generation) を参照してください。
 
-いずれかの OpenAPI document を変更したら、`cmd/web/frontend` から次を実行します。
-
-```sh
-npm run generate:api
-```
-
-`cmd/web/frontend/src/lib/generated` は手動編集しません。
 変更した endpoint が standalone frontend development で使われる場合は、`cmd/web/frontend/src/mocks` 配下の MSW handlers と fixtures も更新します。
 
 ## Component Flow
 
-1. Route-owned UI は route の `_components` directory に置きます。
-2. 複数 route で本当に共有する component だけ `cmd/web/frontend/src/components` へ移します。
-3. Component directory shape は `docs/design/web.md` に従います。
-4. Translated display strings は `cmd/web/frontend/src/lib/i18n.ts` に置きます。
-5. Generated operation を直接使う必要がない限り、API-facing types は `cmd/web/frontend/src/lib/types.ts` 経由で import します。
+Frontend の routing、feature/component 配置、directory 所有ルールは [frontend/docs/design.md](frontend/docs/design.md) を参照してください。
+
+- Translated display strings は `cmd/web/frontend/src/lib/i18n.ts` に置きます。
+- Generated operation を直接使う必要がない限り、API-facing types は `cmd/web/frontend/src/lib/types.ts` 経由で import します。
 
 ## Verification
 
@@ -84,4 +75,4 @@ cd ../../..
 go build -o .tmp/tasq-web ./cmd/web
 ```
 
-Go と Web UI を Compose 経由で一緒に検証するときは `make dev-build` を使います。
+Compose 経由の `make dev-build` check は [../../docs/development.md](../../docs/development.md#verification) を参照してください。

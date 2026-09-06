@@ -32,13 +32,7 @@ TQ_HOME=./.tasq go run ./cmd/issue-tracker -addr :37651
 
 1. Public API の behavior を変える場合は、domain、store、API handler、OpenAPI contract をまとめて更新します。
 2. SQLite schema 変更は `db/schema/issue_tracker.sql` に置きます。
-3. `docs/openapi/issue-tracker.yml` を変更した場合は、Web UI API client を再生成します。
-
-   ```sh
-   cd cmd/web/frontend
-   npm run generate:api
-   ```
-
+3. `docs/openapi/issue-tracker.yml` を変更した場合は、Web UI API client を再生成します。コマンドは [../../docs/development.md](../../docs/development.md#api-generation) を参照してください。
 4. `cmd/web/frontend/src/lib/generated` 配下の generated files は手動編集しません。
 
 ## Verification
@@ -49,18 +43,9 @@ TQ_HOME=./.tasq go run ./cmd/issue-tracker -addr :37651
 go test ./internal/issue/...
 ```
 
-Contract や persistence の変更を渡す前に、repository 全体の checks を実行します。
-
-```sh
-go test ./...
-cd web
-npm run typecheck
-```
-
-Compose toolchain で確認するときは `make dev-test` を使います。
+Contract や persistence の変更を渡す前に、[../../docs/development.md](../../docs/development.md#verification) にある repository 全体の checks を実行します。
 
 ## Operational Notes
 
-- issue status change は issue API 経由で行います。
 - Summary response は orchestrator run snapshot ではなく issue data だけを反映します。
 - work item claim や orchestrator event receiver など削除済み endpoint family は、明示的な contract 変更なしに再導入しません。

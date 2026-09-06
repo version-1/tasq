@@ -32,13 +32,7 @@ TQ_HOME=./.tasq go run ./cmd/issue-tracker -addr :37651
 
 1. Update the domain, store, API handler, and OpenAPI contract together when a behavior changes the public API.
 2. Keep SQLite schema changes in `db/schema/issue_tracker.sql`.
-3. Regenerate the Web UI API client when `docs/openapi/issue-tracker.yml` changes:
-
-   ```sh
-   cd cmd/web/frontend
-   npm run generate:api
-   ```
-
+3. Regenerate the Web UI API client when `docs/openapi/issue-tracker.yml` changes; see [../../docs/development.md](../../docs/development.md#api-generation) for the command.
 4. Do not manually edit generated files under `cmd/web/frontend/src/lib/generated`.
 
 ## Verification
@@ -49,18 +43,9 @@ Run focused Go tests while developing:
 go test ./internal/issue/...
 ```
 
-Run the broader repository checks before handing off a contract or persistence change:
-
-```sh
-go test ./...
-cd web
-npm run typecheck
-```
-
-Use `make dev-test` when verifying through the Compose toolchain.
+Before handing off a contract or persistence change, run the repository-wide checks in [../../docs/development.md](../../docs/development.md#verification).
 
 ## Operational Notes
 
-- Issue status changes must go through issue APIs.
 - Summary responses should reflect issue data only, not orchestrator run snapshots.
 - Removed endpoint families such as work item claims and orchestrator event receivers must not be reintroduced without an explicit contract change.
