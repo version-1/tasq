@@ -12,18 +12,30 @@ ignored for forward compatibility.
 ```yaml
 tasq:
   task_work_prompt: true
+tracker:
+  kind: local
+  endpoint: http://localhost:37651
+  api_key: $TRACKER_API_KEY
+  project_slug: tasq
+  active_states: [in_progress]
+  terminal_states: [done, cancelled]
 polling:
   interval_ms: 30000
 workspace:
   root: .workspaces
 agent:
   max_concurrent_agents: 10
+  max_concurrent_agents_by_state:
+    in_progress: 5
   max_turns: 20
   continuation_turns_enabled: false
   max_retry_attempts: 3
   max_retry_backoff_ms: 300000
 codex:
   command: codex app-server
+  approval_policy: on-request
+  thread_sandbox: workspace-write
+  turn_sandbox_policy: workspace-write
   read_timeout_ms: 5000
   turn_timeout_ms: 3600000
   stall_timeout_ms: 300000
@@ -46,12 +58,24 @@ prepends to the rendered agent prompt. It defaults to `true` when omitted. Set i
 when the workflow template provides its own issue-tracker synchronization instructions. See
 [System Prompts](../design/system-prompts.md) for the exact injected text and continuation behavior.
 
+`tracker` provides compatibility with the Symphony tracker shape. When `tracker.kind` is set,
+`tracker.project_slug` is required. `tracker.api_key` accepts `$VARIABLE` environment-variable
+indirection. Tasq dispatch eligibility and cleanup use its local issue-tracker state model; the
+tracker state lists are parsed for compatibility with the workflow contract.
+
 Relative `workspace.root` values resolve relative to the selected workflow file. Environment
 variable indirection and `~` expansion are supported for path fields.
 
 Continuation turns are disabled by default even when `agent.max_turns` is greater than one. Enable
 `agent.continuation_turns_enabled` when the workflow is prepared for multiple turns on the same live
 Codex thread.
+
+`agent.max_concurrent_agents_by_state` is parsed as a case-normalized map of positive per-state
+limits, but current Tasq scheduling does not apply those limits. `codex.approval_policy`,
+`codex.thread_sandbox`, and `codex.turn_sandbox_policy` are accepted for contract compatibility,
+but the current runner does not apply them to Codex app-server configuration.
+`codex.stall_timeout_ms` must be positive; unlike Symphony, Tasq does not use a non-positive value
+to disable stall detection.
 
 Runner progress, workspace metadata, workspace setup failures, and cleanup state are stored in the
 orchestrator SQLite database. Large transcript artifacts are not written to separate filesystem
