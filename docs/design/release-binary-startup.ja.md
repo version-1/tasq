@@ -62,13 +62,13 @@ tq service status
 tq web
 ```
 
-`tq service start` は 3 つの managed service を固定の loopback port で起動する。
+`tq service start` は 3 つの managed service を固定の loopback port で起動する。port 表は [インストール](../site/i18n/ja/docusaurus-plugin-content-docs/current/getting-started/install.md)を参照。各 service の data:
 
-| Service | Port | Data |
-| --- | ---: | --- |
-| `issue-tracker` | `37651` | `$TQ_HOME/system/data/issues.sqlite` |
-| `orchestrator` | `37652` | `$TQ_HOME/system/data/orchestrator.sqlite` |
-| `web` | `37653` | `web` バイナリに埋め込まれた static assets |
+| Service | Data |
+| --- | --- |
+| `issue-tracker` | `$TQ_HOME/system/data/issues.sqlite` |
+| `orchestrator` | `$TQ_HOME/system/data/orchestrator.sqlite` |
+| `web` | `web` バイナリに埋め込まれた static assets |
 
 `tq service start` は `$TQ_HOME/system/bin` の `issue-tracker`、`orchestrator`、`web` だけを起動する。実行中の `tq` の隣、`PATH`、source tree は探索しない。管理対象の binary が欠落または実行不可の場合は、サービスを起動する前にすべての不正な path を報告し、同じ `TQ_HOME` を指定した再インストールを案内する。
 
@@ -119,6 +119,6 @@ README では、次の制約付きで binary full experience をサポート済�
 
 - `tq service start` の前に `tq migrate` を入れる。
 - インストーラーが `tq` を公開 install directory に、3サービスを `$TQ_HOME/system/bin` に配置すると書く。
-- default ports `37651`、`37652`、`37653` を明記する。
+- default ports を明記する（port 表は [インストール](../site/i18n/ja/docusaurus-plugin-content-docs/current/getting-started/install.md)を参照）。
 - custom ports が必要な場合は手動 service startup が必要だと説明する。
 - ダウンロード済み release の runtime requirements には Node.js を含めない。`web` は built frontend を埋め込んでいるため。

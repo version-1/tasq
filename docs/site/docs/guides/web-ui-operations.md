@@ -24,13 +24,7 @@ tq web
 
 ## Runtime Ports
 
-Host-only service mode uses fixed local ports:
-
-| Service | Port |
-| --- | ---: |
-| issue-tracker | `37651` |
-| orchestrator | `37652` |
-| web | `37653` |
+Host-only service mode uses fixed local ports. See [Installation](pathname:///getting-started/install) for the port table.
 
 Discovery metadata is written to `$TQ_HOME/system/state.json`, and logs are written under `$TQ_HOME/system/log/`.
 

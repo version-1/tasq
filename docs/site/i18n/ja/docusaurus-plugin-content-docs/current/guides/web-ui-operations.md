@@ -24,13 +24,7 @@ tq web
 
 ## Runtime Ports
 
-host-only service mode は fixed local ports を使います。
-
-| Service | Port |
-| --- | ---: |
-| issue-tracker | `37651` |
-| orchestrator | `37652` |
-| web | `37653` |
+host-only service mode は fixed local ports を使います。ポート表は [インストール](pathname:///getting-started/install)を参照してください。
 
 Discovery metadata は `$TQ_HOME/system/state.json` に書き込まれ、logs は `$TQ_HOME/system/log/` 配下に書き込まれます。
 
