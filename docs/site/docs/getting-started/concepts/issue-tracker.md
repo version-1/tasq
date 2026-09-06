@@ -14,13 +14,11 @@ clients.
 
 ## Responsibilities
 
-- Store and validate issue data.
-- Require each issue to belong to one project.
-- Store comments and image attachment metadata.
+- Store and validate project, issue, comment, and attachment data as the single source of truth for Tasq work.
+- Serve the project, issue, comment, attachment, workflow, and summary API used by `tq`, the Web UI, and agents.
 - Associate issues with external artifacts such as pull-request URLs.
-- Store attachment bytes under `$TQ_HOME/system/data/attachments`.
-- Serve project, issue, comment, attachment, workflow, and summary endpoints.
-- Prevent project deletion while linked issues exist.
+
+See [Architecture: issue-tracker](https://github.com/version-1/tasq/blob/main/docs/design/architecture.md#issue-tracker) for the full responsibility list and ownership boundaries.
 
 ## Issue Workflow
 

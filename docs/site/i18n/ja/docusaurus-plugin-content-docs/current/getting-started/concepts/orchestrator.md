@@ -11,13 +11,12 @@ runner events、Codex app-server-backed execution の boundary です。
 
 ## 責務
 
-- 自身の SQLite database に run records を作成する。
-- orchestration に使う repository workflow configuration を読み込む。
-- configured workspace root 配下に sanitized per-issue workspaces を作成する。
-- runner events と workspace metadata を記録する。
+- run records、runner events、workspace metadata を所有する runtime source of truth である。
 - blocked になった Codex セッションを、開始元の issue に接続し直すために十分な
   run metadata を保持する。
 - runtime state と run details のための optional loopback HTTP APIs を公開する。
+
+責務の全リストと所有境界は [Architecture: orchestrator](https://github.com/version-1/tasq/blob/main/docs/design/architecture.ja.md#orchestrator) を参照してください。
 
 ## 所有しないもの
 

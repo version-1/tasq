@@ -55,15 +55,15 @@ flowchart LR
 
 ## 状態の境界
 
-Issue status と run status は意図的に異なる概念です。
-
-| 領域 | Owner | Examples |
-| --- | --- | --- |
-| Issue workflow | Issue Tracker | `backlog`, `ready`, `in_progress`, `blocked`, `failed`, `review`, `done` |
-| Run lifecycle | Orchestrator | `queued`, `running`, `waiting_for_input`, `succeeded`, `failed` |
-| Workspace metadata | Orchestrator | workspace path, setup result, source path |
-| Attachments | Issue Tracker | `TQ_HOME` 配下の image metadata と bytes |
+Issue status と run status は意図的に異なる概念であり、それぞれ単一の owner を持ちます。
+issue-tracker が issue status を、orchestrator が run status と workspace metadata を所有します。
 
 この分離により、orchestration internals が進化しても user workflow は安定したままに
 なります。また、issue workflow state を変えずに、Web UI に表示される run metadata
 から blocked になった Codex セッションを復旧できます。
+
+status の正典となる値の一覧、queue-status の導出、標準遷移は
+[Issue and Queue Status](https://github.com/version-1/tasq/blob/main/docs/design/status.ja.md) を、
+所有関係の要約は
+[Architecture: State Ownership](https://github.com/version-1/tasq/blob/main/docs/design/architecture.ja.md#state-ownership)
+を参照してください。

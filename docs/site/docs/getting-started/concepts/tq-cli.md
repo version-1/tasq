@@ -17,13 +17,12 @@ agents choose the right command without guessing.
 
 ## Design Goals
 
-- Keep common issue operations scriptable.
-- Return human-readable output by default.
-- Support `--output json` for tools and agents.
-- Resolve local service URLs without requiring every command to pass an API URL.
+- Keep common issue operations scriptable, with human-readable output by default and `--output json` for tools and agents.
 - Give agents one stable command surface for issue lookup, artifacts, comments, and status
   transitions.
 - Avoid direct orchestration mutations from issue commands.
+
+See [Architecture: tq](https://github.com/version-1/tasq/blob/main/docs/design/architecture.md#tq) for the full responsibility list, including API URL resolution order and service management.
 
 ## API URL Resolution
 

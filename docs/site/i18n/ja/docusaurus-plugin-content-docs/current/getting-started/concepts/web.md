@@ -15,14 +15,12 @@ backends に proxy します。
 
 ## 責務
 
-- project と issue summaries を render する。
-- status、priority、assignee、descriptions、comments、利用可能な run links を表示する。
+- issue-tracker API を通じて、ブラウザ上で Tasq issue summaries を render・更新する。
 - 課題に該当 Artifact がある場合、課題カードと詳細サイドバーにプルリクエストへのリンクを表示する。
 - blocked になったセッションを resume するときに Codex thread ID などの run context を
   確認できるよう、issue activity を表示する。
-- issue-tracker API を通じて issues を statuses 間で移動する。
-- SPA fallback で browser routes を提供する。
-- `/tracker/*` を issue-tracker に、`/orchestrator/*` を orchestrator に proxy する。
+
+SPA routing と tracker/orchestrator proxy path を含む責務の全リストは [Architecture: web-ui](https://github.com/version-1/tasq/blob/main/docs/design/architecture.ja.md#web-ui) を参照してください。
 
 ## リクエスト経路
 

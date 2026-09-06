@@ -95,6 +95,8 @@ Responsibilities:
 
 orchestrator は run record、run attempt、runner event、workspace metadata の source of truth です。
 
+orchestrator 内部のパッケージ単位の境界（`run`、`runstore`、`tracker` など）については [internal/orchestrator/README.md](../../internal/orchestrator/README.md) を参照してください。このドキュメントは実装レベルのパッケージ責務を説明するものであり、ここで定義したコンポーネント所有権の再掲ではありません。
+
 ### agent
 
 将来のエージェントは、orchestrator に制御される Codex app-server プロセスです。
@@ -140,27 +142,7 @@ tq ─────┘
 
 ## State Ownership
 
-課題の状態と実行状態は別々のものです。
-
-課題の状態は issue-tracker が所有します。
-
-- `backlog`
-- `ready`
-- `in_progress`
-- `review`
-- `done`
-- `blocked`
-- `failed`
-
-実行状態は orchestrator が所有します。
-
-- `queued`
-- `starting`
-- `running`
-- `waiting_for_input`
-- `succeeded`
-- `failed`
-- `cancelled`
+課題の状態と実行状態は別々の概念であり、所有者もそれぞれ異なります。課題の状態は issue-tracker が所有し、実行状態は orchestrator が所有します。status の正典となる値の一覧、queue-status の導出、標準遷移は [status.ja.md](status.ja.md) を参照してください。
 
 orchestrator は課題の状態を直接変更しません。課題の状態変更は issue-tracker の課題 API 経由で行います。
 

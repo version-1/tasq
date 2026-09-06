@@ -95,6 +95,8 @@ Responsibilities:
 
 The orchestrator is the source of truth for run records, run attempts, runner events, and workspace metadata.
 
+For the package-level boundaries inside the orchestrator (`run`, `runstore`, `tracker`, and related packages), see [internal/orchestrator/README.md](../../internal/orchestrator/README.md). That document describes implementation-level package responsibilities, not a second copy of the component ownership defined here.
+
 ### agent
 
 The future agent is a Codex app-server process controlled by the orchestrator.
@@ -140,27 +142,7 @@ tq ─────┘
 
 ## State Ownership
 
-Issue status and run status are separate.
-
-Issue status belongs to the issue-tracker:
-
-- `backlog`
-- `ready`
-- `in_progress`
-- `review`
-- `done`
-- `blocked`
-- `failed`
-
-Run status belongs to the orchestrator:
-
-- `queued`
-- `starting`
-- `running`
-- `waiting_for_input`
-- `succeeded`
-- `failed`
-- `cancelled`
+Issue status and run status are separate concepts with separate owners. Issue status belongs to the issue-tracker; run status belongs to the orchestrator. For the canonical status value lists, queue-status derivation, and standard transitions, see [status.md](status.md).
 
 The orchestrator does not directly change issue status. Issue status changes go through the issue-tracker issue APIs.
 

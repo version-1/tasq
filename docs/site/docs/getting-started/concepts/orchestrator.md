@@ -12,13 +12,12 @@ execution.
 
 ## Responsibilities
 
-- Create run records in its own SQLite database.
-- Load repository workflow configuration used for orchestration.
-- Create sanitized per-issue workspaces under the configured workspace root.
-- Record runner events and workspace metadata.
+- Own run records, runner events, and workspace metadata as the runtime source of truth.
 - Keep enough run metadata to reconnect a blocked Codex session to the issue
   that started it.
 - Expose optional loopback HTTP APIs for runtime state and run details.
+
+See [Architecture: orchestrator](https://github.com/version-1/tasq/blob/main/docs/design/architecture.md#orchestrator) for the full responsibility list and ownership boundaries.
 
 ## What It Does Not Own
 

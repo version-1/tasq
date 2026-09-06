@@ -17,13 +17,12 @@ Tasq 利用では、`tq` は Codex や Claude Code などのエージェント�
 
 ## 設計目標
 
-- common issue operations を scriptable に保つ。
-- default では human-readable output を返す。
-- tools と agents 向けに `--output json` を support する。
-- すべての command に API URL を渡さなくても local service URLs を解決する。
+- common issue operations を scriptable に保ち、default では human-readable output を返し、tools と agents 向けに `--output json` を support する。
 - 課題の検索、Artifact、コメント、ステータス遷移のために、エージェントへ 1 つの安定した
   command surface を提供する。
 - issue commands から direct orchestration mutations を避ける。
+
+API URL の解決順序や service management を含む責務の全リストは [Architecture: tq](https://github.com/version-1/tasq/blob/main/docs/design/architecture.ja.md#tq) を参照してください。
 
 ## API URL の解決
 
