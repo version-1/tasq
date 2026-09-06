@@ -51,7 +51,7 @@ Tasq の Issue Tracker から ready の課題を監視し、プロジェクト�
 > [!NOTE]
 > `tq issue watch` は実験的なコマンドであり、CLI の他の機能から意図的に分離されている。
 
-`tq issue watch` はグローバルの `--output` フラグを無視し、常に1行につき1個の JSON オブジェクトを出力する。
+`tq issue watch` はグローバルの `--output` フラグを無視し、常に1行につき1個の JSON オブジェクトを出力する。標準出力の各行が Monitor の通知1件になる。
 
 - `{"type":"error","body":"<message>"}` — 一時的な監視エラー。ループは継続する。
 - `{"type":"event","eventType":"issue-ready","body":<issue>}` — ready の課題。`body` に課題の全データが含まれる。

@@ -51,7 +51,7 @@ If the task cannot be completed for any reason, including an error or missing co
 > [!NOTE]
 > `tq issue watch` is experimental and intentionally isolated from the rest of the CLI.
 
-`tq issue watch` ignores the global `--output` flag and always writes one JSON object per line:
+`tq issue watch` ignores the global `--output` flag and always writes one JSON object per line. Each stdout line becomes one Monitor notification.
 
 - `{"type":"error","body":"<message>"}` — a transient polling failure; the loop continues.
 - `{"type":"event","eventType":"issue-ready","body":<issue>}` — a ready issue; `body` contains the full issue payload.
