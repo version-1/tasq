@@ -22,17 +22,7 @@ state に記録されたローカル orchestrator だけを管理するには、
 - `make dev-ports`
 - `make dev-codex-login`
 
-CLI コマンド:
-
-- `make build-tq`
-- `make run-migrate`
-- `TQ_HOME=./.tasq go run ./cmd/tq migrate`
-- `make run-tq ARGS="issue list"`
-- `make run-tq ARGS="issue get 1"`
-- `TQ_HOME=./.tasq go run ./cmd/tq service status`
-- `tq tui`（別名: `tq console`、`tq c`）
-
-`tq tui` には対話型端末と text 出力が必要です。Issue Tracker の URL は通常の CLI 解決順に従います。`--orchestrator-url` はサービス状態に保存されたオーケストレーターのアドレスより優先されます。オーケストレーターが未設定または利用できない場合は Run タブだけを縮退表示し、Issue Tracker の障害時は再試行画面を表示します。
+`tq` のコマンド仕様は、利用者向けの [CLI リファレンス](../site/i18n/ja/docusaurus-plugin-content-docs/current/reference/cli-reference.md)を参照してください。Compose 固有の実行方法は [Compose 開発環境での `tq`](../references/tq.ja.md)に、開発用ターゲットは [Makefile リファレンス](../references/makefile.ja.md)に記載しています。
 
 `make build-tq` はホスト用の `tq` binary を `./bin/tq` に build し、release build と同じ共有 build-info ldflags variable を通じて現在の short commit hash を `tq version` に注入します。
 
