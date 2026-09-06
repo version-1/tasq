@@ -17,8 +17,8 @@ Validation is enforced at the **store layer** (Go code) on every create and upda
 | ProjectKey  | `string`   | response           | —                  | —           | copied from referenced project                                     |
 | Title       | `string`   | yes                | optional (`*string`) | —          | min 1, max 500 chars                                              |
 | Description | `string`   | no                 | optional (`*string`) | `""`       | max 10,000 chars                                                  |
-| Status      | `Status`   | no                 | optional (`*Status`) | `backlog`  | enum: `backlog`, `ready`, `in_progress`, `review`, `done`, `blocked`, `failed`, `cancelled`, `duplicate` |
-| Priority    | `Priority` | no                 | optional (`*Priority`) | `normal` | enum: `low`, `normal`, `high`, `urgent`                           |
+| Status      | `Status`   | no                 | optional (`*Status`) | `backlog`  | enum, see [Enum fields](#enum-fields)                             |
+| Priority    | `Priority` | no                 | optional (`*Priority`) | `normal` | enum, see [Enum fields](#enum-fields)                             |
 | Assignee    | `string`   | no                 | optional (`*string`) | `""`       | max 200 chars, free text                                          |
 | DependencyIDs | `[]int64` | no               | optional (`*[]int64`) | `[]`      | full replacement when set; each ID must reference an issue; no duplicates; no self-dependency; no cycles |
 | Artifacts | `[]Artifact` | response | — | `[]` | sorted by `type`; every issue response includes an array, never `null` |
@@ -45,17 +45,9 @@ Validation trims surrounding whitespace before parsing, rejects invalid UTF-8, a
 
 ### CreateIssueInput
 
-`CreateIssueInput` is the request body for `POST /api/v1/issues`.
+`CreateIssueInput` is the request body for `POST /api/v1/issues`. Its fields are the same subset of the Issue table above that accepts client input at create time — `project_id`, `title`, `description`, `status`, `priority`, `assignee`, `dependency_ids` — with the required/default/constraint rules from the Issue table's **Required (Create)** and **Default** columns applying unchanged. `dependency_ids` here means the initial dependency set (same validation as an update: each ID must reference an issue; no duplicates; no self-dependency; no cycles).
 
-| Field         | Go Type    | Required | Default   | Constraints |
-|---------------|------------|----------|-----------|-------------|
-| ProjectID     | `int64`    | yes      | —         | `> 0`, referenced project must exist |
-| Title         | `string`   | yes      | —         | min 1, max 500 chars |
-| Description   | `string`   | no       | `""`      | max 10,000 chars |
-| Status        | `Status`   | no       | `backlog` | enum: `backlog`, `ready`, `in_progress`, `review`, `done`, `blocked`, `failed`, `cancelled`, `duplicate` |
-| Priority      | `Priority` | no       | `normal`  | enum: `low`, `normal`, `high`, `urgent` |
-| Assignee      | `string`   | no       | `""`      | max 200 chars, free text |
-| DependencyIDs | `[]int64`  | no       | `[]`      | initial dependency set; each ID must reference an issue; no duplicates; no self-dependency; no cycles |
+Fields that do not appear in `CreateIssueInput` are server-generated or response-only: `id`, `project_key`, `artifacts`, `created_at`, `updated_at`.
 
 `dependency_ids` is applied in the same transaction as issue creation. If dependency validation fails, the issue is not created.
 
@@ -82,7 +74,7 @@ Queue state is derived from this table and issue status. `queued` means the issu
 | ID          | `int64`       | auto               | path param         | autoincrement | `> 0`                                                            |
 | IssueID     | `int64`       | yes                | —                  | —           | `> 0`, referenced issue must exist                                 |
 | Author      | `string`      | yes                | —                  | —           | min 1                                                              |
-| Type        | `CommentType` | no                 | —                  | `general`   | enum: `progress`, `blocker`, `handoff`, `general`                  |
+| Type        | `CommentType` | no                 | —                  | `general`   | enum, see [Enum fields](#enum-fields)                              |
 | Body        | `string`      | yes                | optional (`*string`) | —         | min 1, max 10,000 chars; may contain Markdown attachment refs      |
 | CreatedAt   | `time.Time`   | auto               | —                  | `now()`     | —                                                                  |
 
@@ -96,7 +88,7 @@ Change requests store additional user or reviewer requests that should be handle
 | IssueID         | `int64`               | yes               | —                 | —             | `> 0`, referenced issue must exist |
 | Author          | `string`              | yes               | —                 | —             | min 1 |
 | Body            | `string`              | yes               | optional (`*string`) | —          | min 1, max 10,000 chars; editable only while `open` |
-| Status          | `ChangeRequestStatus` | auto              | optional          | `open`        | enum: `open`, `in_progress`, `resolved`, `canceled` |
+| Status          | `ChangeRequestStatus` | auto              | optional          | `open`        | enum, see [Enum fields](#enum-fields) |
 | CreatedAt       | `time.Time`           | auto              | —                 | `now()`       | — |
 | UpdatedAt       | `time.Time`           | auto              | auto              | `now()`       | — |
 | ResolvedAt      | `*time.Time`          | —                 | auto on resolve   | `NULL`        | set when status becomes `resolved` |
@@ -110,11 +102,11 @@ Allowed status transitions are `open -> in_progress`, `open -> canceled`, `in_pr
 | Field       | Go Type    | Required (Create) | Required (Update) | Default | Constraints                                                        |
 |-------------|------------|--------------------|--------------------|---------|--------------------------------------------------------------------|
 | ID          | `string`   | generated          | path param         | —       | min 1, max 80 chars                                                |
-| EntityType  | `string`   | yes                | —                  | —       | enum: `issue`, `comment`                                           |
+| EntityType  | `string`   | yes                | —                  | —       | enum, see [Enum fields](#enum-fields)                              |
 | EntityID    | `string`   | yes                | —                  | —       | min 1, max 80 chars; referenced entity must exist on upload        |
 | Filename    | `string`   | yes                | —                  | —       | basename only, min 1, max 255 chars                                |
 | Path        | `string`   | generated          | —                  | —       | relative path under `$TQ_HOME`, max 1,000 chars                    |
-| ContentType | `string`   | yes                | —                  | —       | `image/png`, `image/jpeg`, `image/gif`, or `image/webp`            |
+| ContentType | `string`   | yes                | —                  | —       | enum, see [Enum fields](#enum-fields)                              |
 | Size        | `int64`    | yes                | —                  | —       | `> 0`, max 5 MiB                                                   |
 | CreatedAt   | `time.Time`| auto               | —                  | `now()` | —                                                                  |
 
@@ -125,7 +117,7 @@ Attachment records live in SQLite, while file bytes are stored under `$TQ_HOME/s
 | Field       | Go Type    | Required (Create) | Required (Update) | Default     | Constraints                                                        |
 |-------------|------------|--------------------|--------------------|-------------|--------------------------------------------------------------------|
 | ID          | `int64`    | auto               | path param         | autoincrement | `> 0`                                                            |
-| Key         | `string`   | yes                | optional (`*string`) | —          | regex: `^[A-Z][A-Z0-9_]{0,19}$` (1-20 chars, uppercase start)    |
+| Key         | `string`   | yes                | optional (`*string`) | —          | regex: `^([A-Z][A-Z0-9_]{0,19}\|[a-z][a-z0-9-]{0,63})$` — 1-20 chars uppercase legacy key (`A-Z`, `0-9`, `_`) or 1-64 chars lowercase kebab-case key |
 | Name        | `string`   | yes                | optional (`*string`) | —          | min 1, max 200 chars                                              |
 | Description | `string`   | no                 | optional (`*string`) | `""`       | max 10,000 chars                                                  |
 | Location    | `string`   | yes                | optional (`*string`) | —          | absolute path (`/` prefix), max 1,000 chars, `os.Stat` directory existence check on set |
@@ -169,7 +161,7 @@ Each SQLite database owns a `schema_migrations` table. The migration engine writ
 | ID             | `int64`      | auto               | —                  | autoincrement | `> 0`                                                            |
 | RunID          | `string`     | auto               | —                  | `uuid.NewString()` | generated by store                                          |
 | IssueID        | `int64`      | yes                | —                  | —           | `> 0`                                                              |
-| Status         | `run.Status` | auto               | yes                | `queued`    | enum: `queued`, `running`, `succeeded`, `failed`, `cancelled`      |
+| Status         | `run.Status` | auto               | yes                | `queued`    | enum, see [Enum fields](#enum-fields)                              |
 | Workspace      | `string`     | no                 | —                  | `""`        | max 1,000 chars                                                    |
 | ThreadID       | `string`     | no                 | optional           | `NULL`      | max 200 chars; stores the Codex app-server thread identifier for resume |
 | Attempt        | `int`        | yes                | —                  | —           | `>= 0`                                                             |
@@ -220,15 +212,7 @@ Recorded via `RecordWorkspaceSetupFailure(ctx, issueID, workspaceKey, path, errT
 
 ## Validation Rules Summary
 
-### String length
-
-| Limit       | Fields                                                                 |
-|-------------|------------------------------------------------------------------------|
-| max 200     | Issue.Assignee, Project.Key, Project.Name, Workspace.Name, Run.ThreadID, Run.OrchestratorID, RunnerEvent.RunID, RunnerEvent.EventType, WorkspaceMetadata.WorkspaceKey, WorkspaceSetupFailure.WorkspaceKey |
-| max 500     | Issue.Title                                                            |
-| max 1,000   | Attachment.Path, Project.Location, Workspace.Path, Run.Workspace, WorkspaceMetadata.Path, WorkspaceMetadata.SourcePath, WorkspaceSetupFailure.Path |
-| max 10,000  | Issue.Description, Comment.Body, Project.Description, Run.Error, RunnerEvent.Message, WorkspaceSetupFailure.Error |
-| max 50,000  | RunnerEvent.PayloadJSON                                                |
+String length limits are listed per field in each entity table's **Constraints** column above. There is no separate string-length summary table: keeping the limit next to the field it constrains avoids the two copies drifting apart on future edits.
 
 ### Path fields
 
@@ -256,8 +240,6 @@ Directory existence is not checked by the API for:
 | Workspace.Status | `active`, `inactive`, `archived`                                      |
 | Run.Status       | `queued`, `running`, `succeeded`, `failed`, `cancelled`               |
 
-### Format constraints
+This table is the single source for enum values in this document; entity tables above reference it instead of repeating the value list.
 
-| Field       | Pattern                          | Description                              |
-|-------------|----------------------------------|------------------------------------------|
-| Project.Key | `^([A-Z][A-Z0-9_]{0,19}\|[a-z][a-z0-9-]{0,63})$` | 1-20 chars uppercase legacy key (`A-Z`, `0-9`, `_`) or 1-64 chars lowercase kebab-case key |
+Project.Key's format constraint is defined once, in the Project table's **Constraints** column above (`internal/issue/domain/entity/entity.go`, `projectKeyPattern`).
