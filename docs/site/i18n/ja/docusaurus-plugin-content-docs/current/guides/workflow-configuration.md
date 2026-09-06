@@ -6,91 +6,51 @@ sidebar_position: 1
 
 # Workflow Configuration
 
-Tasq は workflow documents を使って、agents が project でどう作業すべきかを説明します。workflow は project-local file、stored project override、または global fallback から取得できます。
+Tasq はワークフロー文書を使って、エージェントがプロジェクトでどのように作業すべきかを定義します。ワークフローはプロジェクトローカルのファイル、保存済みのプロジェクト override、またはグローバル fallback から取得できます。
 
 ## 解決順序
 
 ```mermaid
 flowchart TD
-  Command[tq workflow show] --> Stored{Project workflow stored?}
-  Stored -->|yes| StoredWorkflow[Use database override]
-  Stored -->|no| File{WORKFLOW.md exists?}
+  Command[tq workflow show or dispatch] --> File{Project WORKFLOW.md exists?}
   File -->|yes| FileWorkflow[Use project file]
-  File -->|no| Global{Global workflow exists?}
+  File -->|no| Stored{Project workflow stored?}
+  Stored -->|yes| StoredWorkflow[Use database override]
+  Stored -->|no| Global{Global workflow exists?}
   Global -->|yes| GlobalWorkflow[Use global fallback]
   Global -->|no| Missing[No workflow configured]
 ```
 
-## Project Workflow Files
+利用可能な最初のソースが選ばれます。`tq workflow show` と orchestrator はどちらも、この順序でプロジェクトの有効なワークフローを解決します。
 
-workflow を codebase と一緒に動かしたい場合は、repository に `WORKFLOW.md` を置いてください。review rules、verification commands、task flow が project と一緒に versioned されるため、local development ではこれが最も簡単な model です。
+## プロジェクトのワークフローファイル
 
-## Front Matter
+ワークフローをコードベースと一緒に管理したい場合は、リポジトリに `WORKFLOW.md` を置いてください。レビュー規則、検証コマンド、作業フローもプロジェクトと一緒にバージョン管理されるため、ローカル開発ではこれが最も簡単な方法です。
 
-`WORKFLOW.md` の先頭には YAML front matter を置けます。Tasq は front matter を
-machine-readable な orchestration configuration として扱い、Markdown body を
-エージェントが読む task workflow または prompt template として扱います。
+## フロントマターとプロンプトテンプレート
 
-polling、workspace、agent、Codex、server、hook、tracker settings のように、
-orchestrator が作業開始前に parse する必要がある値は front matter に置きます。
-エージェントが読んで従う手順は Markdown body に書きます。
+`WORKFLOW.md` の先頭には YAML フロントマターを置けます。その後には、エージェント向けの Markdown プロンプトテンプレートを記述します。フロントマターは機械可読なオーケストレーション設定であり、プロンプトテンプレートにはエージェントが読んで従う手順を記述します。
 
-例:
+サポートされるフィールド、検証規則、hook の挙動、プロンプトテンプレート変数は、正典である [Tasq Symphony Workflow Contract](https://github.com/version-1/tasq/blob/main/docs/symphony/WORKFLOW_CONTRACT.ja.md) で定義しています。
 
-```md
----
-polling:
-  interval_ms: 30000
-workspace:
-  root: .worktrees/agents
-agent:
-  max_concurrent_agents: 5
-  max_turns: 20
-codex:
-  command: codex --sandbox workspace-write app-server
-  read_timeout_ms: 15000
-  turn_timeout_ms: 3600000
----
+## ワークフローが読み込まれるタイミング
 
-# Task
+Tasq は、orchestrator がキューに入った作業を評価し、エージェント実行を準備するときに、プロジェクトごとの有効なワークフローを解決します。そのため、プロジェクトの `WORKFLOW.md` や保存済み override の変更は、その後に割り当てられる作業に反映されます。すでに実行中のエージェント実行には反映されません。
 
-Issue ID: {{ issue.id }}
-Title: {{ issue.title }}
+`WORKFLOW.md` を編集したら、課題を `ready` に移動する前に `tq project check <key>` を実行し、プロジェクト設定を検証してください。
 
-## Required Flow
+## 保存済み override
 
-1. Confirm the issue scope before editing.
-2. Make focused changes in the isolated workspace.
-3. Run verification and leave a handoff comment.
-```
-
-`tq workflow add` で workflow を保存すると、Tasq は parse した front matter と
-Markdown body を分けて保存します。未知の front matter fields は forward compatibility
-のために無視されますが、サポートされている fields の値が不正な場合は workflow
-validation が失敗します。
-
-## Workflow が読み込まれるタイミング
-
-Tasq は、orchestrator が queued work を評価し、エージェント実行を準備するときに、
-project ごとの effective workflow を解決します。そのため、project の `WORKFLOW.md`
-や stored override の変更は、そのあとに dispatch される作業に反映されます。すでに
-running の agent run には反映されません。
-
-`WORKFLOW.md` を編集したら、issue を `ready` に移動する前に `tq project check <key>`
-を実行し、front matter と project setup を validate してください。
-
-## Stored Overrides
-
-repository を変更せずに project が machine-local workflow changes を必要とする場合は、stored override を使います。
+ローカルの `WORKFLOW.md` がなく、リポジトリを変更せずにマシンローカルなワークフローが必要な場合は、保存済み override を使います。ローカルの `WORKFLOW.md` がある場合は常にそちらが優先されるため、プロジェクトにファイルを残したまま保存済みワークフローで上書きすることはできません。
 
 ```sh
-tq workflow add --project tasq --file WORKFLOW.md
+tq workflow add --project tasq --file machine-local-workflow.md
 tq workflow show --project tasq
 tq workflow remove --project tasq
 ```
 
-stored workflow を削除すると、project は file-based resolution に戻ります。
+保存済みワークフローを削除すると、解決順序における次の利用可能なソースが有効になります。
 
 ## 実践的な指針
 
-workflow documents は operational に保ってください。branch policy、required verification、issue synchronization、handoff expectations を定義するべきです。workflow files に長い design explanations を置くことは避け、代わりに documentation へ link してください。
+ワークフロー文書は運用に必要な内容に絞ってください。ブランチ方針、必須の検証、課題の同期、引き継ぎ条件を定義します。長い設計説明はワークフローファイルに書かず、関連ドキュメントへリンクしてください。

@@ -35,65 +35,23 @@ issue-tracker サービスに置くことで、依存関係の検証、cycle 防
 
 ## Workflow Front Matter Contract
 
-Tasq の `WORKFLOW.md` front matter は、Symphony の front matter スキーマの上に重ねた、
-小さな Tasq 固有の契約として意図的に定義されています。Tasq の正式なワークフロー契約は
-[WORKFLOW_CONTRACT.md](WORKFLOW_CONTRACT.md) に記録されています。次の表は、Symphony `SPEC.md`
-のフィールドと Tasq の front matter の振る舞いの対応を示します。
+Tasq の `WORKFLOW.md` フロントマターは、Symphony のフロントマタースキーマの上に重ねた、小さな Tasq 固有の契約です。[WORKFLOW_CONTRACT.ja.md](WORKFLOW_CONTRACT.ja.md) を、サポート対象の全フィールド、検証規則、実行時の挙動の正典とします。
 
-| トップレベルキー | 子フィールド | Symphony support | Tasq support | Tasq extension | Tasq の front matter / 振る舞い |
-| --- | --- | --- | --- | --- | --- |
-| `tracker` | `kind` | ✓ | ✓ | × | 現在のオーケストレーションは Linear クライアントではなくローカルの issue-tracker API から読み取ります。 |
-|  | `endpoint` | ✓ | ✓ | × | Symphony のトラッカー形状との部分的な互換性のために解析されます。 |
-|  | `api_key` | ✓ | ✓ | × | `$VAR` の解決をサポートします。 |
-|  | `project_slug` | ✓ | ✓ | × | `tracker.kind` が設定された場合のみ必須です。 |
-|  | `active_states` | ✓ | ✓ | × | Tasq の割り当て適格性は、ローカルの issue-tracker 状態で決まります。 |
-|  | `terminal_states` | ✓ | ✓ | × | Tasq のクリーンアップと整合処理は、ローカルの issue-tracker 状態を使います。 |
-| `polling` | `interval_ms` | ✓ | ✓ | × | Orchestrator のポーリング間隔です。 |
-| `workspace` | `root` | ✓ | ✓ | × | 選択された `WORKFLOW.md` からの相対パスとして解決され、worktree 管理のため対象 Git リポジトリ内にある必要があります。 |
-|  | `source` | × | × | × | Tasq は代わりに `workspace.root` 配下に Git worktree を作成します。 |
-| `hooks` | `after_create` | ✓ | ✓ | × | 新規作成されたワークスペースに対してのみ、課題ワークスペース内で `bash -lc` 経由で実行されます。 |
-|  | `before_run` | ✓ | ✓ | × | 各エージェント試行の前に実行されます。 |
-|  | `after_run` | ✓ | ✓ | × | 各エージェント試行後に実行され、失敗はログに記録されて無視されます。 |
-|  | `before_remove` | ✓ | ✓ | × | ワークスペースディレクトリが存在する場合にクリーンアップ前に実行され、失敗はログに記録されますがクリーンアップは継続します。 |
-|  | `timeout_ms` | ✓ | ✓ | × | すべてのワークスペース hook に適用され、正の値である必要があります。 |
-| `agent` | `max_concurrent_agents` | ✓ | ✓ | × | 全体の並行実行数の上限です。 |
-|  | `max_turns` | ✓ | ✓ | × | 1 回の実行における Codex ターン数の上限です。継続ターンには `agent.continuation_turns_enabled` も必要です。 |
-|  | `max_retry_backoff_ms` | ✓ | ✓ | × | 再試行バックオフの上限です。 |
-|  | `max_concurrent_agents_by_state` | ✓ | ✓ | × | 正規化された map です。意味を持つかは、ローカルの issue-tracker 状態モデルに依存します。 |
-|  | `continuation_turns_enabled` | × | ✓ | ✓ | `agent.max_turns` が 1 より大きい場合でも、継続ターンをこの値で制御します。 |
-|  | `max_retry_attempts` | × | ✓ | ✓ | 実行を再試行する回数を設定します。 |
-| `codex` | `command` | ✓ | ✓ | × | リポジトリルートの `WORKFLOW.md` は `codex --sandbox workspace-write app-server` を使います。 |
-|  | `approval_policy` | ✓ | ✓ | × | リポジトリルートの `WORKFLOW.md` では設定されていません。 |
-|  | `thread_sandbox` | ✓ | ✓ | × | リポジトリルートの `WORKFLOW.md` では設定されていません。 |
-|  | `turn_sandbox_policy` | ✓ | ✓ | × | リポジトリルートの `WORKFLOW.md` では設定されていません。 |
-|  | `turn_timeout_ms` | ✓ | ✓ | × | Codex ターンのタイムアウトです。 |
-|  | `read_timeout_ms` | ✓ | ✓ | × | Codex app-server の読み取りタイムアウトです。 |
-|  | `stall_timeout_ms` | ✓ | ✓ | × | Tasq は正の値として検証します。 |
-| `server` | `port` | ✓ | ✓ | × | 任意の HTTP 拡張のポートです。CLI `--port` で上書きできます。 |
-| `tasq` | `task_work_prompt` | × | ✓ | ✓ | orchestrator がレンダリング済みプロンプトの前に既定の `tq` issue-tracker 同期指示を付与するかを制御します。 |
+次の表には、Symphony との差分、すなわち Tasq 拡張と Tasq がサポートしないフィールドだけを記載します。
 
-表の補足:
-
-- `Symphony Support` は、そのフィールドが `SPEC.md` のコアフィールドまたは文書化済み拡張フィールドとして定義されていることを表します。
-- `Tasq Support` は、Tasq がそのフィールドを `WORKFLOW.md` の front matter 契約で解析または実装していることを表します。
-- `Tasq Extension` は、そのフィールドが Tasq 固有であり、Symphony コアスキーマの一部ではないことを表します。
-- `tracker.kind` は Symphony の割り当てでは必須です。Tasq は解析しますが、ローカルの割り当てでは使いません。
-- Symphony では `codex.stall_timeout_ms <= 0` によって停止検知を無効化できます。Tasq はこのフィールドを正の値として検証します。
+| フィールド | Symphony の対応 | Tasq の対応 | 差分 |
+| --- | --- | --- | --- |
+| `workspace.source` | ✓ | ✗ | Tasq は代わりに `workspace.root` 配下に Git worktree を作成します。 |
+| `agent.continuation_turns_enabled` | ✗ | ✓ | Tasq 拡張です。 |
+| `agent.max_retry_attempts` | ✗ | ✓ | Tasq 拡張です。 |
+| `tasq.task_work_prompt` | ✗ | ✓ | Tasq 拡張です。 |
 
 Symphony との差分:
 
 - 有効な `WORKFLOW.md` は、課題のキュー投入または割り当て時にプロジェクトごとに解決されます。
   すでに実行中の作業に対する動的な監視と再読み込みは延期されています。
-- 未知の front matter フィールドは、前方互換性のために無視されます。
-- `workspace.source` はサポートされません。Tasq は `workspace.root` 配下に Git worktree で課題ごとの
-  ワークスペースを作成します。
-- 大きなトランスクリプト artifact のパスと可観測性の出力先は、workflow front matter では設定できません。
-  Tasq は runner の進捗、ワークスペースメタデータ、ワークスペース準備の失敗、クリーンアップ状態を
-  orchestrator の SQLite データベースに記録します。
-- ローカルの `tq project check` コマンドは、Symphony スキーマ全体ではなく、Tasq の既定プロジェクト
-  テンプレートが要求する front matter フィールドを検証します。
 - ワークフローパスの選択では、プロセスレベルの明示的なワークフローパスや cwd の既定値を使いません。
-  Tasq は "Workflow Path Selection" に記載するように、プロジェクトごとに有効なワークフローを解決します。
+  Tasq はプロジェクトごとに有効なワークフローを解決します。優先順位は [ワークフロー設定](../site/i18n/ja/docusaurus-plugin-content-docs/current/guides/workflow-configuration.md) を参照してください。
 - Codex app-server のオーケストレーションは内部的に transport に依存せず、Tasq は stdio と websocket の
   transport パッケージを含みます。本番のワークフロー実行では、まだ stdio subprocess transport を
   起動します。実行時の transport 選択と実 Codex websocket server との結合検証は延期されています。
@@ -155,9 +113,6 @@ Tasq は正式な課題識別子として `issue-<ID>` を意図的に使い、�
 - 実 Codex websocket app-server との結合検証。
 - 任意の Symphony HTTP status/API surface 全体。
 
-Tasq は [WORKFLOW_CONTRACT.md](WORKFLOW_CONTRACT.md) に記録されている workflow front matter フィールド
-をサポートします。未知のフィールドは前方互換性のために無視されます。
-
 ## Workspace Creation Strategy
 
 Tasq はリポジトリのソースディレクトリからファイルをコピーするのではなく、`git worktree add` で
@@ -212,16 +167,7 @@ Symphony はプロセスレベルのワークフローパス選択モデルを�
 `WORKFLOW.md` を既定値とします。Tasq は Symphony の workflow-path flag を公開しません。これには
 以前の `--workflow` flag 形式も含みます。
 
-Tasq はワークフロー設定を orchestrator process 単位ではなくプロジェクト単位で解決します。課題を
-割り当てるとき、orchestrator は次の順序で有効なワークフローを選択します。
-
-1. 課題の `Project.Location` 配下にある物理的なプロジェクト `WORKFLOW.md` ファイル。
-2. ローカルの issue-tracker データベースのプロジェクトレコードに保存されたワークフロー内容。
-3. Orchestrator が使うグローバルな fallback ワークフロー。
-
-つまり orchestrator process の cwd は、割り当て済み課題のワークフローの振る舞いに対する既定のソース
-ではありません。cwd は運用者コマンドとプロセス起動には引き続き関係しますが、課題の割り当ては課題に
-紐づくプロジェクトを使います。
+Tasq はワークフロー設定を orchestrator process 単位ではなくプロジェクト単位で解決します。orchestrator process の cwd は、割り当て済み課題のワークフローの振る舞いに対する既定のソースではありません。cwd は運用者コマンドとプロセス起動には引き続き関係しますが、課題の割り当ては課題に紐づくプロジェクトを使います。有効なワークフローの優先順位は [ワークフロー設定](../site/i18n/ja/docusaurus-plugin-content-docs/current/guides/workflow-configuration.md) を参照してください。
 
 SPEC.md の以下のセクションと乖離します:
 

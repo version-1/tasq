@@ -12,18 +12,30 @@ Tasq は実行の割り当て時に、プロジェクトごとの有効なワー
 ```yaml
 tasq:
   task_work_prompt: true
+tracker:
+  kind: local
+  endpoint: http://localhost:37651
+  api_key: $TRACKER_API_KEY
+  project_slug: tasq
+  active_states: [in_progress]
+  terminal_states: [done, cancelled]
 polling:
   interval_ms: 30000
 workspace:
   root: .workspaces
 agent:
   max_concurrent_agents: 10
+  max_concurrent_agents_by_state:
+    in_progress: 5
   max_turns: 20
   continuation_turns_enabled: false
   max_retry_attempts: 3
   max_retry_backoff_ms: 300000
 codex:
   command: codex app-server
+  approval_policy: on-request
+  thread_sandbox: workspace-write
+  turn_sandbox_policy: workspace-write
   read_timeout_ms: 5000
   turn_timeout_ms: 3600000
   stall_timeout_ms: 300000
@@ -46,12 +58,16 @@ Tasq の既定の作業指示を制御します。省略時の既定値は `true
 独自の Issue Tracker 同期指示を提供する場合にのみ `false` に設定してください。注入する正確な文言と
 継続時の動作は、[システムプロンプト](../design/system-prompts.ja.md)を参照してください。
 
+`tracker` は Symphony のトラッカー形式との互換性を提供します。`tracker.kind` を設定する場合、`tracker.project_slug` は必須です。`tracker.api_key` では `$VARIABLE` 形式の環境変数の間接参照を使えます。Tasq の課題割り当て適格性とクリーンアップにはローカルの Issue Tracker 状態モデルを使い、トラッカーの状態一覧はワークフロー契約との互換性のために解析されます。
+
 `workspace.root` の相対パスは、選択されたワークフローファイルからの相対パスとして解決されます。
 パスのフィールドでは環境変数の間接参照と `~` 展開がサポートされています。
 
 `agent.max_turns` が 1 より大きい場合でも、継続ターンはデフォルトで無効です。同じ Codex
 スレッド上で複数ターンを実行する準備ができている場合に `agent.continuation_turns_enabled` を有効化
 してください。
+
+`agent.max_concurrent_agents_by_state` は、状態名を正規化し、状態ごとの正の上限値を持つ map として解析されますが、現在の Tasq スケジューリングではこの上限を適用しません。`codex.approval_policy`、`codex.thread_sandbox`、`codex.turn_sandbox_policy` は契約との互換性のために受理しますが、現在の runner は Codex app-server 設定へ適用しません。`codex.stall_timeout_ms` は正の値でなければなりません。Symphony と異なり、Tasq は 0 以下の値で停止検知を無効化しません。
 
 runner の進捗、ワークスペースメタデータ、ワークスペース準備の失敗、クリーンアップ状態は、オーケストレーターの
 SQLite データベースに保存されます。大きなトランスクリプトは現在の実装ではファイルシステムには書き出されません。

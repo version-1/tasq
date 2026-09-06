@@ -448,11 +448,8 @@ Show the resolved `WORKFLOW.md` content for a project.
 make run-tq ARGS="workflow show --project tasq"
 ```
 
-The command uses the same source order as workflow resolution:
-
-1. `WORKFLOW.md` under the registered project location.
-2. The stored project workflow from the issue-tracker API.
-3. The global `$TQ_HOME/WORKFLOW.md`.
+The command resolves the effective workflow and reports its source. For source precedence and
+stored-override guidance, see [Workflow Configuration](../site/docs/guides/workflow-configuration.md).
 
 Text output prints a `# Source: ...` header followed by the resolved `WORKFLOW.md` content. Use `--json` or global `--output json` for structured output:
 
