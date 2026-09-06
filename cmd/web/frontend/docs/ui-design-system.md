@@ -188,27 +188,53 @@ the value is part of the shared system.
 | `--markdown-quote-border` | `#0075FF` | Blockquote left accent in Markdown text |
 | `--markdown-quote-text` | `#174A7C` | Blockquote text in Markdown text |
 
+The following groups record the dark-mode values for the semantic tokens above.
+
+| Tokens | Dark values |
+| --- | --- |
+| `--bg` / `--white` / `--surface-wash` | `#111315` |
+| `--surface` / `--surface-strong` | `#181B1F` / `#F0F3F6` |
+| `--border` / `--light-gray` | `#30363D` |
+| `--text` / `--accent` / `--primary-black` | `#F0F3F6` |
+| `--muted` / `--medium-gray` / `--control-divider` | `#9DA7B3` |
+| `--dark-gray` / `--extra-light-gray` | `#D0D7DE` / `#21262D` |
+| `--surface-hover` / `--surface-row-hover` | `#262C36` / `#1C2128` |
+| `--accent-color` / `--glow-color` | `#A78BFA` / `#C4B5FD` |
+| `--accent-strong` / `--control-strong` / `--control-strong-hover` | `#FFFFFF` / `#F0F3F6` / `#FFFFFF` |
+| `--danger` / `--warning` / `--ok` | `#FF7B72` / `#F2CC60` / `#3FB950` |
+| `--info-accent` / `--info-bg` / `--info-border` / `--info-text` | `#79C0FF` / `#12253D` / `#28547A` / `#B6D7FF` |
+| `--markdown-link` / `--markdown-link-hover` / `--markdown-link-visited` / `--markdown-checkbox` | `#79C0FF` / `#A5D6FF` / `#C4B5FD` / `#79C0FF` |
+| `--markdown-inline-code-bg` / `--markdown-inline-code-text` | `#1D2D3D` / `#A5D6FF` |
+| `--markdown-quote-bg` / `--markdown-quote-border` / `--markdown-quote-text` | `#172536` / `#58A6FF` / `#B6D7FF` |
+
 Status, priority, project, approval, toast, and filter-chip tones are global
 tokens. Components may assign them to local variables such as `--badge-bg`, but
 the source value must come from `:root`.
 
-| Role | Tokens |
-| ---- | ------ |
-| Priority high | `--priority-high-accent`, `--priority-high-bg`, `--priority-high-text` |
-| Priority normal | `--priority-normal-accent`, `--priority-normal-bg`, `--priority-normal-text` |
-| Priority low | `--priority-low-accent`, `--priority-low-bg`, `--priority-low-text` |
-| Status backlog | `--status-backlog-accent`, `--status-backlog-bg`, `--status-backlog-text` |
-| Status ready | `--status-ready-accent`, `--status-ready-bg`, `--status-ready-text` |
-| Status in progress | `--status-in-progress-accent`, `--status-in-progress-bg`, `--status-in-progress-text` |
-| Status review | `--status-review-accent`, `--status-review-bg`, `--status-review-text` |
-| Status done | `--status-done-accent`, `--status-done-bg`, `--status-done-text` |
-| Status blocked | `--status-blocked-accent`, `--status-blocked-bg`, `--status-blocked-text` |
-| Status failed | `--status-failed-accent`, `--status-failed-bg`, `--status-failed-text` |
-| Status muted | `--status-muted-accent`, `--status-muted-bg`, `--status-muted-text` |
-| Project | `--project-bg`, `--project-text` |
-| Approval | `--approval-bg`, `--warning`, `--info-*` for request-approval event emphasis |
-| Toast | `--toast-error-*`, `--toast-success-*` |
-| Filter chip | `--filter-chip-bg`, `--filter-chip-border` |
+Each three-value state row is `accent / background / text` and documents both
+theme values. This table, together with the semantic-token table above, is the
+complete color-token reference; `src/app/globals.css` remains the executable
+source of truth.
+
+| Role and tokens | Light values | Dark values |
+| --- | --- | --- |
+| Priority high (`--priority-high-accent`, `--priority-high-bg`, `--priority-high-text`) | `#D97706` / `#FEF3C7` / `#92400E` | `#F2CC60` / `#3D310F` / `#F8E3A1` |
+| Priority normal (`--priority-normal-accent`, `--priority-normal-bg`, `--priority-normal-text`) | `#0284C7` / `#E0F2FE` / `#075985` | `#58A6FF` / `#112D4A` / `#A5D6FF` |
+| Priority low (`--priority-low-accent`, `--priority-low-bg`, `--priority-low-text`) | `#9CA3AF` / `#F3F4F6` / `#4B5563` | `#8B949E` / `#24292F` / `#C9D1D9` |
+| Status backlog (`--status-backlog-accent`, `--status-backlog-bg`, `--status-backlog-text`) | `#8A958D` / `#F3F4F6` / `#4B5563` | `#8B949E` / `#24292F` / `#C9D1D9` |
+| Status ready (`--status-ready-accent`, `--status-ready-bg`, `--status-ready-text`) | `#0E8F70` / `#DFF8EF` / `#047857` | `#56D364` / `#12372A` / `#7EE787` |
+| Status in progress (`--status-in-progress-accent`, `--status-in-progress-bg`, `--status-in-progress-text`) | `#2F6FB3` / `#E0F2FE` / `#075985` | `#58A6FF` / `#112D4A` / `#A5D6FF` |
+| Status review (`--status-review-accent`, `--status-review-bg`, `--status-review-text`) | `#B7791F` / `#FEF3C7` / `#92400E` | `#E3B341` / `#3D2E0C` / `#F2CC60` |
+| Status done (`--status-done-accent`, `--status-done-bg`, `--status-done-text`) | `#2F7D4F` / `#DCFCE7` / `#166534` | `#3FB950` / `#12372A` / `#7EE787` |
+| Status blocked (`--status-blocked-accent`, `--status-blocked-bg`, `--status-blocked-text`) | `#9A4F14` / `#FFEDD5` / `#9A3412` | `#F0883E` / `#3D260F` / `#F5B77A` |
+| Status failed (`--status-failed-accent`, `--status-failed-bg`, `--status-failed-text`) | `#B42318` / `#FEE2E2` / `#991B1B` | `#FF7B72` / `#3D1F22` / `#FFA198` |
+| Status muted (`--status-muted-accent`, `--status-muted-bg`, `--status-muted-text`) | `#667085` / `#F3F4F6` / `#4B5563` | `#8B949E` / `#24292F` / `#C9D1D9` |
+| Project (`--project-bg`, `--project-text`) | `#EEF6F8` / `#14636F` | `#12343B` / `#7DD3DC` |
+| Approval (`--approval-bg`) | `#FFF2CC` | `#3D310F` |
+| Toast error (`--toast-error-accent`, `--toast-error-bg`, `--toast-error-border`, `--toast-error-text`) | `#DC2626` / `#FEE2E2` / `#FECACA` / `#991B1B` | `#FF7B72` / `#3D1F22` / `#6E2B32` / `#FFA198` |
+| Toast success (`--toast-success-accent`, `--toast-success-bg`, `--toast-success-icon`) | `#16A34A` / `#DCFCE7` / `#15803D` | `#56D364` / `#12372A` / `#7EE787` |
+| Filter chip (`--filter-chip-bg`, `--filter-chip-border`) | `#F3F3F3` / `#EEEEEE` | `#24292F` / `#30363D` |
+| Backdrop (`--backdrop`) | `rgb(20 20 20 / 36%)` | `rgb(0 0 0 / 60%)` |
 
 Status tones used by table rows (`statusToneClassName`) map to a single
 `--status-color`. They are declared in
@@ -236,8 +262,13 @@ elsewhere.
 
 Light mode tokens are declared on `:root`. Setting `data-theme="dark"` on an
 ancestor (normally `html`) overrides every color and shadow token while
-preserving component token references. The full dark palette is documented in
-[web-color-pallete.md](design/web-color-pallete.md).
+preserving component token references. The semantic-token table and state table
+in this document include the corresponding dark values.
+
+`--bg` and `--surface-wash` resolve to `#111315` in dark mode; `--surface`
+resolves to `#181B1F`. All shadow tokens are also overridden in the theme
+selector to preserve hierarchy on dark surfaces. Do not add component-level
+shadow color literals.
 
 `index.html` sets `html[data-theme]` before React mounts. A valid
 `localStorage` value at `tasq.theme` (`light` or `dark`) takes precedence; when

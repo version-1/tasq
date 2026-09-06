@@ -58,27 +58,11 @@ npm run generate:api
 
 生成ファイルは `cmd/web/frontend/src/lib/generated` 配下に置き、手動編集してはいけません。ルート向けコードは、生成された operation を直接必要とする場合を除き、API 型を `cmd/web/frontend/src/lib/types.ts` 経由で import します。
 
-## Component Structure
+## Frontend Ownership
 
-ナビゲーション、サマリー読み込み、更新処理、ページ選択など、共有シェルに関する責務はルート固有のコンポーネントディレクトリの外に置きます。
-
-複数のルートで意図的に共有する common component は `cmd/web/frontend/src/components` 配下に置きます。
-
-ページ固有のコンポーネントは、所有元ルートの `_components` directory に置きます。
-
-- Issue page component は `cmd/web/frontend/src/app/issues/_components` に置きます。
-- Project detail tab component は `cmd/web/frontend/src/app/projects/[projectKey]/**/_components` に置きます。
-- Workspace page component は `cmd/web/frontend/src/app/workspace/_components` に置きます。
-- Settings page component は `cmd/web/frontend/src/app/settings/_components` に置きます。
-
-コンポーネントは、shared か route-specific かにかかわらず、コンポーネント名の directory を使います。実装、CSS Module、コンポーネントテストは同じ directory に置きます。
-
-```text
-<component-name>/
-├── index.tsx
-├── index.module.css
-└── index.test.tsx
-```
+フロントエンドコンポーネントの配置と directory shape のルールは
+[Frontend Design](../../cmd/web/frontend/docs/design.ja.md) で管理します。
+frontend UI を追加または移動するときは、その文書に従ってください。
 
 ## Internationalization
 
@@ -97,21 +81,10 @@ Web UI は表示文字列に `react-i18next` を使います。
 
 どちらのリンクも opener を渡さずに外部 URL を新しいタブで開きます。Artifact の作成、更新、削除は CLI と API で行い、Web UI では表示のみを提供します。
 
-## テーマ
+## テーマとトークン
 
-Web UI はライトテーマとダークテーマに対応します。`cmd/web/frontend/index.html` は
-React のマウント前に初期テーマを解決し、`html` に `data-theme` を設定します。これにより、
-初回描画で誤ったトークンセットが使われることを防ぎます。
-
-テーマの決定順序は次のとおりです。
-
-1. `localStorage` の `tasq.theme` に保存された有効な値（`light` または `dark`）。
-2. 有効な保存値がない場合は、`prefers-color-scheme` による OS の設定。
-
-`src/components/layout/use-theme.ts` は、レイアウトのサイドバーにある切替スイッチで使う
-実行時の挙動を所有します。スイッチを変更すると `html[data-theme]` を更新し、明示的な選択を
-`tasq.theme` に保存します。明示的な選択が保存されていない間は OS の設定変更に追従し、保存後は
-その選択を優先します。
+テーマ解決、カラートークン、styling convention は
+[UI デザインシステム](../../cmd/web/frontend/docs/ui-design-system.ja.md) で管理します。
 
 ## Styling
 
@@ -123,11 +96,12 @@ React のマウント前に初期テーマを解決し、`html` に `data-theme`
 トークン値を上書きします。コンポーネントは、アクティブテーマで分岐したりテーマ専用の色の
 固定値を追加したりせず、意味的な CSS 変数を引き続き参照します。
 
-グローバルカラートークンは [Web UI Color Palette](web-color-pallete.md) を参照してください。
+完全なグローバルカラートークンは
+[UI デザインシステム](../../cmd/web/frontend/docs/ui-design-system.ja.md) を参照してください。
 
 Examples:
 
 - `cmd/web/frontend/src/components/layout/index.module.css`
-- `cmd/web/frontend/src/app/issues/_components/issues-view/index.module.css`
+- `cmd/web/frontend/src/features/issues/components/issues-view/index.module.css`
 
 機能固有の class selector を `cmd/web/frontend/src/app/globals.css` に追加しないでください。
