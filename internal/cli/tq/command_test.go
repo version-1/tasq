@@ -247,7 +247,7 @@ func TestOrchestratorStopIsIdempotent(t *testing.T) {
 	}
 }
 
-func TestOrchestratorStopDoesNotSignalUnverifiedProcess(t *testing.T) {
+func TestOrchestratorStopRetainsUnverifiedProcessState(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv(tqconfig.EnvHome, home)
 	if err := tqconfig.UpdateState(func(state *tqconfig.State) error {
@@ -265,8 +265,8 @@ func TestOrchestratorStopDoesNotSignalUnverifiedProcess(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read state: %v", err)
 	}
-	if state.Orchestrator != nil {
-		t.Fatalf("orchestrator state was not cleared: %+v", state.Orchestrator)
+	if state.Orchestrator == nil {
+		t.Fatal("orchestrator state was cleared")
 	}
 }
 
@@ -1021,18 +1021,27 @@ func TestMigrateAppliesLocalDatabases(t *testing.T) {
 
 func TestServiceStatusJSONRunning(t *testing.T) {
 	t.Setenv(tqconfig.EnvHome, t.TempDir())
+	originalMatchesProcessIdentity := serviceMatchesProcessIdentity
+	defer func() { serviceMatchesProcessIdentity = originalMatchesProcessIdentity }()
+	serviceMatchesProcessIdentity = func(service *tqconfig.ServiceState) (bool, error) {
+		return true, nil
+	}
 	startedAt := time.Now().Add(-time.Minute).UTC()
 	if err := tqconfig.UpdateState(func(state *tqconfig.State) error {
 		state.IssueTracker = &tqconfig.ServiceState{
-			PID:       os.Getpid(),
-			Addr:      "127.0.0.1:" + strconv.Itoa(tqconfig.DefaultIssueTrackerPort),
-			DB:        "/tmp/issues.sqlite",
-			StartedAt: startedAt,
+			PID:              os.Getpid(),
+			Addr:             "127.0.0.1:" + strconv.Itoa(tqconfig.DefaultIssueTrackerPort),
+			DB:               "/tmp/issues.sqlite",
+			StartedAt:        startedAt,
+			ProcessStartedAt: startedAt,
+			Executable:       "/usr/local/bin/issue-tracker",
 		}
 		state.Web = &tqconfig.ServiceState{
-			PID:       os.Getpid(),
-			Addr:      "127.0.0.1:" + strconv.Itoa(tqconfig.DefaultWebPort),
-			StartedAt: startedAt,
+			PID:              os.Getpid(),
+			Addr:             "127.0.0.1:" + strconv.Itoa(tqconfig.DefaultWebPort),
+			StartedAt:        startedAt,
+			ProcessStartedAt: startedAt,
+			Executable:       "/usr/local/bin/web",
 		}
 		return nil
 	}); err != nil {
@@ -1058,6 +1067,39 @@ func TestServiceStatusJSONRunning(t *testing.T) {
 	}
 	if statuses[2].Name != "web" || statuses[2].State != "running" || statuses[2].PID != os.Getpid() || statuses[2].Port != tqconfig.DefaultWebPort {
 		t.Fatalf("unexpected web status: %+v", statuses[2])
+	}
+}
+
+func TestServiceStatusRetainsRunningLegacyState(t *testing.T) {
+	t.Setenv(tqconfig.EnvHome, t.TempDir())
+	if err := tqconfig.UpdateState(func(state *tqconfig.State) error {
+		state.IssueTracker = &tqconfig.ServiceState{
+			PID:       os.Getpid(),
+			Addr:      "127.0.0.1:" + strconv.Itoa(tqconfig.DefaultIssueTrackerPort),
+			StartedAt: time.Now().Add(-time.Minute).UTC(),
+		}
+		return nil
+	}); err != nil {
+		t.Fatalf("write legacy state: %v", err)
+	}
+
+	stdout, stderr, code := runCLI(t, []string{"--output", "json", "service", "status"})
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr)
+	}
+	var statuses []serviceStatus
+	if err := json.Unmarshal([]byte(stdout), &statuses); err != nil {
+		t.Fatalf("decode stdout: %v: %s", err, stdout)
+	}
+	if statuses[0].State != "running" {
+		t.Fatalf("legacy issue-tracker status = %+v, want running", statuses[0])
+	}
+	state, err := tqconfig.ReadState()
+	if err != nil {
+		t.Fatalf("read state: %v", err)
+	}
+	if state.IssueTracker == nil {
+		t.Fatal("legacy issue-tracker state was removed")
 	}
 }
 

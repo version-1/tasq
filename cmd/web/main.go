@@ -49,19 +49,21 @@ func main() {
 		log.Fatalf("listen: %v", err)
 	}
 	serviceAddr := clientAddr(listener.Addr().String())
+	serviceState, err := config.NewCurrentServiceState(serviceAddr, "")
+	if err != nil {
+		log.Fatalf("identify web process: %v", err)
+	}
 	if err := config.UpdateState(func(state *config.State) error {
-		state.Web = &config.ServiceState{
-			PID:       os.Getpid(),
-			Addr:      serviceAddr,
-			StartedAt: time.Now().UTC(),
-		}
+		state.Web = &serviceState
 		return nil
 	}); err != nil {
 		log.Fatalf("write web state: %v", err)
 	}
 	defer func() {
 		if err := config.UpdateState(func(state *config.State) error {
-			state.Web = nil
+			if state.Web != nil && state.Web.HasSameProcessIdentity(serviceState) {
+				state.Web = nil
+			}
 			return nil
 		}); err != nil {
 			log.Printf("clear web state: %v", err)

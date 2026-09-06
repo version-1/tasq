@@ -30,22 +30,29 @@ func processIdentityForPID(pid int) (ProcessIdentity, error) {
 	if err != nil {
 		return ProcessIdentity{}, err
 	}
-	executable, err := processExecutable(pid)
-	if err != nil {
-		return ProcessIdentity{}, err
+	if pid == os.Getpid() {
+		executable, err := os.Executable()
+		if err != nil {
+			return ProcessIdentity{}, fmt.Errorf("resolve current executable: %w", err)
+		}
+		executable, err = canonicalExecutable(executable)
+		if err != nil {
+			return ProcessIdentity{}, err
+		}
+		return ProcessIdentity{StartedAt: startedAt, Executable: executable}, nil
 	}
-	return ProcessIdentity{StartedAt: startedAt, Executable: executable}, nil
+	return ProcessIdentity{StartedAt: startedAt}, nil
 }
 
 func (state ServiceState) MatchesProcessIdentity() (bool, error) {
-	if state.PID <= 0 || state.ProcessStartedAt.IsZero() || strings.TrimSpace(state.Executable) == "" {
+	if state.PID <= 0 || state.ProcessStartedAt.IsZero() {
 		return false, nil
 	}
 	identity, err := ProcessIdentityForPID(state.PID)
 	if err != nil {
 		return false, err
 	}
-	return state.ProcessStartedAt.Equal(identity.StartedAt) && state.Executable == identity.Executable, nil
+	return state.ProcessStartedAt.Equal(identity.StartedAt), nil
 }
 
 func processStartTime(pid int) (time.Time, error) {
@@ -60,18 +67,6 @@ func processStartTime(pid int) (time.Time, error) {
 	return startedAt.UTC(), nil
 }
 
-func processExecutable(pid int) (string, error) {
-	output, err := processAttribute(pid, "command=")
-	if err != nil {
-		return "", err
-	}
-	fields := strings.Fields(output)
-	if len(fields) == 0 {
-		return "", fmt.Errorf("process %d has no executable", pid)
-	}
-	return canonicalExecutable(fields[0])
-}
-
 func processAttribute(pid int, attribute string) (string, error) {
 	command := exec.Command("ps", "-p", fmt.Sprintf("%d", pid), "-o", attribute)
 	command.Env = append(os.Environ(), "LC_ALL=C", "LANG=C")
@@ -83,6 +78,10 @@ func processAttribute(pid int, attribute string) (string, error) {
 }
 
 func canonicalExecutable(path string) (string, error) {
+	path = strings.TrimSpace(path)
+	if !filepath.IsAbs(path) {
+		return path, nil
+	}
 	absPath, err := filepath.Abs(path)
 	if err != nil {
 		return "", fmt.Errorf("resolve executable %s: %w", path, err)

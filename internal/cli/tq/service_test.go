@@ -67,6 +67,25 @@ func TestServiceStopGraceForOrchestratorAllowsDispatcherShutdown(t *testing.T) {
 	}
 }
 
+func TestStatusForServiceReportsCurrentProcessWithMatchingIdentityAsRunning(t *testing.T) {
+	originalMatchesProcessIdentity := serviceMatchesProcessIdentity
+	defer func() { serviceMatchesProcessIdentity = originalMatchesProcessIdentity }()
+	serviceMatchesProcessIdentity = func(service *tqconfig.ServiceState) (bool, error) {
+		return true, nil
+	}
+
+	status := statusForService(serviceOrchestrator, &tqconfig.ServiceState{
+		PID:              os.Getpid(),
+		Addr:             "127.0.0.1:37652",
+		StartedAt:        time.Now().Add(-time.Minute),
+		ProcessStartedAt: time.Date(2026, time.September, 6, 3, 4, 5, 0, time.UTC),
+		Executable:       "/usr/local/bin/orchestrator",
+	})
+	if status.State != "running" {
+		t.Fatalf("status state = %q, want running", status.State)
+	}
+}
+
 func TestServiceCommandEnvSetsManagedExecutionContract(t *testing.T) {
 	home := t.TempDir()
 	environment := serviceCommandEnv(home, []string{
@@ -149,6 +168,11 @@ func TestCommandForServiceUsesHomeSystemBinExecutable(t *testing.T) {
 func TestServiceStartLeavesLegacyManagedCLIWhenServiceIsRunning(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv(tqconfig.EnvHome, home)
+	originalMatchesProcessIdentity := serviceMatchesProcessIdentity
+	defer func() { serviceMatchesProcessIdentity = originalMatchesProcessIdentity }()
+	serviceMatchesProcessIdentity = func(service *tqconfig.ServiceState) (bool, error) {
+		return true, nil
+	}
 	if _, err := tqconfig.EnsureHome(); err != nil {
 		t.Fatalf("ensure home: %v", err)
 	}
@@ -160,7 +184,11 @@ func TestServiceStartLeavesLegacyManagedCLIWhenServiceIsRunning(t *testing.T) {
 		t.Fatalf("write managed cli: %v", err)
 	}
 	if err := tqconfig.UpdateState(func(state *tqconfig.State) error {
-		state.IssueTracker = &tqconfig.ServiceState{PID: os.Getpid()}
+		state.IssueTracker = &tqconfig.ServiceState{
+			PID:              os.Getpid(),
+			ProcessStartedAt: time.Date(2026, time.September, 6, 3, 4, 5, 0, time.UTC),
+			Executable:       "/usr/local/bin/issue-tracker",
+		}
 		return nil
 	}); err != nil {
 		t.Fatalf("write running service state: %v", err)
