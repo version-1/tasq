@@ -13,13 +13,11 @@ issue-tracker は Tasq work の user-facing source of truth です。
 
 ## 責務
 
-- issue data を保存して validate する。
-- 各 issue が 1 つの project に属することを要求する。
-- comments と image attachment metadata を保存する。
+- project、issue、comment、attachment データを保存・validate し、Tasq work の唯一の source of truth となる。
+- `tq`、Web UI、agents が使う project、issue、comment、attachment、workflow、summary API を提供する。
 - プルリクエスト URL など、課題に関連付ける外部 Artifact を保存する。
-- attachment bytes を `$TQ_HOME/system/data/attachments` 配下に保存する。
-- project、issue、comment、attachment、workflow、summary endpoints を提供する。
-- linked issues が存在する間は project deletion を防ぐ。
+
+責務の全リストと所有境界は [Architecture: issue-tracker](https://github.com/version-1/tasq/blob/main/docs/design/architecture.ja.md#issue-tracker) を参照してください。
 
 ## Issue Workflow
 

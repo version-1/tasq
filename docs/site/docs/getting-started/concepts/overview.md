@@ -57,15 +57,14 @@ flowchart LR
 
 ## Status Boundaries
 
-Issue status and run status are intentionally different concepts.
-
-| Area | Owner | Examples |
-| --- | --- | --- |
-| Issue workflow | Issue Tracker | `backlog`, `ready`, `in_progress`, `blocked`, `failed`, `review`, `done` |
-| Run lifecycle | Orchestrator | `queued`, `running`, `waiting_for_input`, `succeeded`, `failed` |
-| Workspace metadata | Orchestrator | workspace path, setup result, source path |
-| Attachments | Issue Tracker | image metadata and bytes under `TQ_HOME` |
+Issue status and run status are intentionally different concepts, each with a single owner: the
+issue-tracker owns issue status, and the orchestrator owns run status and workspace metadata.
 
 This split keeps the user workflow stable even as orchestration internals evolve.
 It also lets a blocked Codex session be recovered from the run metadata exposed
 in the Web UI without changing the issue workflow state.
+
+See [Issue and Queue Status](https://github.com/version-1/tasq/blob/main/docs/design/status.md) for
+the canonical status value lists, queue-status derivation, and standard transitions, and
+[Architecture: State Ownership](https://github.com/version-1/tasq/blob/main/docs/design/architecture.md#state-ownership)
+for the ownership summary.

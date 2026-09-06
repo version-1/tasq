@@ -15,15 +15,12 @@ and proxies API calls to the local backends.
 
 ## Responsibilities
 
-- Render project and issue summaries.
-- Display status, priority, assignee, descriptions, comments, and run links
-  where available.
+- Render and update Tasq issue summaries in the browser through the issue-tracker API.
 - Show a pull-request link on an issue card and details sidebar when the issue has that artifact.
 - Show issue activity so operators can find run context such as a Codex thread
   ID when a blocked session needs to be resumed.
-- Move issues between statuses through the issue-tracker API.
-- Serve browser routes through SPA fallback.
-- Proxy `/tracker/*` to the issue-tracker and `/orchestrator/*` to the orchestrator.
+
+See [Architecture: web-ui](https://github.com/version-1/tasq/blob/main/docs/design/architecture.md#web-ui) for the full responsibility list, including SPA routing and the tracker/orchestrator proxy paths.
 
 ## Request Path
 
