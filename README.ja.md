@@ -6,37 +6,13 @@ tasq は、実装作業を見えるキューにし、そのキューのための
 
 [![Tasq の紹介動画を見る](docs/site/static/img/tasq-thumbnail.png)](https://github.com/user-attachments/assets/8c4fdc9c-c70b-4f86-8e0a-323f8880ffb7)
 
-[Tasq の紹介動画を見る](https://github.com/user-attachments/assets/8c4fdc9c-c70b-4f86-8e0a-323f8880ffb7)。
-
 English counterpart: [README.md](README.md).
 
-## Problem
+## Tasq を使う理由
 
-AI コーディングエージェントにより、複数の実装タスクを同時に進められるようになりました。ボトルネックはコードを書くことから、並列作業の管理へ移ります。
+AI エージェントによる並列作業では、コードを書くことよりも、タスク・ワークスペース・レビューの調整がボトルネックになります。Tasq は、課題キュー、分離されたワークスペース、ローカルサービス、CLI と Web UI によって、その作業を見える状態に保ちます。
 
-### 人間のコンテキスト切り替え
-
-エージェントは並列に実行できますが、人間はどのタスクを割り当てたか、どのエージェントが実行中か、各タスクがどこまで進んでいるか、次に何をレビューすべきかを追跡する必要があります。
-
-### ワークスペースの競合
-
-複数のエージェントを 1 つのリポジトリのチェックアウトで実行すると、ブランチ切り替えの問題、未完了の変更による競合、ファイル編集の重複が発生する可能性があります。
-
-### セットアップ作業の繰り返し
-
-エージェントのタスクごとに、ブランチとワークツリーの作成、依存関係の確認、適切なセットアップコマンドの実行といった同じ準備作業が必要になりがちです。
-
-## Solution
-
-tasq はエージェント作業にプロダクトとしての操作面を与えます。Issue Tracker、ローカルサービス、CLI、Web UI により、タスクの状態とプロジェクトの文脈を 1 か所に集めます。
-
-![Tasq agent issue flow](docs/site/static/img/agent-issue-flow.png)
-
-タスクはレビュー可能なワークフローを進みます。
-
-```text
-backlog -> ready -> in_progress -> review -> done
-```
+課題とワークフロー、製品全体の説明は [Tasq ドキュメントサイト](https://version-1.github.io/tasq/ja/)を参照してください。
 
 ## Features
 
@@ -49,16 +25,7 @@ backlog -> ready -> in_progress -> review -> done
 
 ## Install
 
-最新の GitHub Release アーカイブをプラットフォームに合わせてダウンロードし、展開した 4 つのバイナリを `PATH` に配置します。
-
-各リリース tarball には次のバイナリが含まれます。
-
-- `tq`: 直接実行する CLI。
-- `issue-tracker`: ローカル REST API サービス。
-- `orchestrator`: ローカルの実行状態サービス。
-- `web`: フロントエンド資産を埋め込んだローカル Web UI サーバー。
-
-最新の正式リリースをインストールします。
+確認したインストーラーで、最新の正式リリースアーカイブをインストールします。
 
 ```sh
 curl -fsSLO https://raw.githubusercontent.com/version-1/tasq/main/scripts/install.sh
@@ -66,19 +33,8 @@ less install.sh
 sh install.sh
 ```
 
-実行前に installer の内容を確認してください。Installer は、ダウンロードした release archive を release の `checksums.txt` で検証し、その後 installed `tq` binary が展開元の release binary と一致することを検証します。成功すると `verified installed tq sha256: ...` が表示されます。
-
-インストール先のディレクトリが `PATH` に含まれることを確認します。
-
-```sh
-export PATH="${HOME}/.local/bin:${PATH}"
-tq version
-```
-
-## Getting Started
-
-セットアップと利用方法については、[Tasq ドキュメントサイト](https://version-1.github.io/tasq/ja/)を参照してください。
+インストール先、`TQ_HOME`、サービスの起動、更新については、[インストール](https://version-1.github.io/tasq/ja/getting-started/install)を参照してください。
 
 ## Documentation
 
-ガイド、概念、リファレンスは、[Tasq ドキュメントサイト](https://version-1.github.io/tasq/ja/)を参照してください。
+チュートリアル、ガイド、概念、リファレンスは、[Tasq ドキュメントサイト](https://version-1.github.io/tasq/ja/)を参照してください。
