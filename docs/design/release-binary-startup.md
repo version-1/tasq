@@ -62,13 +62,13 @@ or use:
 tq web
 ```
 
-`tq service start` starts all three managed services with fixed loopback ports:
+`tq service start` starts all three managed services with fixed loopback ports. See [Installation](../site/docs/getting-started/install.md) for the port table. Each service's data:
 
-| Service | Port | Data |
-| --- | ---: | --- |
-| `issue-tracker` | `37651` | `$TQ_HOME/system/data/issues.sqlite` |
-| `orchestrator` | `37652` | `$TQ_HOME/system/data/orchestrator.sqlite` |
-| `web` | `37653` | static assets embedded in the `web` binary |
+| Service | Data |
+| --- | --- |
+| `issue-tracker` | `$TQ_HOME/system/data/issues.sqlite` |
+| `orchestrator` | `$TQ_HOME/system/data/orchestrator.sqlite` |
+| `web` | static assets embedded in the `web` binary |
 
 `tq service start` only starts `issue-tracker`, `orchestrator`, and `web` from `$TQ_HOME/system/bin`. It does not search next to the running `tq`, in `PATH`, or in the source tree. If any managed binary is missing or not executable, it reports every invalid path before starting a service and directs the user to reinstall with the same `TQ_HOME`.
 
@@ -119,6 +119,6 @@ The README can present the full binary experience as supported, with these const
 
 - Include `tq migrate` before `tq service start`.
 - Say that the installer keeps `tq` in the public install directory and installs the three managed services under `$TQ_HOME/system/bin`.
-- State the default ports `37651`, `37652`, and `37653`.
+- State the default ports (see [Installation](../site/docs/getting-started/install.md) for the port table).
 - Explain that custom ports require manual service startup.
 - Keep Node.js out of the runtime requirements for downloaded releases because `web` embeds the built frontend.
