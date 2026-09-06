@@ -119,11 +119,13 @@ Documentation を更新するときは、英語版の `.md` と日本語版の `
 - 片方の language file しかない場合は、対応するもう片方を追加します。
 - 英語版と日本語版の links を揃えます。
 - 日本語版の `*.ja.md` は `AGENTS.md` から link しなくてかまいません。`AGENTS.md` では英語版の `.md` を link します。
+- `AGENTS.md`、`WORKFLOW.md`、`cmd/web/frontend/AGENTS.md` のようなエージェント指示ファイルは、この英日ペア規約の対象外とします。単一言語の運用ファイルとして扱います。
 - ADR は historical decision record として扱います。typo や broken link のような明らかな mechanical fix を除き、後続 decision に合わせて過去 ADR を書き換えません。新しい decision が過去 ADR を変更または制約する場合は、新しい ADR 側にその変更と関係を書きます。
 
 ## Repository Documentation
 
-- [docs/development.ja.md](development.ja.md): repository workflow、task flow、documentation update rules、component workflow links。
+このセクションは、repository documentation の唯一の索引です。この一覧を他の場所に複製せず、このセクションへリンクしてください。
+
 - [WORKFLOW.md](../WORKFLOW.md): orchestrator が使う Symphony runtime workflow contract。
 - [docs/design.md](design.md): system architecture と service boundaries。
 - [docs/design/deployment.ja.md](design/deployment.ja.md): release tag 作成、GitHub Actions、GoReleaser の deployment flow。
@@ -184,11 +186,3 @@ make run-tq ARGS="--output json issue list"
 ```
 
 完全な command reference は [docs/references/tq.ja.md](references/tq.ja.md) を参照してください。
-
-## Component Workflows
-
-特定の runtime area で作業するときは、component-level workflow documents を使います。
-
-- [Issue Tracker](../cmd/issue-tracker/WORKFLOW.ja.md)
-- [Orchestrator](../cmd/orchestrator/WORKFLOW.ja.md)
-- [Web UI](../cmd/web/WORKFLOW.ja.md)

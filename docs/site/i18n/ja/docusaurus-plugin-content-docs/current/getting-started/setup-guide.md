@@ -87,6 +87,8 @@ tq workflow show --project tasq-demo
 解決順序と override の挙動は
 [Workflow Configuration](../guides/workflow-configuration) を参照してください。
 
+<a id="minimal-codex-permissions"></a>
+
 ## 最小限の Codex 権限設定
 
 自律実行の詳細なセットアップは

@@ -72,13 +72,7 @@ docs/site/
 
 公開される docs のソースは `docs/site/docs/` に置きます。docs-site は利用者向けドキュメントの正とします。リポジトリの `docs/design/` 配下にある内部設計ドキュメントは、開発者向けの設計記録として別管理し、より低レベルの実装詳細を含む場合があります。
 
-現在の英語 docs-site は 17 ページ構成です。
-
-- Getting Started: Overview、Install、Agent Tutorial、Setup Guide、5 つの Concepts ページ。
-- Guides: Codex Autonomy Setup、Recover a Blocked Session、Workflow Configuration、Web UI Operations。
-- Reference: CLI Reference、API、Configuration、Schema。
-
-sidebar は明示的に管理しています。`docs/site/docs/` に新しいページを追加し、そのページを navigation に表示したい場合は `sidebars.ts` も更新してください。
+現在のページ一覧とセクション構成は `sidebars.ts` を参照してください。sidebar は明示的に管理しています。`docs/site/docs/` に新しいページを追加し、そのページを navigation に表示したい場合は `sidebars.ts` も更新してください。
 
 通常の図表には Mermaid を使います。より情報量の多い静的 overview が必要なページでは、手書き SVG を `static/img/` 配下に置きます。
 

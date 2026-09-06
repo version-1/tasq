@@ -10,17 +10,12 @@ Ask questions to clarify ambiguous instructions.
 - Write documentation in English and Japanese.
   - English documentation is the primary source of truth for development and design decisions.
   - All documents linked from AGENTS.md must also be written in English.
-  - Create two documents for each topic, one in English and one in Japanese, and keep them synchronized.
-- See [docs/development.md](docs/development.md) for repository workflow, task flow, documentation update rules, and component workflow links.
+  - Create two documents for each topic, one in English and one in Japanese, and keep them synchronized. See [docs/development.md](docs/development.md) for the pairing rule and its exceptions.
+- See [docs/development.md](docs/development.md) for the repository documentation index, task flow, and documentation update rules.
 - See [docs/design.md](docs/design.md) for the design documentation index.
-  - [docs/design/architecture.md](docs/design/architecture.md): system architecture and ownership boundaries.
-  - [docs/design/api.md](docs/design/api.md): issue-tracker API surface and CLI command mapping.
-  - [docs/design/operations.md](docs/design/operations.md): local development environment, verification, and open decisions.
 - Symphony-related orchestration, workflow, workspace, agent-runner, tracker, and observability changes must comply with [docs/symphony/SPEC.md](docs/symphony/SPEC.md).
 - Do not change [docs/symphony/SPEC.md](docs/symphony/SPEC.md) to match Tasq-specific implementation differences. Record any intentional Tasq-vs-Symphony differences in [docs/symphony/DEVIATIONS.md](docs/symphony/DEVIATIONS.md) instead.
 - See [docs/symphony/CODEX_APP_SERVER.md](docs/symphony/CODEX_APP_SERVER.md) for the Tasq Codex app-server start/resume contract.
-- See [docs/design/schema.md](docs/design/schema.md) for entity field specifications and validation rules.
-- See [docs/design/web.md](docs/design/web.md) for Web UI structure and styling conventions.
 - See [cmd/web/frontend/docs/design.md](cmd/web/frontend/docs/design.md) for frontend routing and component placement rules.
 
 # Code Design

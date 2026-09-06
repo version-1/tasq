@@ -78,23 +78,15 @@ writable_roots = [
 ```
 
 For current Codex permissions, prefer a named profile so the same filesystem
-rules can be reused across sessions:
+rules can be reused across sessions. Start from the
+[Minimal Codex Permissions](pathname:///getting-started/setup-guide#minimal-codex-permissions)
+profile in the Setup Guide, then add one `workspace_roots` entry per cache
+directory your workflow writes to:
 
 ```toml
 # ~/.codex/config.toml
 
-default_permissions = "tasq_workspace"
-
-[permissions.tasq_workspace]
-description = "Tasq workspace with language and CLI cache writes enabled."
-extends = ":workspace"
-
-[permissions.tasq_workspace.filesystem.":workspace_roots"]
-"." = "write"
-
 [permissions.tasq_workspace.workspace_roots]
-"/Users/YOU/src/tasq" = true
-"/Users/YOU/src/tasq/.git" = true
 "/Users/YOU/Library/Caches" = true
 "/Users/YOU/.cache" = true
 "/Users/YOU/.npm" = true

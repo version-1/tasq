@@ -119,11 +119,13 @@ When updating documentation, keep the English `.md` file and the Japanese `*.ja.
 - Add the missing counterpart when only one language file exists.
 - Keep links between the English and Japanese versions aligned.
 - Do not link Japanese `*.ja.md` counterparts from `AGENTS.md`; link the English `.md` document there.
+- Agent instruction files such as `AGENTS.md`, `WORKFLOW.md`, and `cmd/web/frontend/AGENTS.md` are exempt from the pairing rule; keep them as single-language operational files.
 - Treat ADRs as historical decision records. Do not rewrite an earlier ADR to fit a later decision, except for clearly mechanical fixes such as typos or broken links. When a new decision changes or constrains an earlier one, write the change in a new ADR and describe the relationship there.
 
 ## Repository Documentation
 
-- [docs/development.md](development.md): repository workflow, task flow, documentation update rules, and component workflow links.
+This section is the single index of repository documentation. Do not duplicate this list elsewhere; link to this section instead.
+
 - [WORKFLOW.md](../WORKFLOW.md): Symphony runtime workflow contract used by the orchestrator.
 - [docs/design.md](design.md): system architecture and service boundaries.
 - [docs/design/deployment.md](design/deployment.md): release tag creation, GitHub Actions, and GoReleaser deployment flow.
@@ -184,11 +186,3 @@ make run-tq ARGS="--output json issue list"
 ```
 
 For the full command reference, see [docs/references/tq.md](references/tq.md).
-
-## Component Workflows
-
-Use the component-level workflow documents when working in a specific runtime area:
-
-- [Issue Tracker](../cmd/issue-tracker/WORKFLOW.md)
-- [Orchestrator](../cmd/orchestrator/WORKFLOW.md)
-- [Web UI](../cmd/web/WORKFLOW.md)

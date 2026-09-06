@@ -78,23 +78,15 @@ writable_roots = [
 ```
 
 現在の Codex permissions では、同じ filesystem rules を複数セッションで再利用
-できるように named profile を使うことを推奨します。
+できるように named profile を使うことを推奨します。Setup Guide の
+[最小限の Codex 権限設定](pathname:///getting-started/setup-guide#minimal-codex-permissions)
+のプロファイルを起点にし、ワークフローが書き込む cache directory ごとに
+`workspace_roots` の entry を追加してください。
 
 ```toml
 # ~/.codex/config.toml
 
-default_permissions = "tasq_workspace"
-
-[permissions.tasq_workspace]
-description = "Tasq workspace with language and CLI cache writes enabled."
-extends = ":workspace"
-
-[permissions.tasq_workspace.filesystem.":workspace_roots"]
-"." = "write"
-
 [permissions.tasq_workspace.workspace_roots]
-"/Users/YOU/src/tasq" = true
-"/Users/YOU/src/tasq/.git" = true
 "/Users/YOU/Library/Caches" = true
 "/Users/YOU/.cache" = true
 "/Users/YOU/.npm" = true
