@@ -17,7 +17,7 @@ Tasq は作成・更新時に、ストア層でエンティティのデータを
 | Comment | `issueId`, `author`, `body` | body 1-10,000 chars、type defaults to `general` |
 | ChangeRequest | `issueId`, `author`, `body` | 本文は 1〜10,000 文字で、`open` の間だけ編集可能。状態の既定値は `open`。終端状態では変更不可 |
 | Attachment | `entityType`, `entityId`, `file` | image PNG/JPEG/GIF/WebP、max 5 MiB |
-| Project | `key`, `name`, `location` | key format、name 1-200 chars、description max 10,000 chars、absolute location |
+| Project | `key`, `name`, `location` | key は大文字始まりの legacy 形式（`A-Z`, `0-9`, `_`、1-20 文字）または小文字の kebab-case（1-64 文字）— 正確な正規表現は [design reference](https://github.com/version-1/tasq/blob/main/docs/design/schema.ja.md#project) を参照。name 1-200 chars、description max 10,000 chars、absolute location |
 | ProjectWorkflow | `projectId`, `frontmatter`, `body`, `checksum` | one workflow override per project、checksum は SHA256 hex |
 
 ## Orchestrator Entities

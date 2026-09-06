@@ -17,7 +17,7 @@ Tasq validates entity data at the store layer on create and update operations. T
 | Comment | `issueId`, `author`, `body` | body 1-10,000 chars, type defaults to `general` |
 | ChangeRequest | `issueId`, `author`, `body` | body 1-10,000 chars and editable only while `open`; status defaults to `open`; terminal requests are immutable |
 | Attachment | `entityType`, `entityId`, `file` | image PNG/JPEG/GIF/WebP, max 5 MiB |
-| Project | `key`, `name`, `location` | key format, name 1-200 chars, description max 10,000 chars, absolute location |
+| Project | `key`, `name`, `location` | key is uppercase legacy (`A-Z`, `0-9`, `_`, 1-20 chars) or lowercase kebab-case (1-64 chars) — see the [design reference](https://github.com/version-1/tasq/blob/main/docs/design/schema.md#project) for the exact regex; name 1-200 chars, description max 10,000 chars, absolute location |
 | ProjectWorkflow | `projectId`, `frontmatter`, `body`, `checksum` | one workflow override per project, checksum is SHA256 hex |
 
 ## Orchestrator Entities

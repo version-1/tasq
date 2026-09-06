@@ -19,8 +19,8 @@
 | ProjectKey  | `string`   | response           | —                  | —           | 参照先 project からコピーされること                                |
 | Title       | `string`   | yes                | optional (`*string`) | —          | min 1, max 500 chars                                              |
 | Description | `string`   | no                 | optional (`*string`) | `""`       | max 10,000 chars                                                  |
-| Status      | `Status`   | no                 | optional (`*Status`) | `backlog`  | enum: `backlog`, `ready`, `in_progress`, `review`, `done`, `blocked`, `failed`, `cancelled`, `duplicate` |
-| Priority    | `Priority` | no                 | optional (`*Priority`) | `normal` | enum: `low`, `normal`, `high`, `urgent`                           |
+| Status      | `Status`   | no                 | optional (`*Status`) | `backlog`  | enum、[Enum fields](#enum-fields) を参照                          |
+| Priority    | `Priority` | no                 | optional (`*Priority`) | `normal` | enum、[Enum fields](#enum-fields) を参照                          |
 | Assignee    | `string`   | no                 | optional (`*string`) | `""`       | max 200 chars、自由入力                                           |
 | DependencyIDs | `[]int64` | no               | optional (`*[]int64`) | `[]`      | 指定時は全置換。各 ID は issue を参照すること。重複、自己依存、cycle は不可 |
 | Artifacts | `[]Artifact` | response | — | `[]` | `type` 昇順。すべての課題レスポンスに配列として含まれ、`null` にはならない |
@@ -47,17 +47,9 @@ Artifact の作成・更新時刻は内部で保持しますが、公開フィ�
 
 ### CreateIssueInput
 
-`CreateIssueInput` は `POST /api/v1/issues` の request body です。
+`CreateIssueInput` は `POST /api/v1/issues` の request body です。フィールドは上記 Issue 表のうち、create 時にクライアント入力を受け付けるサブセット（`project_id`, `title`, `description`, `status`, `priority`, `assignee`, `dependency_ids`）と同じで、Required/Default の内容も Issue 表の **Required (Create)** 列と **Default** 列のとおりです。ここでの `dependency_ids` は初期 dependency set を意味します（update と同じ検証: 各 ID は issue を参照すること。重複、自己依存、cycle は不可）。
 
-| Field         | Go Type    | Required | Default   | Constraints |
-|---------------|------------|----------|-----------|-------------|
-| ProjectID     | `int64`    | yes      | —         | `> 0`、参照先 project が存在すること |
-| Title         | `string`   | yes      | —         | min 1, max 500 chars |
-| Description   | `string`   | no       | `""`      | max 10,000 chars |
-| Status        | `Status`   | no       | `backlog` | enum: `backlog`, `ready`, `in_progress`, `review`, `done`, `blocked`, `failed`, `cancelled`, `duplicate` |
-| Priority      | `Priority` | no       | `normal`  | enum: `low`, `normal`, `high`, `urgent` |
-| Assignee      | `string`   | no       | `""`      | max 200 chars、自由入力 |
-| DependencyIDs | `[]int64`  | no       | `[]`      | 初期 dependency set。各 ID は issue を参照すること。重複、自己依存、cycle は不可 |
+`CreateIssueInput` に含まれないフィールドは、サーバー生成または response 専用です: `id`, `project_key`, `artifacts`, `created_at`, `updated_at`。
 
 `dependency_ids` は issue creation と同じ transaction で適用されます。dependency validation が失敗した場合、issue は作成されません。
 
@@ -84,7 +76,7 @@ queue state はこの table と issue status から導出されます。`queued`
 | ID          | `int64`       | auto               | path param         | autoincrement | `> 0`                                                            |
 | IssueID     | `int64`       | yes                | —                  | —           | `> 0`、参照先 issue が存在すること                                 |
 | Author      | `string`      | yes                | —                  | —           | min 1                                                              |
-| Type        | `CommentType` | no                 | —                  | `general`   | enum: `progress`, `blocker`, `handoff`, `general`                  |
+| Type        | `CommentType` | no                 | —                  | `general`   | enum、[Enum fields](#enum-fields) を参照                           |
 | Body        | `string`      | yes                | optional (`*string`) | —         | min 1, max 10,000 chars、Markdown attachment refs を含められること |
 | CreatedAt   | `time.Time`   | auto               | —                  | `now()`     | —                                                                  |
 
@@ -98,7 +90,7 @@ change request は、後続の agent run が対応すべきユーザーまたは
 | IssueID         | `int64`               | yes               | —                 | —             | `> 0`、参照先 issue が存在すること |
 | Author          | `string`              | yes               | —                 | —             | min 1 |
 | Body            | `string`              | yes               | optional (`*string`) | —          | min 1, max 10,000 chars、`open` の間だけ編集可能 |
-| Status          | `ChangeRequestStatus` | auto              | optional          | `open`        | enum: `open`, `in_progress`, `resolved`, `canceled` |
+| Status          | `ChangeRequestStatus` | auto              | optional          | `open`        | enum、[Enum fields](#enum-fields) を参照 |
 | CreatedAt       | `time.Time`           | auto              | —                 | `now()`       | — |
 | UpdatedAt       | `time.Time`           | auto              | auto              | `now()`       | — |
 | ResolvedAt      | `*time.Time`          | —                 | resolve 時に auto | `NULL`        | status が `resolved` になったときに設定 |
@@ -112,11 +104,11 @@ change request は、後続の agent run が対応すべきユーザーまたは
 | Field       | Go Type    | Required (Create) | Required (Update) | Default | Constraints                                                        |
 |-------------|------------|--------------------|--------------------|---------|--------------------------------------------------------------------|
 | ID          | `string`   | generated          | path param         | —       | min 1, max 80 chars                                                |
-| EntityType  | `string`   | yes                | —                  | —       | enum: `issue`, `comment`                                           |
+| EntityType  | `string`   | yes                | —                  | —       | enum、[Enum fields](#enum-fields) を参照                           |
 | EntityID    | `string`   | yes                | —                  | —       | min 1, max 80 chars、upload 時点で参照先 entity が存在すること     |
 | Filename    | `string`   | yes                | —                  | —       | basename only, min 1, max 255 chars                                |
 | Path        | `string`   | generated          | —                  | —       | `$TQ_HOME` 配下の相対 path、max 1,000 chars                        |
-| ContentType | `string`   | yes                | —                  | —       | `image/png`, `image/jpeg`, `image/gif`, or `image/webp`            |
+| ContentType | `string`   | yes                | —                  | —       | enum、[Enum fields](#enum-fields) を参照                           |
 | Size        | `int64`    | yes                | —                  | —       | `> 0`, max 5 MiB                                                   |
 | CreatedAt   | `time.Time`| auto               | —                  | `now()` | —                                                                  |
 
@@ -127,7 +119,7 @@ change request は、後続の agent run が対応すべきユーザーまたは
 | Field       | Go Type    | Required (Create) | Required (Update) | Default     | Constraints                                                        |
 |-------------|------------|--------------------|--------------------|-------------|--------------------------------------------------------------------|
 | ID          | `int64`    | auto               | path param         | autoincrement | `> 0`                                                            |
-| Key         | `string`   | yes                | optional (`*string`) | —          | regex: `^[A-Z][A-Z0-9_]{0,19}$` (1-20 chars, uppercase start)    |
+| Key         | `string`   | yes                | optional (`*string`) | —          | regex: `^([A-Z][A-Z0-9_]{0,19}\|[a-z][a-z0-9-]{0,63})$` — 大文字始まりの legacy key（`A-Z`, `0-9`, `_`、1-20 文字）または小文字の kebab-case key（1-64 文字） |
 | Name        | `string`   | yes                | optional (`*string`) | —          | min 1, max 200 chars                                              |
 | Description | `string`   | no                 | optional (`*string`) | `""`       | max 10,000 chars                                                  |
 | Location    | `string`   | yes                | optional (`*string`) | —          | absolute path (`/` prefix), max 1,000 chars、set 時に `os.Stat` で directory existence check |
@@ -171,7 +163,7 @@ project workflow row を削除すると、その project は project `WORKFLOW.m
 | ID             | `int64`      | auto               | —                  | autoincrement | `> 0`                                                            |
 | RunID          | `string`     | auto               | —                  | `uuid.NewString()` | store が生成すること                                        |
 | IssueID        | `int64`      | yes                | —                  | —           | `> 0`                                                              |
-| Status         | `run.Status` | auto               | yes                | `queued`    | enum: `queued`, `running`, `succeeded`, `failed`, `cancelled`      |
+| Status         | `run.Status` | auto               | yes                | `queued`    | enum、[Enum fields](#enum-fields) を参照                           |
 | Workspace      | `string`     | no                 | —                  | `""`        | max 1,000 chars                                                    |
 | ThreadID       | `string`     | no                 | optional           | `NULL`      | max 200 chars、resume 用の Codex app-server thread identifier を保存すること |
 | Attempt        | `int`        | yes                | —                  | —           | `>= 0`                                                             |
@@ -222,15 +214,7 @@ project workflow row を削除すると、その project は project `WORKFLOW.m
 
 ## Validation Rules Summary
 
-### String length
-
-| Limit       | Fields                                                                 |
-|-------------|------------------------------------------------------------------------|
-| max 200     | Issue.Assignee, Project.Key, Project.Name, Workspace.Name, Run.ThreadID, Run.OrchestratorID, RunnerEvent.RunID, RunnerEvent.EventType, WorkspaceMetadata.WorkspaceKey, WorkspaceSetupFailure.WorkspaceKey |
-| max 500     | Issue.Title                                                            |
-| max 1,000   | Attachment.Path, Project.Location, Workspace.Path, Run.Workspace, WorkspaceMetadata.Path, WorkspaceMetadata.SourcePath, WorkspaceSetupFailure.Path |
-| max 10,000  | Issue.Description, Comment.Body, Project.Description, Run.Error, RunnerEvent.Message, WorkspaceSetupFailure.Error |
-| max 50,000  | RunnerEvent.PayloadJSON                                                |
+文字数上限は、上記の各エンティティ表の **Constraints** 列にフィールドごとに記載されています。個別の summary table はここには置きません。上限をフィールドの近くに置くことで、2 箇所の記述が編集のたびにずれていくのを防ぎます。
 
 ### Path fields
 
@@ -259,8 +243,6 @@ API は次の項目について directory の存在を確認しません。
 | Workspace.Status | `active`, `inactive`, `archived`                                      |
 | Run.Status       | `queued`, `running`, `succeeded`, `failed`, `cancelled`               |
 
-### Format constraints
+この表が本文書における enum 値の正典です。上記の各エンティティ表は値のリストを繰り返さず、この表を参照します。
 
-| Field       | Pattern                          | Description                              |
-|-------------|----------------------------------|------------------------------------------|
-| Project.Key | `^([A-Z][A-Z0-9_]{0,19}\|[a-z][a-z0-9-]{0,63})$` | 1-20 chars uppercase legacy key (`A-Z`, `0-9`, `_`) or 1-64 chars lowercase kebab-case key |
+Project.Key の format constraint は、上記 Project 表の **Constraints** 列の 1 箇所のみに定義されています（`internal/issue/domain/entity/entity.go`, `projectKeyPattern`）。
