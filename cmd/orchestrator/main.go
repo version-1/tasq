@@ -124,26 +124,21 @@ func main() {
 	} else {
 		log.Printf("orchestrator http server disabled; set --port or workflow server.port to enable")
 	}
+	serviceState, err := tqconfig.NewCurrentServiceState(orchestratorAddr, resolvedDBPath)
+	if err != nil {
+		log.Fatalf("identify orchestrator process: %v", err)
+	}
 	if err := tqconfig.UpdateState(func(state *tqconfig.State) error {
-		identity, err := tqconfig.CurrentProcessIdentity()
-		if err != nil {
-			return err
-		}
-		state.Orchestrator = &tqconfig.ServiceState{
-			PID:              os.Getpid(),
-			Addr:             orchestratorAddr,
-			DB:               resolvedDBPath,
-			StartedAt:        time.Now().UTC(),
-			ProcessStartedAt: identity.StartedAt,
-			Executable:       identity.Executable,
-		}
+		state.Orchestrator = &serviceState
 		return nil
 	}); err != nil {
 		log.Fatalf("write orchestrator state: %v", err)
 	}
 	defer func() {
 		if err := tqconfig.UpdateState(func(state *tqconfig.State) error {
-			state.Orchestrator = nil
+			if state.Orchestrator != nil && state.Orchestrator.HasSameProcessIdentity(serviceState) {
+				state.Orchestrator = nil
+			}
 			return nil
 		}); err != nil {
 			log.Printf("clear orchestrator state: %v", err)

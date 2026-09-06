@@ -24,3 +24,85 @@ volume を削除するとログイン状態も削除されます。device auth �
 `/home/codex/.codex/rules` へ読み取り専用でマウントします。認証情報、個人用の上書き設定、
 生成された承認判断、その他の秘密情報を含む Codex state は、リポジトリではなく
 `codex-home` volume に保持します。
+## Directory Layout
+
+```text
+$TQ_HOME/
+├── config/
+│   └── config.yaml
+└── system/
+    ├── state.json
+    ├── log
+    │   ├── issue-tracker.log
+    │   ├── orchestrator.log
+    │   └── web.log
+    └── data/
+        ├── issues.sqlite
+        └── orchestrator.sqlite
+```
+
+`config/` はユーザーが編集できます。`system/` は Tasq のプロセスが管理し、上書きされる可能性があります。
+開発用サービスログは `system/log/` 配下に書き込まれます。`tq service start` は issue-tracker と orchestrator のログをこのディレクトリへ追記します。
+
+## config.yaml
+
+```yaml
+author: "jiro"
+max_concurrent_agents: 3
+```
+
+| Field | Default | Description |
+|---|---:|---|
+| `author` | `$USER` | `--author` と `TQ_AUTHOR` が未指定のときに `tq comment add` が使う既定の author です。 |
+| `max_concurrent_agents` | `10` | orchestrator agent runs に対するマシン全体の同時実行数の上限です。 |
+
+## state.json
+
+実行中のサービスは、検出用メタデータを `system/state.json` に書き込みます。
+
+```json
+{
+  "issue_tracker": {
+    "pid": 12345,
+    "addr": "127.0.0.1:37651",
+    "db": "/Users/me/.tasq/system/data/issues.sqlite",
+    "started_at": "2026-06-01T10:00:00Z",
+    "process_started_at": "2026-06-01T10:00:00Z",
+    "executable": "/Users/me/.tasq/system/bin/issue-tracker"
+  },
+  "orchestrator": {
+    "pid": 12346,
+    "addr": "http://127.0.0.1:37652",
+    "db": "/Users/me/.tasq/system/data/orchestrator.sqlite",
+    "started_at": "2026-06-01T10:00:01Z",
+    "process_started_at": "2026-06-01T10:00:01Z",
+    "executable": "/Users/me/.tasq/system/bin/orchestrator"
+  }
+}
+```
+
+すべての managed service は、プロセス開始時刻と実行ファイルのパスを記録します。`tq service status` は PID の生存確認に加えてプロセス開始時刻を検証するため、status を実行したカレントディレクトリや空白を含む実行ファイルパスに判定が依存しません。プロセス開始時刻を持たない旧形式の entry は、サービスを再起動するまで PID の生存確認で扱います。この場合、`tq service stop` は対象プロセスを安全に特定できないため entry を変更しません。終了時には、保存済み identity が自プロセスと一致する場合だけ entry を消去します。したがって、古いプロセスが置き換え後のサービスの検出用 state を消すことはありません。
+
+API URL が指定されていない場合、`tq` と `tasq-tui` は `issue_tracker.addr` を読みます。
+
+## Resolution Order
+
+issue-tracker API URL:
+
+```text
+--api-url / -api flag > TQ_API_URL > state.json issue_tracker.addr > http://localhost:37651
+```
+
+comment author:
+
+```text
+--author flag > TQ_AUTHOR > config.yaml author > $USER
+```
+
+orchestrator concurrency:
+
+```text
+effective max = min(WORKFLOW.md agent.max_concurrent_agents, config.yaml max_concurrent_agents)
+```
+
+`WORKFLOW.md` は各プロジェクトリポジトリに残します。`$TQ_HOME/config/config.yaml` はマシン全体の設定と上限値を保存します。

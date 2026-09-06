@@ -60,20 +60,21 @@ func main() {
 		log.Fatalf("listen: %v", err)
 	}
 	serviceAddr := clientAddr(listener.Addr().String())
+	serviceState, err := tqconfig.NewCurrentServiceState(serviceAddr, resolvedDBPath)
+	if err != nil {
+		log.Fatalf("identify issue-tracker process: %v", err)
+	}
 	if err := tqconfig.UpdateState(func(state *tqconfig.State) error {
-		state.IssueTracker = &tqconfig.ServiceState{
-			PID:       os.Getpid(),
-			Addr:      serviceAddr,
-			DB:        resolvedDBPath,
-			StartedAt: time.Now().UTC(),
-		}
+		state.IssueTracker = &serviceState
 		return nil
 	}); err != nil {
 		log.Fatalf("write issue-tracker state: %v", err)
 	}
 	defer func() {
 		if err := tqconfig.UpdateState(func(state *tqconfig.State) error {
-			state.IssueTracker = nil
+			if state.IssueTracker != nil && state.IssueTracker.HasSameProcessIdentity(serviceState) {
+				state.IssueTracker = nil
+			}
 			return nil
 		}); err != nil {
 			log.Printf("clear issue-tracker state: %v", err)

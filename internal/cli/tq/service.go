@@ -33,6 +33,10 @@ const (
 	serviceWeb          serviceName = "web"
 )
 
+var serviceMatchesProcessIdentity = func(service *tqconfig.ServiceState) (bool, error) {
+	return service.MatchesProcessIdentity()
+}
+
 type serviceStatus struct {
 	Name      string `json:"name"`
 	State     string `json:"state"`
@@ -125,7 +129,7 @@ func (a app) orchestratorStart(ctx context.Context, args []string, cfg config) e
 	if err != nil {
 		return err
 	}
-	orchestratorRunning, err := serviceStateRunning(serviceOrchestrator, state.Orchestrator)
+	orchestratorRunning, err := serviceStateRunning(state.Orchestrator)
 	if err != nil {
 		return err
 	}
@@ -688,7 +692,10 @@ func stopServiceByName(ctx context.Context, name serviceName) error {
 		return err
 	}
 	service := serviceStateByName(state, name)
-	running, err := serviceStateRunning(name, service)
+	if service == nil || service.ProcessStartedAt.IsZero() {
+		return nil
+	}
+	running, err := serviceStateRunning(service)
 	if err != nil {
 		return err
 	}
@@ -735,21 +742,21 @@ func terminatePID(ctx context.Context, pid int, grace time.Duration) error {
 
 func cleanupStaleServices() error {
 	return tqconfig.UpdateState(func(state *tqconfig.State) error {
-		issueTrackerRunning, err := serviceStateRunning(serviceIssueTracker, state.IssueTracker)
+		issueTrackerRunning, err := serviceStateRunning(state.IssueTracker)
 		if err != nil {
 			return err
 		}
 		if !issueTrackerRunning {
 			state.IssueTracker = nil
 		}
-		orchestratorRunning, err := serviceStateRunning(serviceOrchestrator, state.Orchestrator)
+		orchestratorRunning, err := serviceStateRunning(state.Orchestrator)
 		if err != nil {
 			return err
 		}
 		if !orchestratorRunning {
 			state.Orchestrator = nil
 		}
-		webRunning, err := serviceStateRunning(serviceWeb, state.Web)
+		webRunning, err := serviceStateRunning(state.Web)
 		if err != nil {
 			return err
 		}
@@ -760,34 +767,45 @@ func cleanupStaleServices() error {
 	})
 }
 
-func serviceStateRunning(name serviceName, service *tqconfig.ServiceState) (bool, error) {
+func serviceStateRunning(service *tqconfig.ServiceState) (bool, error) {
 	if service == nil || !processAlive(service.PID) {
 		return false, nil
 	}
-	if name != serviceOrchestrator {
+	if service.ProcessStartedAt.IsZero() {
 		return true, nil
 	}
-	return service.MatchesProcessIdentity()
+	return serviceMatchesProcessIdentity(service)
 }
 
 func cleanupServiceState(name serviceName, force bool) error {
 	return tqconfig.UpdateState(func(state *tqconfig.State) error {
 		switch name {
 		case serviceIssueTracker:
-			if force || state.IssueTracker == nil || !processAlive(state.IssueTracker.PID) {
+			if shouldClearServiceState(state.IssueTracker, force) {
 				state.IssueTracker = nil
 			}
 		case serviceOrchestrator:
-			if force || state.Orchestrator == nil || !processAlive(state.Orchestrator.PID) {
+			if shouldClearServiceState(state.Orchestrator, force) {
 				state.Orchestrator = nil
 			}
 		case serviceWeb:
-			if force || state.Web == nil || !processAlive(state.Web.PID) {
+			if shouldClearServiceState(state.Web, force) {
 				state.Web = nil
 			}
 		}
 		return nil
 	})
+}
+
+func shouldClearServiceState(service *tqconfig.ServiceState, force bool) bool {
+	if service == nil || !processAlive(service.PID) {
+		return true
+	}
+	if !force || service.ProcessStartedAt.IsZero() {
+		return false
+	}
+	running, err := serviceStateRunning(service)
+	return err != nil || !running
 }
 
 func serviceStateByName(state tqconfig.State, name serviceName) *tqconfig.ServiceState {
@@ -805,7 +823,7 @@ func serviceStateByName(state tqconfig.State, name serviceName) *tqconfig.Servic
 
 func statusForService(name serviceName, service *tqconfig.ServiceState) serviceStatus {
 	status := serviceStatus{Name: string(name), State: "stopped"}
-	running, err := serviceStateRunning(name, service)
+	running, err := serviceStateRunning(service)
 	if err != nil || !running {
 		return status
 	}

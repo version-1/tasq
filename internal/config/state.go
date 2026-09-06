@@ -27,6 +27,31 @@ type ServiceState struct {
 	Executable       string    `json:"executable,omitempty"`
 }
 
+func NewCurrentServiceState(addr, db string) (ServiceState, error) {
+	identity, err := CurrentProcessIdentity()
+	if err != nil {
+		return ServiceState{}, err
+	}
+	return ServiceState{
+		PID:              os.Getpid(),
+		Addr:             addr,
+		DB:               db,
+		StartedAt:        time.Now().UTC(),
+		ProcessStartedAt: identity.StartedAt,
+		Executable:       identity.Executable,
+	}, nil
+}
+
+func (state ServiceState) HasSameProcessIdentity(other ServiceState) bool {
+	return state.PID == other.PID &&
+		!state.ProcessStartedAt.IsZero() &&
+		!other.ProcessStartedAt.IsZero() &&
+		strings.TrimSpace(state.Executable) != "" &&
+		strings.TrimSpace(other.Executable) != "" &&
+		state.ProcessStartedAt.Equal(other.ProcessStartedAt) &&
+		state.Executable == other.Executable
+}
+
 func ReadState() (State, error) {
 	home, err := Home()
 	if err != nil {
