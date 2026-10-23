@@ -8,6 +8,14 @@ Local development では `make` 経由で Docker Compose を使います。
 make dev-up
 ```
 
+開発コンテナは Go 1.26.10 と Node.js 22.23.4 を提供します。コンテナ外で
+リポジトリの Go または Node.js コマンドを実行する場合は、Go 1.26.10–1.26.x または 1.27.3 以降、
+および Node.js 22.23.4–22.x、24.22.1–24.x、26.12.1–26.x のいずれかを使用してください。
+
+開発コンテナを更新した後は、コンテナを再ビルドしてください。既存の Go バイナリも
+再ビルドして再デプロイする必要があります。toolchain を更新しても、すでにビルド済みの
+バイナリには反映されません。
+
 このコマンドは `dev` container と OpenAPI UI を起動し、`dev` container 内で issue-tracker、orchestrator、Web UI を起動します。Docker Compose が host ports を自動割り当てし、割り当てられた URLs を表示します。
 
 URLs を再表示します。

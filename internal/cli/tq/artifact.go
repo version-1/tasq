@@ -30,7 +30,7 @@ func (a app) artifactSet(ctx context.Context, args []string, cfg config) error {
 		return err
 	}
 	if err := fs.Parse(args[1:]); err != nil {
-		return usageError(err.Error())
+		return usageError("%s", err)
 	}
 	if fs.NArg() != 1 {
 		return usageError("usage: tq artifact set <issue_id> --type pull_request <url>")
@@ -56,7 +56,7 @@ func (a app) artifactDelete(ctx context.Context, args []string, cfg config) erro
 		return err
 	}
 	if err := fs.Parse(args[1:]); err != nil {
-		return usageError(err.Error())
+		return usageError("%s", err)
 	}
 	if fs.NArg() != 0 {
 		return usageError("usage: tq artifact delete <issue_id> --type pull_request")

@@ -1,6 +1,7 @@
-FROM golang:1.22-bookworm
+FROM golang:1.26.10-bookworm
 
 ARG NODE_MAJOR=22
+ARG NODE_VERSION=22.23.4
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
@@ -17,7 +18,7 @@ RUN apt-get update \
     && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
     && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_${NODE_MAJOR}.x nodistro main" > /etc/apt/sources.list.d/nodesource.list \
     && apt-get update \
-    && apt-get install -y --no-install-recommends nodejs \
+    && apt-get install -y --no-install-recommends nodejs=${NODE_VERSION}-1nodesource1 \
     && npm install -g @openai/codex \
     && useradd --create-home --shell /bin/bash codex \
     && mkdir -p /workspace /home/codex/.codex /home/codex/.cache/go-build /go/pkg/mod \

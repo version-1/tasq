@@ -30,7 +30,7 @@ func (a app) workflowShow(ctx context.Context, args []string, cfg config) error 
 	projectKey := fs.String("project", "", "project key")
 	jsonOutput := fs.Bool("json", false, "output structured JSON")
 	if err := fs.Parse(args); err != nil {
-		return usageError(err.Error())
+		return usageError("%s", err)
 	}
 	if fs.NArg() != 0 {
 		return usageError("workflow show does not accept positional arguments")

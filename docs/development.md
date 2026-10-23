@@ -8,6 +8,15 @@ Use Docker Compose through `make` for local development:
 make dev-up
 ```
 
+The dev container provides Go 1.26.10 and Node.js 22.23.4. When running the
+repository's Go or Node.js commands outside the container, use Go 1.26.10–1.26.x
+or 1.27.3 or later, and one of Node.js 22.23.4–22.x, 24.22.1–24.x, or
+26.12.1–26.x.
+
+After updating the dev container, rebuild it. Rebuild and redeploy existing Go
+binaries as well: changing the toolchain does not change binaries that have
+already been built.
+
 This starts the `dev` container and OpenAPI UI, then launches the issue-tracker, orchestrator, and Web UI inside the `dev` container. Docker Compose assigns host ports automatically, and the command prints the assigned URLs.
 
 Show the URLs again:

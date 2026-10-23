@@ -40,7 +40,7 @@ func (a app) routeLogs(ctx context.Context, args []string, cfg config) error {
 	lines := fs.Int("n", defaultLogLines, "number of lines from the end")
 	follow := fs.Bool("f", false, "follow appended log output")
 	if err := fs.Parse(remaining); err != nil {
-		return usageError(err.Error())
+		return usageError("%s", err)
 	}
 	if fs.NArg() != 0 {
 		return usageError("logs does not accept extra positional arguments")

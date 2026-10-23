@@ -39,7 +39,7 @@ func (a app) commentAdd(ctx context.Context, args []string, cfg config) error {
 	body := fs.String("body", "", "comment body")
 	attach := fs.String("attach", "", "image attachment path")
 	if err := fs.Parse(args[1:]); err != nil {
-		return usageError(err.Error())
+		return usageError("%s", err)
 	}
 	if fs.NArg() != 0 {
 		return usageError("comment add does not accept extra positional arguments")

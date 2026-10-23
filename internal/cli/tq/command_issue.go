@@ -47,7 +47,7 @@ func (a app) issueList(ctx context.Context, args []string, cfg config) error {
 	fs := newFlagSet("issue list")
 	projectKey := fs.String("project", "", "project key")
 	if err := fs.Parse(args); err != nil {
-		return usageError(err.Error())
+		return usageError("%s", err)
 	}
 	if fs.NArg() > 0 {
 		return usageError("issue list does not accept positional arguments")
@@ -93,7 +93,7 @@ func (a app) issueCreate(ctx context.Context, args []string, cfg config) error {
 	dependency := fs.String("dependency", "", "comma-separated dependency issue IDs")
 	projectKey := fs.String("project", "", "project key")
 	if err := fs.Parse(args); err != nil {
-		return usageError(err.Error())
+		return usageError("%s", err)
 	}
 	if fs.NArg() != 0 {
 		return usageError("issue create does not accept positional arguments")
@@ -176,7 +176,7 @@ func (a app) issueUpdate(ctx context.Context, args []string, cfg config) error {
 	clearDependencies := fs.Bool("clear-dependencies", false, "clear all dependency issue IDs")
 	attach := fs.String("attach", "", "image attachment path")
 	if err := fs.Parse(args[1:]); err != nil {
-		return usageError(err.Error())
+		return usageError("%s", err)
 	}
 	if fs.NArg() != 0 {
 		return usageError("issue update does not accept extra positional arguments")
@@ -273,7 +273,7 @@ func (a app) issueUpdate(ctx context.Context, args []string, cfg config) error {
 
 func (a app) issueSetStatus(ctx context.Context, args []string, cfg config, status entity.Status, action string, usage string) error {
 	if len(args) != 1 {
-		return usageError(usage)
+		return usageError("%s", usage)
 	}
 	id, err := parseID(args[0])
 	if err != nil {

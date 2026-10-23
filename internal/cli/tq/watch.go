@@ -140,7 +140,7 @@ func (a app) issueWatch(ctx context.Context, args []string) error {
 	seenTTL := fs.Int("seen-ttl", 900, "seconds to suppress re-emitting the same issue")
 	verbose := fs.Bool("verbose", false, "also emit info envelopes (error and event are always emitted)")
 	if err := fs.Parse(args); err != nil {
-		return usageError(err.Error())
+		return usageError("%s", err)
 	}
 	if fs.NArg() != 0 {
 		return usageError("issue watch does not accept positional arguments")
