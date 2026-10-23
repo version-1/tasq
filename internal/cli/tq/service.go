@@ -215,7 +215,7 @@ func (a app) serviceStart(ctx context.Context, args []string, cfg config) error 
 	fs := newFlagSet("service start")
 	yes := fs.Bool("y", false, "start without confirmation")
 	if err := fs.Parse(args); err != nil {
-		return usageError(err.Error())
+		return usageError("%s", err)
 	}
 	if fs.NArg() != 0 {
 		return usageError("usage: tq service start [-y]")

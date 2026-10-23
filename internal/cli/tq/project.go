@@ -50,7 +50,7 @@ func (a app) projectRemove(ctx context.Context, args []string, cfg config) error
 	fs := newFlagSet("project remove")
 	yes := fs.Bool("y", false, "remove without confirmation")
 	if err := fs.Parse(args); err != nil {
-		return usageError(err.Error())
+		return usageError("%s", err)
 	}
 	if fs.NArg() != 1 {
 		return usageError("usage: tq project remove [-y] <project-key>")
@@ -92,7 +92,7 @@ func (a app) workflowRemove(ctx context.Context, args []string, cfg config) erro
 	fs := newFlagSet("workflow remove")
 	projectKey := fs.String("project", "", "project key")
 	if err := fs.Parse(args); err != nil {
-		return usageError(err.Error())
+		return usageError("%s", err)
 	}
 	if fs.NArg() != 0 {
 		return usageError("workflow remove does not accept positional arguments")
@@ -119,7 +119,7 @@ func (a app) workflowAdd(ctx context.Context, args []string, cfg config) error {
 	filePath := fs.String("file", "", "workflow file path")
 	body := fs.String("body", "", "workflow content")
 	if err := fs.Parse(args); err != nil {
-		return usageError(err.Error())
+		return usageError("%s", err)
 	}
 	if fs.NArg() != 0 {
 		return usageError("workflow add does not accept positional arguments")
@@ -163,7 +163,7 @@ func (a app) projectAdd(ctx context.Context, args []string, cfg config) error {
 	fs := newFlagSet("project add")
 	key := fs.String("key", "", "project key")
 	if err := fs.Parse(args); err != nil {
-		return usageError(err.Error())
+		return usageError("%s", err)
 	}
 	if fs.NArg() > 1 {
 		return usageError("usage: tq project add [flags] [path]")

@@ -48,7 +48,7 @@ func (a app) update(ctx context.Context, args []string, cfg config) error {
 	yes := fs.Bool("y", false, "update without confirmation")
 	tag := fs.String("tag", "", "release tag to install")
 	if err := fs.Parse(args); err != nil {
-		return usageError(err.Error())
+		return usageError("%s", err)
 	}
 	if fs.NArg() != 0 {
 		return usageError("update does not accept positional arguments")

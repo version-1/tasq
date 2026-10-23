@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=22.23.4 <23 || >=24.22.1 <25 || >=26.12.1 <27"
+  },
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "dev:mock": "VITE_MSW=true vite --host 0.0.0.0",
