@@ -474,6 +474,10 @@ the same custom property.
 - Thumb shifts `18px` horizontally with a `160ms` ease transition.
 - Focus ring: `2px solid var(--primary-black)` with `2px` offset.
 
+The `decorative` variant renders only the track and thumb, with `aria-hidden`
+and no input or change handler. Use it inside an already accessible interactive
+owner, such as a checkable menu item, to avoid nested controls.
+
 ### Pagination (`ui/pagination`)
 
 - Inline cluster aligned to the end with `12px` gap.
@@ -621,6 +625,17 @@ This is the recurring shape for `runs-section`, `comment-list`,
   comment across all comment pages and opens a continue-with-comment dialog.
   The blocker is read-only context; free text or the built-in `Ok` / `Retry`
   shortcuts create the change request before the issue moves to `ready`.
+
+The card action dropdown includes the feature-owned `auto-ok-control`, using a
+checkable `ContextMenuItem`. Its `menuitemcheckbox` role and `aria-checked` expose
+the saved setting, with a visual toggle and an `n/5` reply count shown in the menu. Reasons
+for automatic shutdown and save errors also appear inside the dropdown. Saving
+disables the item; failures preserve the saved value. The toggle uses the shared
+`Switch` in decorative mode; the menu item owns interaction and checked state.
+The control has an
+issue-specific accessible name and supports keyboard activation. Auto OK is
+configured only in the dropdown. [Issue Auto OK](../../../../docs/design/status.md#issue-auto-ok) defines
+the server-owned lifecycle.
 
 ### Issue Board
 
@@ -792,7 +807,8 @@ new ones:
 - `Switch`, sort buttons, copy buttons, context menu items, and toasts expose
   meaningful `aria-label`s, often through i18n keys.
 - Context menus apply `aria-haspopup`, `aria-expanded`, `aria-controls`, and
-  `role="menu"` / `role="menuitem"`.
+  `role="menu"` / `role="menuitem"`. Checkable items use `menuitemcheckbox`
+  with `aria-checked`.
 - Toasts wrap each item in `role="status"` and the stack in `aria-live="polite"`.
 - Icons rendered through `IconProxy` are `aria-hidden="true"` and
   `focusable="false"`, so labels must live on the wrapping interactive element.

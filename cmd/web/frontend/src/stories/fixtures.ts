@@ -112,6 +112,7 @@ export const storyShellData: LayoutShellData = {
     onRejectShortcut: asyncNoop,
     onResolveIssue: noop,
     onStatusChange: asyncNoop,
+    onAutoOKChange: asyncNoop,
   },
   loadState: {
     kind: "ready",

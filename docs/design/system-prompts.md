@@ -70,6 +70,14 @@ Tasq prepends the command-resolution guidance for development builds, then prepe
 
 The approval-reason wording guides agent behavior but does not add runtime validation or change Tasq's approval-denial policy. The pull-request artifact instructions apply only when the agent creates or updates a PR.
 
+## Auto OK Reply
+
+A pending [Auto OK reply](status.md#issue-auto-ok) is an exception to the normal
+resume prompt. It requires a stored thread and sends exactly `ok`, with no added
+guidance, workflow text, or change requests. It runs one turn even if workflow
+continuation is enabled. The tracker moves a still-ready issue to `in_progress`
+when the app-server accepts the reply. Ordinary resumes retain the behavior below.
+
 ## Task Resume Prompt
 
 On a resumed run, when `Task.ResumeThreadID` is set, the runner resumes the existing Codex thread and does not resend the full workflow prompt. It sends only continuation guidance so the agent continues the same task without repeating completed work.

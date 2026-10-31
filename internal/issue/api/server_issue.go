@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/version-1/tasq/internal/issue/domain/entity"
@@ -106,6 +107,34 @@ func (s *Server) updateIssue(w http.ResponseWriter, r *http.Request) {
 
 type issueStatesInput struct {
 	IDs []int64 `json:"ids"`
+}
+
+func (s *Server) completeAutoOK(w http.ResponseWriter, r *http.Request) {
+	id, ok := issueID(w, r, "issues.auto_ok")
+	if !ok {
+		return
+	}
+	var input entity.AutoOKResultInput
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		writeError(w, http.StatusBadRequest, "issues.auto_ok.invalid_request", err)
+		return
+	}
+	if input.Phase != "" && input.Phase != entity.AutoOKResultPhaseClaim {
+		writeError(w, http.StatusBadRequest, "issues.auto_ok.invalid_request", errors.New("phase is invalid"))
+		return
+	}
+	var updated entity.Issue
+	var err error
+	if input.Phase == entity.AutoOKResultPhaseClaim {
+		updated, err = s.store.ClaimAutoOK(r.Context(), id, input)
+	} else {
+		updated, err = s.store.CompleteAutoOK(r.Context(), id, input)
+	}
+	if err != nil {
+		writeStoreError(w, err, "issues.auto_ok", "issue")
+		return
+	}
+	writeJSON(w, http.StatusOK, updated)
 }
 
 func (s *Server) issueStates(w http.ResponseWriter, r *http.Request) {

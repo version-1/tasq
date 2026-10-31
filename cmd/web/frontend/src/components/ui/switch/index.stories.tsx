@@ -21,3 +21,13 @@ export const Unchecked: Story = {
     checked: false,
   },
 };
+
+export const Decorative: Story = {
+  render: () => (
+    <div style={{ display: "flex", gap: 16 }}>
+      <Switch decorative checked />
+      <Switch decorative checked={false} />
+      <Switch decorative checked disabled />
+    </div>
+  ),
+};

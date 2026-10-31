@@ -117,18 +117,24 @@ type UpsertProjectWorkflowInput struct {
 }
 
 type Issue struct {
-	ID            int64      `json:"id"`
-	ProjectID     int64      `json:"projectId"`
-	ProjectKey    string     `json:"projectKey"`
-	Title         string     `json:"title"`
-	Description   string     `json:"description"`
-	Status        Status     `json:"status"`
-	Priority      Priority   `json:"priority"`
-	Assignee      string     `json:"assignee"`
-	DependencyIDs []int64    `json:"dependency_ids"`
-	Artifacts     []Artifact `json:"artifacts"`
-	CreatedAt     time.Time  `json:"createdAt"`
-	UpdatedAt     time.Time  `json:"updatedAt"`
+	AutoOK           bool       `json:"autoOk"`
+	AutoOKCount      int        `json:"autoOkCount"`
+	AutoOKPending    bool       `json:"autoOkPending"`
+	AutoOKClaimed    bool       `json:"-"`
+	AutoOKGeneration int64      `json:"autoOkGeneration"`
+	AutoOKStopReason string     `json:"autoOkStopReason"`
+	ID               int64      `json:"id"`
+	ProjectID        int64      `json:"projectId"`
+	ProjectKey       string     `json:"projectKey"`
+	Title            string     `json:"title"`
+	Description      string     `json:"description"`
+	Status           Status     `json:"status"`
+	Priority         Priority   `json:"priority"`
+	Assignee         string     `json:"assignee"`
+	DependencyIDs    []int64    `json:"dependency_ids"`
+	Artifacts        []Artifact `json:"artifacts"`
+	CreatedAt        time.Time  `json:"createdAt"`
+	UpdatedAt        time.Time  `json:"updatedAt"`
 }
 
 type ArtifactType string
@@ -186,6 +192,7 @@ type CreateIssueInput struct {
 }
 
 type UpdateIssueInput struct {
+	AutoOK        *bool     `json:"autoOk,omitempty"`
 	Title         *string   `json:"title"`
 	Description   *string   `json:"description"`
 	Status        *Status   `json:"status"`

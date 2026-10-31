@@ -47,6 +47,9 @@ const defaultTaskWorkPrompt = "Use `{{ tq.command }}` to keep the issue tracker 
 const continuationGuidance = "First run `%[1]s issue update %[2]d --status in_progress` to keep the issue tracker synchronized. Then continue the same task in this live thread without repeating completed work, and stop when it is ready for handoff. " + approvalRequestGuidance + " If this continuation creates or updates a pull request, register the primary PR before handoff with `%[1]s artifact set %[2]d --type pull_request <pr-url>`. On success, add the handoff comment, then move the issue to `review`; on failure, retry reasonably, then leave a blocker comment and do not move to `review` if it remains unresolved. Otherwise, artifact registration is not required."
 
 func continuationPrompt(task Task) string {
+	if task.AutoOK {
+		return "ok"
+	}
 	prompt := fmt.Sprintf(continuationGuidance, tasqCommand(task), task.Issue.ID)
 	if guidance := alternateTasqCommandGuidance(task); guidance != "" {
 		prompt = guidance + "\n\n" + prompt

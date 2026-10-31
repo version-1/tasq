@@ -11,6 +11,7 @@ import {
 
 function ContextMenuStory() {
   const [isOpen, setIsOpen] = useState(true);
+  const [isChecked, setIsChecked] = useState(false);
 
   return (
     <ContextMenu
@@ -25,6 +26,14 @@ function ContextMenuStory() {
         </button>
       )}
     >
+      <ContextMenuItem
+        checked={isChecked}
+        trailingIcon={isChecked ? <IconProxy name="check" /> : undefined}
+        onSelect={() => setIsChecked((value) => !value)}
+      >
+        Automatically refresh
+      </ContextMenuItem>
+      <ContextMenuSeparator />
       <ContextMenuGroupLabel>Status</ContextMenuGroupLabel>
       <ContextMenuItem
         icon={<IconProxy name="circle" />}

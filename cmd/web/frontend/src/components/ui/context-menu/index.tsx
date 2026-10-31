@@ -78,6 +78,7 @@ export function ContextMenuGroupLabel({ children }: { children: ReactNode }) {
 
 export function ContextMenuItem({
   children,
+  checked,
   disabled = false,
   icon,
   label,
@@ -87,6 +88,7 @@ export function ContextMenuItem({
   variant = "default",
 }: {
   children: ReactNode;
+  checked?: boolean;
   disabled?: boolean;
   icon?: ReactNode;
   label?: string;
@@ -97,12 +99,13 @@ export function ContextMenuItem({
 }) {
   return (
     <button
+      aria-checked={checked}
       aria-label={label}
       className={[styles.item, variant === "danger" ? styles.dangerItem : ""]
         .filter(Boolean)
         .join(" ")}
       disabled={disabled}
-      role="menuitem"
+      role={checked === undefined ? "menuitem" : "menuitemcheckbox"}
       title={title}
       type="button"
       onClick={onSelect}

@@ -66,6 +66,7 @@ const meta = {
   args: {
     issue: summaryIssue(1, 3),
     onStatusChange: async () => undefined,
+    onAutoOKChange: async () => undefined,
     runCount: 2,
   },
 } satisfies Meta<typeof IssueCard>;

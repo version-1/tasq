@@ -1,0 +1,21 @@
+.control {
+  display: grid;
+  gap: var(--space-1);
+  max-width: 260px;
+}
+
+.count {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.error {
+  margin: 0;
+  padding: 4px 8px;
+  color: var(--danger);
+  font-size: 12px;
+}

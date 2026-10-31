@@ -250,3 +250,21 @@ Storybook title は所有責務に合わせます。
 Storybook 専用 fixture と builder は `src/stories/` に置きます。Production code から Storybook helper を import してはいけません。
 
 Storybook static build output は `storybook-static/` に生成されますが、commit してはいけません。
+
+## 単体開発時の Auto OK モック
+
+`npm run dev:mock` の Tasq プロジェクトには、#3 が ON・2/5、#2 が5回到達で OFF、
+#9 が再開失敗で OFF の3例を用意しています。対応する自動返信コメントも履歴に含めます。
+
+MSW は、ON の課題が `blocked` になったときと、`blocked` のカードのプルダウンで Auto OK を ON にしたときに、
+再開の受理を模擬します。自動返信コメントを履歴に記録し、回数を
+加算して5回目に OFF にします。未解決の依存先がある返信は、サマリーの再取得で
+依存関係の解消を確認してから再開します。`POST /api/v1/issues/{id}/auto-ok-result`
+も実装し、送信開始・失敗・重複する結果通知を扱います。次の確認待ちは、課題を
+PATCH で `blocked` にすると再現できます。単体開発では Codex を実行しません。
+
+モックの状態はメモリ上にあり、ページの再読み込みで初期化されます。本番の永続化仕様は
+変わりません。HTTP 経由の動作は `src/mocks/auto-ok.test.ts` で検証します。
+
+[プルダウン内の Auto OK 設定](screenshots/auto-ok-mock-states.jpg) ·
+[再有効化後の最初の返信が成功したプルダウン](screenshots/auto-ok-mock-resumed.jpg)

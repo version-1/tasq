@@ -238,6 +238,16 @@ This deviates from the following SPEC.md sections:
 | §4.1.8, §8.3 | Runtime state and concurrency are implicitly single-project scoped | Flat global state; no per-project partitioning |
 | §8.1 | One poll interval from one workflow | One global poll interval; per-project intervals ignored |
 
+## Issue Auto OK
+
+Tasq extends the local tracker contract with an issue-scoped Auto OK setting and
+a persistent five-reply limit. A blocked issue with Auto OK enabled schedules a
+new single-turn resume containing only `ok`; the tracker owns the pending reply,
+count, history, and status transition through its API. This is an opt-in Tasq
+extension to Symphony's implementation-defined input policy (§10.5), not an
+automatic acceptance of command/file-change approvals. See
+[Issue Auto OK](../design/status.md#issue-auto-ok) for the complete lifecycle.
+
 ## Compatibility Notes
 
 Where Symphony says "tracker" for scheduling, Tasq's orchestrator should read that as the local issue-tracker API unless a future design explicitly adds an external tracker adapter.

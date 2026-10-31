@@ -31,6 +31,19 @@
 すべての課題は必ず 1 つのプロジェクトに属します。課題が属するプロジェクトは作成時に設定され、update API では変更できません。
 `dependency_ids` と `artifacts` は単一課題と一覧の両方のレスポンスで公開されます。依存または Artifact がない課題は、`null` ではなく `[]` を返します。
 
+課題の Auto OK フィールドは、詳細・一覧・キュー・サマリーの各レスポンスに含めます。
+
+| 公開フィールド | 型 | 既定値 | 更新方法 |
+| --- | --- | --- | --- |
+| `autoOk` | boolean | `false` | `UpdateIssueInput` で任意指定。OFF から ON で回数をリセット |
+| `autoOkCount` | integer | `0` | 結果通知のみで更新。範囲は 0–5 |
+| `autoOkPending` | boolean | `false` | issue-tracker が管理する返信予約 |
+| `autoOkGeneration` | int64 | `0` | 結果通知の重複を防ぐための世代番号 |
+| `autoOkStopReason` | string | `""` | issue-tracker が管理。`""`、`limit`、`error` のいずれか |
+
+5 フィールドとも `issues` に保存します。新規課題は必ず Auto OK が OFF です。
+状態遷移と結果通知の仕様は、[課題ごとの Auto OK](status.ja.md#課題ごとの-auto-ok) を参照してください。
+
 ### Artifact
 
 Artifact は、課題に外部成果物を関連付けます。1 つの課題には、同じ `type` の Artifact を最大 1 件だけ登録できます。初期対応の type は `pull_request` で、サーバーが設定する `data_type` は `url` です。

@@ -11,7 +11,7 @@ import (
 )
 
 func issueColumns() string {
-	return `issues.id, issues.project_id, projects.key, issues.title, issues.description, issues.status, issues.priority, issues.assignee, issues.created_at, issues.updated_at`
+	return `issues.id, issues.project_id, projects.key, issues.title, issues.description, issues.status, issues.priority, issues.assignee, issues.created_at, issues.updated_at, issues.auto_ok, issues.auto_ok_count, issues.auto_ok_pending, issues.auto_ok_claimed, issues.auto_ok_generation, issues.auto_ok_stop_reason`
 }
 
 func commentColumns() string {
@@ -42,7 +42,7 @@ func scanIssue(row rowScanner) (entity.Issue, error) {
 	var item entity.Issue
 	var createdAt string
 	var updatedAt string
-	err := row.Scan(&item.ID, &item.ProjectID, &item.ProjectKey, &item.Title, &item.Description, &item.Status, &item.Priority, &item.Assignee, &createdAt, &updatedAt)
+	err := row.Scan(&item.ID, &item.ProjectID, &item.ProjectKey, &item.Title, &item.Description, &item.Status, &item.Priority, &item.Assignee, &createdAt, &updatedAt, &item.AutoOK, &item.AutoOKCount, &item.AutoOKPending, &item.AutoOKClaimed, &item.AutoOKGeneration, &item.AutoOKStopReason)
 	if err != nil {
 		return entity.Issue{}, err
 	}

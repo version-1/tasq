@@ -2,6 +2,9 @@ import { defineConfig } from "orval";
 
 export default defineConfig({
   issueTracker: {
+    hooks: {
+      afterAllFilesWrite: "node scripts/trim-issue-tracker-client.mjs",
+    },
     input: {
       target: "../../../docs/openapi/issue-tracker.yml",
     },

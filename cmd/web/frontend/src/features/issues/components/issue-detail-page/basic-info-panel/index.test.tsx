@@ -25,10 +25,10 @@ describe("BasicInfoPanel", () => {
     renderBasicInfoPanel(issueFixtures[0]);
 
     const firstDependencyLink = screen.getByRole("link", {
-      name: "#2 Wire issue board to generated client",
+      name: "#2 Auto OK stopped after five replies",
     });
     const secondDependencyLink = screen.getByRole("link", {
-      name: "#3 Verify status transitions",
+      name: "#3 Auto OK active — waiting for next checkpoint",
     });
 
     expect(firstDependencyLink).toHaveAttribute("href", "/issues/2");

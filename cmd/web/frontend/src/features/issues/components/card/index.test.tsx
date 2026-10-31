@@ -25,6 +25,11 @@ const issue: IssueSummary = {
   priority: "high",
   assignee: "web",
   dependency_ids: [],
+  autoOk: false,
+  autoOkCount: 0,
+  autoOkPending: false,
+  autoOkGeneration: 0,
+  autoOkStopReason: "",
   artifacts: [],
   queueStatus: "queued",
   createdAt: "2026-06-01T00:00:00.000Z",
@@ -157,6 +162,19 @@ describe("IssueCard", () => {
     expect(within(menu).getAllByRole("separator")).toHaveLength(2);
   });
 
+  it("configures Auto OK only through the card action dropdown", async () => {
+    const user = userEvent.setup();
+    const onAutoOKChange = vi.fn().mockResolvedValue(undefined);
+    renderCard({ onAutoOKChange });
+    expect(screen.queryByText("Auto OK")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Issue actions for Wire issue board to generated client" }));
+    const menu = screen.getByRole("menu");
+    const autoOK = within(menu).getByRole("menuitemcheckbox", { name: "Auto OK for issue #24" });
+    expect(autoOK).toHaveAttribute("aria-checked", "false");
+    await user.click(autoOK);
+    expect(onAutoOKChange).toHaveBeenCalledWith(24, true);
+  });
+
   it.each([
     ["backlog", "Backlog", "lucide-inbox"],
     ["blocked", "Blocked", "lucide-circle-alert"],
@@ -199,6 +217,11 @@ describe("IssueCard", () => {
     renderCard({
       issue: {
         ...issue,
+        autoOk: false,
+        autoOkCount: 0,
+        autoOkPending: false,
+        autoOkGeneration: 0,
+        autoOkStopReason: "",
         artifacts: [
           {
             type: "pull_request",

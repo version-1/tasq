@@ -339,8 +339,10 @@ func (s *Store) UpdateIssue(ctx context.Context, id int64, input entity.UpdateIs
 	if normalized.Assignee != nil {
 		current.Assignee = *normalized.Assignee
 	}
+	updateAutoOK(&current, normalized)
 	_, err = tx.ExecContext(ctx, `UPDATE issues SET
-		title = ?, description = ?, status = ?, priority = ?, assignee = ?, updated_at = ?
+		title = ?, description = ?, status = ?, priority = ?, assignee = ?, updated_at = ?,
+		auto_ok = ?, auto_ok_count = ?, auto_ok_pending = ?, auto_ok_claimed = ?, auto_ok_generation = ?, auto_ok_stop_reason = ?
 		WHERE id = ?`,
 		current.Title,
 		current.Description,
@@ -348,6 +350,7 @@ func (s *Store) UpdateIssue(ctx context.Context, id int64, input entity.UpdateIs
 		current.Priority,
 		current.Assignee,
 		nowString(),
+		current.AutoOK, current.AutoOKCount, current.AutoOKPending, current.AutoOKClaimed, current.AutoOKGeneration, current.AutoOKStopReason,
 		id,
 	)
 	if err != nil {

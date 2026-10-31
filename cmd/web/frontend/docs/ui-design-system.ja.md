@@ -469,6 +469,10 @@ header の `Create`) は所有モジュール内で個別にスタイル付け�
 - thumb は `160ms` ease で水平方向に `18px` 移動。
 - フォーカスリング: `2px solid var(--primary-black)` + offset `2px`。
 
+`decorative` は表示専用のトラックとつまみだけを描画し、`aria-hidden` を付けます。
+入力要素や変更ハンドラーは持ちません。チェック可能なメニュー項目など、操作と
+アクセシビリティを担う親要素の内側で使い、操作部品の入れ子を避けます。
+
 ### Pagination (`ui/pagination`)
 
 - 末尾揃え、gap `12px` のインラインクラスター。
@@ -616,6 +620,16 @@ gap: 14px;
   Continue with Comment ダイアログを開きます。blocker は読み取り専用の文脈として
   表示し、フリーテキストまたは組み込みの `Ok` / `Retry` ショートカットで
   Change Request を作成してから Issue を `ready` へ移動します。
+
+課題カードのプルダウンには、チェック可能な `ContextMenuItem` を使った
+`auto-ok-control` を配置します。`menuitemcheckbox` と `aria-checked` で保存済みの設定を
+伝え、トグルと送信成功回数 `n/5` を表示します。自動 OFF の理由と保存エラーも
+プルダウン内に表示します。保存中は項目を無効にし、失敗時は保存済みの値を保ちます。
+トグルには共通の `Switch` の表示専用モードを使い、操作とチェック状態はメニュー項目が
+担います。課題 ID を含むアクセシブルな名前を付け、キーボード操作に対応します。
+Auto OK の設定はプルダウン内だけで行います。
+サーバー側の状態遷移は[課題ごとの Auto OK](../../../../docs/design/status.ja.md#課題ごとの-auto-ok)
+を参照してください。
 
 ### Issue Board
 
@@ -791,7 +805,8 @@ issue table の実行行は `statusToneClassName(issue.status)` を適用し、
 - `Switch`、ソートボタン、コピーボタン、context menu アイテム、toast には、
   多くの場合 i18n キー経由で意味のある `aria-label` を付けます。
 - context menu には `aria-haspopup`、`aria-expanded`、`aria-controls`、
-  `role="menu"` / `role="menuitem"` を適用します。
+  `role="menu"` / `role="menuitem"` を適用します。チェック可能な項目は
+  `menuitemcheckbox` と `aria-checked` を使います。
 - toast は各アイテムを `role="status"` で、スタックを
   `aria-live="polite"` でラップします。
 - `IconProxy` 経由で描画されるアイコンは `aria-hidden="true"` かつ

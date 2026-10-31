@@ -6,6 +6,12 @@ CREATE TABLE IF NOT EXISTS issues (
 	status TEXT NOT NULL,
 	priority TEXT NOT NULL,
 	assignee TEXT NOT NULL DEFAULT '',
+	auto_ok INTEGER NOT NULL DEFAULT 0,
+	auto_ok_count INTEGER NOT NULL DEFAULT 0 CHECK(auto_ok_count BETWEEN 0 AND 5),
+	auto_ok_pending INTEGER NOT NULL DEFAULT 0,
+	auto_ok_claimed INTEGER NOT NULL DEFAULT 0,
+	auto_ok_generation INTEGER NOT NULL DEFAULT 0,
+	auto_ok_stop_reason TEXT NOT NULL DEFAULT '',
 	created_at TEXT NOT NULL,
 	updated_at TEXT NOT NULL,
 	FOREIGN KEY(project_id) REFERENCES projects(id)

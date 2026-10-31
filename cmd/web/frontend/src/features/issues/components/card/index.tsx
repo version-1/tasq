@@ -20,6 +20,8 @@ import type { ChangeRequestShortcut } from "@/features/issues/change-request-sho
 import { useIssueThreadID } from "@/features/issues/hooks/use-issue-thread-id";
 import { pullRequestArtifact } from "@/features/issues/artifacts";
 import { PendingBadge } from "./pending-badge";
+import { AutoOKControl } from "@/features/issues/components/auto-ok-control";
+import type { AutoOKChangeHandler } from "../issues-view/types";
 import styles from "./index.module.css";
 
 type IssueStatusChangeHandler = (id: number, status: IssueStatus) => Promise<void>;
@@ -48,6 +50,7 @@ const quickStatusTargets: Partial<Record<IssueStatus, IssueStatus>> = {
 export function IssueCard({
   issue,
   onStatusChange,
+  onAutoOKChange,
   onRejectIssue,
   onRejectShortcut,
   onResolveIssue,
@@ -56,6 +59,7 @@ export function IssueCard({
 }: {
   issue: IssueSummary;
   onStatusChange: IssueStatusChangeHandler;
+  onAutoOKChange?: AutoOKChangeHandler;
   onRejectIssue?: IssueRejectHandler;
   onRejectShortcut?: IssueRejectShortcutHandler;
   onResolveIssue?: IssueResolveHandler;
@@ -158,6 +162,7 @@ export function IssueCard({
               {t("issues.card.openPullRequest")}
             </ContextMenuItem>
           ) : null}
+          <AutoOKControl issue={issue} disabled={readonly} onChange={onAutoOKChange} />
           <ContextMenuSeparator />
           <ContextMenuGroupLabel>{t("issues.card.changeStatus")}</ContextMenuGroupLabel>
           {statusOptions.map((status, index) => {

@@ -96,6 +96,18 @@ func (c *Client) CreateComment(ctx context.Context, issueID int64, input entity.
 	return output, nil
 }
 
+func (c *Client) CompleteAutoOK(ctx context.Context, issueID int64, input entity.AutoOKResultInput) (entity.Issue, error) {
+	var output entity.Issue
+	if err := c.request(ctx, http.MethodPost, fmt.Sprintf("/api/v1/issues/%d/auto-ok-result", issueID), input, &output); err != nil {
+		return entity.Issue{}, err
+	}
+	return output, nil
+}
+
+func (c *Client) ClaimAutoOK(ctx context.Context, issueID int64, generation int64) (entity.Issue, error) {
+	return c.CompleteAutoOK(ctx, issueID, entity.AutoOKResultInput{Generation: generation, Phase: entity.AutoOKResultPhaseClaim})
+}
+
 func (c *Client) ChangeRequestsByIssueID(ctx context.Context, issueID int64, status entity.ChangeRequestStatus, limit int) ([]entity.ChangeRequest, error) {
 	query := url.Values{}
 	if status != "" {

@@ -90,5 +90,10 @@ operator can decide whether a future retry should allow the requested action. Ap
 user-input behavior should be
 revisited before enabling wider production usage.
 
+Issue-scoped [Auto OK](../design/status.md#issue-auto-ok) can schedule a new
+single-turn resume after `blocked`, with exactly `ok` as the text input.
+Acceptance of `turn/start` acknowledges delivery to the tracker. Auto OK does
+not change the JSON-RPC approval-denial policy above.
+
 Runner progress is persisted to SQLite in `runner_events`. The current implementation does not write
 separate large transcript artifacts to the filesystem.

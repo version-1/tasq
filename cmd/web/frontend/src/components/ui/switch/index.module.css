@@ -32,15 +32,23 @@
   width: 20px;
 }
 
-.switch input:checked + .track {
+.switch input:checked + .track,
+.switch[data-checked="true"] .track {
   background: var(--primary-black);
 }
 
-.switch input:checked + .track .thumb {
+.switch input:checked + .track .thumb,
+.switch[data-checked="true"] .thumb {
   transform: translateX(18px);
 }
 
 .switch input:focus-visible + .track {
   outline: 2px solid var(--primary-black);
   outline-offset: 2px;
+}
+
+.switch input:disabled + .track,
+.switch[data-disabled="true"] .track {
+  opacity: 0.6;
+  cursor: not-allowed;
 }

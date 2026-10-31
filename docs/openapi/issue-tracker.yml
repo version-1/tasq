@@ -409,6 +409,30 @@ paths:
           $ref: "#/components/responses/Error"
         "404":
           $ref: "#/components/responses/Error"
+  /api/v1/issues/{id}/auto-ok-result:
+    parameters:
+      - $ref: "#/components/parameters/IssueID"
+    post:
+      tags: [Issues]
+      summary: Claim, acknowledge, or report failure for a pending Auto OK reply.
+      description: The orchestrator first claims a matching ready reservation immediately before turn/start. A later acknowledgement completes the claimed generation atomically with history. Duplicate or stale generations leave the issue unchanged.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AutoOKResultInput"
+      responses:
+        "200":
+          description: Updated issue.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IssueResponse"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
   /api/v1/issues/{issueId}/artifacts/{type}:
     parameters:
       - $ref: "#/components/parameters/IssueIDPath"
@@ -1043,6 +1067,11 @@ components:
     Issue:
       type: object
       required:
+        - autoOk
+        - autoOkCount
+        - autoOkPending
+        - autoOkGeneration
+        - autoOkStopReason
         - id
         - projectId
         - projectKey
@@ -1056,6 +1085,26 @@ components:
         - createdAt
         - updatedAt
       properties:
+        autoOk:
+          type: boolean
+          description: Issue-scoped automatic blocked reply setting. Defaults to false.
+        autoOkCount:
+          type: integer
+          minimum: 0
+          maximum: 5
+          description: Accepted automatic replies since the last OFF to ON transition.
+        autoOkPending:
+          type: boolean
+          description: A blocked transition has scheduled an automatic reply through the ready queue.
+        autoOkGeneration:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Persistent reply generation for idempotent delivery acknowledgement.
+        autoOkStopReason:
+          type: string
+          enum: ["", limit, error]
+          description: Why Auto OK stopped automatically.
         id:
           type: integer
           format: int64
@@ -1354,6 +1403,9 @@ components:
     UpdateIssueInput:
       type: object
       properties:
+        autoOk:
+          type: boolean
+          description: Enable or disable Auto OK. OFF to ON resets the reply count. Enabling a blocked issue schedules an immediate reply; disabling an unsent reply restores blocked.
         title:
           type: string
         description:
@@ -1370,6 +1422,21 @@ components:
           items:
             type: integer
             format: int64
+    AutoOKResultInput:
+      type: object
+      required: [generation]
+      properties:
+        generation:
+          type: integer
+          format: int64
+          minimum: 1
+        phase:
+          type: string
+          enum: [claim]
+          description: Set to claim immediately before turn/start. Omit for the delivery acknowledgement or failure result.
+        error:
+          type: string
+          description: Empty or omitted on accepted reply. On failure, disables Auto OK, restores blocked, and records the reason without incrementing the count.
     IssueStatesInput:
       type: object
       required:

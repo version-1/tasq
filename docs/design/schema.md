@@ -29,6 +29,19 @@ Issue descriptions may contain Markdown. Image attachments are referenced as `![
 Every issue belongs to exactly one project. Issue project ownership is set at create time and cannot be changed through update APIs.
 `dependency_ids` and `artifacts` are exposed on single-issue and list responses. Issues without dependencies or artifacts return `[]`, not `null`.
 
+Issue Auto OK fields are included in detail, list, queue, and summary responses:
+
+| Public field | Type | Default | Update contract |
+| --- | --- | --- | --- |
+| `autoOk` | boolean | `false` | Optional in `UpdateIssueInput`; OFF to ON resets count |
+| `autoOkCount` | integer | `0` | Result acknowledgement only; range 0–5 |
+| `autoOkPending` | boolean | `false` | Tracker-managed pending reply |
+| `autoOkGeneration` | int64 | `0` | Tracker-managed generation for idempotent acknowledgements |
+| `autoOkStopReason` | string | `""` | Tracker-managed: `""`, `limit`, or `error` |
+
+All five fields are stored on `issues`. New issues always start with Auto OK OFF.
+See [Issue Auto OK](status.md#issue-auto-ok) for lifecycle and acknowledgement semantics.
+
 ### Artifact
 
 Artifacts associate an issue with one external result. An issue can have at most one artifact for each `type`. The initial supported type is `pull_request`; its server-selected `data_type` is `url`.

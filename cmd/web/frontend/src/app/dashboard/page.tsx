@@ -4,7 +4,7 @@ import { useLayoutData } from "@/components/layout";
 import { IssuesView } from "@/features/issues/components/issues-view";
 
 export default function DashboardPage() {
-  const { summary, onAddIssue, onRejectIssue, onRejectShortcut, onResolveIssue, onStatusChange } = useLayoutData();
+  const { summary, onAddIssue, onRejectIssue, onRejectShortcut, onResolveIssue, onStatusChange, onAutoOKChange } = useLayoutData();
 
   return (
     <IssuesView
@@ -15,6 +15,7 @@ export default function DashboardPage() {
       onRejectShortcut={onRejectShortcut}
       onResolveIssue={onResolveIssue}
       onStatusChange={onStatusChange}
+      onAutoOKChange={onAutoOKChange}
     />
   );
 }
