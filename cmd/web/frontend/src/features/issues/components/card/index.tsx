@@ -162,6 +162,7 @@ export function IssueCard({
               {t("issues.card.openPullRequest")}
             </ContextMenuItem>
           ) : null}
+          <AutoOKControl issue={issue} disabled={readonly} onChange={onAutoOKChange} />
           <ContextMenuSeparator />
           <ContextMenuGroupLabel>{t("issues.card.changeStatus")}</ContextMenuGroupLabel>
           {statusOptions.map((status, index) => {
@@ -214,8 +215,6 @@ export function IssueCard({
         </div>
         {issue.queueStatus === "pending" ? <PendingBadge className={styles.pendingBadge} /> : null}
       </div>
-
-      <AutoOKControl issue={issue} disabled={readonly} onChange={onAutoOKChange} />
 
       <div className={styles.footerRow}>
         <div className={styles.metrics}>

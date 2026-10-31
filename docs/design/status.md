@@ -77,7 +77,8 @@ Common CLI shortcuts map to these status updates:
 
 ## Issue Auto OK
 
-Each issue card has an Auto OK switch, initially OFF. The issue-tracker persists
+Each issue card's action dropdown has a checkable Auto OK item, initially OFF.
+The issue-tracker persists
 the setting and accepted-reply count across browser reloads and service restarts.
 An OFF-to-ON transition resets the count; sending ON again does not reset it.
 

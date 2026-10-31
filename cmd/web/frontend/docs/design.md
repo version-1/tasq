@@ -306,7 +306,7 @@ is ON at 2/5, #2 is OFF after five replies, and #9 is OFF after a resume failure
 The fixture histories include the corresponding automatic reply comments.
 
 MSW simulates an accepted resume when an enabled issue becomes blocked, including
-when a blocked card is enabled. It records automatic reply comments, increments
+when Auto OK is enabled in a blocked card's action dropdown. It records automatic reply comments, increments
 the count, and switches OFF on the fifth reply. Dependency-blocked
 replies wait until a summary refresh finds their dependencies satisfied. The mock
 also implements `POST /api/v1/issues/{id}/auto-ok-result` for claim, failure, and
@@ -316,5 +316,5 @@ PATCHing the issue to `blocked`; no Codex process runs in standalone mode.
 Mock state is in memory and resets on page reload. The production persistence
 contract is unchanged. HTTP workflow coverage lives in `src/mocks/auto-ok.test.ts`.
 
-[Initial mock states](screenshots/auto-ok-mock-states.jpg) ·
-[Re-enabled card after its first reply](screenshots/auto-ok-mock-resumed.jpg)
+[Auto OK in the card dropdown](screenshots/auto-ok-mock-states.jpg) ·
+[Dropdown after re-enabling and accepting its first reply](screenshots/auto-ok-mock-resumed.jpg)

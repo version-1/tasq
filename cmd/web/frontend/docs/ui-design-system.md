@@ -622,12 +622,13 @@ This is the recurring shape for `runs-section`, `comment-list`,
   The blocker is read-only context; free text or the built-in `Ok` / `Retry`
   shortcuts create the change request before the issue moves to `ready`.
 
-Issue cards also compose the shared `Switch` through the feature-owned
-`auto-ok-control`. It displays the persisted Auto OK setting, an `n/5` accepted
-reply count, and a text reason after automatic shutdown. Saving disables the
-switch; failures keep the saved value and use the API error toast. The control
-has an issue-specific accessible name and supports label clicks and keyboard
-input. [Issue Auto OK](../../../../docs/design/status.md#issue-auto-ok) defines
+The card action dropdown includes the feature-owned `auto-ok-control`, using a
+checkable `ContextMenuItem`. Its `menuitemcheckbox` role and `aria-checked` expose
+the saved setting, with ON/OFF and an `n/5` reply count shown in the menu. Reasons
+for automatic shutdown and save errors also appear inside the dropdown. Saving
+disables the item; failures preserve the saved value. The control has an
+issue-specific accessible name and supports keyboard activation. Auto OK is
+configured only in the dropdown. [Issue Auto OK](../../../../docs/design/status.md#issue-auto-ok) defines
 the server-owned lifecycle.
 
 ### Issue Board
@@ -800,7 +801,8 @@ new ones:
 - `Switch`, sort buttons, copy buttons, context menu items, and toasts expose
   meaningful `aria-label`s, often through i18n keys.
 - Context menus apply `aria-haspopup`, `aria-expanded`, `aria-controls`, and
-  `role="menu"` / `role="menuitem"`.
+  `role="menu"` / `role="menuitem"`. Checkable items use `menuitemcheckbox`
+  with `aria-checked`.
 - Toasts wrap each item in `role="status"` and the stack in `aria-live="polite"`.
 - Icons rendered through `IconProxy` are `aria-hidden="true"` and
   `focusable="false"`, so labels must live on the wrapping interactive element.

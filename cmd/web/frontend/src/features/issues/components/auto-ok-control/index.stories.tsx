@@ -1,10 +1,25 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { storyIssue } from "@/stories/fixtures";
+import { ContextMenu } from "@/components/ui/context-menu";
 import { AutoOKControl } from "./index";
 
 const meta = {
   title: "Features/Issues/AutoOKControl",
   component: AutoOKControl,
+  decorators: [(Story) => (
+    <div style={{ minHeight: 180 }}>
+      <ContextMenu
+        id="auto-ok-story-menu"
+        isOpen
+        label="Issue actions"
+        onOpenChange={() => {}}
+        placement="bottom-start"
+        trigger={(props) => <button type="button" {...props}>Actions</button>}
+      >
+        <Story />
+      </ContextMenu>
+    </div>
+  )],
   args: { issue: storyIssue(), onChange: async () => {} },
 } satisfies Meta<typeof AutoOKControl>;
 export default meta;

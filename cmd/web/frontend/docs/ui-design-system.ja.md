@@ -617,10 +617,12 @@ gap: 14px;
   表示し、フリーテキストまたは組み込みの `Ok` / `Retry` ショートカットで
   Change Request を作成してから Issue を `ready` へ移動します。
 
-課題カードの `auto-ok-control` は、共通の `Switch` を使って、保存済みの Auto OK 設定、
-送信成功回数 `n/5`、自動 OFF の理由を表示します。保存中はスイッチを無効にします。
-失敗時は保存済みの値を保ち、API のエラートーストを表示します。課題 ID を含む
-アクセシブルな名前を付け、ラベルのクリックとキーボード操作に対応します。
+課題カードのプルダウンには、チェック可能な `ContextMenuItem` を使った
+`auto-ok-control` を配置します。`menuitemcheckbox` と `aria-checked` で保存済みの設定を
+伝え、ON/OFF と送信成功回数 `n/5` を表示します。自動 OFF の理由と保存エラーも
+プルダウン内に表示します。保存中は項目を無効にし、失敗時は保存済みの値を保ちます。
+課題 ID を含むアクセシブルな名前を付け、キーボード操作に対応します。
+Auto OK の設定はプルダウン内だけで行います。
 サーバー側の状態遷移は[課題ごとの Auto OK](../../../../docs/design/status.ja.md#課題ごとの-auto-ok)
 を参照してください。
 
@@ -798,7 +800,8 @@ issue table の実行行は `statusToneClassName(issue.status)` を適用し、
 - `Switch`、ソートボタン、コピーボタン、context menu アイテム、toast には、
   多くの場合 i18n キー経由で意味のある `aria-label` を付けます。
 - context menu には `aria-haspopup`、`aria-expanded`、`aria-controls`、
-  `role="menu"` / `role="menuitem"` を適用します。
+  `role="menu"` / `role="menuitem"` を適用します。チェック可能な項目は
+  `menuitemcheckbox` と `aria-checked` を使います。
 - toast は各アイテムを `role="status"` で、スタックを
   `aria-live="polite"` でラップします。
 - `IconProxy` 経由で描画されるアイコンは `aria-hidden="true"` かつ

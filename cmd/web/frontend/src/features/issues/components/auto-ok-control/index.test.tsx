@@ -5,13 +5,17 @@ import { storyIssue } from "@/stories/fixtures";
 import "@/lib/i18n";
 import { AutoOKControl } from "./index";
 
+function renderControl(props: Parameters<typeof AutoOKControl>[0]) {
+  return render(<div role="menu" aria-label="Issue actions"><AutoOKControl {...props} /></div>);
+}
+
 describe("AutoOKControl", () => {
   it("sends the issue setting and prevents duplicate changes while saving", async () => {
     const user = userEvent.setup();
     let finish: (() => void) | undefined;
     const onChange = vi.fn(() => new Promise<void>((resolve) => { finish = resolve; }));
-    render(<AutoOKControl issue={storyIssue()} onChange={onChange} />);
-    const toggle = screen.getByRole("checkbox");
+    renderControl({ issue: storyIssue(), onChange });
+    const toggle = screen.getByRole("menuitemcheckbox");
     await user.click(screen.getByText("Auto OK"));
     expect(onChange).toHaveBeenCalledWith(storyIssue().id, true);
     expect(toggle).toBeDisabled();
@@ -23,18 +27,35 @@ describe("AutoOKControl", () => {
 
   it("keeps the saved setting after an API failure", async () => {
     const user = userEvent.setup();
-    render(<AutoOKControl issue={storyIssue()} onChange={vi.fn().mockRejectedValue(new Error("offline"))} />);
-    const toggle = screen.getByRole("checkbox");
+    renderControl({ issue: storyIssue(), onChange: vi.fn().mockRejectedValue(new Error("offline")) });
+    const toggle = screen.getByRole("menuitemcheckbox");
     await user.click(screen.getByText("Auto OK"));
     await waitFor(() => expect(toggle).not.toBeDisabled());
-    expect(toggle).not.toBeChecked();
+    expect(toggle).toHaveAttribute("aria-checked", "false");
     expect(screen.getByRole("alert")).toBeInTheDocument();
   });
 
   it("shows the persisted count and automatic stop reason", () => {
-    render(<AutoOKControl issue={{ ...storyIssue(), autoOkCount: 5, autoOkStopReason: "limit" }} onChange={vi.fn()} />);
-    expect(screen.getByText("5/5")).toBeInTheDocument();
+    renderControl({ issue: { ...storyIssue(), autoOkCount: 5, autoOkStopReason: "limit" }, onChange: vi.fn() });
+    expect(screen.getByText("OFF · 5/5")).toBeInTheDocument();
     expect(screen.getByText(/5回に達した|after 5 replies/)).toBeInTheDocument();
-    expect(screen.getByRole("checkbox")).not.toBeChecked();
+    expect(screen.getByRole("menuitemcheckbox")).toHaveAttribute("aria-checked", "false");
+  });
+
+  it("exposes the saved checked state and supports keyboard toggling", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn().mockResolvedValue(undefined);
+    renderControl({ issue: { ...storyIssue(), autoOk: true, autoOkCount: 2 }, onChange });
+    const item = screen.getByRole("menuitemcheckbox");
+    expect(item).toHaveAttribute("aria-checked", "true");
+    expect(item).toHaveTextContent("ON · 2/5");
+    item.focus();
+    await user.keyboard(" ");
+    expect(onChange).toHaveBeenCalledWith(storyIssue().id, false);
+  });
+
+  it("disables editing for read-only cards", () => {
+    renderControl({ issue: storyIssue(), disabled: true, onChange: vi.fn() });
+    expect(screen.getByRole("menuitemcheckbox")).toBeDisabled();
   });
 });
