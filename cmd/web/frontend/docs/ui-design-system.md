@@ -474,6 +474,10 @@ the same custom property.
 - Thumb shifts `18px` horizontally with a `160ms` ease transition.
 - Focus ring: `2px solid var(--primary-black)` with `2px` offset.
 
+The `decorative` variant renders only the track and thumb, with `aria-hidden`
+and no input or change handler. Use it inside an already accessible interactive
+owner, such as a checkable menu item, to avoid nested controls.
+
 ### Pagination (`ui/pagination`)
 
 - Inline cluster aligned to the end with `12px` gap.
@@ -624,9 +628,11 @@ This is the recurring shape for `runs-section`, `comment-list`,
 
 The card action dropdown includes the feature-owned `auto-ok-control`, using a
 checkable `ContextMenuItem`. Its `menuitemcheckbox` role and `aria-checked` expose
-the saved setting, with ON/OFF and an `n/5` reply count shown in the menu. Reasons
+the saved setting, with a visual toggle and an `n/5` reply count shown in the menu. Reasons
 for automatic shutdown and save errors also appear inside the dropdown. Saving
-disables the item; failures preserve the saved value. The control has an
+disables the item; failures preserve the saved value. The toggle uses the shared
+`Switch` in decorative mode; the menu item owns interaction and checked state.
+The control has an
 issue-specific accessible name and supports keyboard activation. Auto OK is
 configured only in the dropdown. [Issue Auto OK](../../../../docs/design/status.md#issue-auto-ok) defines
 the server-owned lifecycle.

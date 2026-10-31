@@ -37,7 +37,7 @@ describe("AutoOKControl", () => {
 
   it("shows the persisted count and automatic stop reason", () => {
     renderControl({ issue: { ...storyIssue(), autoOkCount: 5, autoOkStopReason: "limit" }, onChange: vi.fn() });
-    expect(screen.getByText("OFF · 5/5")).toBeInTheDocument();
+    expect(screen.getByText("5/5")).toBeInTheDocument();
     expect(screen.getByText(/5回に達した|after 5 replies/)).toBeInTheDocument();
     expect(screen.getByRole("menuitemcheckbox")).toHaveAttribute("aria-checked", "false");
   });
@@ -48,7 +48,9 @@ describe("AutoOKControl", () => {
     renderControl({ issue: { ...storyIssue(), autoOk: true, autoOkCount: 2 }, onChange });
     const item = screen.getByRole("menuitemcheckbox");
     expect(item).toHaveAttribute("aria-checked", "true");
-    expect(item).toHaveTextContent("ON · 2/5");
+    expect(item).toHaveTextContent("2/5");
+    expect(item.querySelector('[data-checked="true"]')).toBeInTheDocument();
+    expect(item.querySelector("input")).not.toBeInTheDocument();
     item.focus();
     await user.keyboard(" ");
     expect(onChange).toHaveBeenCalledWith(storyIssue().id, false);

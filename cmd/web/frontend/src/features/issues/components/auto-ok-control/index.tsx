@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { ContextMenuHelp, ContextMenuItem } from "@/components/ui/context-menu";
 import { IconProxy } from "@/components/ui/icon-proxy";
+import { Switch } from "@/components/ui/switch";
 import type { Issue } from "@/lib/types";
 import type { AutoOKChangeHandler } from "../issues-view/types";
 import { useAutoOKToggle } from "@/features/issues/hooks/use-auto-ok-toggle";
@@ -27,8 +28,8 @@ export function AutoOKControl({ issue, disabled = false, onChange }: {
         onSelect={() => { void toggle(!issue.autoOk); }}
         trailingIcon={
           <span className={styles.count}>
-            {issue.autoOk ? "ON" : "OFF"} · {issue.autoOkCount}/5
-            {issue.autoOk ? <IconProxy name="check" /> : null}
+            {issue.autoOkCount}/5
+            <Switch decorative checked={issue.autoOk} disabled={disabled || isSaving || !onChange} />
           </span>
         }
       >
