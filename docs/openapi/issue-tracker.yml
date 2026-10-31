@@ -414,8 +414,8 @@ paths:
       - $ref: "#/components/parameters/IssueID"
     post:
       tags: [Issues]
-      summary: Record acceptance or failure of a pending Auto OK reply.
-      description: Orchestrator acknowledgement. Matching pending generations are completed atomically with history; duplicate or stale generations leave the issue unchanged.
+      summary: Claim, acknowledge, or report failure for a pending Auto OK reply.
+      description: The orchestrator first claims a matching ready reservation immediately before turn/start. A later acknowledgement completes the claimed generation atomically with history. Duplicate or stale generations leave the issue unchanged.
       requestBody:
         required: true
         content:
@@ -1430,6 +1430,10 @@ components:
           type: integer
           format: int64
           minimum: 1
+        phase:
+          type: string
+          enum: [claim]
+          description: Set to claim immediately before turn/start. Omit for the delivery acknowledgement or failure result.
         error:
           type: string
           description: Empty or omitted on accepted reply. On failure, disables Auto OK, restores blocked, and records the reason without incrementing the count.

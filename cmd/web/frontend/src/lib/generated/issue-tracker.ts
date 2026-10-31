@@ -399,9 +399,22 @@ export interface UpdateIssueInput {
   dependency_ids?: number[];
 }
 
+/**
+ * Set to claim immediately before turn/start. Omit for the delivery acknowledgement or failure result.
+ */
+export type AutoOKResultInputPhase = typeof AutoOKResultInputPhase[keyof typeof AutoOKResultInputPhase];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AutoOKResultInputPhase = {
+  claim: 'claim',
+} as const;
+
 export interface AutoOKResultInput {
   /** @minimum 1 */
   generation: number;
+  /** Set to claim immediately before turn/start. Omit for the delivery acknowledgement or failure result. */
+  phase?: AutoOKResultInputPhase;
   /** Empty or omitted on accepted reply. On failure, disables Auto OK, restores blocked, and records the reason without incrementing the count. */
   error?: string;
 }
@@ -1575,8 +1588,8 @@ export const patchApiV1IssuesId = async (id: number,
 
 
 /**
- * Orchestrator acknowledgement. Matching pending generations are completed atomically with history; duplicate or stale generations leave the issue unchanged.
- * @summary Record acceptance or failure of a pending Auto OK reply.
+ * The orchestrator first claims a matching ready reservation immediately before turn/start. A later acknowledgement completes the claimed generation atomically with history. Duplicate or stale generations leave the issue unchanged.
+ * @summary Claim, acknowledge, or report failure for a pending Auto OK reply.
  */
 export type postApiV1IssuesIdAutoOkResultResponse200 = {
   data: IssueResponse

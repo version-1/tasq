@@ -100,12 +100,17 @@ Workspace preparation, missing resume threads, startup, or reply acceptance
 failures switch Auto OK OFF with stop reason `error`, restore `blocked`, and add
 a blocker comment without incrementing the count. An error after acceptance is
 an ordinary run failure and may trigger the next automatic reply. Turning OFF
-before dispatch cancels the pending reply and restores `blocked`. An already
-accepted turn is not interrupted by the switch.
+before dispatch cancels the pending reply and restores `blocked`. Turning OFF
+then ON resets the counter and creates a new generation, so an acknowledgement
+from the prior generation cannot affect the new cycle.
 
-Pending replies carry a persisted generation. Result acknowledgements use
-`POST /api/v1/issues/{id}/auto-ok-result`; history, count, and stop state commit in
-one tracker transaction. Duplicate or obsolete generations do not change state.
+Pending replies carry a persisted generation. Immediately before `turn/start`,
+the orchestrator claims the reservation with `POST /api/v1/issues/{id}/auto-ok-result`
+and `phase: "claim"`. The later delivery acknowledgement records history, count, and
+stop state in one tracker transaction. Lifecycle updates after the claim do not discard
+that acknowledgement: if the agent blocks again first, the acknowledgement counts and
+reserves the next generation (until the fifth reply disables Auto OK). Duplicate or
+obsolete generations do not change state.
 This does not provide a distributed exactly-once guarantee across app-server
 acceptance and an abrupt crash before the tracker acknowledgement.
 

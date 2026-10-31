@@ -17,9 +17,10 @@ import (
 
 func TestDispatcherAutoOKThroughTrackerAPI(t *testing.T) {
 	for _, test := range []struct {
-		name string
-		fail bool
-	}{{"accepted", false}, {"failed before delivery", true}} {
+		name        string
+		fail        bool
+		beforeClaim bool
+	}{{"accepted", false, false}, {"failed before delivery", true, false}, {"startup failed before claim", true, true}} {
 		t.Run(test.name, func(t *testing.T) {
 			ctx := context.Background()
 			issues, err := issuestore.OpenMigrated(ctx, filepath.Join(t.TempDir(), "tracker.sqlite"))
@@ -53,9 +54,14 @@ func TestDispatcherAutoOKThroughTrackerAPI(t *testing.T) {
 			queued := createQueuedRun(t, store, issue.ID)
 			var testRunner runner.Runner = runner.SimulatedRunner{Duration: time.Millisecond}
 			if test.fail {
-				testRunner = &recordingRunner{result: runner.Result{Status: run.StatusFailed, Error: "could not resume thread"}}
+				testRunner = autoOKFailingRunner{}
 			}
-			d, err := NewDispatcher(DispatcherConfig{Tracker: tracker.NewClient(server.URL), Store: store, Runner: testRunner, WorkflowResolver: staticWorkflowResolver(testWorkflowDefinition()), MaxConcurrentRuns: 1})
+			definition := testWorkflowDefinition()
+			if test.beforeClaim {
+				testRunner = runner.CodexRunner{}
+				definition.Config.CodexCommand = "false"
+			}
+			d, err := NewDispatcher(DispatcherConfig{Tracker: tracker.NewClient(server.URL), Store: store, Runner: testRunner, WorkflowResolver: staticWorkflowResolver(definition), MaxConcurrentRuns: 1})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -87,4 +93,15 @@ func TestDispatcherAutoOKThroughTrackerAPI(t *testing.T) {
 			}
 		})
 	}
+}
+
+type autoOKFailingRunner struct{}
+
+func (autoOKFailingRunner) Run(_ context.Context, task runner.Task) runner.Result {
+	if task.OnAutoOKStarting != nil {
+		if err := task.OnAutoOKStarting(); err != nil {
+			return runner.Result{Status: run.StatusFailed, Error: err.Error()}
+		}
+	}
+	return runner.Result{Status: run.StatusFailed, Error: "could not resume thread"}
 }

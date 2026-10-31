@@ -120,6 +120,7 @@ type Issue struct {
 	AutoOK           bool       `json:"autoOk"`
 	AutoOKCount      int        `json:"autoOkCount"`
 	AutoOKPending    bool       `json:"autoOkPending"`
+	AutoOKClaimed    bool       `json:"-"`
 	AutoOKGeneration int64      `json:"autoOkGeneration"`
 	AutoOKStopReason string     `json:"autoOkStopReason"`
 	ID               int64      `json:"id"`

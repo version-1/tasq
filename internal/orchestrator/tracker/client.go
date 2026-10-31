@@ -104,6 +104,10 @@ func (c *Client) CompleteAutoOK(ctx context.Context, issueID int64, input entity
 	return output, nil
 }
 
+func (c *Client) ClaimAutoOK(ctx context.Context, issueID int64, generation int64) (entity.Issue, error) {
+	return c.CompleteAutoOK(ctx, issueID, entity.AutoOKResultInput{Generation: generation, Phase: entity.AutoOKResultPhaseClaim})
+}
+
 func (c *Client) ChangeRequestsByIssueID(ctx context.Context, issueID int64, status entity.ChangeRequestStatus, limit int) ([]entity.ChangeRequest, error) {
 	query := url.Values{}
 	if status != "" {

@@ -31,7 +31,7 @@ done
 `), 0700); err != nil {
 		t.Fatal(err)
 	}
-	accepted := 0
+	started, accepted := 0, 0
 	result := CodexRunner{}.Run(context.Background(), Task{
 		AutoOK:            true,
 		ResumeThreadID:    "previous",
@@ -42,10 +42,11 @@ done
 		ContinueTurns:     true,
 		MaxTurns:          5,
 		PromptTemplate:    "Must not appear",
+		OnAutoOKStarting:  func() error { started++; return nil },
 		OnAutoOKDelivered: func() error { accepted++; return nil },
 	})
-	if result.Status != run.StatusSucceeded || accepted != 1 {
-		t.Fatalf("result=%+v accepted=%d", result, accepted)
+	if result.Status != run.StatusSucceeded || started != 1 || accepted != 1 {
+		t.Fatalf("result=%+v started=%d accepted=%d", result, started, accepted)
 	}
 	data, err := os.ReadFile(filepath.Join(dir, "turns.jsonl"))
 	if err != nil {
@@ -71,5 +72,30 @@ func TestAutoOKRequiresExistingThread(t *testing.T) {
 	result := CodexRunner{}.Run(context.Background(), Task{AutoOK: true, Command: "does-not-run", Workspace: workspace.Workspace{Path: t.TempDir()}})
 	if result.Status != run.StatusFailed || result.Error != "Auto OK requires a previous thread to resume" {
 		t.Fatalf("result=%+v", result)
+	}
+}
+
+func TestAutoOKDoesNotClaimBeforeCodexStartupOrResumeFailure(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		command string
+	}{
+		{name: "startup", command: "false"},
+		{name: "resume", command: "sh -c 'read line; echo \"{\\\"id\\\":1,\\\"result\\\":{}}\"; read line; exit 1'"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			started := 0
+			result := CodexRunner{}.Run(context.Background(), Task{
+				AutoOK:           true,
+				ResumeThreadID:   "previous",
+				Workspace:        workspace.Workspace{Path: t.TempDir()},
+				Command:          test.command,
+				ReadTimeout:      time.Second,
+				OnAutoOKStarting: func() error { started++; return nil },
+			})
+			if result.Status != run.StatusFailed || started != 0 {
+				t.Fatalf("result=%+v started=%d", result, started)
+			}
+		})
 	}
 }

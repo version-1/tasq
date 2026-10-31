@@ -11,6 +11,20 @@ import (
 
 type autoOKTracker interface {
 	CompleteAutoOK(context.Context, int64, entity.AutoOKResultInput) (entity.Issue, error)
+	ClaimAutoOK(context.Context, int64, int64) (entity.Issue, error)
+}
+
+func claimAutoOK(ctx context.Context, tracker any, issue entity.Issue) error {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	client, ok := tracker.(autoOKTracker)
+	if !ok {
+		return errors.New("tracker does not support Auto OK results")
+	}
+	if _, err := client.ClaimAutoOK(ctx, issue.ID, issue.AutoOKGeneration); err != nil {
+		return fmt.Errorf("claim Auto OK reply for issue %d: %w", issue.ID, err)
+	}
+	return nil
 }
 
 func completeAutoOK(ctx context.Context, tracker any, issue entity.Issue, deliveryErr error) error {

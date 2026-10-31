@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/version-1/tasq/internal/issue/domain/entity"
@@ -118,7 +119,17 @@ func (s *Server) completeAutoOK(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "issues.auto_ok.invalid_request", err)
 		return
 	}
-	updated, err := s.store.CompleteAutoOK(r.Context(), id, input)
+	if input.Phase != "" && input.Phase != entity.AutoOKResultPhaseClaim {
+		writeError(w, http.StatusBadRequest, "issues.auto_ok.invalid_request", errors.New("phase is invalid"))
+		return
+	}
+	var updated entity.Issue
+	var err error
+	if input.Phase == entity.AutoOKResultPhaseClaim {
+		updated, err = s.store.ClaimAutoOK(r.Context(), id, input)
+	} else {
+		updated, err = s.store.CompleteAutoOK(r.Context(), id, input)
+	}
 	if err != nil {
 		writeStoreError(w, err, "issues.auto_ok", "issue")
 		return

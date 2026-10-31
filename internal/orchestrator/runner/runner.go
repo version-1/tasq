@@ -17,6 +17,7 @@ type Runner interface {
 
 type Task struct {
 	AutoOK            bool
+	OnAutoOKStarting  func() error
 	OnAutoOKDelivered func() error
 	Issue             entity.Issue
 	Attempt           int
@@ -61,6 +62,11 @@ func (r SimulatedRunner) Run(ctx context.Context, task Task) Result {
 	case <-ctx.Done():
 		return Result{Status: run.StatusCancelled, Error: ctx.Err().Error()}
 	case <-timer.C:
+		if task.AutoOK && task.OnAutoOKStarting != nil {
+			if err := task.OnAutoOKStarting(); err != nil {
+				return Result{Status: run.StatusFailed, Error: err.Error()}
+			}
+		}
 		if task.AutoOK && task.OnAutoOKDelivered != nil {
 			if err := task.OnAutoOKDelivered(); err != nil {
 				return Result{Status: run.StatusFailed, Error: err.Error()}
@@ -133,6 +139,11 @@ func (r CodexRunner) Run(ctx context.Context, task Task) Result {
 		turnPrompt := prompt
 		if turnNumber > 1 {
 			turnPrompt = continuationPrompt(task)
+		}
+		if turnNumber == 1 && task.AutoOK && task.OnAutoOKStarting != nil {
+			if err := task.OnAutoOKStarting(); err != nil {
+				return Result{Status: run.StatusFailed, Error: err.Error()}
+			}
 		}
 		turnID, err := session.startTurn(ctx, task, threadID, turnPrompt)
 		if err != nil {

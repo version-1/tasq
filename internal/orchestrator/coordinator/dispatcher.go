@@ -210,6 +210,12 @@ func (d *Dispatcher) startRun(storedRun run.Run, task runner.Task) {
 	defer d.release(storedRun.RunID)
 	autoOKDelivered := false
 	if task.AutoOK {
+		task.OnAutoOKStarting = func() error {
+			if err := claimAutoOK(context.Background(), d.tracker, task.Issue); err != nil {
+				return err
+			}
+			return nil
+		}
 		task.OnAutoOKDelivered = func() error {
 			if err := completeAutoOK(context.Background(), d.tracker, task.Issue, nil); err != nil {
 				return err
