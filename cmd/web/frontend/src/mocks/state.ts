@@ -1,5 +1,6 @@
 import type {
   ChangeRequest,
+  AutoOKResultInput,
   ChangeRequestListResponse,
   Comment,
   CommentListResponse,
@@ -75,6 +76,16 @@ let nextProjectID = nextNumericID(projects);
 let nextIssueID = nextNumericID(issues);
 let nextCommentID = nextNumericID(comments);
 let nextChangeRequestID = nextNumericID(changeRequests);
+const claimedAutoOK = new Set<number>();
+
+for (const issue of issueFixtures) {
+  for (let count = 1; count <= issue.autoOkCount; count++) {
+    createComment(issue.id, { author: "tasq-auto-ok", type: "progress", body: autoOKReplyBody(count) });
+  }
+  if (issue.autoOkStopReason === "error") {
+    createComment(issue.id, { author: "tasq-auto-ok", type: "blocker", body: "Auto OK disabled: could not send ok and resume.\n\nMock resume failed because credentials are unavailable." });
+  }
+}
 
 export function listProjects(): Project[] {
   return clone(projects);
@@ -263,6 +274,7 @@ export function updateIssue(id: number, input: UpdateIssueInput): Issue | null {
   };
 
   if (input.autoOk !== undefined && input.autoOk !== current.autoOk) {
+    claimedAutoOK.delete(id);
     updated.autoOkGeneration++;
     updated.autoOkPending = false;
     if (input.autoOk) {
@@ -272,7 +284,7 @@ export function updateIssue(id: number, input: UpdateIssueInput): Issue | null {
       updated.status = "blocked";
     }
   }
-  if (input.status && input.status !== "ready" && updated.autoOkPending) {
+  if (input.status && input.status !== "ready" && updated.autoOkPending && !claimedAutoOK.has(id)) {
     updated.autoOkPending = false;
     updated.autoOkGeneration++;
   }
@@ -284,6 +296,64 @@ export function updateIssue(id: number, input: UpdateIssueInput): Issue | null {
 
   issues = issues.map((issue) => (issue.id === id ? updated : issue));
   return clone(updated);
+}
+
+export function completeAutoOK(id: number, input: AutoOKResultInput): Issue | null {
+  if (!Number.isSafeInteger(input.generation) || input.generation <= 0 ||
+      (input.phase !== undefined && input.phase !== "" && input.phase !== "claim") ||
+      (input.error !== undefined && typeof input.error !== "string")) {
+    throw new Error("Invalid Auto OK result.");
+  }
+  const issue = getIssue(id);
+  if (!issue) return null;
+  if (input.phase === "claim") {
+    if (!issue.autoOkPending || issue.autoOkGeneration !== input.generation || issue.status !== "ready") {
+      throw new Error("Auto OK reservation is no longer available.");
+    }
+    claimedAutoOK.add(id);
+    return issue;
+  }
+  if (!issue.autoOkPending || issue.autoOkGeneration !== input.generation || (!input.error && !claimedAutoOK.has(id))) return issue;
+
+  claimedAutoOK.delete(id);
+  issue.autoOkPending = false;
+  let body: string;
+  if (input.error) {
+    issue.autoOk = false;
+    issue.autoOkStopReason = "error";
+    issue.status = "blocked";
+    body = `Auto OK disabled: could not send ok and resume.\n\n${input.error}`;
+  } else {
+    issue.autoOkCount++;
+    if (issue.status === "ready") issue.status = "in_progress";
+    body = autoOKReplyBody(issue.autoOkCount);
+    if (issue.autoOkCount === 5) {
+      issue.autoOk = false;
+      issue.autoOkStopReason = "limit";
+    } else if (issue.status === "blocked" && issue.autoOk) {
+      issue.autoOkGeneration++;
+      issue.autoOkPending = true;
+      issue.status = "ready";
+    }
+  }
+  issue.updatedAt = new Date().toISOString();
+  issues = issues.map((current) => current.id === id ? issue : current);
+  createComment(id, { author: "tasq-auto-ok", type: input.error ? "blocker" : "progress", body });
+  return clone(issue);
+}
+
+function autoOKReplyBody(count: number): string {
+  return `Auto OK: sent \`ok\` and resumed (${count}/5).${count === 5 ? " Auto OK disabled after 5 replies." : ""}`;
+}
+
+// Standalone MSW has no orchestrator process. Simulate one accepted resume
+// after a blocked transition; further blockers are driven by mock API updates.
+export function resumeAutoOK(id: number): Issue | null {
+  const issue = getIssue(id);
+  if (!issue?.autoOkPending || claimedAutoOK.has(id) || hasActiveDependency(issue)) return issue;
+  const generation = issue.autoOkGeneration;
+  completeAutoOK(id, { generation, phase: "claim" });
+  return completeAutoOK(id, { generation });
 }
 
 export function listIssueStates(ids: number[]): IssueState[] {

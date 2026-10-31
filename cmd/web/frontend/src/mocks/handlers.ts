@@ -1,6 +1,7 @@
 import { http, HttpResponse } from "msw";
 import type {
   CreateChangeRequestInput,
+  AutoOKResultInput,
   CreateIssueInput,
   CreateProjectInput,
   ErrorResponse as IssueTrackerErrorResponse,
@@ -13,6 +14,7 @@ import type { ErrorResponse as OrchestratorErrorResponse } from "@/lib/generated
 import {
   buildOrchestratorIssueRuntime,
   buildSummary,
+  completeAutoOK,
   countIssues,
   createChangeRequest,
   createComment,
@@ -27,6 +29,7 @@ import {
   listIssues,
   listProjects,
   updateIssue,
+  resumeAutoOK,
 } from "./state";
 
 const apiBase = "/tracker/api/v1";
@@ -38,6 +41,7 @@ export const handlers = [
   }),
 
   http.get(`${apiBase}/summary`, () => {
+    for (const issue of listIssues()) resumeAutoOK(issue.id);
     return jsonOk(buildSummary());
   }),
 
@@ -122,7 +126,17 @@ export const handlers = [
       return jsonError("issues.update.not_found", `Issue ${id} was not found.`, 404);
     }
 
-    return jsonOk(issue);
+    return jsonOk(resumeAutoOK(id) ?? issue);
+  }),
+
+  http.post(`${apiBase}/issues/:id/auto-ok-result`, async ({ params, request }) => {
+    try {
+      const input = await request.json() as AutoOKResultInput;
+      const issue = completeAutoOK(numericParam(params.id), input);
+      return issue ? jsonOk(issue) : jsonError("issues.auto_ok.not_found", "Issue was not found.", 404);
+    } catch (error) {
+      return jsonError("issues.auto_ok.invalid_request", error instanceof Error ? error.message : "Invalid Auto OK result.", 400);
+    }
   }),
 
   http.get(`${apiBase}/issues/:issueId/comments`, ({ params, request }) => {

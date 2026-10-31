@@ -120,7 +120,7 @@ export const issueFixtures: Issue[] = [
     id: 2,
     projectId: 1,
     projectKey: "tasq",
-    title: "Wire issue board to generated client",
+    title: "Auto OK stopped after five replies",
     description: `## Goal
 
 Load issue board data through the generated issue-tracker client so the standalone UI and production UI exercise the same contract. Mocking should happen at the HTTP boundary, not inside route components.
@@ -134,15 +134,15 @@ Load issue board data through the generated issue-tracker client so the standalo
 ### Acceptance criteria
 
 The board renders from generated client calls, status changes survive the next refresh, and type checking fails if the API response contract changes incompatibly.`,
-    status: "ready",
+    status: "blocked",
     priority: "high",
     assignee: "web",
     dependency_ids: [],
     autoOk: false,
-    autoOkCount: 0,
+    autoOkCount: 5,
     autoOkPending: false,
-    autoOkGeneration: 0,
-    autoOkStopReason: "",
+    autoOkGeneration: 5,
+    autoOkStopReason: "limit",
     artifacts: [],
     createdAt: "2026-06-01T02:00:00.000Z",
     updatedAt: "2026-06-01T02:00:00.000Z",
@@ -151,7 +151,7 @@ The board renders from generated client calls, status changes survive the next r
     id: 3,
     projectId: 1,
     projectKey: "tasq",
-    title: "Verify status transitions",
+    title: "Auto OK active — waiting for next checkpoint",
     description: `## Goal
 
 Verify that status transitions update both the individual issue and the board summary after refresh. This fixture is meant to catch regressions where a card appears to move locally but returns to the old column after the next poll.
@@ -168,11 +168,11 @@ The behavior should match production semantics: the UI asks the API to update th
     status: "in_progress",
     priority: "normal",
     assignee: "qa",
-    dependency_ids: [2],
-    autoOk: false,
-    autoOkCount: 0,
+    dependency_ids: [],
+    autoOk: true,
+    autoOkCount: 2,
     autoOkPending: false,
-    autoOkGeneration: 0,
+    autoOkGeneration: 2,
     autoOkStopReason: "",
     artifacts: [],
     createdAt: "2026-06-01T03:00:00.000Z",
@@ -326,7 +326,7 @@ If a project key is unknown, the board should not fall back to all issues; it sh
     id: 9,
     projectId: 1,
     projectKey: "tasq",
-    title: "Resume agent after credentials are configured",
+    title: "Auto OK stopped after a resume failure",
     description: `## Goal
 
 Exercise the blocked issue card and its Resolve flow in the standalone mock UI.
@@ -348,7 +348,7 @@ The agent cannot continue until the required GitHub credentials are available in
     autoOkCount: 0,
     autoOkPending: false,
     autoOkGeneration: 0,
-    autoOkStopReason: "",
+    autoOkStopReason: "error",
     artifacts: [],
     createdAt: "2026-06-01T09:00:00.000Z",
     updatedAt: "2026-06-01T09:15:00.000Z",
