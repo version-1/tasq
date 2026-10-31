@@ -299,8 +299,9 @@ export function updateIssue(id: number, input: UpdateIssueInput): Issue | null {
 }
 
 export function completeAutoOK(id: number, input: AutoOKResultInput): Issue | null {
+  const phase: unknown = input.phase;
   if (!Number.isSafeInteger(input.generation) || input.generation <= 0 ||
-      (input.phase !== undefined && input.phase !== "" && input.phase !== "claim") ||
+      (phase !== undefined && phase !== "" && phase !== "claim") ||
       (input.error !== undefined && typeof input.error !== "string")) {
     throw new Error("Invalid Auto OK result.");
   }
