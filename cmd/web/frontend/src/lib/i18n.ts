@@ -125,6 +125,13 @@ const resources = {
         views: "ビュー",
       },
       issues: {
+        autoOK: {
+          label: "Auto OK",
+          saveError: "設定を保存できませんでした。再試行してください。",
+          toggle: "issue #{{id}} の Auto OK",
+          limit: "5回に達したため自動 OFF",
+          error: "再開に失敗したため自動 OFF。履歴を確認してください。",
+        },
         assignee: "担当者",
         attempt: "試行回数",
         board: {
@@ -736,6 +743,13 @@ const resources = {
         views: "Views",
       },
       issues: {
+        autoOK: {
+          label: "Auto OK",
+          saveError: "Could not save the setting. Please retry.",
+          toggle: "Auto OK for issue #{{id}}",
+          limit: "Automatically off after 5 replies",
+          error: "Automatically off after a resume failure. Check history.",
+        },
         assignee: "Assignee",
         attempt: "Attempt",
         board: {

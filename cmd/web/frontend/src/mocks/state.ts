@@ -235,6 +235,11 @@ export function createIssue(input: CreateIssueInput): Issue | null {
     priority: input.priority ?? "normal",
     assignee: input.assignee ?? "",
     dependency_ids: [...dependencyIDs].sort((left, right) => left - right),
+    autoOk: false,
+    autoOkCount: 0,
+    autoOkPending: false,
+    autoOkGeneration: 0,
+    autoOkStopReason: "",
     artifacts: [],
     createdAt: now,
     updatedAt: now,
@@ -256,6 +261,26 @@ export function updateIssue(id: number, input: UpdateIssueInput): Issue | null {
     ...definedFields(input),
     updatedAt: new Date().toISOString(),
   };
+
+  if (input.autoOk !== undefined && input.autoOk !== current.autoOk) {
+    updated.autoOkGeneration++;
+    updated.autoOkPending = false;
+    if (input.autoOk) {
+      updated.autoOkCount = 0;
+      updated.autoOkStopReason = "";
+    } else if (current.autoOkPending && !input.status) {
+      updated.status = "blocked";
+    }
+  }
+  if (input.status && input.status !== "ready" && updated.autoOkPending) {
+    updated.autoOkPending = false;
+    updated.autoOkGeneration++;
+  }
+  if (updated.status === "blocked" && updated.autoOk && !updated.autoOkPending && updated.autoOkCount < 5) {
+    updated.autoOkGeneration++;
+    updated.autoOkPending = true;
+    updated.status = "ready";
+  }
 
   issues = issues.map((issue) => (issue.id === id ? updated : issue));
   return clone(updated);

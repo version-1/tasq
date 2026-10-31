@@ -79,6 +79,11 @@ describe("IssueDetailPage", () => {
   it("shows the artifacts sidebar section only when a pull request is registered", async () => {
     api.fetchIssue.mockResolvedValueOnce({
       ...issue,
+      autoOk: false,
+      autoOkCount: 0,
+      autoOkPending: false,
+      autoOkGeneration: 0,
+      autoOkStopReason: "",
       artifacts: [
         {
           type: "pull_request",
@@ -534,6 +539,11 @@ const issue: Issue = {
   priority: "high",
   assignee: "frontend",
   dependency_ids: [],
+  autoOk: false,
+  autoOkCount: 0,
+  autoOkPending: false,
+  autoOkGeneration: 0,
+  autoOkStopReason: "",
   artifacts: [],
   createdAt: "2026-06-20T00:00:00.000Z",
   updatedAt: "2026-06-21T00:00:00.000Z",

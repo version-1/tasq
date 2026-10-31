@@ -89,5 +89,9 @@ in-progress の課題を `blocked` にし、運用者が将来の retry で requ
 判断できるように blocker comment に詳細を書き込みます。Approval、sandbox、user-input の振る舞いは、
 より広い本番利用を有効にする前に見直すべきです。
 
+課題ごとの [Auto OK](../design/status.ja.md#課題ごとの-auto-ok) は、`blocked` の後に
+本文を `ok` だけとする 1 ターンの再開を予約できます。`turn/start` が受理された時点で
+Issue Tracker に送信成功を通知します。上記の JSON-RPC 承認拒否方針は変更しません。
+
 Runner progress は SQLite の `runner_events` に保存されます。現在の実装は filesystem に
 別個の大きなトランスクリプト artifact を書きません。

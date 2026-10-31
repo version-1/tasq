@@ -617,6 +617,13 @@ gap: 14px;
   表示し、フリーテキストまたは組み込みの `Ok` / `Retry` ショートカットで
   Change Request を作成してから Issue を `ready` へ移動します。
 
+課題カードの `auto-ok-control` は、共通の `Switch` を使って、保存済みの Auto OK 設定、
+送信成功回数 `n/5`、自動 OFF の理由を表示します。保存中はスイッチを無効にします。
+失敗時は保存済みの値を保ち、API のエラートーストを表示します。課題 ID を含む
+アクセシブルな名前を付け、ラベルのクリックとキーボード操作に対応します。
+サーバー側の状態遷移は[課題ごとの Auto OK](../../../../docs/design/status.ja.md#課題ごとの-auto-ok)
+を参照してください。
+
 ### Issue Board
 
 `features/issues/components/board`:

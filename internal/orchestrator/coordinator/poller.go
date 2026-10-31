@@ -135,6 +135,11 @@ func (p *Poller) Poll(ctx context.Context) error {
 				break
 			}
 			if _, err := p.queueIssue(ctx, issue); err != nil {
+				if issue.AutoOKPending {
+					if resultErr := completeAutoOK(ctx, p.tracker, issue, err); resultErr != nil {
+						return errors.Join(err, resultErr)
+					}
+				}
 				return err
 			}
 			created++

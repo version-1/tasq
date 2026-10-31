@@ -44,3 +44,8 @@
   outline: 2px solid var(--primary-black);
   outline-offset: 2px;
 }
+
+.switch input:disabled + .track {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

@@ -75,6 +75,43 @@ Common CLI shortcuts map to these status updates:
 | `tq issue close <id>` | Sets `issue.status` to `done`. |
 | `tq issue update <id> --status <status>` | Sets any valid `issue.status`. |
 
+## Issue Auto OK
+
+Each issue card has an Auto OK switch, initially OFF. The issue-tracker persists
+the setting and accepted-reply count across browser reloads and service restarts.
+An OFF-to-ON transition resets the count; sending ON again does not reset it.
+
+When an enabled issue becomes `blocked`, regardless of the reason, the tracker
+atomically marks an automatic reply pending and moves it to `ready`. Enabling an
+already blocked issue does the same immediately. The ordinary queue still
+enforces dependencies and available run slots; a running attempt must finish
+before another attempt can start. Closing the browser does not stop this flow.
+
+The dispatcher resumes the latest stored thread and sends exactly `ok` as a
+single turn, without workflow, continuation, or change-request instructions.
+Open change requests remain available for a later ordinary continuation.
+Acceptance of `turn/start` increments the count and moves a still-ready issue to
+`in_progress`. Each accepted reply adds a `tasq-auto-ok` progress comment and an
+`auto_ok_reply` runner event. On the fifth accepted reply, Auto OK switches OFF
+with stop reason `limit`; that fifth turn still runs. A subsequent blocker stays
+blocked. Counts do not reset on task progress or service restart.
+
+Workspace preparation, missing resume threads, startup, or reply acceptance
+failures switch Auto OK OFF with stop reason `error`, restore `blocked`, and add
+a blocker comment without incrementing the count. An error after acceptance is
+an ordinary run failure and may trigger the next automatic reply. Turning OFF
+before dispatch cancels the pending reply and restores `blocked`. An already
+accepted turn is not interrupted by the switch.
+
+Pending replies carry a persisted generation. Result acknowledgements use
+`POST /api/v1/issues/{id}/auto-ok-result`; history, count, and stop state commit in
+one tracker transaction. Duplicate or obsolete generations do not change state.
+This does not provide a distributed exactly-once guarantee across app-server
+acceptance and an abrupt crash before the tracker acknowledgement.
+
+Auto OK sends conversational input; command/file-change approval requests still
+follow the [app-server approval policy](../symphony/CODEX_APP_SERVER.md).
+
 ## Orchestrator Notes
 
 The orchestrator reads `GET /api/v1/queue` and dispatches only issues in the endpoint's `queued` array. Dependency resolution remains in the issue-tracker so orchestrator workers do not duplicate queue eligibility logic.

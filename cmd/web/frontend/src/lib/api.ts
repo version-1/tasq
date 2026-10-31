@@ -175,6 +175,10 @@ export function updateIssueDescription(
   return unwrapResponse(patchApiV1IssuesId(id, input, noStore), options);
 }
 
+export function updateIssueAutoOK(id: number, autoOk: boolean): Promise<Issue> {
+  return unwrapResponse(patchApiV1IssuesId(id, { autoOk }, noStore));
+}
+
 export function fetchOrchestratorState(options?: ApiRequestOptions): Promise<StateResponse> {
   return unwrapOrchestratorResponse(getApiV1State(noStore), options);
 }

@@ -4,6 +4,7 @@ import { IconProxy, type IconProxyName } from "@/components/ui/icon-proxy";
 import type { IssueStatus, Summary } from "@/lib/types";
 import type { ChangeRequestShortcut } from "@/features/issues/change-request-shortcuts";
 import { boardColumns } from "./board-columns";
+import type { AutoOKChangeHandler } from "../issues-view/types";
 import styles from "./index.module.css";
 
 type StatusChangeHandler = (id: number, status: IssueStatus) => Promise<void>;
@@ -25,6 +26,7 @@ export function IssueBoard({
   onRejectShortcut,
   onResolveIssue,
   onStatusChange,
+  onAutoOKChange,
 }: {
   showFilterSortActions?: boolean;
   summary: Summary;
@@ -33,6 +35,7 @@ export function IssueBoard({
   onRejectShortcut?: RejectShortcutHandler;
   onResolveIssue?: ResolveIssueHandler;
   onStatusChange: StatusChangeHandler;
+  onAutoOKChange?: AutoOKChangeHandler;
 }) {
   const { t } = useTranslation();
   const issues = summary.columns.flatMap((column) => column.issues);
@@ -90,6 +93,7 @@ export function IssueBoard({
                       onRejectShortcut={onRejectShortcut}
                       onResolveIssue={onResolveIssue}
                       onStatusChange={onStatusChange}
+                      onAutoOKChange={onAutoOKChange}
                     />
                   ))
                 )}

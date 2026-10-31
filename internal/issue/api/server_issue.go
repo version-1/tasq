@@ -108,6 +108,24 @@ type issueStatesInput struct {
 	IDs []int64 `json:"ids"`
 }
 
+func (s *Server) completeAutoOK(w http.ResponseWriter, r *http.Request) {
+	id, ok := issueID(w, r, "issues.auto_ok")
+	if !ok {
+		return
+	}
+	var input entity.AutoOKResultInput
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		writeError(w, http.StatusBadRequest, "issues.auto_ok.invalid_request", err)
+		return
+	}
+	updated, err := s.store.CompleteAutoOK(r.Context(), id, input)
+	if err != nil {
+		writeStoreError(w, err, "issues.auto_ok", "issue")
+		return
+	}
+	writeJSON(w, http.StatusOK, updated)
+}
+
 func (s *Server) issueStates(w http.ResponseWriter, r *http.Request) {
 	var input issueStatesInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {

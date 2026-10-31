@@ -25,6 +25,11 @@ const issue: IssueSummary = {
   priority: "high",
   assignee: "web",
   dependency_ids: [],
+  autoOk: false,
+  autoOkCount: 0,
+  autoOkPending: false,
+  autoOkGeneration: 0,
+  autoOkStopReason: "",
   artifacts: [],
   queueStatus: "queued",
   createdAt: "2026-06-01T00:00:00.000Z",
@@ -199,6 +204,11 @@ describe("IssueCard", () => {
     renderCard({
       issue: {
         ...issue,
+        autoOk: false,
+        autoOkCount: 0,
+        autoOkPending: false,
+        autoOkGeneration: 0,
+        autoOkStopReason: "",
         artifacts: [
           {
             type: "pull_request",

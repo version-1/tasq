@@ -20,6 +20,7 @@ import {
   fetchProjects,
   fetchSummary,
   updateIssueStatus,
+  updateIssueAutoOK,
 } from "@/lib/api";
 import "@/lib/i18n";
 import { i18n, type SupportedLanguage } from "@/lib/i18n";
@@ -65,6 +66,7 @@ export type LayoutData = {
   onRejectShortcut: (issueID: number, shortcut: ChangeRequestShortcut) => Promise<void>;
   onResolveIssue: (issueID: number) => void;
   onStatusChange: (id: number, status: IssueStatus) => Promise<void>;
+  onAutoOKChange: (id: number, enabled: boolean) => Promise<void>;
 };
 
 export type LayoutShellData = {
@@ -245,6 +247,11 @@ function LayoutContent({ children }: { children: ReactNode }) {
     } catch {
       // Error toast is emitted by the API wrapper.
     }
+  }
+
+  async function handleAutoOKChange(id: number, enabled: boolean) {
+    await updateIssueAutoOK(id, enabled);
+    await load();
   }
 
   async function handleCreateIssue(input: CreateIssueInput) {
@@ -435,6 +442,7 @@ function LayoutContent({ children }: { children: ReactNode }) {
         onRejectShortcut: handleRejectShortcut,
         onResolveIssue: handleResolveIssue,
         onStatusChange: handleStatusChange,
+        onAutoOKChange: handleAutoOKChange,
       }
     : null;
 

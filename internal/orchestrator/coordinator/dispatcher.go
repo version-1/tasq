@@ -148,13 +148,27 @@ func (d *Dispatcher) Dispatch(ctx context.Context, activeRuns []run.Run) error {
 			d.release(queuedRun.RunID)
 			return fmt.Errorf("fetch issue %d for run %s: %w", queuedRun.IssueID, queuedRun.RunID, err)
 		}
+		if issue.Status != entity.StatusReady && issue.Status != entity.StatusInProgress {
+			_, err := d.store.UpdateRunStatus(ctx, queuedRun.RunID, run.StatusCancelled, "issue is no longer ready")
+			d.release(queuedRun.RunID)
+			if err != nil {
+				return err
+			}
+			continue
+		}
 		definition, err := d.workflowResolver.Resolve(ctx, issue.ProjectID)
 		if err != nil {
+			if issue.AutoOKPending {
+				d.failAutoOKRun(ctx, queuedRun, issue, err)
+			}
 			d.release(queuedRun.RunID)
 			return fmt.Errorf("resolve workflow for project %d run %s: %w", issue.ProjectID, queuedRun.RunID, err)
 		}
 		task, err := d.taskForRun(ctx, queuedRun, issue, definition)
 		if err != nil {
+			if issue.AutoOKPending {
+				d.failAutoOKRun(ctx, queuedRun, issue, err)
+			}
 			d.release(queuedRun.RunID)
 			return err
 		}
@@ -194,15 +208,32 @@ func (d *Dispatcher) Shutdown(ctx context.Context) error {
 func (d *Dispatcher) startRun(storedRun run.Run, task runner.Task) {
 	defer d.wg.Done()
 	defer d.release(storedRun.RunID)
+	autoOKDelivered := false
+	if task.AutoOK {
+		task.OnAutoOKDelivered = func() error {
+			if err := completeAutoOK(context.Background(), d.tracker, task.Issue, nil); err != nil {
+				return err
+			}
+			autoOKDelivered = true
+			d.recordEvent(storedRun.RunID, "auto_ok_reply", "Auto OK: sent ok and resumed", "")
+			return nil
+		}
+	}
 	defer func() {
 		if value := recover(); value != nil {
 			message := fmt.Sprintf("runner panic: %v", value)
+			if task.AutoOK && !autoOKDelivered {
+				_ = completeAutoOK(context.Background(), d.tracker, task.Issue, errors.New(message))
+			}
 			d.failRun(storedRun, message)
 		}
 	}()
 
 	if _, err := d.store.UpdateRunStatus(context.Background(), storedRun.RunID, run.StatusRunning, ""); err != nil {
 		log.Printf("orchestrator dispatch update running failed run=%s: %v", storedRun.RunID, err)
+		if task.AutoOK {
+			d.failAutoOKRun(context.Background(), storedRun, task.Issue, err)
+		}
 		return
 	}
 	d.recordEvent(storedRun.RunID, "running", "runner started", "")
@@ -215,6 +246,16 @@ func (d *Dispatcher) startRun(storedRun run.Run, task runner.Task) {
 		d.recordEvent(storedRun.RunID, event.EventType, event.Message, event.PayloadJSON)
 	}
 	result := d.runner.Run(d.runCtx, task)
+	if task.AutoOK && !autoOKDelivered {
+		cause := result.Error
+		if cause == "" {
+			cause = "Auto OK run ended before the reply was accepted"
+		}
+		if err := completeAutoOK(context.Background(), d.tracker, task.Issue, errors.New(cause)); err != nil {
+			log.Printf("orchestrator Auto OK failure issue=%d: %v", task.Issue.ID, err)
+		}
+		result = runner.Result{Status: run.StatusFailed, Error: cause}
+	}
 	if result.Status == "" {
 		result.Status = run.StatusFailed
 		if result.Error == "" {
@@ -238,11 +279,18 @@ func (d *Dispatcher) taskForRun(ctx context.Context, storedRun run.Run, issue en
 	} else if err != nil {
 		return runner.Task{}, fmt.Errorf("read resume thread id for issue %d run %s: %w", storedRun.IssueID, storedRun.RunID, err)
 	}
-	changeRequests, err := d.claimContinuationChangeRequests(ctx, storedRun)
+	if issue.AutoOKPending && resumeThreadID == "" {
+		return runner.Task{}, errors.New("Auto OK requires a previous thread to resume")
+	}
+	var changeRequests []entity.ChangeRequest
+	if !issue.AutoOKPending {
+		changeRequests, err = d.claimContinuationChangeRequests(ctx, storedRun)
+	}
 	if err != nil {
 		return runner.Task{}, err
 	}
 	return runner.Task{
+		AutoOK:         issue.AutoOKPending,
 		Issue:          issue,
 		Attempt:        storedRun.Attempt,
 		RunID:          storedRun.RunID,
@@ -253,11 +301,20 @@ func (d *Dispatcher) taskForRun(ctx context.Context, storedRun run.Run, issue en
 		ResumeThreadID: resumeThreadID,
 		ChangeRequests: changeRequests,
 		MaxTurns:       definition.Config.MaxTurns,
-		ContinueTurns:  definition.Config.ContinuationTurns,
+		ContinueTurns:  definition.Config.ContinuationTurns && !issue.AutoOKPending,
 		Command:        definition.Config.CodexCommand,
 		ReadTimeout:    definition.Config.CodexReadTimeout,
 		TurnTimeout:    definition.Config.CodexTurnTimeout,
 	}, nil
+}
+
+func (d *Dispatcher) failAutoOKRun(ctx context.Context, storedRun run.Run, issue entity.Issue, cause error) {
+	if err := completeAutoOK(ctx, d.tracker, issue, cause); err != nil {
+		log.Printf("orchestrator Auto OK failure issue=%d: %v", issue.ID, err)
+	}
+	if _, err := d.store.UpdateRunStatus(ctx, storedRun.RunID, run.StatusFailed, cause.Error()); err != nil {
+		log.Printf("orchestrator Auto OK update run failed run=%s: %v", storedRun.RunID, err)
+	}
 }
 
 func (d *Dispatcher) claimContinuationChangeRequests(ctx context.Context, storedRun run.Run) ([]entity.ChangeRequest, error) {

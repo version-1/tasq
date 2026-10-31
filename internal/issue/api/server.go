@@ -55,6 +55,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/v1/queue", s.queue)
 	mux.HandleFunc("GET /api/v1/issues/{id}", s.issue)
 	mux.HandleFunc("PATCH /api/v1/issues/{id}", s.updateIssue)
+	mux.HandleFunc("POST /api/v1/issues/{id}/auto-ok-result", s.completeAutoOK)
 	mux.HandleFunc("PUT /api/v1/issues/{issueId}/artifacts/{type}", s.upsertArtifact)
 	mux.HandleFunc("DELETE /api/v1/issues/{issueId}/artifacts/{type}", s.deleteArtifact)
 	mux.HandleFunc("GET /api/v1/issues/{issueId}/comments", s.comments)

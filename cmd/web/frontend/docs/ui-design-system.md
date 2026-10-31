@@ -622,6 +622,14 @@ This is the recurring shape for `runs-section`, `comment-list`,
   The blocker is read-only context; free text or the built-in `Ok` / `Retry`
   shortcuts create the change request before the issue moves to `ready`.
 
+Issue cards also compose the shared `Switch` through the feature-owned
+`auto-ok-control`. It displays the persisted Auto OK setting, an `n/5` accepted
+reply count, and a text reason after automatic shutdown. Saving disables the
+switch; failures keep the saved value and use the API error toast. The control
+has an issue-specific accessible name and supports label clicks and keyboard
+input. [Issue Auto OK](../../../../docs/design/status.md#issue-auto-ok) defines
+the server-owned lifecycle.
+
 ### Issue Board
 
 `features/issues/components/board`:

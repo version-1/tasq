@@ -16,21 +16,23 @@ type Runner interface {
 }
 
 type Task struct {
-	Issue          entity.Issue
-	Attempt        int
-	RunID          string
-	Workspace      workspace.Workspace
-	PromptTemplate string
-	TaskWorkPrompt *bool
-	TasqCommand    string
-	ResumeThreadID string
-	ChangeRequests []entity.ChangeRequest
-	MaxTurns       int
-	ContinueTurns  bool
-	Command        string
-	ReadTimeout    time.Duration
-	TurnTimeout    time.Duration
-	OnEvent        func(Event)
+	AutoOK            bool
+	OnAutoOKDelivered func() error
+	Issue             entity.Issue
+	Attempt           int
+	RunID             string
+	Workspace         workspace.Workspace
+	PromptTemplate    string
+	TaskWorkPrompt    *bool
+	TasqCommand       string
+	ResumeThreadID    string
+	ChangeRequests    []entity.ChangeRequest
+	MaxTurns          int
+	ContinueTurns     bool
+	Command           string
+	ReadTimeout       time.Duration
+	TurnTimeout       time.Duration
+	OnEvent           func(Event)
 }
 
 type Result struct {
@@ -59,6 +61,11 @@ func (r SimulatedRunner) Run(ctx context.Context, task Task) Result {
 	case <-ctx.Done():
 		return Result{Status: run.StatusCancelled, Error: ctx.Err().Error()}
 	case <-timer.C:
+		if task.AutoOK && task.OnAutoOKDelivered != nil {
+			if err := task.OnAutoOKDelivered(); err != nil {
+				return Result{Status: run.StatusFailed, Error: err.Error()}
+			}
+		}
 		return Result{Status: run.StatusSucceeded}
 	}
 }
@@ -77,6 +84,9 @@ func (r CodexRunner) Run(ctx context.Context, task Task) Result {
 	}
 	if task.Workspace.Path == "" {
 		return Result{Status: run.StatusFailed, Error: "workspace path is required"}
+	}
+	if task.AutoOK && task.ResumeThreadID == "" {
+		return Result{Status: run.StatusFailed, Error: "Auto OK requires a previous thread to resume"}
 	}
 	prompt := continuationPrompt(task)
 	if task.ResumeThreadID == "" {
@@ -116,7 +126,7 @@ func (r CodexRunner) Run(ctx context.Context, task Task) Result {
 	emit(task, "session_started", "thread_id="+threadID, "")
 
 	maxTurns := 1
-	if task.ContinueTurns && task.MaxTurns > 1 {
+	if task.ContinueTurns && task.MaxTurns > 1 && !task.AutoOK {
 		maxTurns = task.MaxTurns
 	}
 	for turnNumber := 1; turnNumber <= maxTurns; turnNumber++ {
@@ -127,6 +137,11 @@ func (r CodexRunner) Run(ctx context.Context, task Task) Result {
 		turnID, err := session.startTurn(ctx, task, threadID, turnPrompt)
 		if err != nil {
 			return Result{Status: run.StatusFailed, Error: err.Error()}
+		}
+		if turnNumber == 1 && task.AutoOK && task.OnAutoOKDelivered != nil {
+			if err := task.OnAutoOKDelivered(); err != nil {
+				return Result{Status: run.StatusFailed, Error: err.Error()}
+			}
 		}
 		emit(task, "turn_started", fmt.Sprintf("turn_id=%s turn_number=%d", turnID, turnNumber), "")
 		if err := session.waitTurn(ctx, task.TurnTimeout, task, threadID, turnID); err != nil {

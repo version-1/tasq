@@ -186,7 +186,37 @@ export interface UpsertProjectWorkflowInput {
   checksum: string;
 }
 
+/**
+ * Why Auto OK stopped automatically.
+ */
+export type IssueAutoOkStopReason = typeof IssueAutoOkStopReason[keyof typeof IssueAutoOkStopReason];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const IssueAutoOkStopReason = {
+  '': '',
+  limit: 'limit',
+  error: 'error',
+} as const;
+
 export interface Issue {
+  /** Issue-scoped automatic blocked reply setting. Defaults to false. */
+  autoOk: boolean;
+  /**
+   * Accepted automatic replies since the last OFF to ON transition.
+   * @minimum 0
+   * @maximum 5
+   */
+  autoOkCount: number;
+  /** A blocked transition has scheduled an automatic reply through the ready queue. */
+  autoOkPending: boolean;
+  /**
+   * Persistent reply generation for idempotent delivery acknowledgement.
+   * @minimum 0
+   */
+  autoOkGeneration: number;
+  /** Why Auto OK stopped automatically. */
+  autoOkStopReason: IssueAutoOkStopReason;
   id: number;
   projectId: number;
   projectKey: string;
@@ -358,6 +388,8 @@ export interface Queue {
 }
 
 export interface UpdateIssueInput {
+  /** Enable or disable Auto OK. OFF to ON resets the reply count. Enabling a blocked issue schedules an immediate reply; disabling an unsent reply restores blocked. */
+  autoOk?: boolean;
   title?: string;
   description?: string;
   status?: IssueStatus;
@@ -365,6 +397,13 @@ export interface UpdateIssueInput {
   assignee?: string;
   /** Replaces the full dependency set when present. Omit this field to preserve existing dependencies; pass an empty array to clear dependencies. */
   dependency_ids?: number[];
+}
+
+export interface AutoOKResultInput {
+  /** @minimum 1 */
+  generation: number;
+  /** Empty or omitted on accepted reply. On failure, disables Auto OK, restores blocked, and records the reason without incrementing the count. */
+  error?: string;
 }
 
 export interface IssueStatesInput {
@@ -1531,6 +1570,63 @@ export const patchApiV1IssuesId = async (id: number,
 
   const data: patchApiV1IssuesIdResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as patchApiV1IssuesIdResponse
+}
+
+
+
+/**
+ * Orchestrator acknowledgement. Matching pending generations are completed atomically with history; duplicate or stale generations leave the issue unchanged.
+ * @summary Record acceptance or failure of a pending Auto OK reply.
+ */
+export type postApiV1IssuesIdAutoOkResultResponse200 = {
+  data: IssueResponse
+  status: 200
+}
+
+export type postApiV1IssuesIdAutoOkResultResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type postApiV1IssuesIdAutoOkResultResponse404 = {
+  data: ErrorResponse
+  status: 404
+}
+
+export type postApiV1IssuesIdAutoOkResultResponseSuccess = (postApiV1IssuesIdAutoOkResultResponse200) & {
+  headers: Headers;
+};
+export type postApiV1IssuesIdAutoOkResultResponseError = (postApiV1IssuesIdAutoOkResultResponse400 | postApiV1IssuesIdAutoOkResultResponse404) & {
+  headers: Headers;
+};
+
+export type postApiV1IssuesIdAutoOkResultResponse = (postApiV1IssuesIdAutoOkResultResponseSuccess | postApiV1IssuesIdAutoOkResultResponseError)
+
+export const getPostApiV1IssuesIdAutoOkResultUrl = (id: number,) => {
+
+
+
+
+  return `/tracker/api/v1/issues/${id}/auto-ok-result`
+}
+
+export const postApiV1IssuesIdAutoOkResult = async (id: number,
+    autoOKResultInput: AutoOKResultInput, options?: RequestInit): Promise<postApiV1IssuesIdAutoOkResultResponse> => {
+
+  const res = await fetch(getPostApiV1IssuesIdAutoOkResultUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      autoOKResultInput,)
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: postApiV1IssuesIdAutoOkResultResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as postApiV1IssuesIdAutoOkResultResponse
 }
 
 
