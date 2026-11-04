@@ -11,6 +11,8 @@ issue-tracker サービスが既にあるため、一部の実装方針は異な
 
 `orchestrator_enabled: false` は、共有する `TQ_HOME` で Tasq が管理するオーケストレーションを無効にします。issue-tracker は通常の課題と queue API を通じて外部エージェントから引き続き利用できますが、orchestrator runstore を開かず、managed launcher も orchestrator を起動しません。これは Symphony の実行動作を製品として選択的に無効にする差異であり、有効な orchestrator の契約を変更するものではありません。独立して起動された互換 orchestrator が tracker API を消費することまでは防げないため、課題管理のみの運用を選ぶ前に運用者がそのプロセスを停止します。
 
+legacy 履歴を開いたり migration したりせず保全するため、tracker-only の project deletion は legacy orchestrator database が存在する場合、または存在確認できない場合に拒否されます。削除前に orchestration を再有効化し、検証済みの legacy cleanup を完了する必要があります。legacy database がない新規 tracker-only home では、通常どおり project を削除できます。
+
 ## Tracker Adapter
 
 Tasq は Symphony 仕様の Section 11 で説明されている Linear トラッカークライアントを実装しません。

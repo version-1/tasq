@@ -141,6 +141,40 @@ func TestValidateServiceExecutablesReportsAllUnavailableTargets(t *testing.T) {
 	}
 }
 
+func TestValidateServiceExecutablesTrackerOnlyDoesNotRequireOrchestrator(t *testing.T) {
+	home := t.TempDir()
+	for _, name := range []serviceName{serviceIssueTracker, serviceWeb} {
+		path := serviceExecutablePath(home, name)
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte("#!/bin/sh\n"), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := validateServiceExecutables(home, false); err != nil {
+		t.Fatalf("tracker-only executable validation: %v", err)
+	}
+	if _, err := os.Stat(serviceExecutablePath(home, serviceOrchestrator)); !os.IsNotExist(err) {
+		t.Fatalf("orchestrator executable exists or stat failed: %v", err)
+	}
+}
+
+func TestConfirmServicePortsSkipsOccupiedOrchestratorWhenDisabled(t *testing.T) {
+	occupied, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer occupied.Close()
+	addresses := serviceAddresses{issueTracker: "127.0.0.1:0", web: "127.0.0.1:0", orchestrator: occupied.Addr().String()}
+	if err := confirmServicePortsAvailable(addresses, false); err != nil {
+		t.Fatalf("disabled port check: %v", err)
+	}
+	if err := confirmServicePortsAvailable(addresses, true); err == nil {
+		t.Fatal("enabled port check succeeded with occupied orchestrator port")
+	}
+}
+
 func TestCommandForServiceUsesHomeSystemBinExecutable(t *testing.T) {
 	home := t.TempDir()
 	path := serviceExecutablePath(home, serviceIssueTracker)

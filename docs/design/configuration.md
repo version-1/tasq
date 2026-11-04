@@ -60,7 +60,7 @@ orchestrator_enabled: false
 | `max_concurrent_agents` | `10` | Machine-wide concurrency limit for orchestrator agent runs. |
 | `orchestrator_enabled` | `true` | When `false`, managed startup runs only the issue-tracker and Web UI. The tracker does not open the orchestrator database and Auto OK is unavailable. |
 
-Changing `orchestrator_enabled` affects only processes started after the change. Stop any currently running managed orchestrator with `tq orchestrator stop` (or `tq service stop`), then restart services. Tasq cannot stop an independently started or older orchestrator process; stop that process before using tracker-only mode. Existing orchestrator data is retained, and issue, queue, comment, and explicit status operations continue to be available for external agents.
+Changing `orchestrator_enabled` affects only processes started after the change. Stop any currently running managed orchestrator with `tq orchestrator stop` (or `tq service stop`), then restart services. Tasq cannot stop an independently started or older orchestrator process; stop that process before using tracker-only mode. Existing orchestrator data is retained, and issue, queue, comment, and explicit status operations continue to be available for external agents. While tracker-only mode detects a legacy orchestrator database, project deletion returns a conflict instead of opening or deleting that history; re-enable orchestration and complete verified legacy cleanup before deleting the project.
 
 ## state.json
 

@@ -12,11 +12,30 @@ type Server struct {
 	store                 *store.Store
 	attachmentStorage     *store.AttachmentStorage
 	projectRunDataDeleter projectRunDataDeleter
+	projectDeletionGuard  projectDeletionGuard
 	orchestratorEnabled   bool
 }
 
 type projectRunDataDeleter interface {
 	DeleteProjectIssueData(ctx context.Context, issueIDs []int64) error
+}
+
+type projectDeletionGuard interface {
+	CheckProjectDeletion(ctx context.Context) error
+}
+
+type projectDeletionGuardFunc func(ctx context.Context) error
+
+func (f projectDeletionGuardFunc) CheckProjectDeletion(ctx context.Context) error { return f(ctx) }
+
+// SetProjectDeletionGuard blocks project deletion when external run history
+// cannot be safely inspected without opening the legacy orchestrator database.
+func (s *Server) SetProjectDeletionGuard(check func(context.Context) error) {
+	if check == nil {
+		s.projectDeletionGuard = nil
+		return
+	}
+	s.projectDeletionGuard = projectDeletionGuardFunc(check)
 }
 
 func NewServer(issueStore *store.Store) *Server {
