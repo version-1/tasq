@@ -70,7 +70,7 @@ Document Artifact は、ユーザーまたは外部エージェントが作成�
 | Title | 前後の空白を除いた空でない UTF-8 文字列。500 bytes 以下。 |
 | Body | 空でない UTF-8 の Markdown。内容を保持し、100,000 bytes 以下。 |
 
-一覧レスポンスは本文を含まず、個別取得時に返します。migration の適用前に SQLite データベースをバックアップしてください。通常の migration コマンドは適用済みバージョンを記録し、未適用の migration があるデータベースでは起動を拒否します。
+一覧レスポンスは本文を含まず、個別取得時に返します。migration を適用する前にローカルサービスを停止し、Issue Tracker SQLite database を active な `TQ_HOME` data directory の外へコピーしてください。復旧時はサービスを停止し、active database をそのコピーで置き換えてからサービスを再起動します。`tq migrate down` は定義済みの down migration を適用するだけであり、データ復旧の代替ではありません。通常の migration コマンドは適用済みバージョンを記録し、未適用の migration があるデータベースでは起動を拒否します。
 
 ### CreateIssueInput
 

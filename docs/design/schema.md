@@ -68,7 +68,7 @@ Document artifacts store Markdown authored by users or external agents. Tasq doe
 | Title | Trimmed non-empty UTF-8 text, at most 500 bytes. |
 | Body | Non-empty UTF-8 Markdown, preserved exactly, at most 100,000 bytes. |
 
-List responses omit the body; an individual read returns it. Back up the SQLite database before applying the migration. The normal migration command records the applied version, and startup refuses a database with pending migrations.
+List responses omit the body; an individual read returns it. Before applying the migration, stop local services and copy the issue-tracker SQLite database outside the active `TQ_HOME` data directory. To recover, stop services, replace the active database with that copy, then start services again. `tq migrate down` only applies defined down migrations and is not a data-recovery substitute. The normal migration command records the applied version, and startup refuses a database with pending migrations.
 
 ### CreateIssueInput
 
