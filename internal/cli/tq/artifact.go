@@ -86,15 +86,24 @@ func (a app) listDocumentArtifacts(ctx context.Context, args []string, cfg confi
 	return writeDocumentArtifacts(a.stdout, cfg.output, items)
 }
 func (a app) getDocumentArtifact(ctx context.Context, args []string, cfg config) error {
-	if len(args) != 2 {
+	fs := newFlagSet("artifact document get")
+	raw := fs.Bool("raw", false, "write only Markdown body")
+	if len(args) < 2 {
 		return usageError("usage: tq artifact document get <issue-id> <document-id>")
 	}
 	id, err := parseID(args[0])
 	if err != nil {
 		return err
 	}
+	if err := fs.Parse(args[2:]); err != nil || fs.NArg() != 0 {
+		return usageError("usage: tq artifact document get <issue-id> <document-id> [--raw]")
+	}
 	item, err := a.client.documentArtifact(ctx, id, args[1])
 	if err != nil {
+		return err
+	}
+	if *raw {
+		_, err := io.WriteString(a.stdout, item.Body)
 		return err
 	}
 	return writeDocumentArtifact(a.stdout, cfg.output, item)
@@ -134,16 +143,28 @@ func (a app) updateDocumentArtifact(ctx context.Context, args []string, cfg conf
 	return writeDocumentArtifact(a.stdout, cfg.output, item)
 }
 func readDocumentArtifactBody(path string, stdin io.Reader) (string, error) {
+	const maxDocumentBytes = 100000
 	if path == "-" {
-		bytes, err := io.ReadAll(stdin)
+		bytes, err := io.ReadAll(io.LimitReader(stdin, maxDocumentBytes+1))
 		if err != nil {
 			return "", fmt.Errorf("read document standard input: %w", err)
 		}
+		if len(bytes) > maxDocumentBytes {
+			return "", usageError("document body must be 100000 bytes or fewer")
+		}
 		return string(bytes), nil
 	}
-	bytes, err := os.ReadFile(path)
+	file, err := os.Open(path)
 	if err != nil {
 		return "", fmt.Errorf("read document file: %w", err)
+	}
+	defer file.Close()
+	bytes, err := io.ReadAll(io.LimitReader(file, maxDocumentBytes+1))
+	if err != nil {
+		return "", fmt.Errorf("read document file: %w", err)
+	}
+	if len(bytes) > maxDocumentBytes {
+		return "", usageError("document body must be 100000 bytes or fewer")
 	}
 	return string(bytes), nil
 }

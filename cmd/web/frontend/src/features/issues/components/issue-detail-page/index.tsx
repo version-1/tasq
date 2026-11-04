@@ -485,7 +485,7 @@ export function IssueDetailPage() {
                     }}
                     onStatusChange={handleStatusChange}
                   />
-                  <ArtifactsSection artifacts={issueState.issue.artifacts} />
+                  <ArtifactsSection artifacts={issueState.issue.artifacts} issueID={issueState.issue.id} />
                 </aside>
               </div>
             </div>

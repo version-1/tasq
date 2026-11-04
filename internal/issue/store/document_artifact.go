@@ -3,8 +3,10 @@ package store
 import (
 	"context"
 	"crypto/rand"
+	"database/sql"
 	"encoding/hex"
 	"fmt"
+	"strings"
 
 	"github.com/version-1/tasq/internal/issue/domain/entity"
 )
@@ -68,18 +70,25 @@ func (s *Store) UpdateDocumentArtifact(ctx context.Context, issueID int64, id st
 	if err != nil {
 		return entity.DocumentArtifact{}, err
 	}
-	current, err := s.DocumentArtifact(ctx, issueID, id)
-	if err != nil {
-		return entity.DocumentArtifact{}, err
-	}
+	assignments := []string{"updated_at = ?"}
+	args := []any{nowString()}
 	if normalized.Title != nil {
-		current.Title = *normalized.Title
+		assignments = append(assignments, "title = ?")
+		args = append(args, *normalized.Title)
 	}
 	if normalized.Body != nil {
-		current.Body = *normalized.Body
+		assignments = append(assignments, "body = ?")
+		args = append(args, *normalized.Body)
 	}
-	if _, err := s.db.ExecContext(ctx, `UPDATE issue_document_artifacts SET title = ?, body = ?, updated_at = ? WHERE issue_id = ? AND id = ?`, current.Title, current.Body, nowString(), issueID, id); err != nil {
+	args = append(args, issueID, id)
+	result, err := s.db.ExecContext(ctx, `UPDATE issue_document_artifacts SET `+strings.Join(assignments, ", ")+` WHERE issue_id = ? AND id = ?`, args...)
+	if err != nil {
 		return entity.DocumentArtifact{}, fmt.Errorf("update issue document artifact: %w", err)
+	}
+	if affected, err := result.RowsAffected(); err != nil {
+		return entity.DocumentArtifact{}, err
+	} else if affected == 0 {
+		return entity.DocumentArtifact{}, sql.ErrNoRows
 	}
 	return s.DocumentArtifact(ctx, issueID, id)
 }
