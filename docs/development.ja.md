@@ -135,6 +135,7 @@ Documentation を更新するときは、英語版の `.md` と日本語版の `
 このセクションは、repository documentation の唯一の索引です。この一覧を他の場所に複製せず、このセクションへリンクしてください。
 
 - [ロードマップ](../ROADMAP.ja.md): 課題管理を中心とする製品の方向性、移行段階、orchestrator のサポート方針。
+- [TQ Factory plugin](../plugins/tq-factory/README.ja.md): tq の課題とコメントを正本として外部エージェントと連携する workflow package。
 - [WORKFLOW.md](../WORKFLOW.md): orchestrator が使う Symphony runtime workflow contract。
 - [docs/design.md](design.md): system architecture と service boundaries。
 - [docs/design/deployment.ja.md](design/deployment.ja.md): release tag 作成、GitHub Actions、GoReleaser の deployment flow。
