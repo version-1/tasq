@@ -97,7 +97,7 @@ func (s *Server) updateIssue(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "issues.update.invalid_request", err)
 		return
 	}
-	if !s.orchestratorEnabled && input.AutoOK != nil {
+	if !s.orchestratorEnabled && input.AutoOK != nil && *input.AutoOK {
 		writeError(w, http.StatusConflict, "issues.auto_ok.unavailable", errors.New("Auto OK is unavailable while orchestrator execution is disabled"))
 		return
 	}

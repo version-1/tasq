@@ -258,7 +258,7 @@ func isPositiveInt64(value string) bool {
 
 // apiRoutes is intentionally explicit: new server endpoints remain unavailable until reviewed here.
 var apiRoutes = []apiRoute{
-	{"GET", "/api/v1/health"}, {"GET", "/api/v1/summary"},
+	{"GET", "/api/v1/health"}, {"GET", "/api/v1/capabilities"}, {"GET", "/api/v1/summary"},
 	{"GET", "/api/v1/projects"}, {"POST", "/api/v1/projects"}, {"GET", "/api/v1/projects/{id}"}, {"PATCH", "/api/v1/projects/{id}"}, {"DELETE", "/api/v1/projects/{id}"}, {"POST", "/api/v1/projects/{id}/check"},
 	{"GET", "/api/v1/projects/{id}/workflow"}, {"PUT", "/api/v1/projects/{id}/workflow"}, {"DELETE", "/api/v1/projects/{id}/workflow"},
 	{"GET", "/api/v1/issues"}, {"POST", "/api/v1/issues"}, {"POST", "/api/v1/issues/states"}, {"GET", "/api/v1/queue"}, {"GET", "/api/v1/issues/{id}"}, {"PATCH", "/api/v1/issues/{id}"},

@@ -3,6 +3,7 @@
 import { useParams, useSearchParams } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useOptionalLayoutShellData } from "@/components/layout";
 import { fetchOrchestratorConversation, fetchOrchestratorIssueRuntime } from "@/lib/api";
 import type { OrchestratorConversation, OrchestratorConversationEvent } from "@/lib/types";
 import { EventCard } from "./event-card";
@@ -16,6 +17,7 @@ type LoadState =
 
 export function ConversationPage() {
   const { t } = useTranslation();
+  const agentExecutionEnabled = useOptionalLayoutShellData()?.agentExecutionEnabled ?? true;
   const { id, runId } = useParams();
   const [searchParams] = useSearchParams();
   const issueID = parseIssueID(id);
@@ -23,6 +25,10 @@ export function ConversationPage() {
   const [state, setState] = useState<LoadState>({ kind: "loading" });
 
   useEffect(() => {
+    if (!agentExecutionEnabled) {
+      setState({ kind: "empty" });
+      return;
+    }
     if (!issueID) {
       setState({ kind: "error", message: t("issues.detailPage.invalidIssue") });
       return;
@@ -48,7 +54,7 @@ export function ConversationPage() {
     return () => {
       active = false;
     };
-  }, [issueID, selectedRunID, t]);
+  }, [agentExecutionEnabled, issueID, selectedRunID, t]);
 
   const title = useMemo(() => {
     if (state.kind !== "ready") {

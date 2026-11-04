@@ -10,6 +10,16 @@ JSON error responses use `{ "error": { "code": "...", "message": "..." }, "meta"
 
  * OpenAPI spec version: 0.1.0
  */
+export interface CapabilitiesResponse {
+  data: Capabilities;
+  meta: ApiMeta;
+}
+
+export interface Capabilities {
+  orchestratorEnabled: boolean;
+  autoOKEnabled: boolean;
+}
+
 /**
  * Response metadata. Currently empty, reserved for future extensions.
  */
@@ -667,6 +677,48 @@ export type PostApiV1AttachmentsBody = {
   /** PNG, JPEG, GIF, or WebP image up to 5 MiB. */
   file: Blob;
 };
+
+/**
+ * @summary Get enabled local runtime capabilities.
+ */
+export type getApiV1CapabilitiesResponse200 = {
+  data: CapabilitiesResponse
+  status: 200
+}
+
+export type getApiV1CapabilitiesResponseSuccess = (getApiV1CapabilitiesResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getApiV1CapabilitiesResponse = (getApiV1CapabilitiesResponseSuccess)
+
+export const getGetApiV1CapabilitiesUrl = () => {
+
+
+
+
+  return `/tracker/api/v1/capabilities`
+}
+
+export const getApiV1Capabilities = async ( options?: RequestInit): Promise<getApiV1CapabilitiesResponse> => {
+
+  const res = await fetch(getGetApiV1CapabilitiesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getApiV1CapabilitiesResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getApiV1CapabilitiesResponse
+}
+
+
 
 /**
  * @summary Check API health.

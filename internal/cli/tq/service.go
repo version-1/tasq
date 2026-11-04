@@ -250,7 +250,7 @@ func (a app) serviceStart(ctx context.Context, args []string, cfg config) error 
 	if state.IssueTracker != nil && processAlive(state.IssueTracker.PID) {
 		return usageError("issue-tracker is already running")
 	}
-	if appConfig.OrchestratorEnabled && state.Orchestrator != nil && processAlive(state.Orchestrator.PID) {
+	if state.Orchestrator != nil && processAlive(state.Orchestrator.PID) {
 		return usageError("orchestrator is already running")
 	}
 	if state.Web != nil && processAlive(state.Web.PID) {

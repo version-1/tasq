@@ -125,6 +125,61 @@ func TestAutoOKFailureAndCancellation(t *testing.T) {
 	}
 }
 
+func TestAutoOKDisabledCancelsUnclaimedReservationWithoutRequeueing(t *testing.T) {
+	ctx := context.Background()
+	s, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "issues.sqlite"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = s.Close() }()
+	project := createTestProject(t, s, "DISABLED")
+	issue, err := s.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Disabled Auto OK", Status: entity.StatusBlocked})
+	if err != nil {
+		t.Fatal(err)
+	}
+	enabled := true
+	blocked := entity.StatusBlocked
+	issue, err = s.UpdateIssue(ctx, issue.ID, entity.UpdateIssueInput{AutoOK: &enabled, Status: &blocked})
+	if err != nil {
+		t.Fatalf("enable Auto OK: %v", err)
+	}
+	if !issue.AutoOKPending || issue.Status != entity.StatusReady {
+		t.Fatalf("enabled issue = %+v, want pending ready reservation", issue)
+	}
+	s.SetAutoOKEnabled(false)
+	issue, err = s.UpdateIssue(ctx, issue.ID, entity.UpdateIssueInput{Status: &blocked})
+	if err != nil {
+		t.Fatalf("block while disabled: %v", err)
+	}
+	if issue.AutoOKPending || issue.Status != entity.StatusBlocked {
+		t.Fatalf("disabled update = %+v, want blocked issue without reservation", issue)
+	}
+}
+
+func TestAutoOKDisabledCanBeTurnedOffWithoutChangingStatus(t *testing.T) {
+	ctx := context.Background()
+	s, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "issues.sqlite"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = s.Close() }()
+	project := createTestProject(t, s, "DISABLEOFF")
+	issue, err := s.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Turn off", Status: entity.StatusBlocked})
+	if err != nil {
+		t.Fatal(err)
+	}
+	enabled, disabled := true, false
+	issue, err = s.UpdateIssue(ctx, issue.ID, entity.UpdateIssueInput{AutoOK: &enabled})
+	if err != nil || !issue.AutoOKPending || issue.Status != entity.StatusReady {
+		t.Fatalf("enable = %+v, %v", issue, err)
+	}
+	s.SetAutoOKEnabled(false)
+	issue, err = s.UpdateIssue(ctx, issue.ID, entity.UpdateIssueInput{AutoOK: &disabled})
+	if err != nil || issue.AutoOK || issue.AutoOKPending || issue.Status != entity.StatusReady {
+		t.Fatalf("disable while tracker-only = %+v, %v", issue, err)
+	}
+}
+
 func TestAutoOKClaimPreservesAcceptedReplyAcrossLifecycleUpdates(t *testing.T) {
 	ctx := context.Background()
 	s, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "issues.sqlite"))

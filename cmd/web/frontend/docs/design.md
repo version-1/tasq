@@ -301,6 +301,17 @@ not be committed.
 
 ## Standalone Auto OK Mock
 
+## Tracker-only capability mock
+
+The mock server exposes `GET /tracker/api/v1/capabilities` with orchestration
+and Auto OK enabled. A tracker-only server returns both fields as `false`.
+The layout fails closed until this capability is known: it keeps issue CRUD,
+comments, change requests, and explicit status updates available, while hiding
+Auto OK, thread-copy, runs, and conversation controls and making no
+orchestrator HTTP requests.
+Browser tests can call `setMockCapabilities({ orchestratorEnabled: false,
+autoOKEnabled: false })` from `src/mocks/handlers` before rendering.
+
 `npm run dev:mock` includes three Auto OK examples in the Tasq project: issue #3
 is ON at 2/5, #2 is OFF after five replies, and #9 is OFF after a resume failure.
 The fixture histories include the corresponding automatic reply comments.
