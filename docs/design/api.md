@@ -51,6 +51,12 @@ Issue responses include `projectId`, `projectKey`, `dependency_ids`, and `artifa
 
 The initial supported type is `pull_request`, with `data_type` `url`. The URL is trimmed before validation and must be an absolute `http` or `https` URL with a host, without userinfo, and no more than 4,096 UTF-8 bytes. Apart from trimming, the API does not normalize the URL.
 
+### Document artifacts
+
+`POST /api/v1/issues/{issue_id}/artifacts/documents` creates a Markdown document artifact. Its `type` is either `reference_document` or `work_report`; `title` is non-empty UTF-8 text up to 500 bytes and `body` is non-empty UTF-8 Markdown up to 100,000 bytes. Multiple documents of either type may belong to one issue.
+
+`GET /api/v1/issues/{issue_id}/artifacts/documents` lists document metadata without bodies. `GET /api/v1/issues/{issue_id}/artifacts/documents/{document_id}` returns one document including its exact body. `PATCH` on that same path accepts one or both of `title` and `body`; omitted fields are preserved. Every read and update is scoped by both issue and document ID, so a document from another issue returns `404`. The initial release intentionally has no delete endpoint.
+
 ### Listing and search
 
 `GET /api/v1/issues` supports `states`, `project_id`, `project_ids`, `priorities`, `assignee`, `search`, `limit`, `offset`, `sort_by`, and `sort_direction`.

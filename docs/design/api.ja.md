@@ -51,6 +51,12 @@ API を変更するときは、[development.ja.md](../development.ja.md)の手�
 
 初期対応の type は `pull_request` で、`data_type` は `url` です。URL は前後の空白を除去してから検証します。host を持つ絶対 `http` / `https` URL であること、userinfo を含まないこと、UTF-8 で 4,096 bytes 以下であることが必要です。空白除去以外に API が URL を正規化することはありません。
 
+### Document Artifact
+
+`POST /api/v1/issues/{issue_id}/artifacts/documents` は Markdown の Document Artifact を作成します。`type` は `reference_document` または `work_report`、`title` は 500 bytes 以下の空でない UTF-8 文字列、`body` は 100,000 bytes 以下の空でない UTF-8 Markdown です。同じ課題には、どちらの type も複数紐付けられます。
+
+`GET /api/v1/issues/{issue_id}/artifacts/documents` は本文を含まない Document のメタデータを一覧表示します。`GET /api/v1/issues/{issue_id}/artifacts/documents/{document_id}` は本文を含む 1 件を返します。同じパスへの `PATCH` は `title` と `body` の一方または両方を受け付け、省略したフィールドは維持します。読み取りと更新は課題 ID と Document ID の両方でスコープされるため、別の課題の Document は `404` になります。初期リリースでは delete endpoint を提供しません。
+
 ### 一覧と検索
 
 `GET /api/v1/issues` では、`states`、`project_id`、`project_ids`、`priorities`、`assignee`、`search`、`limit`、`offset`、`sort_by`、`sort_direction` を使用できます。

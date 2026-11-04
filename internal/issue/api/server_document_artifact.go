@@ -69,7 +69,10 @@ func (s *Server) updateDocumentArtifact(w http.ResponseWriter, r *http.Request) 
 	writeJSON(w, http.StatusOK, item)
 }
 func decodeOneJSON(w http.ResponseWriter, r *http.Request, action string, value any) bool {
-	r.Body = http.MaxBytesReader(w, r.Body, 400000)
+	// The decoded Markdown body is limited by the domain layer. JSON escaping
+	// can expand a valid 100 kB body by up to six times, so leave room for the
+	// encoded envelope while still bounding the request before reading it.
+	r.Body = http.MaxBytesReader(w, r.Body, 1024*1024)
 	raw, err := io.ReadAll(r.Body)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, action+".invalid_request", err)

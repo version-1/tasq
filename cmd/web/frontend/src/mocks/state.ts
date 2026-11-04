@@ -15,6 +15,7 @@ import type {
   QueueStatus,
   Summary,
   UpdateIssueInput,
+  DocumentArtifact,
 } from "@/lib/generated/issue-tracker";
 import type {
   ConversationResponse,
@@ -46,6 +47,10 @@ const workflows = new Map<number, ProjectWorkflow>(
   workflowFixtures.map((workflow) => [workflow.projectId, workflow]),
 );
 let comments = clone(commentFixtures);
+let documentArtifacts: DocumentArtifact[] = [
+  { id: "doc-1", issueId: 1, type: "reference_document", title: "Acceptance criteria", body: "# Acceptance criteria\n\n- Preserve issue IDs\n- Record verification", createdAt: "2026-06-16T04:00:00.000Z", updatedAt: "2026-06-16T04:00:00.000Z" },
+  { id: "doc-2", issueId: 1, type: "work_report", title: "Work report", body: "# Work report\n\nAll checks passed.", createdAt: "2026-06-16T05:00:00.000Z", updatedAt: "2026-06-16T05:00:00.000Z" },
+];
 let changeRequests: ChangeRequest[] = [
   {
     id: 1,
@@ -218,6 +223,15 @@ function matchesIssueSearch(issue: Issue, search: string | undefined): boolean {
 
 export function getIssue(id: number): Issue | null {
   return clone(issues.find((issue) => issue.id === id) ?? null);
+}
+
+export function listDocumentArtifacts(issueID: number): DocumentArtifact[] | null {
+  if (!issues.some((issue) => issue.id === issueID)) return null;
+  return clone(documentArtifacts.filter((item) => item.issueId === issueID).map(({ body: _, ...item }) => item));
+}
+
+export function getDocumentArtifact(issueID: number, id: string): DocumentArtifact | null {
+  return clone(documentArtifacts.find((item) => item.issueId === issueID && item.id === id) ?? null);
 }
 
 export function createIssue(input: CreateIssueInput): Issue | null {

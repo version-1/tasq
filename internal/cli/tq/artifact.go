@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"unicode/utf8"
 
 	"github.com/version-1/tasq/internal/issue/domain/entity"
 )
@@ -152,6 +153,9 @@ func readDocumentArtifactBody(path string, stdin io.Reader) (string, error) {
 		if len(bytes) > maxDocumentBytes {
 			return "", usageError("document body must be 100000 bytes or fewer")
 		}
+		if !utf8.Valid(bytes) {
+			return "", usageError("document body is invalid UTF-8")
+		}
 		return string(bytes), nil
 	}
 	file, err := os.Open(path)
@@ -165,6 +169,9 @@ func readDocumentArtifactBody(path string, stdin io.Reader) (string, error) {
 	}
 	if len(bytes) > maxDocumentBytes {
 		return "", usageError("document body must be 100000 bytes or fewer")
+	}
+	if !utf8.Valid(bytes) {
+		return "", usageError("document body is invalid UTF-8")
 	}
 	return string(bytes), nil
 }
