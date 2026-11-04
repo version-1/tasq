@@ -12,12 +12,14 @@ import (
 )
 
 const (
-	maxAssigneeLength    = 200
-	maxDescriptionLength = 10000
-	maxIssueTitleLength  = 500
-	maxNameLength        = 200
-	maxPathLength        = 1000
-	maxArtifactURLBytes  = 4096
+	maxAssigneeLength     = 200
+	maxDescriptionLength  = 10000
+	maxIssueTitleLength   = 500
+	maxNameLength         = 200
+	maxPathLength         = 1000
+	maxArtifactURLBytes   = 4096
+	maxDocumentBodyBytes  = 100000
+	maxDocumentTitleBytes = 500
 )
 
 var projectKeyPattern = regexp.MustCompile(`^([A-Z][A-Z0-9_]{0,19}|[a-z][a-z0-9-]{0,63})$`)
@@ -153,6 +155,95 @@ type Artifact struct {
 
 type UpsertArtifactInput struct {
 	DataValue string `json:"data_value"`
+}
+
+type DocumentArtifactType string
+
+const (
+	DocumentArtifactTypeReferenceDocument DocumentArtifactType = "reference_document"
+	DocumentArtifactTypeWorkReport        DocumentArtifactType = "work_report"
+)
+
+type DocumentArtifact struct {
+	ID        string               `json:"id"`
+	IssueID   int64                `json:"issueId"`
+	Type      DocumentArtifactType `json:"type"`
+	Title     string               `json:"title"`
+	Body      string               `json:"body,omitempty"`
+	CreatedAt time.Time            `json:"createdAt"`
+	UpdatedAt time.Time            `json:"updatedAt"`
+}
+
+type CreateDocumentArtifactInput struct {
+	Type  DocumentArtifactType `json:"type"`
+	Title string               `json:"title"`
+	Body  string               `json:"body"`
+}
+
+type UpdateDocumentArtifactInput struct {
+	Title *string `json:"title"`
+	Body  *string `json:"body"`
+}
+
+func NormalizeCreateDocumentArtifactInput(input CreateDocumentArtifactInput) (CreateDocumentArtifactInput, error) {
+	if input.Type != DocumentArtifactTypeReferenceDocument && input.Type != DocumentArtifactTypeWorkReport {
+		return CreateDocumentArtifactInput{}, errors.New("document artifact type is unsupported")
+	}
+	title, err := normalizeDocumentArtifactTitle(input.Title)
+	if err != nil {
+		return CreateDocumentArtifactInput{}, err
+	}
+	if err := validateDocumentArtifactBody(input.Body); err != nil {
+		return CreateDocumentArtifactInput{}, err
+	}
+	input.Title = title
+	return input, nil
+}
+
+func NormalizeUpdateDocumentArtifactInput(input UpdateDocumentArtifactInput) (UpdateDocumentArtifactInput, error) {
+	if input.Title == nil && input.Body == nil {
+		return UpdateDocumentArtifactInput{}, errors.New("document artifact update is empty")
+	}
+	if input.Title != nil {
+		title, err := normalizeDocumentArtifactTitle(*input.Title)
+		if err != nil {
+			return UpdateDocumentArtifactInput{}, err
+		}
+		input.Title = &title
+	}
+	if input.Body != nil {
+		if err := validateDocumentArtifactBody(*input.Body); err != nil {
+			return UpdateDocumentArtifactInput{}, err
+		}
+	}
+	return input, nil
+}
+
+func normalizeDocumentArtifactTitle(value string) (string, error) {
+	if !utf8.ValidString(value) {
+		return "", errors.New("document artifact title is invalid UTF-8")
+	}
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return "", errors.New("document artifact title is required")
+	}
+	if len(value) > maxDocumentTitleBytes {
+		return "", errors.New("document artifact title must be 500 bytes or fewer")
+	}
+	return value, nil
+}
+
+func validateDocumentArtifactBody(value string) error {
+	if !utf8.ValidString(value) {
+		return errors.New("document artifact body is invalid UTF-8")
+	}
+	if value == "" {
+		return errors.New("document artifact body is required")
+	}
+	if len(value) > maxDocumentBodyBytes {
+		return errors.New("document artifact body must be 100000 bytes or fewer")
+	}
+	return nil
 }
 
 func NormalizeArtifactInput(artifactType ArtifactType, input UpsertArtifactInput) (Artifact, error) {

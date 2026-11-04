@@ -58,6 +58,20 @@ Artifact の作成・更新時刻は内部で保持しますが、公開フィ�
 
 検証では前後の空白を除去してから解析し、不正な UTF-8 を拒否します。それ以外は送信された URL を変更せずに保持します。課題レスポンスの Artifact は `type` 昇順です。
 
+### Document Artifact
+
+Document Artifact は、ユーザーまたは外部エージェントが作成した Markdown を保存します。Tasq 自身がモデルを呼び出して文書を生成することはありません。URL Artifact とは別に保存するため、複数の参照文書や作業レポートを紐付けても pull request のリンクを置き換えません。
+
+| Field | 制約 |
+| --- | --- |
+| ID | サーバーが生成する安定した不透明な識別子。 |
+| IssueID | 既存の課題。すべての操作はこの ID の範囲に限定されます。 |
+| Type | `reference_document` または `work_report`。 |
+| Title | 前後の空白を除いた空でない UTF-8 文字列。500 bytes 以下。 |
+| Body | 空でない UTF-8 の Markdown。内容を保持し、100,000 bytes 以下。 |
+
+一覧レスポンスは本文を含まず、個別取得時に返します。migration の適用前に SQLite データベースをバックアップしてください。通常の migration コマンドは適用済みバージョンを記録し、未適用の migration があるデータベースでは起動を拒否します。
+
 ### CreateIssueInput
 
 `CreateIssueInput` は `POST /api/v1/issues` の request body です。フィールドは上記 Issue 表のうち、create 時にクライアント入力を受け付けるサブセット（`project_id`, `title`, `description`, `status`, `priority`, `assignee`, `dependency_ids`）と同じで、Required/Default の内容も Issue 表の **Required (Create)** 列と **Default** 列のとおりです。ここでの `dependency_ids` は初期 dependency set を意味します（update と同じ検証: 各 ID は issue を参照すること。重複、自己依存、cycle は不可）。

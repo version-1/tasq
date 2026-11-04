@@ -39,6 +39,7 @@ func printArtifactHelp(w io.Writer) {
 	fmt.Fprintln(w, "Actions:")
 	fmt.Fprintln(w, "  set     Set an artifact (tq artifact set <issue_id> --type pull_request <url>)")
 	fmt.Fprintln(w, "  delete  Delete an artifact (tq artifact delete <issue_id> --type pull_request)")
+	fmt.Fprintln(w, "  document  Create, list, get, or update Markdown document artifacts")
 }
 
 func printAPIHelp(w io.Writer) {

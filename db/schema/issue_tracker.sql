@@ -33,6 +33,19 @@ CREATE TABLE IF NOT EXISTS issue_artifacts (
 
 CREATE INDEX IF NOT EXISTS issue_artifacts_issue_id_idx ON issue_artifacts(issue_id);
 
+CREATE TABLE IF NOT EXISTS issue_document_artifacts (
+	id TEXT PRIMARY KEY,
+	issue_id INTEGER NOT NULL,
+	type TEXT NOT NULL,
+	title TEXT NOT NULL,
+	body TEXT NOT NULL,
+	created_at TEXT NOT NULL,
+	updated_at TEXT NOT NULL,
+	FOREIGN KEY(issue_id) REFERENCES issues(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS issue_document_artifacts_issue_id_idx ON issue_document_artifacts(issue_id, created_at, id);
+
 CREATE TABLE IF NOT EXISTS issue_dependencies (
 	parent_issue_id INTEGER NOT NULL,
 	dependency_issue_id INTEGER NOT NULL,
