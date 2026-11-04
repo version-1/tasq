@@ -260,9 +260,15 @@ export interface DocumentArtifact {
   id: string;
   issueId: number;
   type: DocumentArtifactType;
-  /** @maxLength 500 */
+  /**
+   * Non-empty title in inputs; maximum 500 UTF-8 bytes (which can be stricter than this character limit).
+   * @maxLength 500
+   */
   title: string;
-  /** @maxLength 100000 */
+  /**
+   * Markdown body; maximum 100,000 UTF-8 bytes (which can be stricter than this character limit).
+   * @maxLength 100000
+   */
   body?: string;
   createdAt: string;
   updatedAt: string;
@@ -271,11 +277,13 @@ export interface DocumentArtifact {
 export interface CreateDocumentArtifactInput {
   type: DocumentArtifactType;
   /**
+   * Non-empty title, maximum 500 UTF-8 bytes (which can be stricter than this character limit).
    * @minLength 1
    * @maxLength 500
    */
   title: string;
   /**
+   * Non-empty Markdown body, maximum 100,000 UTF-8 bytes (which can be stricter than this character limit).
    * @minLength 1
    * @maxLength 100000
    */
@@ -284,11 +292,13 @@ export interface CreateDocumentArtifactInput {
 
 export interface UpdateDocumentArtifactInput {
   /**
+   * Non-empty title, maximum 500 UTF-8 bytes (which can be stricter than this character limit).
    * @minLength 1
    * @maxLength 500
    */
   title?: string;
   /**
+   * Non-empty Markdown body, maximum 100,000 UTF-8 bytes (which can be stricter than this character limit).
    * @minLength 1
    * @maxLength 100000
    */
