@@ -4,6 +4,10 @@ This document records intentional differences between Tasq and the upstream Symp
 
 Tasq uses the Symphony specification as the direction for orchestration, workspace, workflow, agent-runner, tracker, and observability behavior. Some implementation choices differ because Tasq already has a local issue-tracker service that owns issue state.
 
+## Optional Managed Execution
+
+`orchestrator_enabled: false` disables Tasq-managed orchestration for a shared `TQ_HOME`. The issue-tracker remains available for external agents through its normal issue and queue API, but it does not open the orchestrator runstore and the managed launcher does not start an orchestrator. This is an intentional product-level opt-out from Symphony execution behavior, not a change to the enabled orchestrator contract. It does not prevent an independently started compatible orchestrator from consuming the tracker API; operators must stop such processes before selecting tracker-only operation.
+
 ## Tracker Adapter
 
 Tasq does not implement the Linear tracker client described in Section 11 of the Symphony specification.

@@ -8,7 +8,10 @@ import (
 	"github.com/version-1/tasq/internal/issue/domain/entity"
 )
 
-func updateAutoOK(issue *entity.Issue, input entity.UpdateIssueInput) {
+func updateAutoOK(issue *entity.Issue, input entity.UpdateIssueInput, enabled bool) {
+	if !enabled {
+		return
+	}
 	if input.AutoOK != nil && *input.AutoOK != issue.AutoOK {
 		issue.AutoOK = *input.AutoOK
 		issue.AutoOKGeneration++

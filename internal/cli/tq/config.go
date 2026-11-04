@@ -21,6 +21,7 @@ type configInfo struct {
 type configSummary struct {
 	Author              string `json:"author"`
 	MaxConcurrentAgents int    `json:"maxConcurrentAgents"`
+	OrchestratorEnabled bool   `json:"orchestratorEnabled"`
 }
 
 func (a app) config(args []string, cfg config) error {
@@ -66,6 +67,7 @@ func readConfigInfo() (configInfo, error) {
 		Config: configSummary{
 			Author:              loaded.Author,
 			MaxConcurrentAgents: loaded.MaxConcurrentAgents,
+			OrchestratorEnabled: loaded.OrchestratorEnabled,
 		},
 	}
 	if value := strings.TrimSpace(os.Getenv(tqconfig.EnvHome)); value != "" {
@@ -91,4 +93,5 @@ func writeConfigInfo(w interface{ Write([]byte) (int, error) }, info configInfo)
 	fmt.Fprintf(w, "Config path: %s\n", info.ConfigPath)
 	fmt.Fprintf(w, "Author: %s\n", info.Config.Author)
 	fmt.Fprintf(w, "Max concurrent agents: %d\n", info.Config.MaxConcurrentAgents)
+	fmt.Fprintf(w, "Orchestrator enabled: %t\n", info.Config.OrchestratorEnabled)
 }

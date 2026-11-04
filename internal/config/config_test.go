@@ -7,6 +7,31 @@ import (
 	"testing"
 )
 
+func TestLoadPreservesOrchestratorEnabledDefaultAndOverride(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv(EnvHome, dir)
+	loaded, err := Load()
+	if err != nil {
+		t.Fatalf("load default config: %v", err)
+	}
+	if !loaded.OrchestratorEnabled {
+		t.Fatal("OrchestratorEnabled = false, want default true")
+	}
+	if err := os.MkdirAll(filepath.Dir(ConfigPath(dir)), 0o755); err != nil {
+		t.Fatalf("create config directory: %v", err)
+	}
+	if err := os.WriteFile(ConfigPath(dir), []byte("orchestrator_enabled: false\n"), 0o644); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+	loaded, err = Load()
+	if err != nil {
+		t.Fatalf("load disabled config: %v", err)
+	}
+	if loaded.OrchestratorEnabled {
+		t.Fatal("OrchestratorEnabled = true, want false from config")
+	}
+}
+
 func TestHomeUsesTQHome(t *testing.T) {
 	originalProfile := defaultHomeProfile
 	defaultHomeProfile = "preview"

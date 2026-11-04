@@ -41,18 +41,31 @@ func main() {
 			log.Printf("close issue store: %v", err)
 		}
 	}()
-	orchestratorStore, err := runstore.Open(ctx, tqconfig.OrchestratorDBPath(home))
+	appConfig, err := tqconfig.Load()
 	if err != nil {
-		log.Fatalf("open orchestrator store: %v", err)
+		log.Fatalf("load TQ_HOME config: %v", err)
 	}
-	defer func() {
-		if err := orchestratorStore.Close(); err != nil {
-			log.Printf("close orchestrator store: %v", err)
+	var handler http.Handler
+	if appConfig.OrchestratorEnabled {
+		orchestratorStore, err := runstore.Open(ctx, tqconfig.OrchestratorDBPath(home))
+		if err != nil {
+			log.Fatalf("open orchestrator store: %v", err)
 		}
-	}()
+		defer func() {
+			if err := orchestratorStore.Close(); err != nil {
+				log.Printf("close orchestrator store: %v", err)
+			}
+		}()
+		handler = api.NewServerWithOrchestratorStore(issueStore, orchestratorStore).Handler()
+	} else {
+		issueStore.SetAutoOKEnabled(false)
+		trackerServer := api.NewServer(issueStore)
+		trackerServer.SetOrchestratorEnabled(false)
+		handler = trackerServer.Handler()
+	}
 
 	server := &http.Server{
-		Handler:           api.NewServerWithOrchestratorStore(issueStore, orchestratorStore).Handler(),
+		Handler:           handler,
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 	listener, err := net.Listen("tcp", *addr)

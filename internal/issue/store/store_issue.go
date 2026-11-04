@@ -339,7 +339,7 @@ func (s *Store) UpdateIssue(ctx context.Context, id int64, input entity.UpdateIs
 	if normalized.Assignee != nil {
 		current.Assignee = *normalized.Assignee
 	}
-	updateAutoOK(&current, normalized)
+	updateAutoOK(&current, normalized, s.autoOKEnabled)
 	_, err = tx.ExecContext(ctx, `UPDATE issues SET
 		title = ?, description = ?, status = ?, priority = ?, assignee = ?, updated_at = ?,
 		auto_ok = ?, auto_ok_count = ?, auto_ok_pending = ?, auto_ok_claimed = ?, auto_ok_generation = ?, auto_ok_stop_reason = ?

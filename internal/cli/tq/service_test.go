@@ -41,7 +41,7 @@ func TestServiceStartAddressesUsesFallbackWhenDefaultPortIsUnavailable(t *testin
 		defer listener.Close()
 	}
 
-	addresses, fallback, err := serviceStartAddresses()
+	addresses, fallback, err := serviceStartAddresses(true)
 	if err != nil {
 		t.Fatalf("service start addresses: %v", err)
 	}
@@ -123,7 +123,7 @@ func TestServiceCommandEnvSetsManagedExecutionContract(t *testing.T) {
 
 func TestValidateServiceExecutablesReportsAllUnavailableTargets(t *testing.T) {
 	home := t.TempDir()
-	err := validateServiceExecutables(home)
+	err := validateServiceExecutables(home, true)
 	if err == nil {
 		t.Fatal("validate service executables error = nil")
 	}
@@ -263,7 +263,7 @@ func TestConfirmServicePortsAvailableFailsWhenCandidateIsTaken(t *testing.T) {
 	}
 	defer listener.Close()
 
-	if err := confirmServicePortsAvailable(addresses); err == nil {
+	if err := confirmServicePortsAvailable(addresses, true); err == nil {
 		t.Fatal("confirm service ports available succeeded after candidate was taken")
 	}
 }
