@@ -966,7 +966,7 @@ func TestServiceMigrationPreflightPassesAfterMigrate(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("migrate code=%d stdout=%s stderr=%s", code, stdout, stderr)
 	}
-	if err := checkMigrationTargetsNoPending(context.Background()); err != nil {
+	if err := checkMigrationTargetsNoPending(context.Background(), true); err != nil {
 		t.Fatalf("pre-flight after migrate: %v", err)
 	}
 }

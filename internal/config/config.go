@@ -14,6 +14,7 @@ const defaultMaxConcurrentAgents = 10
 type Config struct {
 	Author              string `yaml:"author"`
 	MaxConcurrentAgents int    `yaml:"max_concurrent_agents"`
+	OrchestratorEnabled bool   `yaml:"orchestrator_enabled"`
 }
 
 type Overrides struct {
@@ -25,6 +26,7 @@ func DefaultConfig() Config {
 	return Config{
 		Author:              strings.TrimSpace(os.Getenv("USER")),
 		MaxConcurrentAgents: defaultMaxConcurrentAgents,
+		OrchestratorEnabled: true,
 	}
 }
 

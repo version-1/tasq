@@ -12,6 +12,7 @@ type Server struct {
 	store                 *store.Store
 	attachmentStorage     *store.AttachmentStorage
 	projectRunDataDeleter projectRunDataDeleter
+	orchestratorEnabled   bool
 }
 
 type projectRunDataDeleter interface {
@@ -19,26 +20,31 @@ type projectRunDataDeleter interface {
 }
 
 func NewServer(issueStore *store.Store) *Server {
-	return &Server{store: issueStore}
+	return &Server{store: issueStore, orchestratorEnabled: true}
 }
 
 func NewServerWithAttachmentStorage(issueStore *store.Store, attachmentStorage *store.AttachmentStorage) *Server {
 	issueStore.SetAttachmentStorage(attachmentStorage)
-	return &Server{store: issueStore, attachmentStorage: attachmentStorage}
+	return &Server{store: issueStore, attachmentStorage: attachmentStorage, orchestratorEnabled: true}
+}
+
+func (s *Server) SetOrchestratorEnabled(enabled bool) {
+	s.orchestratorEnabled = enabled
 }
 
 func NewServerWithOrchestratorStore(issueStore *store.Store, orchestratorStore *runstore.Store) *Server {
-	return &Server{store: issueStore, projectRunDataDeleter: orchestratorStore}
+	return &Server{store: issueStore, projectRunDataDeleter: orchestratorStore, orchestratorEnabled: true}
 }
 
 func NewServerWithStores(issueStore *store.Store, attachmentStorage *store.AttachmentStorage, orchestratorStore *runstore.Store) *Server {
 	issueStore.SetAttachmentStorage(attachmentStorage)
-	return &Server{store: issueStore, attachmentStorage: attachmentStorage, projectRunDataDeleter: orchestratorStore}
+	return &Server{store: issueStore, attachmentStorage: attachmentStorage, projectRunDataDeleter: orchestratorStore, orchestratorEnabled: true}
 }
 
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/v1/health", s.health)
+	mux.HandleFunc("GET /api/v1/capabilities", s.capabilities)
 	mux.HandleFunc("GET /api/v1/summary", s.summary)
 	mux.HandleFunc("GET /api/v1/projects", s.projects)
 	mux.HandleFunc("POST /api/v1/projects", s.createProject)
@@ -71,6 +77,10 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/v1/attachments/{id}/content", s.attachmentContent)
 	mux.HandleFunc("DELETE /api/v1/attachments/{id}", s.deleteAttachment)
 	return withCORS(withLogging(mux))
+}
+
+func (s *Server) capabilities(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, http.StatusOK, map[string]bool{"orchestratorEnabled": s.orchestratorEnabled, "autoOKEnabled": s.orchestratorEnabled})
 }
 
 func (s *Server) health(w http.ResponseWriter, r *http.Request) {
