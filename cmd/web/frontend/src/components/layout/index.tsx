@@ -569,6 +569,7 @@ export function ShellLayout({
           canDeleteProject={shellData.isProjectIssueScope && shellData.activeProject !== null}
           showAddTaskButton={showAddTaskButton}
           showViewNavigation={showViewNavigation}
+          agentExecutionEnabled={shellData.agentExecutionEnabled}
         />
 
         <ModalOutlet>
