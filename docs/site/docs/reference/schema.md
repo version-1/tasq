@@ -60,7 +60,7 @@ Absolute path fields must start with `/`. Clients such as `tq project add` check
 
 ## Migration Backup and Recovery
 
-Before applying a release that adds a schema migration, stop local services and make a copy of the issue-tracker SQLite database in the configured `TQ_HOME` data directory. Keep that copy outside the active data directory. If a migration must be recovered, stop services, replace the active database with the copy, and then start the services again. Do not use `tq migrate down` as a substitute for restoring a backup: it only runs defined down migrations and cannot recover data that a migration changed or removed.
+Before applying a release that adds a schema migration, stop local services and make a copy of the issue-tracker SQLite database in the configured `TQ_HOME` data directory. Keep that copy outside the active data directory until the migrated database has been verified. To recover, stop services and replace the active database with the copy. Then either run the matching previous Tasq binary, or reapply the current migrations before starting the current binary: it rejects a restored older database with pending migrations. Do not use `tq migrate down` as a substitute for restoring a backup: it only runs defined down migrations and cannot recover data that a migration changed or removed. Do not apply migrations to a live database while services are running.
 
 ## State Transitions
 

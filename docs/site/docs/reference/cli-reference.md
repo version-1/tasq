@@ -66,9 +66,9 @@ greater than `--interval`. It ignores global `--output`.
 | `tq artifact document get <issue-id> <document-id> [--raw]` | Read one document. |
 | `tq artifact document update <issue-id> <document-id> [--title <title>] [--file <path\|->]` | Update a document title and/or body. |
 
-Both commands require a positive issue ID and `--type`, and support the global text and JSON output modes.
+The URL-artifact commands `artifact set` and `artifact delete` require a positive issue ID and `--type`, and support the global text and JSON output modes.
 
-Only `pull_request` is currently supported. The URL must be an absolute
+For those URL-artifact commands, only `pull_request` is currently supported. The URL must be an absolute
 `http` or `https` URL with a host and no userinfo, up to 4,096 UTF-8 bytes.
 Repeating `artifact set` for an issue and type replaces its URL.
 

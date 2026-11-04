@@ -1220,8 +1220,16 @@ components:
         id: { type: string }
         issueId: { type: integer, format: int64 }
         type: { $ref: "#/components/schemas/DocumentArtifactType" }
-        title: { type: string, maxLength: 500 }
-        body: { type: string, maxLength: 100000 }
+        title:
+          type: string
+          maxLength: 500
+          description: Non-empty title in inputs; maximum 500 UTF-8 bytes (which can be stricter than this character limit).
+          x-max-utf8-bytes: 500
+        body:
+          type: string
+          maxLength: 100000
+          description: Markdown body; maximum 100,000 UTF-8 bytes (which can be stricter than this character limit).
+          x-max-utf8-bytes: 100000
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
     CreateDocumentArtifactInput:
@@ -1230,14 +1238,34 @@ components:
       additionalProperties: false
       properties:
         type: { $ref: "#/components/schemas/DocumentArtifactType" }
-        title: { type: string, minLength: 1, maxLength: 500 }
-        body: { type: string, minLength: 1, maxLength: 100000 }
+        title:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Non-empty title, maximum 500 UTF-8 bytes (which can be stricter than this character limit).
+          x-max-utf8-bytes: 500
+        body:
+          type: string
+          minLength: 1
+          maxLength: 100000
+          description: Non-empty Markdown body, maximum 100,000 UTF-8 bytes (which can be stricter than this character limit).
+          x-max-utf8-bytes: 100000
     UpdateDocumentArtifactInput:
       type: object
       additionalProperties: false
       properties:
-        title: { type: string, minLength: 1, maxLength: 500 }
-        body: { type: string, minLength: 1, maxLength: 100000 }
+        title:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Non-empty title, maximum 500 UTF-8 bytes (which can be stricter than this character limit).
+          x-max-utf8-bytes: 500
+        body:
+          type: string
+          minLength: 1
+          maxLength: 100000
+          description: Non-empty Markdown body, maximum 100,000 UTF-8 bytes (which can be stricter than this character limit).
+          x-max-utf8-bytes: 100000
     DocumentArtifactResponse:
       type: object
       required: [data, meta]
