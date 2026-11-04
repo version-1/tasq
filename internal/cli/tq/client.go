@@ -28,6 +28,10 @@ type apiResponse[T any] struct {
 	Data T `json:"data"`
 }
 
+type trackerCapabilities struct {
+	OrchestratorEnabled bool `json:"orchestratorEnabled"`
+}
+
 type apiErrorResponse struct {
 	Error struct {
 		Code    string `json:"code"`
@@ -76,6 +80,14 @@ func newAPIClient(baseURL string) (*apiClient, error) {
 		baseURL:    baseURL,
 		httpClient: &http.Client{Timeout: 10 * time.Second},
 	}, nil
+}
+
+func (c *apiClient) capabilities(ctx context.Context) (trackerCapabilities, error) {
+	var capabilities trackerCapabilities
+	if err := c.do(ctx, http.MethodGet, "/api/v1/capabilities", nil, &capabilities); err != nil {
+		return trackerCapabilities{}, err
+	}
+	return capabilities, nil
 }
 
 func (c *apiClient) listIssues(ctx context.Context, projectID *int64) ([]entity.Issue, error) {

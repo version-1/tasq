@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"log"
 	"net"
@@ -61,6 +62,13 @@ func main() {
 		issueStore.SetAutoOKEnabled(false)
 		trackerServer := api.NewServer(issueStore)
 		trackerServer.SetOrchestratorEnabled(false)
+		legacyRunDBPath := tqconfig.OrchestratorDBPath(home)
+		trackerServer.SetProjectDeletionGuard(func(context.Context) error {
+			if _, err := os.Stat(legacyRunDBPath); err == nil || !errors.Is(err, os.ErrNotExist) {
+				return errors.New("project deletion is unavailable while legacy orchestrator history may exist; re-enable orchestrator execution and complete verified legacy cleanup first")
+			}
+			return nil
+		})
 		handler = trackerServer.Handler()
 	}
 

@@ -72,6 +72,12 @@ func (s *Server) deleteProject(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	if s.projectDeletionGuard != nil {
+		if err := s.projectDeletionGuard.CheckProjectDeletion(r.Context()); err != nil {
+			writeError(w, http.StatusConflict, "projects.delete.legacy_history_unavailable", err)
+			return
+		}
+	}
 	if s.projectRunDataDeleter != nil {
 		issueIDs, err := s.store.ProjectIssueIDs(r.Context(), id)
 		if err != nil {
