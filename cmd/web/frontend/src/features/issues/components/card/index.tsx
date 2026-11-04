@@ -56,6 +56,7 @@ export function IssueCard({
   onResolveIssue,
   readonly = false,
   runCount,
+  agentExecutionEnabled = true,
 }: {
   issue: IssueSummary;
   onStatusChange: IssueStatusChangeHandler;
@@ -65,6 +66,7 @@ export function IssueCard({
   onResolveIssue?: IssueResolveHandler;
   readonly?: boolean;
   runCount?: number;
+  agentExecutionEnabled?: boolean;
 }) {
   const { t } = useTranslation();
   const statusOptions = statusOptionsFor(issue.status);
@@ -74,7 +76,7 @@ export function IssueCard({
   const canReject = !readonly && issue.status === "review" && onRejectIssue !== undefined && onRejectShortcut !== undefined;
   const cardRef = useRef<HTMLElement>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { isThreadIDLoading, threadID } = useIssueThreadID(issue.id, isMenuOpen);
+  const { isThreadIDLoading, threadID } = useIssueThreadID(issue.id, agentExecutionEnabled && isMenuOpen);
   const menuID = `issue-card-menu-${issue.id}`;
   const menuLabel = t("issues.card.actionsLabel", { title: issue.title });
   const lockedStatusLabel = t("issues.card.statusLocked", { status: t(`statuses.${issue.status}`) });
@@ -141,7 +143,7 @@ export function IssueCard({
             </button>
           )}
         >
-          <ContextMenuItem
+          {agentExecutionEnabled ? <ContextMenuItem
             disabled={isThreadIDLoading || !threadID}
             icon={<IconProxy name="copy" />}
             label={t("issues.card.copyThreadID")}
@@ -151,7 +153,7 @@ export function IssueCard({
             }}
           >
             {t("issues.card.copyThreadID")}
-          </ContextMenuItem>
+          </ContextMenuItem> : null}
           {pullRequest ? (
             <ContextMenuItem
               icon={<IconProxy name="git-pull-request" />}
@@ -162,7 +164,7 @@ export function IssueCard({
               {t("issues.card.openPullRequest")}
             </ContextMenuItem>
           ) : null}
-          <AutoOKControl issue={issue} disabled={readonly} onChange={onAutoOKChange} />
+          {agentExecutionEnabled ? <AutoOKControl issue={issue} disabled={readonly} onChange={onAutoOKChange} /> : null}
           <ContextMenuSeparator />
           <ContextMenuGroupLabel>{t("issues.card.changeStatus")}</ContextMenuGroupLabel>
           {statusOptions.map((status, index) => {

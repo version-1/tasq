@@ -55,8 +55,14 @@ func (a app) tui(ctx context.Context, args []string, cfg config) error {
 	if !terminalCheck(a.stdin) || !terminalCheck(a.stdout) {
 		return usageError("tq tui requires an interactive TTY")
 	}
+	appConfig, err := tqconfig.Load()
+	if err != nil {
+		return err
+	}
 	resolvedOrchestratorURL := strings.TrimSpace(*orchestratorURL)
-	if resolvedOrchestratorURL == "" {
+	if !appConfig.OrchestratorEnabled {
+		resolvedOrchestratorURL = ""
+	} else if resolvedOrchestratorURL == "" {
 		stateURL, ok, err := tqconfig.OrchestratorURLFromState()
 		if err == nil && ok {
 			resolvedOrchestratorURL = stateURL

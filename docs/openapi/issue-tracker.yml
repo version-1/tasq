@@ -20,6 +20,18 @@ tags:
   - name: Attachments
   - name: Summary
 paths:
+  /api/v1/capabilities:
+    get:
+      tags:
+        - Health
+      summary: Get enabled local runtime capabilities.
+      responses:
+        "200":
+          description: Runtime capability flags.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CapabilitiesResponse"
   /api/v1/health:
     get:
       tags:
@@ -833,6 +845,26 @@ components:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
   schemas:
+    CapabilitiesResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          $ref: "#/components/schemas/Capabilities"
+        meta:
+          $ref: "#/components/schemas/ApiMeta"
+    Capabilities:
+      type: object
+      required:
+        - orchestratorEnabled
+        - autoOKEnabled
+      properties:
+        orchestratorEnabled:
+          type: boolean
+        autoOKEnabled:
+          type: boolean
     ApiMeta:
       type: object
       additionalProperties: true

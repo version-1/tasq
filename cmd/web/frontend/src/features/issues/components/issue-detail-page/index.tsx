@@ -59,6 +59,7 @@ type IssueLoadState =
 export function IssueDetailPage() {
   const { t } = useTranslation();
   const layoutShellData = useOptionalLayoutShellData();
+  const agentExecutionEnabled = layoutShellData?.agentExecutionEnabled ?? true;
   const onIssueDetailTitleChange = layoutShellData?.onIssueDetailTitleChange;
   const { id } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -187,7 +188,10 @@ export function IssueDetailPage() {
   }, [issueID, t]);
 
   const loadRuns = useCallback(async () => {
-    if (!issueID) return;
+    if (!issueID || !agentExecutionEnabled) {
+      setRuns([]);
+      return;
+    }
 
     setIsLoadingRuns(true);
     setRunsError("");
@@ -202,7 +206,7 @@ export function IssueDetailPage() {
     } finally {
       setIsLoadingRuns(false);
     }
-  }, [issueID, t]);
+  }, [agentExecutionEnabled, issueID, t]);
 
   useEffect(() => {
     void loadIssue();
@@ -285,7 +289,7 @@ export function IssueDetailPage() {
   }, [activeTab, runs, selectedRunID, updateSearchParams]);
 
   useEffect(() => {
-    if (activeTab !== "conversation" || !selectedRunID) {
+    if (!agentExecutionEnabled || activeTab !== "conversation" || !selectedRunID) {
       return;
     }
     if (!issueID) {
@@ -321,7 +325,7 @@ export function IssueDetailPage() {
     return () => {
       active = false;
     };
-  }, [activeTab, issueID, runs, selectedRunID, t]);
+  }, [activeTab, agentExecutionEnabled, issueID, runs, selectedRunID, t]);
 
   async function handleStatusChange(status: IssueStatus) {
     if (issueState.kind !== "ready" || issueState.issue.status === status) return;
@@ -492,12 +496,12 @@ export function IssueDetailPage() {
           ) : null}
           {activeTab === "comments" ? (
             <div className={styles.tabPanel}>
-              <RunsSection
+              {agentExecutionEnabled ? <RunsSection
                 issueID={issueState.issue.id}
                 error={runsError}
                 isLoading={isLoadingRuns}
                 runs={runs}
-              />
+              /> : null}
               <ChangeRequestList
                 changeRequests={sortedChangeRequests}
                 error={changeRequestsError}
@@ -514,18 +518,18 @@ export function IssueDetailPage() {
                     : undefined
                 }
                 onLoadMore={() => void loadComments(nextCursor ?? undefined)}
-                onContinueWithComment={async (shortcut) => {
+                onContinueWithComment={agentExecutionEnabled ? async (shortcut) => {
                   setChangeRequestError("");
                   if (shortcut) {
                     await handleChangeRequestShortcut("continue", shortcut);
                     return;
                   }
                   setChangeRequestDialog({ variant: "continue" });
-                }}
+                } : undefined}
               />
             </div>
           ) : null}
-          {activeTab === "conversation" ? (
+          {activeTab === "conversation" && agentExecutionEnabled ? (
             <ConversationTab
               conversation={conversation}
               error={conversationError}
