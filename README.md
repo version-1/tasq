@@ -46,3 +46,5 @@ For installation directories, `TQ_HOME`, service startup, and updates, see [Inst
 ## Documentation
 
 Visit the [Tasq documentation site](https://version-1.github.io/tasq/) for the tutorial, guides, concepts, and reference.
+
+For a tracker-first, external-agent workflow package, see the bundled [TQ Factory plugin](plugins/tq-factory/README.md).
