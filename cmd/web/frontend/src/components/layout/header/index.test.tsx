@@ -125,4 +125,31 @@ describe("Header", () => {
 
     expect(onDeleteProject).toHaveBeenCalledTimes(1);
   });
+
+  it("hides the conversation tab when execution is disabled", () => {
+    render(
+      <MemoryRouter>
+        <TabsProvider
+          activeKey="details"
+          pages={[
+            { key: "details", href: "/issues/:id", titleKey: "issues.detailPage.detailTab" },
+            { key: "conversation", href: "/issues/:id?tab=conversation", titleKey: "issues.detailPage.conversationTab" },
+          ]}
+        >
+          <Header
+            activePage="issues"
+            agentExecutionEnabled={false}
+            issueCount={1}
+            language="en"
+            projectName="Tasq"
+            onAddTask={() => undefined}
+            onLanguageChange={() => undefined}
+          />
+        </TabsProvider>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("link", { name: "Details" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Conversation" })).not.toBeInTheDocument();
+  });
 });

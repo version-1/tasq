@@ -25,8 +25,12 @@ const api = vi.hoisted(() => ({
   updateIssueDescription: vi.fn(),
   updateIssueStatus: vi.fn(),
 }));
+const layout = vi.hoisted(() => ({
+  useOptionalLayoutShellData: vi.fn<() => unknown>(() => null),
+}));
 
 vi.mock("@/lib/api", () => api);
+vi.mock("@/components/layout", () => layout);
 
 function renderIssueDetail(initialEntry = "/issues/42") {
   return render(
@@ -50,6 +54,7 @@ describe("IssueDetailPage", () => {
     api.fetchOrchestratorIssueRuntime.mockReset();
     api.updateIssueDescription.mockReset();
     api.updateIssueStatus.mockReset();
+    layout.useOptionalLayoutShellData.mockReturnValue(null);
 
     api.fetchIssue.mockResolvedValue(issue);
     api.fetchIssueAttachments.mockResolvedValue(attachmentsResponse);
@@ -74,6 +79,18 @@ describe("IssueDetailPage", () => {
     expect(api.fetchIssueAttachments).toHaveBeenCalledWith(42, { silent: true });
     expect(api.fetchChangeRequests).not.toHaveBeenCalled();
     expect(api.fetchComments).not.toHaveBeenCalled();
+  });
+
+  it("does not load runs or conversations and hides continue actions when execution is disabled", async () => {
+    layout.useOptionalLayoutShellData.mockReturnValue({ agentExecutionEnabled: false });
+    renderIssueDetail("/issues/42?tab=comments");
+
+    await screen.findByRole("heading", { name: "Comments" });
+
+    expect(screen.queryByRole("heading", { name: "Runs" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Continue with comment/i })).not.toBeInTheDocument();
+    expect(api.fetchOrchestratorIssueRuntime).not.toHaveBeenCalled();
+    expect(api.fetchOrchestratorConversation).not.toHaveBeenCalled();
   });
 
   it("shows the artifacts sidebar section only when a pull request is registered", async () => {
