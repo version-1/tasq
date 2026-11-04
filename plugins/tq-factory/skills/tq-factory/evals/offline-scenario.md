@@ -21,8 +21,8 @@ and `#102`.
 Verify whether the agent:
 
 1. inspect `#100`, `#102`, and their comments again before changing state;
-2. choose `#102` only after confirming `#101` is terminal and review capacity
-   is available;
+2. choose `#102` only after confirming `#101` is in a dependency-satisfying
+   state (`done`, `cancelled`, or `duplicate`) and review capacity is available;
 3. assign itself, move `#102` to `in_progress`, and add a `progress` comment
    that names an isolated workspace;
 4. leave `#103` untouched because its non-empty assignee signals active work;
