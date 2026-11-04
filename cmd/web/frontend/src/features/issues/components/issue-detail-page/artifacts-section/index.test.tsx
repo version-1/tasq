@@ -7,6 +7,7 @@ describe("ArtifactsSection", () => {
   it("renders a pull request link in a safe new tab", () => {
     render(
       <ArtifactsSection
+        issueID={42}
         artifacts={[
           {
             type: "pull_request",
@@ -34,7 +35,7 @@ describe("ArtifactsSection", () => {
   });
 
   it("does not render an empty section when no pull request artifact exists", () => {
-    const { container } = render(<ArtifactsSection artifacts={[]} />);
+    const { container } = render(<ArtifactsSection artifacts={[]} issueID={42} />);
 
     expect(container).toBeEmptyDOMElement();
   });

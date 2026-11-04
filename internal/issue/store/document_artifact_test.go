@@ -16,7 +16,7 @@ func TestDocumentArtifactsRetainMultipleDocumentsAndCascade(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer s.Close()
-	project, err := s.CreateProject(ctx, entity.CreateProjectInput{Key: "docs", Name: "Docs"})
+	project, err := s.CreateProject(ctx, entity.CreateProjectInput{Key: "docs", Name: "Docs", Location: t.TempDir()})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -68,7 +68,7 @@ func TestDocumentArtifactRequiresMatchingIssue(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer s.Close()
-	project, _ := s.CreateProject(ctx, entity.CreateProjectInput{Key: "docs", Name: "Docs"})
+	project, _ := s.CreateProject(ctx, entity.CreateProjectInput{Key: "docs", Name: "Docs", Location: t.TempDir()})
 	first, _ := s.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "First"})
 	second, _ := s.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Second"})
 	item, err := s.CreateDocumentArtifact(ctx, first.ID, entity.CreateDocumentArtifactInput{Type: entity.DocumentArtifactTypeReferenceDocument, Title: "Reference", Body: "content"})

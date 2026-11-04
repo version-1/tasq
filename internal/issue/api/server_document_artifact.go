@@ -1,11 +1,13 @@
 package api
 
 import (
+	"bytes"
 	"database/sql"
 	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
+	"unicode/utf8"
 
 	"github.com/version-1/tasq/internal/issue/domain/entity"
 )
@@ -67,7 +69,17 @@ func (s *Server) updateDocumentArtifact(w http.ResponseWriter, r *http.Request) 
 	writeJSON(w, http.StatusOK, item)
 }
 func decodeOneJSON(w http.ResponseWriter, r *http.Request, action string, value any) bool {
-	decoder := json.NewDecoder(r.Body)
+	r.Body = http.MaxBytesReader(w, r.Body, 400000)
+	raw, err := io.ReadAll(r.Body)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, action+".invalid_request", err)
+		return false
+	}
+	if !utf8.Valid(raw) {
+		writeError(w, http.StatusBadRequest, action+".invalid_request", errors.New("request body is invalid UTF-8"))
+		return false
+	}
+	decoder := json.NewDecoder(bytes.NewReader(raw))
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(value); err != nil {
 		writeError(w, http.StatusBadRequest, action+".invalid_request", err)
