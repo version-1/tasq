@@ -122,9 +122,15 @@ func withMigrationTargets(ctx context.Context, fn func(context.Context, migrateT
 	if err != nil {
 		return nil, err
 	}
+	config, err := tqconfig.Load()
+	if err != nil {
+		return nil, err
+	}
 	targets := []migrateTarget{
 		{Name: "issue-tracker", Path: tqconfig.IssueTrackerDBPath(home), Dir: "issue-tracker"},
-		{Name: "orchestrator", Path: tqconfig.OrchestratorDBPath(home), Dir: "orchestrator"},
+	}
+	if config.OrchestratorEnabled {
+		targets = append(targets, migrateTarget{Name: "orchestrator", Path: tqconfig.OrchestratorDBPath(home), Dir: "orchestrator"})
 	}
 	results := make([]migrateResult, 0, len(targets))
 	for _, target := range targets {
@@ -149,9 +155,9 @@ func withMigrationTargets(ctx context.Context, fn func(context.Context, migrateT
 	return results, nil
 }
 
-func checkMigrationTargetsNoPending(ctx context.Context) error {
+func checkMigrationTargetsNoPending(ctx context.Context, orchestratorEnabled bool) error {
 	var pending []string
-	_, err := withMigrationTargets(ctx, func(ctx context.Context, target migrateTarget, manager migration.Manager) (migrateResult, error) {
+	_, err := withMigrationTargetsWithOrchestrator(ctx, orchestratorEnabled, func(ctx context.Context, target migrateTarget, manager migration.Manager) (migrateResult, error) {
 		migrations, err := manager.Pending(ctx)
 		if err != nil {
 			return migrateResult{}, err
@@ -168,6 +174,38 @@ func checkMigrationTargetsNoPending(ctx context.Context) error {
 		return fmt.Errorf("pending migrations: %s; run `tq migrate` before starting services", strings.Join(pending, ", "))
 	}
 	return nil
+}
+
+func withMigrationTargetsWithOrchestrator(ctx context.Context, orchestratorEnabled bool, fn func(context.Context, migrateTarget, migration.Manager) (migrateResult, error)) ([]migrateResult, error) {
+	home, err := tqconfig.EnsureHome()
+	if err != nil {
+		return nil, err
+	}
+	targets := []migrateTarget{{Name: "issue-tracker", Path: tqconfig.IssueTrackerDBPath(home), Dir: "issue-tracker"}}
+	if orchestratorEnabled {
+		targets = append(targets, migrateTarget{Name: "orchestrator", Path: tqconfig.OrchestratorDBPath(home), Dir: "orchestrator"})
+	}
+	results := make([]migrateResult, 0, len(targets))
+	for _, target := range targets {
+		if err := os.MkdirAll(filepath.Dir(target.Path), 0o755); err != nil {
+			return nil, fmt.Errorf("create database directory: %w", err)
+		}
+		db, err := sql.Open("sqlite", target.Path)
+		if err != nil {
+			return nil, fmt.Errorf("open %s sqlite: %w", target.Name, err)
+		}
+		db.SetMaxOpenConns(1)
+		result, runErr := fn(ctx, target, migration.NewManager(db, migrations.Files, target.Dir))
+		closeErr := db.Close()
+		if runErr != nil {
+			return nil, fmt.Errorf("%s migrations: %w", target.Name, runErr)
+		}
+		if closeErr != nil {
+			return nil, fmt.Errorf("close %s sqlite: %w", target.Name, closeErr)
+		}
+		results = append(results, result)
+	}
+	return results, nil
 }
 
 func checkOrchestratorMigrationTargetNoPending(ctx context.Context, home string) error {

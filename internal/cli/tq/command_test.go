@@ -966,8 +966,29 @@ func TestServiceMigrationPreflightPassesAfterMigrate(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("migrate code=%d stdout=%s stderr=%s", code, stdout, stderr)
 	}
-	if err := checkMigrationTargetsNoPending(context.Background()); err != nil {
+	if err := checkMigrationTargetsNoPending(context.Background(), true); err != nil {
 		t.Fatalf("pre-flight after migrate: %v", err)
+	}
+}
+
+func TestTrackerOnlyMigrateAndPreflightDoNotCreateOrchestratorDB(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv(tqconfig.EnvHome, home)
+	if err := os.MkdirAll(filepath.Dir(tqconfig.ConfigPath(home)), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(tqconfig.ConfigPath(home), []byte("orchestrator_enabled: false\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	stdout, stderr, code := runCLI(t, []string{"migrate"})
+	if code != 0 {
+		t.Fatalf("migrate code=%d stdout=%s stderr=%s", code, stdout, stderr)
+	}
+	if err := checkMigrationTargetsNoPending(context.Background(), false); err != nil {
+		t.Fatalf("tracker-only preflight: %v", err)
+	}
+	if _, err := os.Stat(tqconfig.OrchestratorDBPath(home)); !os.IsNotExist(err) {
+		t.Fatalf("orchestrator DB exists or stat failed: %v", err)
 	}
 }
 

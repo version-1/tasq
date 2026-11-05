@@ -318,3 +318,14 @@ contract is unchanged. HTTP workflow coverage lives in `src/mocks/auto-ok.test.t
 
 [Auto OK in the card dropdown](screenshots/auto-ok-mock-states.jpg) ·
 [Dropdown after re-enabling and accepting its first reply](screenshots/auto-ok-mock-resumed.jpg)
+
+## Tracker-only capability mock
+
+The mock server exposes `GET /tracker/api/v1/capabilities` with orchestration
+and Auto OK enabled. A tracker-only server returns both fields as `false`.
+The layout fails closed until this capability is known: it keeps issue CRUD,
+comments, change requests, and explicit status updates available, while hiding
+Auto OK, thread-copy, runs, and conversation controls and making no
+orchestrator HTTP requests. Browser tests can call
+`setMockCapabilities({ orchestratorEnabled: false, autoOKEnabled: false })`
+from `src/mocks/handlers` before rendering.

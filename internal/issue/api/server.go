@@ -12,33 +12,58 @@ type Server struct {
 	store                 *store.Store
 	attachmentStorage     *store.AttachmentStorage
 	projectRunDataDeleter projectRunDataDeleter
+	projectDeletionGuard  projectDeletionGuard
+	orchestratorEnabled   bool
 }
 
 type projectRunDataDeleter interface {
 	DeleteProjectIssueData(ctx context.Context, issueIDs []int64) error
 }
 
+type projectDeletionGuard interface {
+	CheckProjectDeletion(ctx context.Context) error
+}
+
+type projectDeletionGuardFunc func(ctx context.Context) error
+
+func (f projectDeletionGuardFunc) CheckProjectDeletion(ctx context.Context) error { return f(ctx) }
+
+// SetProjectDeletionGuard blocks project deletion when external run history
+// cannot be safely inspected without opening the legacy orchestrator database.
+func (s *Server) SetProjectDeletionGuard(check func(context.Context) error) {
+	if check == nil {
+		s.projectDeletionGuard = nil
+		return
+	}
+	s.projectDeletionGuard = projectDeletionGuardFunc(check)
+}
+
 func NewServer(issueStore *store.Store) *Server {
-	return &Server{store: issueStore}
+	return &Server{store: issueStore, orchestratorEnabled: true}
 }
 
 func NewServerWithAttachmentStorage(issueStore *store.Store, attachmentStorage *store.AttachmentStorage) *Server {
 	issueStore.SetAttachmentStorage(attachmentStorage)
-	return &Server{store: issueStore, attachmentStorage: attachmentStorage}
+	return &Server{store: issueStore, attachmentStorage: attachmentStorage, orchestratorEnabled: true}
+}
+
+func (s *Server) SetOrchestratorEnabled(enabled bool) {
+	s.orchestratorEnabled = enabled
 }
 
 func NewServerWithOrchestratorStore(issueStore *store.Store, orchestratorStore *runstore.Store) *Server {
-	return &Server{store: issueStore, projectRunDataDeleter: orchestratorStore}
+	return &Server{store: issueStore, projectRunDataDeleter: orchestratorStore, orchestratorEnabled: true}
 }
 
 func NewServerWithStores(issueStore *store.Store, attachmentStorage *store.AttachmentStorage, orchestratorStore *runstore.Store) *Server {
 	issueStore.SetAttachmentStorage(attachmentStorage)
-	return &Server{store: issueStore, attachmentStorage: attachmentStorage, projectRunDataDeleter: orchestratorStore}
+	return &Server{store: issueStore, attachmentStorage: attachmentStorage, projectRunDataDeleter: orchestratorStore, orchestratorEnabled: true}
 }
 
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/v1/health", s.health)
+	mux.HandleFunc("GET /api/v1/capabilities", s.capabilities)
 	mux.HandleFunc("GET /api/v1/summary", s.summary)
 	mux.HandleFunc("GET /api/v1/projects", s.projects)
 	mux.HandleFunc("POST /api/v1/projects", s.createProject)
@@ -71,6 +96,10 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/v1/attachments/{id}/content", s.attachmentContent)
 	mux.HandleFunc("DELETE /api/v1/attachments/{id}", s.deleteAttachment)
 	return withCORS(withLogging(mux))
+}
+
+func (s *Server) capabilities(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, http.StatusOK, map[string]bool{"orchestratorEnabled": s.orchestratorEnabled, "autoOKEnabled": s.orchestratorEnabled})
 }
 
 func (s *Server) health(w http.ResponseWriter, r *http.Request) {

@@ -15,6 +15,7 @@ export function IssuesView({
   onResolveIssue,
   onStatusChange,
   onAutoOKChange,
+  agentExecutionEnabled = true,
 }: {
   showFilterSortActions?: boolean;
   summary: Summary;
@@ -24,6 +25,7 @@ export function IssuesView({
   onResolveIssue?: ResolveIssueHandler;
   onStatusChange: StatusChangeHandler;
   onAutoOKChange?: AutoOKChangeHandler;
+  agentExecutionEnabled?: boolean;
 }) {
   return (
     <div className={styles.issuesLayout}>
@@ -36,6 +38,7 @@ export function IssuesView({
         onResolveIssue={onResolveIssue}
         onStatusChange={onStatusChange}
         onAutoOKChange={onAutoOKChange}
+        agentExecutionEnabled={agentExecutionEnabled}
       />
     </div>
   );

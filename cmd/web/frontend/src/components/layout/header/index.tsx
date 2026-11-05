@@ -24,6 +24,7 @@ type HeaderProps = {
   canDeleteProject?: boolean;
   showViewNavigation?: boolean;
   showAddTaskButton?: boolean;
+  agentExecutionEnabled?: boolean;
 };
 
 export function Header({
@@ -37,6 +38,7 @@ export function Header({
   canDeleteProject = false,
   showViewNavigation = true,
   showAddTaskButton = true,
+  agentExecutionEnabled = true,
 }: HeaderProps) {
   const { t } = useTranslation();
   const tabs = useTabs();
@@ -220,10 +222,10 @@ export function Header({
         ) : null}
       </div>
 
-      {showViewNavigation && tabs.pages.length > 0 ? (
+      {showViewNavigation && visibleTabPages(tabs.pages, agentExecutionEnabled).length > 0 ? (
         <div className={styles.viewRow}>
           <nav className={styles.tabs} aria-label={t("header.views")}>
-            {tabs.pages.map((page) => (
+            {visibleTabPages(tabs.pages, agentExecutionEnabled).map((page) => (
               <Link
                 key={page.key}
                 className={
@@ -241,6 +243,10 @@ export function Header({
       ) : null}
     </header>
   );
+}
+
+function visibleTabPages<T extends { key: string }>(pages: readonly T[], agentExecutionEnabled: boolean): readonly T[] {
+  return agentExecutionEnabled ? pages : pages.filter((page) => page.key !== "conversation");
 }
 
 function pageHeadingKey(page: Exclude<HeaderPage, "issues">): string {

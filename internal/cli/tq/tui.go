@@ -55,8 +55,19 @@ func (a app) tui(ctx context.Context, args []string, cfg config) error {
 	if !terminalCheck(a.stdin) || !terminalCheck(a.stdout) {
 		return usageError("tq tui requires an interactive TTY")
 	}
+	appConfig, err := tqconfig.Load()
+	if err != nil {
+		return err
+	}
+	capabilities, err := a.client.capabilities(ctx)
+	if err != nil {
+		return fmt.Errorf("load tracker capabilities: %w", err)
+	}
+	executionEnabled := appConfig.OrchestratorEnabled && capabilities.OrchestratorEnabled
 	resolvedOrchestratorURL := strings.TrimSpace(*orchestratorURL)
-	if resolvedOrchestratorURL == "" {
+	if !executionEnabled {
+		resolvedOrchestratorURL = ""
+	} else if resolvedOrchestratorURL == "" {
 		stateURL, ok, err := tqconfig.OrchestratorURLFromState()
 		if err == nil && ok {
 			resolvedOrchestratorURL = stateURL
@@ -84,10 +95,11 @@ const (
 var tabNames = []string{"Overview", "Comments", "Artifacts", "Run"}
 
 type tuiModel struct {
-	ctx          context.Context
-	tracker      *apiClient
-	orchestrator *orchestratorClient
-	openURL      func(string) error
+	ctx              context.Context
+	tracker          *apiClient
+	orchestrator     *orchestratorClient
+	executionEnabled bool
+	openURL          func(string) error
 
 	width, height     int
 	issues            []entity.Issue
@@ -160,7 +172,7 @@ func newTUIModel(ctx context.Context, tracker *apiClient, orchestrator *orchestr
 	input.Prompt = "/ "
 	input.Placeholder = "search issues"
 	return tuiModel{
-		ctx: ctx, tracker: tracker, orchestrator: orchestrator, openURL: opener,
+		ctx: ctx, tracker: tracker, orchestrator: orchestrator, executionEnabled: orchestrator != nil, openURL: opener,
 		states: defaultTUIStates(), loading: true, replaceList: true, searchInput: input, viewport: viewport.New(80, 20),
 	}
 }
@@ -231,8 +243,7 @@ func (m tuiModel) loadDetail() tea.Cmd {
 			return detailResultMsg{generation: generation, request: request, issueID: issueID, err: err}
 		}
 		result := detailResultMsg{generation: generation, request: request, issueID: issueID, issue: issue, comments: comments}
-		if m.orchestrator == nil {
-			result.runtimeErr = errors.New("orchestrator URL is not configured")
+		if !m.executionEnabled || m.orchestrator == nil {
 			return result
 		}
 		result.runtime, result.runtimeErr = m.orchestrator.issue(ctx, issueID)
@@ -399,7 +410,7 @@ func (m tuiModel) updateKey(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "f":
 		m.filter = !m.filter
 	case "tab":
-		m.tab = (m.tab + 1) % tuiTab(len(tabNames))
+		m.tab = (m.tab + 1) % tuiTab(m.tabCount())
 		m.refreshViewport()
 	case "pgup":
 		if m.tab == tabComments && m.commentCursor != nil && !m.commentsLoading {
@@ -722,8 +733,9 @@ func (m tuiModel) listView() string {
 }
 
 func (m tuiModel) detailView() string {
-	tabs := make([]string, len(tabNames))
-	for i, name := range tabNames {
+	names := m.visibleTabNames()
+	tabs := make([]string, len(names))
+	for i, name := range names {
 		if tuiTab(i) == m.tab {
 			tabs[i] = "[" + name + "]"
 		} else {
@@ -732,6 +744,15 @@ func (m tuiModel) detailView() string {
 	}
 	return strings.Join(tabs, "  ") + "\n" + m.viewport.View()
 }
+
+func (m tuiModel) visibleTabNames() []string {
+	if m.executionEnabled {
+		return tabNames
+	}
+	return tabNames[:tabRun]
+}
+
+func (m tuiModel) tabCount() int { return len(m.visibleTabNames()) }
 
 func (m tuiModel) detailContent() string {
 	if m.detail == nil {

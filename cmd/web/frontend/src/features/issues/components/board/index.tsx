@@ -27,6 +27,7 @@ export function IssueBoard({
   onResolveIssue,
   onStatusChange,
   onAutoOKChange,
+  agentExecutionEnabled = true,
 }: {
   showFilterSortActions?: boolean;
   summary: Summary;
@@ -36,6 +37,7 @@ export function IssueBoard({
   onResolveIssue?: ResolveIssueHandler;
   onStatusChange: StatusChangeHandler;
   onAutoOKChange?: AutoOKChangeHandler;
+  agentExecutionEnabled?: boolean;
 }) {
   const { t } = useTranslation();
   const issues = summary.columns.flatMap((column) => column.issues);
@@ -94,6 +96,7 @@ export function IssueBoard({
                       onResolveIssue={onResolveIssue}
                       onStatusChange={onStatusChange}
                       onAutoOKChange={onAutoOKChange}
+                      agentExecutionEnabled={agentExecutionEnabled}
                     />
                   ))
                 )}

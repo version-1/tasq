@@ -1,5 +1,6 @@
 import {
   getApiV1Attachments,
+  getApiV1Capabilities,
   deleteApiV1ProjectsId,
   getApiV1Issues,
   getApiV1IssuesId,
@@ -14,6 +15,7 @@ import {
   postApiV1Issues,
   postApiV1Projects,
   type AttachmentListResponse,
+  type Capabilities,
   type ChangeRequest,
   type ChangeRequestListResponse,
   type CommentListResponse,
@@ -77,6 +79,10 @@ export class ApiRequestError extends Error {
 
 export function fetchSummary(options?: ApiRequestOptions): Promise<Summary> {
   return unwrapResponse(getApiV1Summary(noStore), options);
+}
+
+export function fetchCapabilities(options?: ApiRequestOptions): Promise<Capabilities> {
+  return unwrapResponse(getApiV1Capabilities(noStore), options);
 }
 
 export function createIssue(input: CreateIssueInput, options?: ApiRequestOptions): Promise<Issue> {

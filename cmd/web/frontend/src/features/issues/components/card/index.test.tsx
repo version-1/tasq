@@ -175,6 +175,17 @@ describe("IssueCard", () => {
     expect(onAutoOKChange).toHaveBeenCalledWith(24, true);
   });
 
+  it("does not request agent runtime or render agent controls when disabled", async () => {
+    const user = userEvent.setup();
+    renderCard({ agentExecutionEnabled: false });
+
+    await user.click(screen.getByRole("button", { name: "Issue actions for Wire issue board to generated client" }));
+
+    expect(screen.queryByRole("menuitem", { name: "Copy thread ID" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("menuitemcheckbox", { name: "Auto OK for issue #24" })).not.toBeInTheDocument();
+    expect(api.fetchOrchestratorIssueRuntime).not.toHaveBeenCalled();
+  });
+
   it.each([
     ["backlog", "Backlog", "lucide-inbox"],
     ["blocked", "Blocked", "lucide-circle-alert"],

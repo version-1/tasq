@@ -268,3 +268,7 @@ PATCH で `blocked` にすると再現できます。単体開発では Codex �
 
 [プルダウン内の Auto OK 設定](screenshots/auto-ok-mock-states.jpg) ·
 [再有効化後の最初の返信が成功したプルダウン](screenshots/auto-ok-mock-resumed.jpg)
+
+## tracker-only capability モック
+
+モックサーバーは `GET /tracker/api/v1/capabilities` で、orchestration と Auto OK が有効であることを返します。tracker-only サーバーでは、両方が `false` になります。レイアウトは capability の取得まで安全側に倒し、課題 CRUD、コメント、変更要求、明示的な状態更新は利用可能なまま、Auto OK、thread のコピー、runs、conversation の操作を隠し、orchestrator への HTTP リクエストを発行しません。ブラウザテストでは、描画前に `src/mocks/handlers` の `setMockCapabilities({ orchestratorEnabled: false, autoOKEnabled: false })` を呼び出せます。

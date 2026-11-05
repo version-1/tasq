@@ -108,6 +108,52 @@ func TestTUIReadClientsSendOnlyGET(t *testing.T) {
 	}
 }
 
+func TestTUITrackerCapabilitiesDisableRunPollingAndTab(t *testing.T) {
+	requests := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/api/v1/capabilities":
+			requests++
+			_, _ = w.Write([]byte(`{"data":{"orchestratorEnabled":false},"meta":{}}`))
+		case "/api/v1/issues/42":
+			_, _ = w.Write([]byte(`{"data":{"id":42,"projectId":1,"projectKey":"tasq","title":"TUI","description":"","status":"ready","priority":"normal","assignee":"","dependency_ids":[],"artifacts":[],"createdAt":"2026-01-01T00:00:00Z","updatedAt":"2026-01-01T00:00:00Z"},"meta":{}}`))
+		case "/api/v1/issues/42/comments":
+			_, _ = w.Write([]byte(`{"data":[],"meta":{"nextCursor":null}}`))
+		case "/api/v1/issue-42":
+			t.Errorf("orchestrator polling occurred while disabled")
+			http.Error(w, "unexpected", http.StatusInternalServerError)
+		default:
+			t.Errorf("unexpected request %s", r.URL.Path)
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+	tracker, err := newAPIClient(server.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	capabilities, err := tracker.capabilities(context.Background())
+	if err != nil || capabilities.OrchestratorEnabled {
+		t.Fatalf("capabilities=%+v err=%v", capabilities, err)
+	}
+	if requests != 1 {
+		t.Fatalf("requests=%d, want 1", requests)
+	}
+
+	m := newTUIModel(context.Background(), tracker, &orchestratorClient{baseURL: server.URL, httpClient: server.Client()}, func(string) error { return nil })
+	m.executionEnabled = false
+	m.issues = []entity.Issue{{ID: 42}}
+	cmd := m.loadDetail()
+	msg := cmd().(detailResultMsg)
+	if msg.runtimeErr != nil || msg.runtimeAbsent {
+		t.Fatalf("disabled run inspection = %+v", msg)
+	}
+	if got := m.detailView(); strings.Contains(got, "Run") {
+		t.Fatalf("disabled tabs = %q", got)
+	}
+}
+
 func TestTUIModelRejectsStaleResultsAndPreservesSelection(t *testing.T) {
 	now := time.Now()
 	m := newTUIModel(context.Background(), nil, nil, func(string) error { return nil })
