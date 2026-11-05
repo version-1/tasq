@@ -1021,7 +1021,7 @@ export const patchApiV1ProjectsId = async (id: number,
 
 
 /**
- * Deletes the project and its issue-tracker descendants, including issues, issue dependencies, comments, attachment records and files under the tracker home, and stored project workflow overrides. Also deletes orchestrator runtime descendants for the owned issues, including runs, runner events, workspace metadata, and workspace setup failures. Returns 409 with `projects.delete.running_runs` when any owned issue has a running orchestrator run. Orchestrator runtime records are deleted before issue-tracker records so partial failures can be retried. The project location directory and worktrees are not modified.
+ * Deletes the project and its issue-tracker descendants, including issues, issue dependencies, comments, attachment records and files under the tracker home, and stored project workflow overrides. Also deletes orchestrator runtime descendants for the owned issues, including runs, runner events, workspace metadata, and workspace setup failures. Returns 409 with `projects.delete.running_runs` when any owned issue has a running orchestrator run. In tracker-only mode, returns 409 with `projects.delete.legacy_history_unavailable` when legacy orchestrator history exists or cannot be safely inspected; re-enable orchestration and complete verified legacy cleanup before retrying. Orchestrator runtime records are deleted before issue-tracker records so partial failures can be retried. The project location directory and worktrees are not modified.
  * @summary Delete a project.
  */
 export type deleteApiV1ProjectsIdResponse204 = {
@@ -1584,6 +1584,7 @@ export const getApiV1IssuesId = async (id: number, options?: RequestInit): Promi
 
 
 /**
+ * In tracker-only mode, enabling `autoOk` returns 409 with `issues.auto_ok.unavailable`. Disabling an existing Auto OK setting and all non-Auto-OK issue updates remain available.
  * @summary Update an issue.
  */
 export type patchApiV1IssuesIdResponse200 = {
@@ -1601,10 +1602,15 @@ export type patchApiV1IssuesIdResponse404 = {
   status: 404
 }
 
+export type patchApiV1IssuesIdResponse409 = {
+  data: ErrorResponse
+  status: 409
+}
+
 export type patchApiV1IssuesIdResponseSuccess = (patchApiV1IssuesIdResponse200) & {
   headers: Headers;
 };
-export type patchApiV1IssuesIdResponseError = (patchApiV1IssuesIdResponse400 | patchApiV1IssuesIdResponse404) & {
+export type patchApiV1IssuesIdResponseError = (patchApiV1IssuesIdResponse400 | patchApiV1IssuesIdResponse404 | patchApiV1IssuesIdResponse409) & {
   headers: Headers;
 };
 
@@ -1640,7 +1646,7 @@ export const patchApiV1IssuesId = async (id: number,
 
 
 /**
- * The orchestrator first claims a matching ready reservation immediately before turn/start. A later acknowledgement completes the claimed generation atomically with history. Duplicate or stale generations leave the issue unchanged.
+ * The orchestrator first claims a matching ready reservation immediately before turn/start. A later acknowledgement completes the claimed generation atomically with history. Duplicate or stale generations leave the issue unchanged. In tracker-only mode this operation returns 409 with `issues.auto_ok.unavailable`.
  * @summary Claim, acknowledge, or report failure for a pending Auto OK reply.
  */
 export type postApiV1IssuesIdAutoOkResultResponse200 = {
@@ -1658,10 +1664,15 @@ export type postApiV1IssuesIdAutoOkResultResponse404 = {
   status: 404
 }
 
+export type postApiV1IssuesIdAutoOkResultResponse409 = {
+  data: ErrorResponse
+  status: 409
+}
+
 export type postApiV1IssuesIdAutoOkResultResponseSuccess = (postApiV1IssuesIdAutoOkResultResponse200) & {
   headers: Headers;
 };
-export type postApiV1IssuesIdAutoOkResultResponseError = (postApiV1IssuesIdAutoOkResultResponse400 | postApiV1IssuesIdAutoOkResultResponse404) & {
+export type postApiV1IssuesIdAutoOkResultResponseError = (postApiV1IssuesIdAutoOkResultResponse400 | postApiV1IssuesIdAutoOkResultResponse404 | postApiV1IssuesIdAutoOkResultResponse409) & {
   headers: Headers;
 };
 
