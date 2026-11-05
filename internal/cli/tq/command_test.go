@@ -1298,6 +1298,87 @@ func TestArtifactCommandsAgainstIssueTrackerAPI(t *testing.T) {
 	}
 }
 
+func TestDocumentArtifactCommandsPreserveMarkdownAndRejectInvalidUTF8(t *testing.T) {
+	ctx := context.Background()
+	issueStore, err := store.OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer issueStore.Close()
+	project, err := issueStore.CreateProject(ctx, entity.CreateProjectInput{Key: "DOCCLI", Name: "Documents", Location: t.TempDir()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	issue, err := issueStore.CreateIssue(ctx, entity.CreateIssueInput{ProjectID: project.ID, Title: "Document through CLI"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	server := httptest.NewServer(api.NewServer(issueStore).Handler())
+	defer server.Close()
+
+	markdown := "# Work report\n\nCompleted.\n"
+	stdout, stderr, code := runCLIWithStdin(t, []string{
+		"--api-url", server.URL,
+		"artifact", "document", "create", stringID(issue.ID),
+		"--type", "work_report", "--title", "Report", "--file", "-",
+	}, markdown)
+	if code != 0 || stderr != "" {
+		t.Fatalf("create code=%d stdout=%q stderr=%q", code, stdout, stderr)
+	}
+	items, err := issueStore.DocumentArtifacts(ctx, issue.ID)
+	if err != nil || len(items) != 1 {
+		t.Fatalf("documents=%+v err=%v", items, err)
+	}
+
+	stdout, stderr, code = runCLI(t, []string{
+		"--api-url", server.URL,
+		"artifact", "document", "get", stringID(issue.ID), items[0].ID, "--raw",
+	})
+	if code != 0 || stderr != "" || stdout != markdown {
+		t.Fatalf("raw get code=%d stdout=%q stderr=%q", code, stdout, stderr)
+	}
+	fromFile := "# Revised from file\n\nTrailing newline remains.\n"
+	validFile := filepath.Join(t.TempDir(), "report.md")
+	if err := os.WriteFile(validFile, []byte(fromFile), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	_, stderr, code = runCLI(t, []string{
+		"--api-url", server.URL,
+		"artifact", "document", "update", stringID(issue.ID), items[0].ID, "--file", validFile,
+	})
+	if code != 0 || stderr != "" {
+		t.Fatalf("update from file code=%d stderr=%q", code, stderr)
+	}
+	stdout, stderr, code = runCLI(t, []string{
+		"--api-url", server.URL,
+		"artifact", "document", "get", stringID(issue.ID), items[0].ID, "--raw",
+	})
+	if code != 0 || stderr != "" || stdout != fromFile {
+		t.Fatalf("raw file get code=%d stdout=%q stderr=%q", code, stdout, stderr)
+	}
+
+	invalidFile := filepath.Join(t.TempDir(), "invalid.md")
+	if err := os.WriteFile(invalidFile, []byte{'a', 0xff}, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	_, stderr, code = runCLI(t, []string{
+		"--api-url", server.URL,
+		"artifact", "document", "create", stringID(issue.ID),
+		"--type", "reference_document", "--title", "Invalid file", "--file", invalidFile,
+	})
+	if code != 2 || !strings.Contains(stderr, "invalid UTF-8") {
+		t.Fatalf("invalid file code=%d stderr=%q", code, stderr)
+	}
+	_, stderr, code = runCLIWithStdin(t, []string{
+		"--api-url", server.URL,
+		"artifact", "document", "create", stringID(issue.ID),
+		"--type", "reference_document", "--title", "Invalid stdin", "--file", "-",
+	}, string([]byte{'a', 0xff}))
+	if code != 2 || !strings.Contains(stderr, "invalid UTF-8") {
+		t.Fatalf("invalid stdin code=%d stderr=%q", code, stderr)
+	}
+}
+
 func TestIssueCreateWithAttachmentAgainstIssueTrackerAPI(t *testing.T) {
 	ctx := context.Background()
 	issueStore, err := store.OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))

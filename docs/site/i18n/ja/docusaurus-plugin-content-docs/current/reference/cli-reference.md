@@ -57,10 +57,16 @@ CLI がアップロード済みの添付ファイルを削除します。
 | --- | --- |
 | `tq artifact set <issue-id> --type pull_request <url>` | 課題のプルリクエスト URL を作成または置き換えます。 |
 | `tq artifact delete <issue-id> --type pull_request` | 課題のプルリクエスト URL を削除します。 |
+| `tq artifact document create <issue-id> --type <type> --title <title> --file <path\|->` | 参照文書または作業レポートを保存します。 |
+| `tq artifact document list <issue-id>` | 課題の Document メタデータを一覧表示します。 |
+| `tq artifact document get <issue-id> <document-id> [--raw]` | Document を 1 件取得します。 |
+| `tq artifact document update <issue-id> <document-id> [--title <title>] [--file <path\|->]` | Document のタイトルや本文を更新します。 |
 
-どちらのコマンドも正の課題 ID と `--type` を必要とし、グローバルな text / JSON 出力モードに対応します。
+URL Artifact 用の `artifact set` と `artifact delete` は、正の課題 ID と `--type` を必要とし、グローバルな text / JSON 出力モードに対応します。
 
-現在サポートする種別は `pull_request` だけです。URL はホストを含み userinfo を持たない絶対 `http` または `https` URL で、UTF-8 で 4,096 バイト以下でなければなりません。同じ課題と種別に対して `artifact set` を繰り返すと URL を置き換えます。
+これらの URL Artifact コマンドで現在サポートする種別は `pull_request` だけです。URL はホストを含み userinfo を持たない絶対 `http` または `https` URL で、UTF-8 で 4,096 バイト以下でなければなりません。同じ課題と種別に対して `artifact set` を繰り返すと URL を置き換えます。
+
+Document の種別は `reference_document` と `work_report` です。Document は pull request URL と別に保持されるため、課題はそのリンクを維持したまま、各種別の Document を複数持てます。`--file -` は標準入力から UTF-8 Markdown を読み込みます。ファイルと標準入力は 100,000 bytes 以下です。`list` は本文を返しません。通常の `get` はメタデータを含み、`get --raw` は末尾の改行を含む保存済み Markdown 本文を byte-for-byte で出力します。初期の Document API には delete command はありません。
 
 ## コメントコマンド
 

@@ -180,6 +180,114 @@ func TestIssueArtifactPutRejectsInvalidBodies(t *testing.T) {
 	}
 }
 
+func TestDocumentArtifactRoutesScopeDocumentsAndPreservePullRequest(t *testing.T) {
+	t.Parallel()
+	server := newTestServer(t)
+	firstIssue := createIssue(t, server, "First documents", entity.StatusReady)
+	secondIssue := createIssue(t, server, "Second documents", entity.StatusReady)
+	ctx := context.Background()
+	if _, err := server.store.UpsertArtifact(ctx, firstIssue.ID, entity.ArtifactTypePullRequest, entity.UpsertArtifactInput{DataValue: "https://example.com/pr/1"}); err != nil {
+		t.Fatal(err)
+	}
+	create := func(documentType, title, body string) entity.DocumentArtifact {
+		t.Helper()
+		requestBody, err := json.Marshal(entity.CreateDocumentArtifactInput{Type: entity.DocumentArtifactType(documentType), Title: title, Body: body})
+		if err != nil {
+			t.Fatal(err)
+		}
+		rec := httptest.NewRecorder()
+		server.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/api/v1/issues/"+stringID(firstIssue.ID)+"/artifacts/documents", bytes.NewReader(requestBody)))
+		if rec.Code != http.StatusCreated {
+			t.Fatalf("create status=%d body=%s", rec.Code, rec.Body.String())
+		}
+		return decodeData[entity.DocumentArtifact](t, rec)
+	}
+	first := create(string(entity.DocumentArtifactTypeWorkReport), "Initial report", "# first")
+	second := create(string(entity.DocumentArtifactTypeWorkReport), "Follow-up report", "# second")
+	if first.ID == second.ID {
+		t.Fatal("distinct documents received same ID")
+	}
+
+	listRec := httptest.NewRecorder()
+	server.Handler().ServeHTTP(listRec, httptest.NewRequest(http.MethodGet, "/api/v1/issues/"+stringID(firstIssue.ID)+"/artifacts/documents", nil))
+	if listRec.Code != http.StatusOK {
+		t.Fatalf("list status=%d body=%s", listRec.Code, listRec.Body.String())
+	}
+	summaries := decodeData[[]entity.DocumentArtifact](t, listRec)
+	if len(summaries) != 2 || summaries[0].Body != "" || summaries[1].Body != "" {
+		t.Fatalf("summaries=%+v", summaries)
+	}
+
+	foreignGetRec := httptest.NewRecorder()
+	server.Handler().ServeHTTP(foreignGetRec, httptest.NewRequest(http.MethodGet, "/api/v1/issues/"+stringID(secondIssue.ID)+"/artifacts/documents/"+first.ID, nil))
+	if foreignGetRec.Code != http.StatusNotFound {
+		t.Fatalf("foreign get status=%d body=%s", foreignGetRec.Code, foreignGetRec.Body.String())
+	}
+	foreignPatchRec := httptest.NewRecorder()
+	server.Handler().ServeHTTP(foreignPatchRec, httptest.NewRequest(http.MethodPatch, "/api/v1/issues/"+stringID(secondIssue.ID)+"/artifacts/documents/"+first.ID, strings.NewReader(`{"title":"wrong issue"}`)))
+	if foreignPatchRec.Code != http.StatusNotFound {
+		t.Fatalf("foreign patch status=%d body=%s", foreignPatchRec.Code, foreignPatchRec.Body.String())
+	}
+
+	updatedTitle := "Revised report"
+	patchBody, err := json.Marshal(entity.UpdateDocumentArtifactInput{Title: &updatedTitle})
+	if err != nil {
+		t.Fatal(err)
+	}
+	patchRec := httptest.NewRecorder()
+	server.Handler().ServeHTTP(patchRec, httptest.NewRequest(http.MethodPatch, "/api/v1/issues/"+stringID(firstIssue.ID)+"/artifacts/documents/"+first.ID, bytes.NewReader(patchBody)))
+	if patchRec.Code != http.StatusOK {
+		t.Fatalf("patch status=%d body=%s", patchRec.Code, patchRec.Body.String())
+	}
+	updated := decodeData[entity.DocumentArtifact](t, patchRec)
+	if updated.Title != updatedTitle || updated.Body != "# first" {
+		t.Fatalf("updated=%+v", updated)
+	}
+	issue, err := server.store.Issue(ctx, firstIssue.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(issue.Artifacts) != 1 || issue.Artifacts[0].DataValue != "https://example.com/pr/1" {
+		t.Fatalf("pull request artifact=%+v", issue.Artifacts)
+	}
+}
+
+func TestDocumentArtifactRoutesRejectInvalidUTF8AndAcceptEscapedMaximumBody(t *testing.T) {
+	t.Parallel()
+	server := newTestServer(t)
+	issue := createIssue(t, server, "Document body validation", entity.StatusReady)
+	path := "/api/v1/issues/" + stringID(issue.ID) + "/artifacts/documents"
+
+	invalidUTF8 := []byte(`{"type":"work_report","title":"Report","body":"`)
+	invalidUTF8 = append(invalidUTF8, 0xff)
+	invalidUTF8 = append(invalidUTF8, []byte(`"}`)...)
+	invalidRec := httptest.NewRecorder()
+	server.Handler().ServeHTTP(invalidRec, httptest.NewRequest(http.MethodPost, path, bytes.NewReader(invalidUTF8)))
+	if invalidRec.Code != http.StatusBadRequest {
+		t.Fatalf("invalid UTF-8 status=%d body=%s", invalidRec.Code, invalidRec.Body.String())
+	}
+
+	// A NUL must be escaped as six JSON bytes. This is a legal 100,000-byte
+	// UTF-8 body whose envelope exceeds the previous 400,000-byte reader cap.
+	body := strings.Repeat("\x00", 100000)
+	requestBody, err := json.Marshal(entity.CreateDocumentArtifactInput{Type: entity.DocumentArtifactTypeWorkReport, Title: "Escaped maximum", Body: body})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(requestBody) <= 400000 {
+		t.Fatalf("encoded body length=%d, want more than old envelope limit", len(requestBody))
+	}
+	rec := httptest.NewRecorder()
+	server.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodPost, path, bytes.NewReader(requestBody)))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("maximum escaped body status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	created := decodeData[entity.DocumentArtifact](t, rec)
+	if created.Body != body {
+		t.Fatalf("stored body differs: got %d bytes want %d", len(created.Body), len(body))
+	}
+}
+
 func TestDeleteProjectWorkflowAllowsMissingOverride(t *testing.T) {
 	t.Parallel()
 

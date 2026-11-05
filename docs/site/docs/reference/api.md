@@ -45,6 +45,10 @@ Error responses use:
 | `PATCH` | `/api/v1/issues/{id}` | Update an issue. |
 | `PUT` | `/api/v1/issues/{issueId}/artifacts/{type}` | Create or update an artifact. |
 | `DELETE` | `/api/v1/issues/{issueId}/artifacts/{type}` | Delete an artifact. |
+| `GET` | `/api/v1/issues/{issueId}/artifacts/documents` | List document artifact metadata. |
+| `POST` | `/api/v1/issues/{issueId}/artifacts/documents` | Create a document artifact. |
+| `GET` | `/api/v1/issues/{issueId}/artifacts/documents/{documentId}` | Read one document artifact. |
+| `PATCH` | `/api/v1/issues/{issueId}/artifacts/documents/{documentId}` | Update a document artifact. |
 | `GET` | `/api/v1/issues/{issueId}/comments` | List comments. |
 | `POST` | `/api/v1/issues/{issueId}/comments` | Add a comment. |
 | `PATCH` | `/api/v1/comments/{id}` | Update a comment. |
@@ -69,6 +73,8 @@ Comment listing supports `cursor` and `limit`. Attachment listing supports
 Change-request listing supports an optional `status` filter and `limit` from `1` to `100`, defaulting to `50`.
 
 Issue responses always include an `artifacts` array, sorted by `type`, including `[]` when no artifacts exist. The initial `pull_request` artifact accepts only `data_value` on `PUT`; the server returns `type`, `data_type`, and `data_value`. `DELETE` returns an empty `204`. Invalid types or URLs return `400`; a missing issue or artifact returns `404`.
+
+Document artifacts store Markdown separately from URL artifacts. A document has a server-generated ID, `type` (`reference_document` or `work_report`), title, and body. An issue can have multiple documents of either type. List responses omit bodies; an individual read returns the exact stored Markdown. Reads and updates are scoped to both the issue and document ID, so a document under another issue returns `404`. `PATCH` preserves fields that are omitted. The initial API deliberately has no document delete endpoint.
 
 Change requests capture additional work for a later agent run. Creation sets the status to `open`. Allowed transitions are `open` to `in_progress` or `canceled`, and `in_progress` to `resolved` or `canceled`. Resolved and canceled requests are immutable. Cancellation is a state transition; there is no physical delete endpoint.
 
