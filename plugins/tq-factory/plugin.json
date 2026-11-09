@@ -1,0 +1,6 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "tq-factory",
+  "version": "0.1.0",
+  "description": "Run bounded coding work from Tasq issues with external agents"
+}

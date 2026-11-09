@@ -136,6 +136,7 @@ When updating documentation, keep the English `.md` file and the Japanese `*.ja.
 This section is the single index of repository documentation. Do not duplicate this list elsewhere; link to this section instead.
 
 - [Roadmap](../ROADMAP.md): tracker-first product direction, transition stages, and orchestrator support policy.
+- [TQ Factory plugin](../plugins/tq-factory/README.md): external-agent workflow package that uses tq issues and comments as its source of truth.
 - [WORKFLOW.md](../WORKFLOW.md): Symphony runtime workflow contract used by the orchestrator.
 - [docs/design.md](design.md): system architecture and service boundaries.
 - [docs/design/deployment.md](design/deployment.md): release tag creation, GitHub Actions, and GoReleaser deployment flow.

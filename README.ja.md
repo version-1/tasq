@@ -46,3 +46,5 @@ sh install.sh
 ## Documentation
 
 チュートリアル、ガイド、概念、リファレンスは、[Tasq ドキュメントサイト](https://version-1.github.io/tasq/ja/)を参照してください。
+
+課題管理を中心に外部エージェントと連携する workflow package は、同梱の[TQ Factory plugin](plugins/tq-factory/README.ja.md)を参照してください。

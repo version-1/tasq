@@ -1,0 +1,6 @@
+{
+  "name": "tq-factory",
+  "version": "0.1.0",
+  "description": "Run bounded coding work from Tasq issues with external agents",
+  "skills": "./skills/"
+}
