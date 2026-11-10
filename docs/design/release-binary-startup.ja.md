@@ -62,7 +62,7 @@ tq service status
 tq web
 ```
 
-`tq service start` は 3 つの managed service を固定の loopback port で起動する。port 表は [インストール](../site/i18n/ja/docusaurus-plugin-content-docs/current/getting-started/install.md)を参照。各 service の data:
+`tq service start` は issue-tracker と Web service を固定の loopback port で起動する。optional orchestrator は `tq migrate orchestrator` の後に `tq orchestrator start` で別途起動する。port 表は [インストール](../site/i18n/ja/docusaurus-plugin-content-docs/current/getting-started/install.md)を参照。各 service の data:
 
 | Service | Data |
 | --- | --- |
@@ -70,7 +70,7 @@ tq web
 | `orchestrator` | `$TQ_HOME/system/data/orchestrator.sqlite` |
 | `web` | `web` バイナリに埋め込まれた static assets |
 
-`tq service start` は `$TQ_HOME/system/bin` の `issue-tracker`、`orchestrator`、`web` だけを起動する。実行中の `tq` の隣、`PATH`、source tree は探索しない。管理対象の binary が欠落または実行不可の場合は、サービスを起動する前にすべての不正な path を報告し、同じ `TQ_HOME` を指定した再インストールを案内する。
+`tq service start` は `$TQ_HOME/system/bin` の `issue-tracker` と `web` だけを起動する。実行中の `tq` の隣、`PATH`、source tree は探索しない。管理対象の binary が欠落または実行不可の場合は、サービスを起動する前にすべての不正な path を報告し、同じ `TQ_HOME` を指定した再インストールを案内する。
 
 `tq service start` には custom port 用の flags はない。default port が使用中の場合、README では競合プロセスの停止、または手動起動を案内する。
 
@@ -81,12 +81,12 @@ tq web
 ```sh
 export TQ_HOME="$(pwd)/.tasq"
 tq migrate
+tq migrate orchestrator
 
 issue-tracker -addr 127.0.0.1:37651
 orchestrator -issue-tracker http://127.0.0.1:37651 -port 37652
 web -addr 127.0.0.1:37653 \
-  -tracker-url http://127.0.0.1:37651 \
-  -orchestrator-url http://127.0.0.1:37652
+  -tracker-url http://127.0.0.1:37651
 ```
 
 各 flags は次のとおり。
@@ -95,10 +95,10 @@ web -addr 127.0.0.1:37653 \
 | --- | --- | --- |
 | `issue-tracker` | `-addr`, `-db` | `-addr` は default で `:37651`。`-db` は default で `$TQ_HOME/system/data/issues.sqlite`。`state.json` に `issue_tracker` を書く。 |
 | `orchestrator` | `-db`, `-issue-tracker`, `-port` | `-db` は default で `$TQ_HOME/system/data/orchestrator.sqlite`。`state.json` に issue-tracker address がある場合、`-issue-tracker` は省略できる。`-port -1` では workflow config が有効化しない限り HTTP を無効にする。`state.json` に `orchestrator` を書く。 |
-| `web` | `-addr`, `-tracker-url`, `-orchestrator-url` | `-addr` は default で `:37653`。backend URLs は default で `http://127.0.0.1:37651` と `http://127.0.0.1:37652`。`state.json` に `web` を書く。 |
+| `web` | `-addr`, `-tracker-url`, `-orchestrator-url` | `-addr` は default で `:37653`。tracker は default で `http://127.0.0.1:37651`。explicit orchestrator URL がない場合は一致する local state entry だけを動的に検出する。`state.json` に `web` を書く。 |
 | `tq` | `--api-url`, `--output` | API URL の解決順は `--api-url` または `-api-url`、`TQ_API_URL`、`$TQ_HOME/system/state.json`、`http://localhost:37651`。 |
 
-default 以外の port を使う場合は、`web` に `-tracker-url` と `-orchestrator-url` を渡す。`tq` や `orchestrator` と違い、`web` は backend URLs を `state.json` から discovery しない。
+default 以外の port を使う場合は、`web` に `-tracker-url` を渡す。`-orchestrator-url` は意図的な explicit pairing にだけ使用する。それ以外では Web が `state.json` から一致する local orchestrator を動的に検出する。
 
 ## 実施した検証
 

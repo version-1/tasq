@@ -20,18 +20,6 @@ tags:
   - name: Attachments
   - name: Summary
 paths:
-  /api/v1/capabilities:
-    get:
-      tags:
-        - Health
-      summary: Get enabled local runtime capabilities.
-      responses:
-        "200":
-          description: Runtime capability flags.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CapabilitiesResponse"
   /api/v1/health:
     get:
       tags:
@@ -134,7 +122,7 @@ paths:
       tags:
         - Projects
       summary: Delete a project.
-      description: Deletes the project and its issue-tracker descendants, including issues, issue dependencies, comments, attachment records and files under the tracker home, and stored project workflow overrides. Also deletes orchestrator runtime descendants for the owned issues, including runs, runner events, workspace metadata, and workspace setup failures. Returns 409 with `projects.delete.running_runs` when any owned issue has a running orchestrator run. In tracker-only mode, returns 409 with `projects.delete.legacy_history_unavailable` when legacy orchestrator history exists or cannot be safely inspected; re-enable orchestration and complete verified legacy cleanup before retrying. Orchestrator runtime records are deleted before issue-tracker records so partial failures can be retried. The project location directory and worktrees are not modified.
+      description: Deletes the project and its issue-tracker descendants, including issues, issue dependencies, comments, attachment records and files under the tracker home, and stored project workflow overrides. A standalone tracker returns 409 with `projects.delete.legacy_history_unavailable` when an orchestrator database exists or its absence cannot be confirmed; preserve and verify that history before cleanup and retrying. When an optional embedded runstore is supplied, its runtime descendants are deleted before issue-tracker records and a running run returns 409 with `projects.delete.running_runs`. The project location directory and worktrees are not modified.
       responses:
         "204":
           description: Project deleted.
@@ -404,7 +392,7 @@ paths:
       tags:
         - Issues
       summary: Update an issue.
-      description: In tracker-only mode, enabling `autoOk` returns 409 with `issues.auto_ok.unavailable`. Disabling an existing Auto OK setting and all non-Auto-OK issue updates remain available.
+      description: Auto OK settings and all other issue updates use the same issue-tracker contract regardless of orchestrator availability.
       requestBody:
         required: true
         content:
@@ -420,8 +408,6 @@ paths:
                 $ref: "#/components/schemas/IssueResponse"
         "400":
           $ref: "#/components/responses/Error"
-        "409":
-          $ref: "#/components/responses/Error"
         "404":
           $ref: "#/components/responses/Error"
   /api/v1/issues/{id}/auto-ok-result:
@@ -430,7 +416,7 @@ paths:
     post:
       tags: [Issues]
       summary: Claim, acknowledge, or report failure for a pending Auto OK reply.
-      description: The orchestrator first claims a matching ready reservation immediately before turn/start. A later acknowledgement completes the claimed generation atomically with history. Duplicate or stale generations leave the issue unchanged. In tracker-only mode this operation returns 409 with `issues.auto_ok.unavailable`.
+      description: The orchestrator first claims a matching ready reservation immediately before turn/start. A later acknowledgement completes the claimed generation atomically with history. Duplicate or stale generations leave the issue unchanged. This issue-tracker operation remains available regardless of orchestrator availability.
       requestBody:
         required: true
         content:
@@ -445,8 +431,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/IssueResponse"
         "400":
-          $ref: "#/components/responses/Error"
-        "409":
           $ref: "#/components/responses/Error"
         "404":
           $ref: "#/components/responses/Error"
@@ -850,26 +834,6 @@ components:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
   schemas:
-    CapabilitiesResponse:
-      type: object
-      required:
-        - data
-        - meta
-      properties:
-        data:
-          $ref: "#/components/schemas/Capabilities"
-        meta:
-          $ref: "#/components/schemas/ApiMeta"
-    Capabilities:
-      type: object
-      required:
-        - orchestratorEnabled
-        - autoOKEnabled
-      properties:
-        orchestratorEnabled:
-          type: boolean
-        autoOKEnabled:
-          type: boolean
     ApiMeta:
       type: object
       additionalProperties: true

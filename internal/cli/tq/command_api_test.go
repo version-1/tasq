@@ -16,7 +16,7 @@ import (
 
 func TestAllowedAPIRoutes(t *testing.T) {
 	expected := []apiRoute{
-		{"GET", "/api/v1/health"}, {"GET", "/api/v1/capabilities"}, {"GET", "/api/v1/summary"},
+		{"GET", "/api/v1/health"}, {"GET", "/api/v1/summary"},
 		{"GET", "/api/v1/projects"}, {"POST", "/api/v1/projects"}, {"GET", "/api/v1/projects/{id}"}, {"PATCH", "/api/v1/projects/{id}"}, {"DELETE", "/api/v1/projects/{id}"}, {"POST", "/api/v1/projects/{id}/check"},
 		{"GET", "/api/v1/projects/{id}/workflow"}, {"PUT", "/api/v1/projects/{id}/workflow"}, {"DELETE", "/api/v1/projects/{id}/workflow"},
 		{"GET", "/api/v1/issues"}, {"POST", "/api/v1/issues"}, {"POST", "/api/v1/issues/states"}, {"GET", "/api/v1/queue"}, {"GET", "/api/v1/issues/{id}"}, {"PATCH", "/api/v1/issues/{id}"},
@@ -48,7 +48,7 @@ func TestAllowedAPIRoutes(t *testing.T) {
 		}
 	}
 	tests := []struct{ method, path string }{
-		{"GET", "/api/v1/health"}, {"GET", "/api/v1/capabilities"}, {"GET", "/api/v1/summary"},
+		{"GET", "/api/v1/health"}, {"GET", "/api/v1/summary"},
 		{"GET", "/api/v1/projects"}, {"POST", "/api/v1/projects"}, {"GET", "/api/v1/projects/1"}, {"PATCH", "/api/v1/projects/1"}, {"DELETE", "/api/v1/projects/1"}, {"POST", "/api/v1/projects/1/check"},
 		{"GET", "/api/v1/projects/1/workflow"}, {"PUT", "/api/v1/projects/1/workflow"}, {"DELETE", "/api/v1/projects/1/workflow"},
 		{"GET", "/api/v1/issues"}, {"POST", "/api/v1/issues"}, {"POST", "/api/v1/issues/states"}, {"GET", "/api/v1/queue"}, {"GET", "/api/v1/issues/1"}, {"PATCH", "/api/v1/issues/1"},

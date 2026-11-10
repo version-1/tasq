@@ -1695,7 +1695,6 @@ func TestDeleteProjectRejectsWhenLegacyHistoryCannotBeInspected(t *testing.T) {
 	t.Parallel()
 
 	server := newTestServer(t)
-	server.SetOrchestratorEnabled(false)
 	server.SetProjectDeletionGuard(func(context.Context) error {
 		return errors.New("legacy orchestrator history may exist; re-enable orchestrator execution and complete verified legacy cleanup first")
 	})
@@ -1718,38 +1717,19 @@ func TestDeleteProjectRejectsWhenLegacyHistoryCannotBeInspected(t *testing.T) {
 	}
 }
 
-func TestTrackerOnlyCapabilitiesRejectAutoOKAndRetainIssueOperations(t *testing.T) {
+func TestTrackerOperationsRetainAutoOKAndIssueOperations(t *testing.T) {
 	t.Parallel()
 
 	server := newTestServer(t)
-	server.SetOrchestratorEnabled(false)
-	server.store.SetAutoOKEnabled(false)
 	project := createProject(t, server, "TRACKER")
 	issue := createIssueInProject(t, server, project.ID, "Tracker operations", entity.StatusBacklog)
-
-	capabilitiesReq := httptest.NewRequest(http.MethodGet, "/api/v1/capabilities", nil)
-	capabilitiesRec := httptest.NewRecorder()
-	server.Handler().ServeHTTP(capabilitiesRec, capabilitiesReq)
-	if capabilitiesRec.Code != http.StatusOK || !strings.Contains(capabilitiesRec.Body.String(), `"orchestratorEnabled":false`) {
-		t.Fatalf("capabilities=%d %s", capabilitiesRec.Code, capabilitiesRec.Body.String())
-	}
 
 	enableReq := httptest.NewRequest(http.MethodPatch, "/api/v1/issues/"+stringID(issue.ID), strings.NewReader(`{"autoOk":true}`))
 	enableReq.Header.Set("Content-Type", "application/json")
 	enableRec := httptest.NewRecorder()
 	server.Handler().ServeHTTP(enableRec, enableReq)
-	if enableRec.Code != http.StatusConflict {
+	if enableRec.Code != http.StatusOK {
 		t.Fatalf("enable Auto OK=%d %s", enableRec.Code, enableRec.Body.String())
-	}
-
-	for _, payload := range []string{`{"generation":1,"phase":"claim"}`, `{"generation":1}`} {
-		req := httptest.NewRequest(http.MethodPost, "/api/v1/issues/"+stringID(issue.ID)+"/auto-ok-result", strings.NewReader(payload))
-		req.Header.Set("Content-Type", "application/json")
-		rec := httptest.NewRecorder()
-		server.Handler().ServeHTTP(rec, req)
-		if rec.Code != http.StatusConflict {
-			t.Fatalf("Auto OK result payload %s = %d %s", payload, rec.Code, rec.Body.String())
-		}
 	}
 
 	readyReq := httptest.NewRequest(http.MethodPatch, "/api/v1/issues/"+stringID(issue.ID), strings.NewReader(`{"status":"ready"}`))

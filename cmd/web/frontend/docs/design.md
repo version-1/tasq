@@ -319,13 +319,11 @@ contract is unchanged. HTTP workflow coverage lives in `src/mocks/auto-ok.test.t
 [Auto OK in the card dropdown](screenshots/auto-ok-mock-states.jpg) ·
 [Dropdown after re-enabling and accepting its first reply](screenshots/auto-ok-mock-resumed.jpg)
 
-## Tracker-only capability mock
+## Optional orchestrator mock
 
-The mock server exposes `GET /tracker/api/v1/capabilities` with orchestration
-and Auto OK enabled. A tracker-only server returns both fields as `false`.
-The layout fails closed until this capability is known: it keeps issue CRUD,
-comments, change requests, and explicit status updates available, while hiding
-Auto OK, thread-copy, runs, and conversation controls and making no
-orchestrator HTTP requests. Browser tests can call
-`setMockCapabilities({ orchestratorEnabled: false, autoOKEnabled: false })`
-from `src/mocks/handlers` before rendering.
+The layout polls `GET /orchestrator/health` and fails closed unless its connected
+orchestrator returns `{ "status": "ok" }`. Issue CRUD, comments, change
+requests, explicit status updates, and Auto OK remain tracker data contracts and
+do not change with orchestrator health. Execution UI controls (including Auto
+OK and thread copy, runs, and conversations) appear only while health is
+available and disappear again when it is lost.

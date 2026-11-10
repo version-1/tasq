@@ -49,16 +49,15 @@ $TQ_HOME/
 ```yaml
 author: "jiro"
 max_concurrent_agents: 3
-orchestrator_enabled: false
 ```
 
 | Field | Default | Description |
 |---|---:|---|
 | `author` | `$USER` | `--author` と `TQ_AUTHOR` が未指定のときに `tq comment add` が使う既定の author です。 |
 | `max_concurrent_agents` | `10` | orchestrator agent runs に対するマシン全体の同時実行数の上限です。 |
-| `orchestrator_enabled` | `true` | `false` の場合、managed startup は issue-tracker と Web UI だけを起動します。tracker は orchestrator database を開かず、Auto OK は利用できません。 |
+`tq service start` は常に issue-tracker と Web UI だけを起動します。エージェント実行は `tq orchestrator start` で明示的に起動します。orchestrator のデータベースに未適用 migration がある場合は、先に `tq migrate orchestrator` を実行してください。tracker は orchestrator database を開かず、orchestrator の稼働有無にかかわらず課題と Auto OK のデータ契約を維持します。Web UI と TUI は、接続先 orchestrator の `GET /health` が `{ "status": "ok" }` を返す間だけ実行用の操作を表示します。
 
-`orchestrator_enabled` の変更は、変更後に起動したプロセスにだけ反映されます。現在動作中の managed orchestrator は `tq orchestrator stop`（または `tq service stop`）で停止してからサービスを再起動してください。Tasq は、独立して起動されたプロセスや古い orchestrator を停止できないため、課題管理のみのモードを使う前にそのプロセスを停止します。既存の orchestrator データは保持され、外部エージェント向けの課題、キュー、コメント、明示的な状態更新は引き続き利用できます。tracker-only モードで legacy orchestrator database を検出した場合、project deletion は履歴を開いたり削除したりせず conflict を返します。project を削除する前に orchestration を再有効化し、検証済みの legacy cleanup を完了してください。
+orchestrator database に履歴が含まれる可能性がある場合、tracker はその database を開いたり削除したりしないため、project deletion を拒否します。対象 project を削除する前に、履歴を確認してクリーンアップしてください。
 
 ## state.json
 

@@ -14,7 +14,6 @@ import (
 type Store struct {
 	db                *sql.DB
 	attachmentStorage *AttachmentStorage
-	autoOKEnabled     bool
 }
 
 const (
@@ -39,7 +38,7 @@ func Open(ctx context.Context, path string) (*Store, error) {
 		_ = db.Close()
 		return nil, fmt.Errorf("enable sqlite foreign keys: %w", err)
 	}
-	store := &Store{db: db, autoOKEnabled: true}
+	store := &Store{db: db}
 	if err := store.checkMigrations(ctx); err != nil {
 		_ = db.Close()
 		return nil, err
@@ -61,15 +60,11 @@ func OpenMigrated(ctx context.Context, path string) (*Store, error) {
 		_ = db.Close()
 		return nil, err
 	}
-	return &Store{db: db, autoOKEnabled: true}, nil
+	return &Store{db: db}, nil
 }
 
 func (s *Store) SetAttachmentStorage(storage *AttachmentStorage) {
 	s.attachmentStorage = storage
-}
-
-func (s *Store) SetAutoOKEnabled(enabled bool) {
-	s.autoOKEnabled = enabled
 }
 
 func (s *Store) Close() error {

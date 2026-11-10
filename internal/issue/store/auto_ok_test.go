@@ -125,7 +125,7 @@ func TestAutoOKFailureAndCancellation(t *testing.T) {
 	}
 }
 
-func TestAutoOKDisabledCancelsUnclaimedReservationWithoutRequeueing(t *testing.T) {
+func TestAutoOKManualStatusChangeRequeuesUnclaimedReservation(t *testing.T) {
 	ctx := context.Background()
 	s, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "issues.sqlite"))
 	if err != nil {
@@ -146,17 +146,16 @@ func TestAutoOKDisabledCancelsUnclaimedReservationWithoutRequeueing(t *testing.T
 	if !issue.AutoOKPending || issue.Status != entity.StatusReady {
 		t.Fatalf("enabled issue = %+v, want pending ready reservation", issue)
 	}
-	s.SetAutoOKEnabled(false)
 	issue, err = s.UpdateIssue(ctx, issue.ID, entity.UpdateIssueInput{Status: &blocked})
 	if err != nil {
 		t.Fatalf("block while disabled: %v", err)
 	}
-	if issue.AutoOKPending || issue.Status != entity.StatusBlocked {
-		t.Fatalf("disabled update = %+v, want blocked issue without reservation", issue)
+	if !issue.AutoOKPending || issue.Status != entity.StatusReady {
+		t.Fatalf("manual update = %+v, want renewed ready reservation", issue)
 	}
 }
 
-func TestAutoOKDisabledCanBeTurnedOffWithoutChangingStatus(t *testing.T) {
+func TestAutoOKCanBeTurnedOffWithoutRuntimeConfiguration(t *testing.T) {
 	ctx := context.Background()
 	s, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "issues.sqlite"))
 	if err != nil {
@@ -173,10 +172,9 @@ func TestAutoOKDisabledCanBeTurnedOffWithoutChangingStatus(t *testing.T) {
 	if err != nil || !issue.AutoOKPending || issue.Status != entity.StatusReady {
 		t.Fatalf("enable = %+v, %v", issue, err)
 	}
-	s.SetAutoOKEnabled(false)
 	issue, err = s.UpdateIssue(ctx, issue.ID, entity.UpdateIssueInput{AutoOK: &disabled})
-	if err != nil || issue.AutoOK || issue.AutoOKPending || issue.Status != entity.StatusReady {
-		t.Fatalf("disable while tracker-only = %+v, %v", issue, err)
+	if err != nil || issue.AutoOK || issue.AutoOKPending || issue.Status != entity.StatusBlocked {
+		t.Fatalf("disable = %+v, %v", issue, err)
 	}
 }
 

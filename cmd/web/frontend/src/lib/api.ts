@@ -1,6 +1,5 @@
 import {
   getApiV1Attachments,
-  getApiV1Capabilities,
   deleteApiV1ProjectsId,
   getApiV1Issues,
   getApiV1IssuesId,
@@ -15,7 +14,6 @@ import {
   postApiV1Issues,
   postApiV1Projects,
   type AttachmentListResponse,
-  type Capabilities,
   type ChangeRequest,
   type ChangeRequestListResponse,
   type CommentListResponse,
@@ -33,6 +31,7 @@ import {
   type UpdateIssueInput,
 } from "@/lib/generated/issue-tracker";
 import {
+  getHealth,
   getApiV1State,
   getApiV1IssueIdentifier,
   getApiV1IssueIdentifierRunsRunIdConversations,
@@ -81,8 +80,13 @@ export function fetchSummary(options?: ApiRequestOptions): Promise<Summary> {
   return unwrapResponse(getApiV1Summary(noStore), options);
 }
 
-export function fetchCapabilities(options?: ApiRequestOptions): Promise<Capabilities> {
-  return unwrapResponse(getApiV1Capabilities(noStore), options);
+export async function isOrchestratorAvailable(): Promise<boolean> {
+  try {
+    const response = await getHealth({ ...noStore, signal: AbortSignal.timeout(2_000) });
+    return response.status >= 200 && response.status < 300 && response.data.status === "ok";
+  } catch {
+    return false;
+  }
 }
 
 export function createIssue(input: CreateIssueInput, options?: ApiRequestOptions): Promise<Issue> {

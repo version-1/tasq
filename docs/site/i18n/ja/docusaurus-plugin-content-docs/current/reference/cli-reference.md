@@ -91,14 +91,15 @@ CLI がアップロード済みの添付ファイルを削除します。
 
 | コマンド | 用途 |
 | --- | --- |
-| `tq service start` | issue-tracker、orchestrator、Web UI を起動します。 |
+| `tq service start` | issue-tracker と Web UI を起動します。 |
 | `tq service stop` | local services を停止します。 |
 | `tq service status` | service status を表示します。 |
 | `tq orchestrator start` | ローカル orchestrator だけを起動します。起動中のローカル Issue Tracker が必要です。 |
 | `tq orchestrator stop` | ローカル orchestrator だけを graceful に停止します。 |
 | `tq orchestrator status` | ローカル orchestrator の status を表示します。 |
 | `tq logs <service> [-n <lines>] [-f]` | service logs を読みます。 |
-| `tq migrate` | migrations を適用します。 |
+| `tq migrate` | issue-tracker migrations を適用します。 |
+| `tq migrate orchestrator` | orchestrator migrations を適用します。 |
 | `tq migrate down` | migrations を rollback します。 |
 | `tq migrate status` | migration status を表示します。 |
 | `tq web` | 実行中の Web UI を開きます。 |
@@ -109,11 +110,11 @@ CLI がアップロード済みの添付ファイルを削除します。
 
 ログ対象には `tracker` または `issue-tracker`、`orchestrator`、`web` を指定できます。
 
-`service start` はプロセスを起動する前に Issue Tracker と orchestrator の未適用マイグレーションを確認し、必要な場合は `tq migrate` を案内します。既定ではポート 37651、37652、37653 を使います。いずれかが使用中の場合は loopback ポートを提案し、`-y` がない限り確認を求めます。`service stop` は Web、orchestrator、Issue Tracker の順に停止します。`service status` はサービスの状態、PID、ポート、稼働時間を表示し、JSON 出力にも対応します。
+`service start` はプロセスを起動する前に Issue Tracker の未適用マイグレーションを確認し、必要な場合は `tq migrate` を案内します。既定ではポート 37651 と 37653 を使います。いずれかが使用中の場合は loopback ポートを提案し、`-y` がない限り確認を求めます。`service stop` は Web、orchestrator、Issue Tracker の順に停止します。`service status` はサービスの状態、PID、ポート、稼働時間を表示し、JSON 出力にも対応します。
 
 `logs` は `$TQ_HOME/system/log/` 以下のファイルを読み、`-n` と `-f` を使えますが JSON 出力には対応しません。`web` はサービス状態から URL を開き、Web UI が起動していない場合は失敗します。
 
-`tq tui [--orchestrator-url URL]` はターミナルを必要とし、テキスト出力だけに対応します。課題、コメント、Artifact、実行状態を読み取りますが、データを変更するリクエストは送信しません。`--orchestrator-url` を指定すると、`state.json` による orchestrator の検出を上書きできます。
+`tq tui [--orchestrator-url URL]` はターミナルを必要とし、テキスト出力だけに対応します。課題、コメント、Artifact、利用可能な実行状態を読み取りますが、データを変更するリクエストは送信しません。ローカル state が接続先 Issue Tracker に属する場合だけ orchestrator を検出します。意図的な remote pairing には `--orchestrator-url` を指定します。
 
 `tq config` は、バージョン、ビルドプロファイル、`TQ_HOME` の上書き、解決済みホームディレクトリ、設定ファイルのパス、解決済みの値を表示します。YAML の生データは表示しません。スクリプトではグローバルオプションの `--output json` を使用します。
 

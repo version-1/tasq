@@ -117,13 +117,6 @@ func (a app) orchestratorStart(ctx context.Context, args []string, cfg config) e
 	if err != nil {
 		return err
 	}
-	appConfig, err := tqconfig.Load()
-	if err != nil {
-		return err
-	}
-	if !appConfig.OrchestratorEnabled {
-		return errors.New("orchestrator is disabled by orchestrator_enabled: false; set it to true and restart services to enable managed agent execution")
-	}
 	lock, err := acquireServiceStartLock(home)
 	if err != nil {
 		return err
@@ -231,10 +224,6 @@ func (a app) serviceStart(ctx context.Context, args []string, cfg config) error 
 	if err != nil {
 		return err
 	}
-	appConfig, err := tqconfig.Load()
-	if err != nil {
-		return err
-	}
 	lock, err := acquireServiceStartLock(home)
 	if err != nil {
 		return err
@@ -250,25 +239,17 @@ func (a app) serviceStart(ctx context.Context, args []string, cfg config) error 
 	if state.IssueTracker != nil && processAlive(state.IssueTracker.PID) {
 		return usageError("issue-tracker is already running")
 	}
-	if state.Orchestrator != nil && processAlive(state.Orchestrator.PID) {
-		return usageError("orchestrator is already running")
-	}
 	if state.Web != nil && processAlive(state.Web.PID) {
 		return usageError("web is already running")
 	}
-	if err := validateServiceExecutables(home, appConfig.OrchestratorEnabled); err != nil {
+	if err := validateServiceExecutables(home); err != nil {
 		return err
 	}
-	if appConfig.OrchestratorEnabled {
-		if _, err := tqconfig.ValidateTasqCommand(); err != nil {
-			return err
-		}
-	}
-	if err := checkMigrationTargetsNoPending(ctx, appConfig.OrchestratorEnabled); err != nil {
+	if err := checkMigrationTargetsNoPending(ctx); err != nil {
 		return fmt.Errorf("migration pre-flight check failed: %w", err)
 	}
 
-	addresses, fallback, err := serviceStartAddresses(appConfig.OrchestratorEnabled)
+	addresses, fallback, err := serviceStartAddresses()
 	if err != nil {
 		return err
 	}
@@ -282,15 +263,13 @@ func (a app) serviceStart(ctx context.Context, args []string, cfg config) error 
 				return errors.New("service start cancelled")
 			}
 		}
-		if err := confirmServicePortsAvailable(addresses, appConfig.OrchestratorEnabled); err != nil {
+		if err := confirmServicePortsAvailable(addresses); err != nil {
 			return err
 		}
 	}
 	issueAddr := addresses.issueTracker
-	orchestratorAddr := addresses.orchestrator
 	webAddr := addresses.web
 	issueDB := tqconfig.IssueTrackerDBPath(home)
-	orchestratorDB := tqconfig.OrchestratorDBPath(home)
 
 	issueService := managedService{
 		name:    serviceIssueTracker,
@@ -308,27 +287,6 @@ func (a app) serviceStart(ctx context.Context, args []string, cfg config) error 
 		return fmt.Errorf("issue-tracker health check failed: %w", err)
 	}
 
-	if appConfig.OrchestratorEnabled {
-		orchestratorService := managedService{
-			name:    serviceOrchestrator,
-			logName: "orchestrator.log",
-			args: []string{
-				"-db", orchestratorDB,
-				"-issue-tracker", "http://" + issueAddr,
-				"-port", strconv.Itoa(servicePort(orchestratorAddr)),
-			},
-		}
-		if _, err := startManagedService(ctx, home, orchestratorService); err != nil {
-			_ = stopServiceByName(context.Background(), serviceIssueTracker)
-			return err
-		}
-		if err := waitServiceRunning(ctx, serviceOrchestrator); err != nil {
-			_ = stopServiceByName(context.Background(), serviceOrchestrator)
-			_ = stopServiceByName(context.Background(), serviceIssueTracker)
-			return fmt.Errorf("orchestrator startup failed: %w", err)
-		}
-	}
-
 	webService := managedService{
 		name:    serviceWeb,
 		logName: "web.log",
@@ -337,21 +295,12 @@ func (a app) serviceStart(ctx context.Context, args []string, cfg config) error 
 			"-tracker-url", "http://" + issueAddr,
 		},
 	}
-	if appConfig.OrchestratorEnabled {
-		webService.args = append(webService.args, "-orchestrator-url", "http://"+orchestratorAddr)
-	}
 	if _, err := startManagedService(ctx, home, webService); err != nil {
-		if appConfig.OrchestratorEnabled {
-			_ = stopServiceByName(context.Background(), serviceOrchestrator)
-		}
 		_ = stopServiceByName(context.Background(), serviceIssueTracker)
 		return err
 	}
 	if err := waitWebHealthy(ctx, "http://"+webAddr); err != nil {
 		_ = stopServiceByName(context.Background(), serviceWeb)
-		if appConfig.OrchestratorEnabled {
-			_ = stopServiceByName(context.Background(), serviceOrchestrator)
-		}
 		_ = stopServiceByName(context.Background(), serviceIssueTracker)
 		return fmt.Errorf("web health check failed: %w", err)
 	}
@@ -401,9 +350,9 @@ func defaultServiceAddresses() serviceAddresses {
 	}
 }
 
-func serviceStartAddresses(orchestratorEnabled bool) (serviceAddresses, bool, error) {
+func serviceStartAddresses() (serviceAddresses, bool, error) {
 	addresses := defaultServiceAddresses()
-	if err := confirmServicePortsAvailable(addresses, orchestratorEnabled); err == nil {
+	if err := confirmServicePortsAvailable(addresses); err == nil {
 		return addresses, false, nil
 	}
 
@@ -439,12 +388,9 @@ func allocateServiceAddresses() (serviceAddresses, error) {
 	return addresses, nil
 }
 
-func confirmServicePortsAvailable(addresses serviceAddresses, orchestratorEnabled bool) error {
-	listeners := make([]net.Listener, 0, 3)
+func confirmServicePortsAvailable(addresses serviceAddresses) error {
+	listeners := make([]net.Listener, 0, 2)
 	serviceAddresses := []string{addresses.issueTracker, addresses.web}
-	if orchestratorEnabled {
-		serviceAddresses = append(serviceAddresses, addresses.orchestrator)
-	}
 	for _, address := range serviceAddresses {
 		listener, err := net.Listen("tcp", address)
 		if err != nil {
@@ -579,12 +525,9 @@ func commandForService(ctx context.Context, home string, service managedService)
 	return command, nil
 }
 
-func validateServiceExecutables(home string, orchestratorEnabled bool) error {
-	problems := make([]string, 0, 3)
+func validateServiceExecutables(home string) error {
+	problems := make([]string, 0, 2)
 	names := []serviceName{serviceIssueTracker, serviceWeb}
-	if orchestratorEnabled {
-		names = append(names, serviceOrchestrator)
-	}
 	for _, name := range names {
 		path := serviceExecutablePath(home, name)
 		if err := validateServiceExecutable(name, path); err != nil {
@@ -899,7 +842,7 @@ func printServiceHelp(w io.Writer) {
 	fmt.Fprintln(w, "Usage: tq service <action>")
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "Actions:")
-	fmt.Fprintln(w, "  start    Start issue-tracker, orchestrator, and web (-y skips fallback port confirmation)")
+	fmt.Fprintln(w, "  start    Start issue-tracker and web (-y skips fallback port confirmation)")
 	fmt.Fprintln(w, "  stop     Stop web, orchestrator, and issue-tracker")
 	fmt.Fprintln(w, "  status   Show service status")
 }

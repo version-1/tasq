@@ -16,7 +16,6 @@ import (
 	tqconfig "github.com/version-1/tasq/internal/config"
 	"github.com/version-1/tasq/internal/issue/api"
 	"github.com/version-1/tasq/internal/issue/store"
-	"github.com/version-1/tasq/internal/orchestrator/runstore"
 )
 
 func main() {
@@ -42,35 +41,15 @@ func main() {
 			log.Printf("close issue store: %v", err)
 		}
 	}()
-	appConfig, err := tqconfig.Load()
-	if err != nil {
-		log.Fatalf("load TQ_HOME config: %v", err)
-	}
-	var handler http.Handler
-	if appConfig.OrchestratorEnabled {
-		orchestratorStore, err := runstore.Open(ctx, tqconfig.OrchestratorDBPath(home))
-		if err != nil {
-			log.Fatalf("open orchestrator store: %v", err)
+	trackerServer := api.NewServer(issueStore)
+	legacyRunDBPath := tqconfig.OrchestratorDBPath(home)
+	trackerServer.SetProjectDeletionGuard(func(context.Context) error {
+		if _, err := os.Stat(legacyRunDBPath); err == nil || !errors.Is(err, os.ErrNotExist) {
+			return errors.New("project deletion is unavailable while orchestrator history may exist; complete verified legacy cleanup before deleting the project")
 		}
-		defer func() {
-			if err := orchestratorStore.Close(); err != nil {
-				log.Printf("close orchestrator store: %v", err)
-			}
-		}()
-		handler = api.NewServerWithOrchestratorStore(issueStore, orchestratorStore).Handler()
-	} else {
-		issueStore.SetAutoOKEnabled(false)
-		trackerServer := api.NewServer(issueStore)
-		trackerServer.SetOrchestratorEnabled(false)
-		legacyRunDBPath := tqconfig.OrchestratorDBPath(home)
-		trackerServer.SetProjectDeletionGuard(func(context.Context) error {
-			if _, err := os.Stat(legacyRunDBPath); err == nil || !errors.Is(err, os.ErrNotExist) {
-				return errors.New("project deletion is unavailable while legacy orchestrator history may exist; re-enable orchestrator execution and complete verified legacy cleanup first")
-			}
-			return nil
-		})
-		handler = trackerServer.Handler()
-	}
+		return nil
+	})
+	handler := trackerServer.Handler()
 
 	server := &http.Server{
 		Handler:           handler,

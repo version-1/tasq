@@ -34,13 +34,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("ensure TQ_HOME: %v", err)
 	}
-	appConfig, err := tqconfig.Load()
-	if err != nil {
-		log.Fatalf("load TQ_HOME config: %v", err)
-	}
-	if !appConfig.OrchestratorEnabled {
-		log.Fatalf("orchestrator is disabled by orchestrator_enabled: false in %s", tqconfig.ConfigPath(home))
-	}
 	tasqCommand, err := tqconfig.ValidateTasqCommand()
 	if err != nil {
 		log.Fatalf("validate Tasq CLI command: %v", err)
@@ -62,6 +55,10 @@ func main() {
 	definition, err := workflow.Load(tqconfig.WorkflowPath(home))
 	if err != nil {
 		log.Fatalf("load workflow: %v", err)
+	}
+	appConfig, err := tqconfig.Load()
+	if err != nil {
+		log.Fatalf("load TQ_HOME config: %v", err)
 	}
 	effectiveMaxConcurrentRuns := min(definition.Config.MaxConcurrentRuns, appConfig.MaxConcurrentAgents)
 	resolvedIssueTrackerURL := *issueTrackerURL

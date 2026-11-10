@@ -10,16 +10,6 @@ JSON error responses use `{ "error": { "code": "...", "message": "..." }, "meta"
 
  * OpenAPI spec version: 0.1.0
  */
-export interface CapabilitiesResponse {
-  data: Capabilities;
-  meta: ApiMeta;
-}
-
-export interface Capabilities {
-  orchestratorEnabled: boolean;
-  autoOKEnabled: boolean;
-}
-
 /**
  * Response metadata. Currently empty, reserved for future extensions.
  */
@@ -679,48 +669,6 @@ export type PostApiV1AttachmentsBody = {
 };
 
 /**
- * @summary Get enabled local runtime capabilities.
- */
-export type getApiV1CapabilitiesResponse200 = {
-  data: CapabilitiesResponse
-  status: 200
-}
-
-export type getApiV1CapabilitiesResponseSuccess = (getApiV1CapabilitiesResponse200) & {
-  headers: Headers;
-};
-;
-
-export type getApiV1CapabilitiesResponse = (getApiV1CapabilitiesResponseSuccess)
-
-export const getGetApiV1CapabilitiesUrl = () => {
-
-
-
-
-  return `/tracker/api/v1/capabilities`
-}
-
-export const getApiV1Capabilities = async ( options?: RequestInit): Promise<getApiV1CapabilitiesResponse> => {
-
-  const res = await fetch(getGetApiV1CapabilitiesUrl(),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-)
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-
-  const data: getApiV1CapabilitiesResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as getApiV1CapabilitiesResponse
-}
-
-
-
-/**
  * @summary Check API health.
  */
 export type getApiV1HealthResponse200 = {
@@ -1021,7 +969,7 @@ export const patchApiV1ProjectsId = async (id: number,
 
 
 /**
- * Deletes the project and its issue-tracker descendants, including issues, issue dependencies, comments, attachment records and files under the tracker home, and stored project workflow overrides. Also deletes orchestrator runtime descendants for the owned issues, including runs, runner events, workspace metadata, and workspace setup failures. Returns 409 with `projects.delete.running_runs` when any owned issue has a running orchestrator run. In tracker-only mode, returns 409 with `projects.delete.legacy_history_unavailable` when legacy orchestrator history exists or cannot be safely inspected; re-enable orchestration and complete verified legacy cleanup before retrying. Orchestrator runtime records are deleted before issue-tracker records so partial failures can be retried. The project location directory and worktrees are not modified.
+ * Deletes the project and its issue-tracker descendants, including issues, issue dependencies, comments, attachment records and files under the tracker home, and stored project workflow overrides. A standalone tracker returns 409 with `projects.delete.legacy_history_unavailable` when an orchestrator database exists or its absence cannot be confirmed; preserve and verify that history before cleanup and retrying. When an optional embedded runstore is supplied, its runtime descendants are deleted before issue-tracker records and a running run returns 409 with `projects.delete.running_runs`. The project location directory and worktrees are not modified.
  * @summary Delete a project.
  */
 export type deleteApiV1ProjectsIdResponse204 = {
@@ -1584,7 +1532,7 @@ export const getApiV1IssuesId = async (id: number, options?: RequestInit): Promi
 
 
 /**
- * In tracker-only mode, enabling `autoOk` returns 409 with `issues.auto_ok.unavailable`. Disabling an existing Auto OK setting and all non-Auto-OK issue updates remain available.
+ * Auto OK settings and all other issue updates use the same issue-tracker contract regardless of orchestrator availability.
  * @summary Update an issue.
  */
 export type patchApiV1IssuesIdResponse200 = {
@@ -1602,15 +1550,10 @@ export type patchApiV1IssuesIdResponse404 = {
   status: 404
 }
 
-export type patchApiV1IssuesIdResponse409 = {
-  data: ErrorResponse
-  status: 409
-}
-
 export type patchApiV1IssuesIdResponseSuccess = (patchApiV1IssuesIdResponse200) & {
   headers: Headers;
 };
-export type patchApiV1IssuesIdResponseError = (patchApiV1IssuesIdResponse400 | patchApiV1IssuesIdResponse404 | patchApiV1IssuesIdResponse409) & {
+export type patchApiV1IssuesIdResponseError = (patchApiV1IssuesIdResponse400 | patchApiV1IssuesIdResponse404) & {
   headers: Headers;
 };
 
@@ -1646,7 +1589,7 @@ export const patchApiV1IssuesId = async (id: number,
 
 
 /**
- * The orchestrator first claims a matching ready reservation immediately before turn/start. A later acknowledgement completes the claimed generation atomically with history. Duplicate or stale generations leave the issue unchanged. In tracker-only mode this operation returns 409 with `issues.auto_ok.unavailable`.
+ * The orchestrator first claims a matching ready reservation immediately before turn/start. A later acknowledgement completes the claimed generation atomically with history. Duplicate or stale generations leave the issue unchanged. This issue-tracker operation remains available regardless of orchestrator availability.
  * @summary Claim, acknowledge, or report failure for a pending Auto OK reply.
  */
 export type postApiV1IssuesIdAutoOkResultResponse200 = {
@@ -1664,15 +1607,10 @@ export type postApiV1IssuesIdAutoOkResultResponse404 = {
   status: 404
 }
 
-export type postApiV1IssuesIdAutoOkResultResponse409 = {
-  data: ErrorResponse
-  status: 409
-}
-
 export type postApiV1IssuesIdAutoOkResultResponseSuccess = (postApiV1IssuesIdAutoOkResultResponse200) & {
   headers: Headers;
 };
-export type postApiV1IssuesIdAutoOkResultResponseError = (postApiV1IssuesIdAutoOkResultResponse400 | postApiV1IssuesIdAutoOkResultResponse404 | postApiV1IssuesIdAutoOkResultResponse409) & {
+export type postApiV1IssuesIdAutoOkResultResponseError = (postApiV1IssuesIdAutoOkResultResponse400 | postApiV1IssuesIdAutoOkResultResponse404) & {
   headers: Headers;
 };
 

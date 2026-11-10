@@ -40,15 +40,21 @@ tq service start
 tq service status
 ```
 
-`tq service start` launches the issue-tracker, orchestrator, and Web server on
-fixed local loopback ports and writes discovery state to
+`tq service start` launches the issue-tracker and Web server on fixed local
+loopback ports and writes discovery state to
 `$TQ_HOME/system/state.json`.
 
 | Service | Port |
 | --- | ---: |
 | issue-tracker | `37651` |
-| orchestrator | `37652` |
 | web | `37653` |
+
+To enable agent execution, apply its separate migration and start it explicitly:
+
+```sh
+tq migrate orchestrator
+tq orchestrator start
+```
 
 ## Update Tasq
 

@@ -55,31 +55,19 @@ func (a app) tui(ctx context.Context, args []string, cfg config) error {
 	if !terminalCheck(a.stdin) || !terminalCheck(a.stdout) {
 		return usageError("tq tui requires an interactive TTY")
 	}
-	appConfig, err := tqconfig.Load()
-	if err != nil {
-		return err
-	}
-	capabilities, err := a.client.capabilities(ctx)
-	if err != nil {
-		return fmt.Errorf("load tracker capabilities: %w", err)
-	}
-	executionEnabled := appConfig.OrchestratorEnabled && capabilities.OrchestratorEnabled
 	resolvedOrchestratorURL := strings.TrimSpace(*orchestratorURL)
-	if !executionEnabled {
-		resolvedOrchestratorURL = ""
-	} else if resolvedOrchestratorURL == "" {
-		stateURL, ok, err := tqconfig.OrchestratorURLFromState()
-		if err == nil && ok {
-			resolvedOrchestratorURL = stateURL
+	var orchestrator *orchestratorClient
+	if resolvedOrchestratorURL != "" {
+		var err error
+		orchestrator, err = newOrchestratorClient(resolvedOrchestratorURL)
+		if err != nil {
+			return usageError("%v", err)
 		}
 	}
-	orchestrator, err := newOrchestratorClient(resolvedOrchestratorURL)
-	if err != nil {
-		return usageError("%v", err)
-	}
 	model := newTUIModel(ctx, a.client, orchestrator, openBrowser)
+	model.orchestratorExplicit = resolvedOrchestratorURL != ""
 	program := tea.NewProgram(model, tea.WithContext(ctx), tea.WithInput(a.stdin), tea.WithOutput(a.stdout), tea.WithAltScreen())
-	_, err = program.Run()
+	_, err := program.Run()
 	return err
 }
 
@@ -95,11 +83,12 @@ const (
 var tabNames = []string{"Overview", "Comments", "Artifacts", "Run"}
 
 type tuiModel struct {
-	ctx              context.Context
-	tracker          *apiClient
-	orchestrator     *orchestratorClient
-	executionEnabled bool
-	openURL          func(string) error
+	ctx                  context.Context
+	tracker              *apiClient
+	orchestrator         *orchestratorClient
+	orchestratorExplicit bool
+	executionEnabled     bool
+	openURL              func(string) error
 
 	width, height     int
 	issues            []entity.Issue
@@ -149,15 +138,16 @@ type listResultMsg struct {
 	err           error
 }
 type detailResultMsg struct {
-	generation    uint64
-	request       uint64
-	issueID       int64
-	issue         entity.Issue
-	comments      commentPage
-	runtime       runtimeIssue
-	runtimeAbsent bool
-	runtimeErr    error
-	err           error
+	generation       uint64
+	request          uint64
+	issueID          int64
+	issue            entity.Issue
+	comments         commentPage
+	runtime          runtimeIssue
+	runtimeAbsent    bool
+	runtimeErr       error
+	executionEnabled bool
+	err              error
 }
 type browserResultMsg struct{ err error }
 type olderCommentsMsg struct {
@@ -172,7 +162,7 @@ func newTUIModel(ctx context.Context, tracker *apiClient, orchestrator *orchestr
 	input.Prompt = "/ "
 	input.Placeholder = "search issues"
 	return tuiModel{
-		ctx: ctx, tracker: tracker, orchestrator: orchestrator, executionEnabled: orchestrator != nil, openURL: opener,
+		ctx: ctx, tracker: tracker, orchestrator: orchestrator, orchestratorExplicit: orchestrator != nil, executionEnabled: false, openURL: opener,
 		states: defaultTUIStates(), loading: true, replaceList: true, searchInput: input, viewport: viewport.New(80, 20),
 	}
 }
@@ -243,13 +233,33 @@ func (m tuiModel) loadDetail() tea.Cmd {
 			return detailResultMsg{generation: generation, request: request, issueID: issueID, err: err}
 		}
 		result := detailResultMsg{generation: generation, request: request, issueID: issueID, issue: issue, comments: comments}
-		if !m.executionEnabled || m.orchestrator == nil {
+		orchestrator := m.connectedOrchestrator()
+		if orchestrator == nil || !orchestrator.healthy(ctx) {
 			return result
 		}
-		result.runtime, result.runtimeErr = m.orchestrator.issue(ctx, issueID)
+		result.executionEnabled = true
+		result.runtime, result.runtimeErr = orchestrator.issue(ctx, issueID)
 		result.runtimeAbsent = errors.Is(result.runtimeErr, errRuntimeNotFound)
 		return result
 	}
+}
+
+func (m tuiModel) connectedOrchestrator() *orchestratorClient {
+	if m.orchestratorExplicit {
+		return m.orchestrator
+	}
+	if m.tracker == nil {
+		return nil
+	}
+	baseURL, ok, err := tqconfig.OrchestratorURLForIssueTracker(m.tracker.baseURL)
+	if err != nil || !ok {
+		return nil
+	}
+	client, err := newOrchestratorClient(baseURL)
+	if err != nil {
+		return nil
+	}
+	return client
 }
 
 func (m tuiModel) loadOlderComments() tea.Cmd {
@@ -336,6 +346,10 @@ func (m tuiModel) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			m.comments, m.commentCursor = msg.comments.Comments, msg.comments.NextCursor
 		}
 		m.runtimeAbsent = msg.runtimeAbsent
+		m.executionEnabled = msg.executionEnabled
+		if !m.executionEnabled && m.tab == tabRun {
+			m.tab = tabOverview
+		}
 		if msg.runtimeErr != nil && !msg.runtimeAbsent {
 			m.runtimeError, m.runtimeErrorAt = msg.runtimeErr.Error(), time.Now()
 		} else {

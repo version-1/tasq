@@ -18,7 +18,8 @@ import {
   createChangeRequest,
   deleteProject,
   fetchProjects,
-  fetchCapabilities,
+
+  isOrchestratorAvailable,
   fetchSummary,
   updateIssueStatus,
   updateIssueAutoOK,
@@ -133,8 +134,7 @@ function LayoutContent({ children }: { children: ReactNode }) {
   const issueDetailID = issueIDFromPathname(pathname);
   const isIssueDetailPage = issueDetailID !== null;
   const [loadState, setLoadState] = useState<LoadState>({ kind: "loading" });
-  // Fail closed: execution endpoints are never contacted until the tracker
-  // explicitly advertises that orchestration is available.
+  // Fail closed until the connected orchestrator proves that it is available.
   const [agentExecutionEnabled, setAgentExecutionEnabled] = useState(false);
   const [selectedIssueID, setSelectedIssueID] = useState<number | null>(null);
   const [addIssueInitialStatus, setAddIssueInitialStatus] =
@@ -183,12 +183,12 @@ function LayoutContent({ children }: { children: ReactNode }) {
   const load = useCallback(
     async (options?: LoadOptions) => {
       try {
-        const [summary, projects, capabilities] = await Promise.all([
+        const [summary, projects, executionAvailable] = await Promise.all([
           fetchSummary(options),
           fetchProjects(options),
-          fetchCapabilities(options),
+          isOrchestratorAvailable(),
         ]);
-        setAgentExecutionEnabled(capabilities.orchestratorEnabled === true);
+        setAgentExecutionEnabled(executionAvailable);
         setLoadState({ kind: "ready", projects, summary });
         setSelectedIssueID((current) => current ?? firstIssueID(summary));
       } catch (error) {

@@ -41,7 +41,7 @@ func TestServiceStartAddressesUsesFallbackWhenDefaultPortIsUnavailable(t *testin
 		defer listener.Close()
 	}
 
-	addresses, fallback, err := serviceStartAddresses(true)
+	addresses, fallback, err := serviceStartAddresses()
 	if err != nil {
 		t.Fatalf("service start addresses: %v", err)
 	}
@@ -53,8 +53,8 @@ func TestServiceStartAddressesUsesFallbackWhenDefaultPortIsUnavailable(t *testin
 			t.Fatalf("address = %q, want loopback address", address)
 		}
 	}
-	if addresses.issueTracker == defaults.issueTracker || addresses.orchestrator == defaults.orchestrator || addresses.web == defaults.web {
-		t.Fatalf("fallback addresses = %+v, want all service ports replaced", addresses)
+	if addresses.issueTracker == defaults.issueTracker || addresses.web == defaults.web {
+		t.Fatalf("fallback addresses = %+v, want tracker and web ports replaced", addresses)
 	}
 }
 
@@ -123,12 +123,12 @@ func TestServiceCommandEnvSetsManagedExecutionContract(t *testing.T) {
 
 func TestValidateServiceExecutablesReportsAllUnavailableTargets(t *testing.T) {
 	home := t.TempDir()
-	err := validateServiceExecutables(home, true)
+	err := validateServiceExecutables(home)
 	if err == nil {
 		t.Fatal("validate service executables error = nil")
 	}
 	message := err.Error()
-	for _, name := range []serviceName{serviceIssueTracker, serviceOrchestrator, serviceWeb} {
+	for _, name := range []serviceName{serviceIssueTracker, serviceWeb} {
 		path := serviceExecutablePath(home, name)
 		for _, want := range []string{string(name) + ": missing", path} {
 			if !strings.Contains(message, want) {
@@ -152,7 +152,7 @@ func TestValidateServiceExecutablesTrackerOnlyDoesNotRequireOrchestrator(t *test
 			t.Fatal(err)
 		}
 	}
-	if err := validateServiceExecutables(home, false); err != nil {
+	if err := validateServiceExecutables(home); err != nil {
 		t.Fatalf("tracker-only executable validation: %v", err)
 	}
 	if _, err := os.Stat(serviceExecutablePath(home, serviceOrchestrator)); !os.IsNotExist(err) {
@@ -160,18 +160,15 @@ func TestValidateServiceExecutablesTrackerOnlyDoesNotRequireOrchestrator(t *test
 	}
 }
 
-func TestConfirmServicePortsSkipsOccupiedOrchestratorWhenDisabled(t *testing.T) {
+func TestConfirmServicePortsIgnoresOccupiedOrchestrator(t *testing.T) {
 	occupied, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer occupied.Close()
 	addresses := serviceAddresses{issueTracker: "127.0.0.1:0", web: "127.0.0.1:0", orchestrator: occupied.Addr().String()}
-	if err := confirmServicePortsAvailable(addresses, false); err != nil {
-		t.Fatalf("disabled port check: %v", err)
-	}
-	if err := confirmServicePortsAvailable(addresses, true); err == nil {
-		t.Fatal("enabled port check succeeded with occupied orchestrator port")
+	if err := confirmServicePortsAvailable(addresses); err != nil {
+		t.Fatalf("orchestrator port must not affect tracker startup: %v", err)
 	}
 }
 
@@ -297,7 +294,7 @@ func TestConfirmServicePortsAvailableFailsWhenCandidateIsTaken(t *testing.T) {
 	}
 	defer listener.Close()
 
-	if err := confirmServicePortsAvailable(addresses, true); err == nil {
+	if err := confirmServicePortsAvailable(addresses); err == nil {
 		t.Fatal("confirm service ports available succeeded after candidate was taken")
 	}
 }

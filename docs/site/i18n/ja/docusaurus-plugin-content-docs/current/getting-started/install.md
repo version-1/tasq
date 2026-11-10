@@ -33,13 +33,19 @@ tq service start
 tq service status
 ```
 
-`tq service start` は issue-tracker、orchestrator、Web サーバーを固定のローカル loopback ポートで起動し、検出情報を `$TQ_HOME/system/state.json` に書き込みます。
+`tq service start` は issue-tracker と Web サーバーを固定のローカル loopback ポートで起動し、検出情報を `$TQ_HOME/system/state.json` に書き込みます。
 
 | サービス | ポート |
 | --- | ---: |
 | issue-tracker | `37651` |
-| orchestrator | `37652` |
 | web | `37653` |
+
+agent execution を有効にするには、専用 migration を適用して明示的に起動します。
+
+```sh
+tq migrate orchestrator
+tq orchestrator start
+```
 
 ## Tasq を更新する
 

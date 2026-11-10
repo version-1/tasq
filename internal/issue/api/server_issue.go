@@ -97,10 +97,6 @@ func (s *Server) updateIssue(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "issues.update.invalid_request", err)
 		return
 	}
-	if !s.orchestratorEnabled && input.AutoOK != nil && *input.AutoOK {
-		writeError(w, http.StatusConflict, "issues.auto_ok.unavailable", errors.New("Auto OK is unavailable while orchestrator execution is disabled"))
-		return
-	}
 	updated, err := s.store.UpdateIssue(r.Context(), id, input)
 	if err != nil {
 		writeStoreError(w, err, "issues.update", "issue")
@@ -116,10 +112,6 @@ type issueStatesInput struct {
 func (s *Server) completeAutoOK(w http.ResponseWriter, r *http.Request) {
 	id, ok := issueID(w, r, "issues.auto_ok")
 	if !ok {
-		return
-	}
-	if !s.orchestratorEnabled {
-		writeError(w, http.StatusConflict, "issues.auto_ok.unavailable", errors.New("Auto OK is unavailable while orchestrator execution is disabled"))
 		return
 	}
 	var input entity.AutoOKResultInput

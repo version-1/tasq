@@ -126,6 +126,51 @@ func TestOrchestratorURLFromState(t *testing.T) {
 	}
 }
 
+func TestOrchestratorURLForIssueTrackerRejectsOtherHomeTracker(t *testing.T) {
+	t.Setenv(EnvHome, t.TempDir())
+	startedAt := time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC)
+	original := readProcessIdentity
+	readProcessIdentity = func(int) (ProcessIdentity, error) { return ProcessIdentity{StartedAt: startedAt}, nil }
+	t.Cleanup(func() { readProcessIdentity = original })
+	if err := UpdateState(func(state *State) error {
+		state.IssueTracker = &ServiceState{PID: 1, ProcessStartedAt: startedAt, Addr: "127.0.0.1:37651"}
+		state.Orchestrator = &ServiceState{PID: 2, ProcessStartedAt: startedAt, Addr: "127.0.0.1:37652"}
+		return nil
+	}); err != nil {
+		t.Fatalf("update state: %v", err)
+	}
+
+	if _, ok, err := OrchestratorURLForIssueTracker("http://127.0.0.1:47651"); err != nil || ok {
+		t.Fatalf("other home pairing = ok:%v err:%v, want unavailable", ok, err)
+	}
+	url, ok, err := OrchestratorURLForIssueTracker("http://127.0.0.1:37651")
+	if err != nil || !ok || url != "http://127.0.0.1:37652" {
+		t.Fatalf("matching pairing = url:%q ok:%v err:%v", url, ok, err)
+	}
+	url, ok, err = OrchestratorURLForIssueTracker("http://localhost:37651")
+	if err != nil || !ok || url != "http://127.0.0.1:37652" {
+		t.Fatalf("loopback pairing = url:%q ok:%v err:%v", url, ok, err)
+	}
+}
+
+func TestOrchestratorURLForIssueTrackerRejectsStaleServiceState(t *testing.T) {
+	t.Setenv(EnvHome, t.TempDir())
+	startedAt := time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC)
+	original := readProcessIdentity
+	readProcessIdentity = func(int) (ProcessIdentity, error) { return ProcessIdentity{StartedAt: startedAt}, nil }
+	t.Cleanup(func() { readProcessIdentity = original })
+	if err := UpdateState(func(state *State) error {
+		state.IssueTracker = &ServiceState{PID: 1, ProcessStartedAt: startedAt, Addr: "127.0.0.1:37651"}
+		state.Orchestrator = &ServiceState{PID: 2, ProcessStartedAt: startedAt.Add(time.Second), Addr: "127.0.0.1:37652"}
+		return nil
+	}); err != nil {
+		t.Fatalf("update state: %v", err)
+	}
+	if _, ok, err := OrchestratorURLForIssueTracker("http://127.0.0.1:37651"); err != nil || ok {
+		t.Fatalf("stale orchestrator pairing = ok:%v err:%v, want unavailable", ok, err)
+	}
+}
+
 func TestServiceStateMatchesCurrentProcessIdentity(t *testing.T) {
 	identity := ProcessIdentity{
 		StartedAt:  time.Date(2026, 9, 5, 12, 0, 0, 0, time.UTC),

@@ -65,6 +65,16 @@ func TestStateReturnsActiveRuns(t *testing.T) {
 	}
 }
 
+func TestHealthReturnsReadyContract(t *testing.T) {
+	t.Parallel()
+	req := httptest.NewRequest(http.MethodGet, "/health", nil)
+	rec := httptest.NewRecorder()
+	New(&fakeStore{}, nil).Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK || rec.Body.String() != `{"status":"ok"}` {
+		t.Fatalf("health = %d %s", rec.Code, rec.Body.String())
+	}
+}
+
 func TestIssueDetailHandlesMissingIssue(t *testing.T) {
 	t.Parallel()
 

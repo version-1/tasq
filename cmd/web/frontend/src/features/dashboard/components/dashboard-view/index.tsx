@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { fetchCapabilities, fetchOrchestratorState } from "@/lib/api";
+import { fetchOrchestratorState, isOrchestratorAvailable } from "@/lib/api";
 import {
   issueStatuses,
   priorities,
@@ -54,8 +54,7 @@ export function DashboardView({ summary, issues, refreshIntervalMs }: DashboardV
 
     async function loadOrchestratorState() {
       try {
-        const capabilities = await fetchCapabilities({ silent: true });
-        if (!capabilities.orchestratorEnabled) {
+        if (!await isOrchestratorAvailable()) {
           if (active) setOrchestratorState({ kind: "ready", state: emptyOrchestratorState() });
           return;
         }

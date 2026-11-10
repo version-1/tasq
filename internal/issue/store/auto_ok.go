@@ -8,22 +8,7 @@ import (
 	"github.com/version-1/tasq/internal/issue/domain/entity"
 )
 
-func updateAutoOK(issue *entity.Issue, input entity.UpdateIssueInput, enabled bool) {
-	if !enabled {
-		// Tracker-only mode never creates a reservation or changes status, but an
-		// existing Auto OK setting can still be explicitly turned off.
-		if input.AutoOK != nil && !*input.AutoOK && issue.AutoOK {
-			issue.AutoOK = false
-			issue.AutoOKPending = false
-			issue.AutoOKClaimed = false
-			issue.AutoOKGeneration++
-		}
-		if input.Status != nil && *input.Status != entity.StatusReady && issue.AutoOKPending && !issue.AutoOKClaimed {
-			issue.AutoOKPending = false
-			issue.AutoOKGeneration++
-		}
-		return
-	}
+func updateAutoOK(issue *entity.Issue, input entity.UpdateIssueInput) {
 	if input.AutoOK != nil && *input.AutoOK != issue.AutoOK {
 		issue.AutoOK = *input.AutoOK
 		issue.AutoOKGeneration++

@@ -11,6 +11,11 @@ use the issue-tracker `{ "data": ..., "meta": {} }` envelope.
 
  * OpenAPI spec version: 0.1.0
  */
+export const HealthResponseValue = {
+  status: 'ok',
+} as const;
+export type HealthResponse = typeof HealthResponseValue;
+
 export interface ErrorInfo {
   code: string;
   message: string;
@@ -193,6 +198,49 @@ export interface RefreshResponse {
 }
 
 /**
+ * Returns success only while this orchestrator HTTP server is accepting requests.
+ * @summary Check orchestrator availability.
+ */
+export type getHealthResponse200 = {
+  data: HealthResponse
+  status: 200
+}
+
+export type getHealthResponseSuccess = (getHealthResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getHealthResponse = (getHealthResponseSuccess)
+
+export const getGetHealthUrl = () => {
+
+
+
+
+  return `/orchestrator/health`
+}
+
+export const getHealth = async ( options?: RequestInit): Promise<getHealthResponse> => {
+
+  const res = await fetch(getGetHealthUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getHealthResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getHealthResponse
+}
+
+
+
+/**
  * Returns active run summaries from the orchestrator runstore.
 
 `retrying` is currently returned as an empty array, and `codex_totals`
@@ -210,7 +258,7 @@ export type getApiV1StateResponse500 = {
   data: ErrorResponse
   status: 500
 }
-    
+
 export type getApiV1StateResponseSuccess = (getApiV1StateResponse200) & {
   headers: Headers;
 };
@@ -223,24 +271,24 @@ export type getApiV1StateResponse = (getApiV1StateResponseSuccess | getApiV1Stat
 export const getGetApiV1StateUrl = () => {
 
 
-  
+
 
   return `/orchestrator/api/v1/state`
 }
 
 export const getApiV1State = async ( options?: RequestInit): Promise<getApiV1StateResponse> => {
-  
+
   const res = await fetch(getGetApiV1StateUrl(),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: getApiV1StateResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as getApiV1StateResponse
 }
@@ -262,7 +310,7 @@ export type postApiV1RefreshResponse503 = {
   data: ErrorResponse
   status: 503
 }
-    
+
 export type postApiV1RefreshResponseSuccess = (postApiV1RefreshResponse202) & {
   headers: Headers;
 };
@@ -275,24 +323,24 @@ export type postApiV1RefreshResponse = (postApiV1RefreshResponseSuccess | postAp
 export const getPostApiV1RefreshUrl = () => {
 
 
-  
+
 
   return `/orchestrator/api/v1/refresh`
 }
 
 export const postApiV1Refresh = async ( options?: RequestInit): Promise<postApiV1RefreshResponse> => {
-  
+
   const res = await fetch(getPostApiV1RefreshUrl(),
-  {      
+  {
     ...options,
     method: 'POST'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: postApiV1RefreshResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as postApiV1RefreshResponse
 }
@@ -324,7 +372,7 @@ export type getApiV1IssueIdentifierResponse500 = {
   data: ErrorResponse
   status: 500
 }
-    
+
 export type getApiV1IssueIdentifierResponseSuccess = (getApiV1IssueIdentifierResponse200) & {
   headers: Headers;
 };
@@ -337,24 +385,24 @@ export type getApiV1IssueIdentifierResponse = (getApiV1IssueIdentifierResponseSu
 export const getGetApiV1IssueIdentifierUrl = (issueIdentifier: string,) => {
 
 
-  
+
 
   return `/orchestrator/api/v1/${issueIdentifier}`
 }
 
 export const getApiV1IssueIdentifier = async (issueIdentifier: string, options?: RequestInit): Promise<getApiV1IssueIdentifierResponse> => {
-  
+
   const res = await fetch(getGetApiV1IssueIdentifierUrl(issueIdentifier),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: getApiV1IssueIdentifierResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as getApiV1IssueIdentifierResponse
 }
@@ -387,7 +435,7 @@ export type getApiV1IssueIdentifierRunsRunIdConversationsResponse500 = {
   data: ErrorResponse
   status: 500
 }
-    
+
 export type getApiV1IssueIdentifierRunsRunIdConversationsResponseSuccess = (getApiV1IssueIdentifierRunsRunIdConversationsResponse200) & {
   headers: Headers;
 };
@@ -401,25 +449,25 @@ export const getGetApiV1IssueIdentifierRunsRunIdConversationsUrl = (issueIdentif
     runId: string,) => {
 
 
-  
+
 
   return `/orchestrator/api/v1/${issueIdentifier}/runs/${runId}/conversations`
 }
 
 export const getApiV1IssueIdentifierRunsRunIdConversations = async (issueIdentifier: string,
     runId: string, options?: RequestInit): Promise<getApiV1IssueIdentifierRunsRunIdConversationsResponse> => {
-  
+
   const res = await fetch(getGetApiV1IssueIdentifierRunsRunIdConversationsUrl(issueIdentifier,runId),
-  {      
+  {
     ...options,
     method: 'GET'
-    
-    
+
+
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
+
   const data: getApiV1IssueIdentifierRunsRunIdConversationsResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as getApiV1IssueIdentifierRunsRunIdConversationsResponse
 }

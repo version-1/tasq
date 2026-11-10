@@ -29,7 +29,7 @@ var embeddedAssets embed.FS
 func main() {
 	addr := flag.String("addr", fmt.Sprintf(":%d", config.DefaultWebPort), "web server listen address")
 	trackerURL := flag.String("tracker-url", fmt.Sprintf("http://127.0.0.1:%d", config.DefaultIssueTrackerPort), "issue-tracker base URL")
-	orchestratorURL := flag.String("orchestrator-url", fmt.Sprintf("http://127.0.0.1:%d", config.DefaultOrchestratorPort), "orchestrator base URL")
+	orchestratorURL := flag.String("orchestrator-url", "", "orchestrator base URL")
 	flag.Parse()
 
 	mux, err := newMux(*trackerURL, *orchestratorURL)
@@ -99,9 +99,25 @@ func newMux(trackerURL string, orchestratorURL string) (http.Handler, error) {
 		w.WriteHeader(http.StatusOK)
 	})
 	mux.Handle("/tracker/", reverseProxy("/tracker", trackerURL))
-	mux.Handle("/orchestrator/", reverseProxy("/orchestrator", orchestratorURL))
+	mux.Handle("/orchestrator/", orchestratorProxy("/orchestrator", trackerURL, orchestratorURL))
 	mux.Handle("/", spaHandler{assets: dist})
 	return mux, nil
+}
+
+func orchestratorProxy(prefix, trackerURL, explicitURL string) http.Handler {
+	explicitURL = strings.TrimSpace(explicitURL)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		target := explicitURL
+		if target == "" {
+			stateURL, ok, err := config.OrchestratorURLForIssueTracker(trackerURL)
+			if err != nil || !ok {
+				http.Error(w, "orchestrator is unavailable", http.StatusServiceUnavailable)
+				return
+			}
+			target = stateURL
+		}
+		reverseProxy(prefix, target).ServeHTTP(w, r)
+	})
 }
 
 func clientAddr(addr string) string {

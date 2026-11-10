@@ -34,19 +34,13 @@ import {
 
 const apiBase = "/tracker/api/v1";
 const orchestratorBase = "/orchestrator/api/v1";
-let capabilities = { orchestratorEnabled: true, autoOKEnabled: true };
-
-export function setMockCapabilities(next: typeof capabilities) {
-  capabilities = next;
-}
-
 export const handlers = [
-  http.get(`${apiBase}/capabilities`, () => {
-    return jsonOk(capabilities);
-  }),
-
   http.get(`${apiBase}/health`, () => {
     return jsonOk({ status: "ok" });
+  }),
+
+  http.get("/orchestrator/health", () => {
+    return HttpResponse.json({ status: "ok" });
   }),
 
   http.get(`${apiBase}/summary`, () => {

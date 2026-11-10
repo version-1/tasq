@@ -105,14 +105,15 @@ when the project has running runs.
 
 | Command | Purpose |
 | --- | --- |
-| `tq service start` | Start issue-tracker, orchestrator, and Web UI. |
+| `tq service start` | Start issue-tracker and Web UI. |
 | `tq service stop` | Stop local services. |
 | `tq service status` | Show service status. |
 | `tq orchestrator start` | Start only the local orchestrator; requires a running local issue-tracker. |
 | `tq orchestrator stop` | Gracefully stop only the local orchestrator. |
 | `tq orchestrator status` | Show local orchestrator status. |
 | `tq logs <service> [-n <lines>] [-f]` | Read service logs. |
-| `tq migrate` | Apply migrations. |
+| `tq migrate` | Apply issue-tracker migrations. |
+| `tq migrate orchestrator` | Apply orchestrator migrations. |
 | `tq migrate down` | Roll back migrations. |
 | `tq migrate status` | Show migration status. |
 | `tq web` | Open the running Web UI. |
@@ -123,9 +124,9 @@ when the project has running runs.
 
 Log services are `tracker` or `issue-tracker`, `orchestrator`, and `web`.
 
-`service start` checks for pending issue-tracker and orchestrator migrations
-before launching processes and directs you to `tq migrate` if needed. It uses
-ports 37651, 37652, and 37653 by default; if any is occupied, it proposes
+`service start` checks for pending issue-tracker migrations before launching
+processes and directs you to `tq migrate` if needed. It uses ports 37651 and
+37653 by default; if either is occupied, it proposes
 loopback replacements and requires confirmation unless `-y` is provided.
 `service stop` stops Web, orchestrator, then issue-tracker. `service status`
 reports service state, PID, port, and uptime and supports JSON output.
@@ -134,7 +135,7 @@ reports service state, PID, port, and uptime and supports JSON output.
 does not support JSON output. `web` opens the URL from service state and fails
 if the Web UI is not running.
 
-`tq tui [--orchestrator-url URL]` requires a terminal and supports only text output. It reads issues, comments, artifacts, and run state without sending mutation requests. Use `--orchestrator-url` to override orchestrator discovery from `state.json`.
+`tq tui [--orchestrator-url URL]` requires a terminal and supports only text output. It reads issues, comments, artifacts, and available run state without sending mutation requests. It discovers an orchestrator only when its local state belongs to the configured issue-tracker; use `--orchestrator-url` for an intentional remote pairing.
 
 `tq config` prints the version, build profile, `TQ_HOME` override, resolved home directory, configuration file path, and resolved values. It does not print the raw YAML. Use global `--output json` for scripts.
 
