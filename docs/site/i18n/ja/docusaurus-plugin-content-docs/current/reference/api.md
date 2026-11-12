@@ -45,6 +45,10 @@ Issue Tracker は利用者向けの Tasq API です。プロジェクト、課�
 | `PATCH` | `/api/v1/issues/{id}` | issue を更新します。 |
 | `PUT` | `/api/v1/issues/{issueId}/artifacts/{type}` | Artifact を作成または更新します。 |
 | `DELETE` | `/api/v1/issues/{issueId}/artifacts/{type}` | Artifact を削除します。 |
+| `GET` | `/api/v1/issues/{issueId}/artifacts/documents` | Document Artifact のメタデータを一覧表示します。 |
+| `POST` | `/api/v1/issues/{issueId}/artifacts/documents` | Document Artifact を作成します。 |
+| `GET` | `/api/v1/issues/{issueId}/artifacts/documents/{documentId}` | Document Artifact を 1 件取得します。 |
+| `PATCH` | `/api/v1/issues/{issueId}/artifacts/documents/{documentId}` | Document Artifact を更新します。 |
 | `GET` | `/api/v1/issues/{issueId}/comments` | comments を list します。 |
 | `POST` | `/api/v1/issues/{issueId}/comments` | comment を追加します。 |
 | `PATCH` | `/api/v1/comments/{id}` | comment を更新します。 |
@@ -69,6 +73,8 @@ comment listing は `cursor` と `limit` を受け付けます。attachment list
 change request の一覧取得では、任意の `status` フィルターと `1`〜`100` の `limit` を指定できます。`limit` の既定値は `50` です。
 
 課題レスポンスには、Artifact がない場合も `[]` となる `artifacts` 配列が常に含まれ、`type` 昇順で返ります。初期の `pull_request` Artifact では、`PUT` に `data_value` だけを指定します。サーバーは `type`、`data_type`、`data_value` を返します。`DELETE` は本文のない `204` を返します。不正な type または URL は `400`、課題または Artifact が存在しない場合は `404` です。
+
+Document Artifact は URL Artifact とは別に Markdown を保存します。Document はサーバー生成の ID、`type`（`reference_document` または `work_report`）、タイトル、本文を持ちます。1 つの課題には、どちらの type でも複数の Document を紐付けられます。一覧レスポンスは本文を含まず、個別取得は保存済みの Markdown をそのまま返します。読み取りと更新は課題 ID と Document ID の両方でスコープされるため、別の課題の Document は `404` になります。`PATCH` では省略したフィールドを維持します。初期 API では Document の delete endpoint を意図的に提供しません。
 
 change request は、後続のエージェント実行で対応する追加作業を記録します。作成時の状態は `open` です。許可される状態遷移は `open` から `in_progress` または `canceled`、`in_progress` から `resolved` または `canceled` です。`resolved` と `canceled` は変更できません。取り消しは状態遷移として扱われ、物理削除のエンドポイントはありません。
 

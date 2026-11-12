@@ -61,12 +61,18 @@ greater than `--interval`. It ignores global `--output`.
 | --- | --- |
 | `tq artifact set <issue-id> --type pull_request <url>` | Create or replace an issue pull-request URL. |
 | `tq artifact delete <issue-id> --type pull_request` | Delete an issue pull-request URL. |
+| `tq artifact document create <issue-id> --type <type> --title <title> --file <path\|->` | Store a reference document or work report. |
+| `tq artifact document list <issue-id>` | List document metadata for an issue. |
+| `tq artifact document get <issue-id> <document-id> [--raw]` | Read one document. |
+| `tq artifact document update <issue-id> <document-id> [--title <title>] [--file <path\|->]` | Update a document title and/or body. |
 
-Both commands require a positive issue ID and `--type`, and support the global text and JSON output modes.
+The URL-artifact commands `artifact set` and `artifact delete` require a positive issue ID and `--type`, and support the global text and JSON output modes.
 
-Only `pull_request` is currently supported. The URL must be an absolute
+For those URL-artifact commands, only `pull_request` is currently supported. The URL must be an absolute
 `http` or `https` URL with a host and no userinfo, up to 4,096 UTF-8 bytes.
 Repeating `artifact set` for an issue and type replaces its URL.
+
+Document types are `reference_document` and `work_report`. Documents are separate from the pull-request URL, so an issue can retain that link and hold multiple documents of either type. `--file -` reads UTF-8 Markdown from standard input; files and input are limited to 100,000 bytes. `list` omits document bodies. Normal `get` output includes metadata, while `get --raw` writes the stored Markdown body byte-for-byte, including trailing newlines. The initial document API has no delete command.
 
 ## Comment Commands
 

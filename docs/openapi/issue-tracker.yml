@@ -474,6 +474,69 @@ paths:
           $ref: "#/components/responses/Error"
         "404":
           $ref: "#/components/responses/Error"
+  /api/v1/issues/{issueId}/artifacts/documents:
+    parameters:
+      - $ref: "#/components/parameters/IssueIDPath"
+    get:
+      tags: [Issues]
+      summary: List document artifacts without Markdown bodies.
+      responses:
+        "200":
+          description: Document artifact summaries.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentArtifactListResponse"
+        "404": { $ref: "#/components/responses/Error" }
+    post:
+      tags: [Issues]
+      summary: Create a Markdown document artifact.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateDocumentArtifactInput" }
+      responses:
+        "201":
+          description: Document artifact created.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DocumentArtifactResponse" }
+        "400": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+  /api/v1/issues/{issueId}/artifacts/documents/{documentId}:
+    parameters:
+      - $ref: "#/components/parameters/IssueIDPath"
+      - name: documentId
+        in: path
+        required: true
+        schema: { type: string, minLength: 1 }
+    get:
+      tags: [Issues]
+      summary: Get a document artifact including its Markdown body.
+      responses:
+        "200":
+          description: Document artifact.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DocumentArtifactResponse" }
+        "404": { $ref: "#/components/responses/Error" }
+    patch:
+      tags: [Issues]
+      summary: Update document artifact Markdown or title.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateDocumentArtifactInput" }
+      responses:
+        "200":
+          description: Updated document artifact.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DocumentArtifactResponse" }
+        "400": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
   /api/v1/issues/{issueId}/comments:
     parameters:
       - $ref: "#/components/parameters/IssueIDPath"
@@ -1148,6 +1211,76 @@ components:
       type: string
       enum:
         - url
+    DocumentArtifactType:
+      type: string
+      enum: [reference_document, work_report]
+    DocumentArtifact:
+      type: object
+      required: [id, issueId, type, title, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        issueId: { type: integer, format: int64 }
+        type: { $ref: "#/components/schemas/DocumentArtifactType" }
+        title:
+          type: string
+          maxLength: 500
+          description: Non-empty title in inputs; maximum 500 UTF-8 bytes (which can be stricter than this character limit).
+          x-max-utf8-bytes: 500
+        body:
+          type: string
+          maxLength: 100000
+          description: Markdown body; maximum 100,000 UTF-8 bytes (which can be stricter than this character limit).
+          x-max-utf8-bytes: 100000
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    CreateDocumentArtifactInput:
+      type: object
+      required: [type, title, body]
+      additionalProperties: false
+      properties:
+        type: { $ref: "#/components/schemas/DocumentArtifactType" }
+        title:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Non-empty title, maximum 500 UTF-8 bytes (which can be stricter than this character limit).
+          x-max-utf8-bytes: 500
+        body:
+          type: string
+          minLength: 1
+          maxLength: 100000
+          description: Non-empty Markdown body, maximum 100,000 UTF-8 bytes (which can be stricter than this character limit).
+          x-max-utf8-bytes: 100000
+    UpdateDocumentArtifactInput:
+      type: object
+      additionalProperties: false
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Non-empty title, maximum 500 UTF-8 bytes (which can be stricter than this character limit).
+          x-max-utf8-bytes: 500
+        body:
+          type: string
+          minLength: 1
+          maxLength: 100000
+          description: Non-empty Markdown body, maximum 100,000 UTF-8 bytes (which can be stricter than this character limit).
+          x-max-utf8-bytes: 100000
+    DocumentArtifactResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data: { $ref: "#/components/schemas/DocumentArtifact" }
+        meta: { $ref: "#/components/schemas/ApiMeta" }
+    DocumentArtifactListResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/DocumentArtifact" }
+        meta: { $ref: "#/components/schemas/ApiMeta" }
     Artifact:
       type: object
       required:

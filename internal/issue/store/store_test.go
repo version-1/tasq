@@ -29,6 +29,8 @@ func TestOpenAppliesIssueTrackerSchema(t *testing.T) {
 		"issues_status_idx",
 		"issue_artifacts",
 		"issue_artifacts_issue_id_idx",
+		"issue_document_artifacts",
+		"issue_document_artifacts_issue_id_idx",
 		"issue_dependencies",
 		"issue_dependencies_dependency_issue_id_idx",
 		"comments",

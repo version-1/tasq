@@ -87,6 +87,25 @@ func writeArtifactDeleted(w io.Writer, format string, issueID int64, artifactTyp
 	return writeSuccess(w, "Artifact deleted")
 }
 
+func writeDocumentArtifact(w io.Writer, format string, item entity.DocumentArtifact) error {
+	if format == "json" {
+		return writeJSON(w, item)
+	}
+	_, err := fmt.Fprintf(w, "ID: %s\nType: %s\nTitle: %s\nCreated: %s\nUpdated: %s\n\n%s", item.ID, item.Type, item.Title, formatTime(item.CreatedAt), formatTime(item.UpdatedAt), item.Body)
+	return err
+}
+func writeDocumentArtifacts(w io.Writer, format string, items []entity.DocumentArtifact) error {
+	if format == "json" {
+		return writeJSON(w, items)
+	}
+	for _, item := range items {
+		if _, err := fmt.Fprintf(w, "%s\t%s\t%s\n", item.ID, item.Type, item.Title); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func writeFaintMessage(w io.Writer, message string) error {
 	_, err := fmt.Fprintf(w, "%s%s%s\n", ansiFaint, message, ansiReset)
 	return err

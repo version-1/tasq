@@ -247,6 +247,74 @@ export const ArtifactDataType = {
   url: 'url',
 } as const;
 
+export type DocumentArtifactType = typeof DocumentArtifactType[keyof typeof DocumentArtifactType];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const DocumentArtifactType = {
+  reference_document: 'reference_document',
+  work_report: 'work_report',
+} as const;
+
+export interface DocumentArtifact {
+  id: string;
+  issueId: number;
+  type: DocumentArtifactType;
+  /**
+   * Non-empty title in inputs; maximum 500 UTF-8 bytes (which can be stricter than this character limit).
+   * @maxLength 500
+   */
+  title: string;
+  /**
+   * Markdown body; maximum 100,000 UTF-8 bytes (which can be stricter than this character limit).
+   * @maxLength 100000
+   */
+  body?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateDocumentArtifactInput {
+  type: DocumentArtifactType;
+  /**
+   * Non-empty title, maximum 500 UTF-8 bytes (which can be stricter than this character limit).
+   * @minLength 1
+   * @maxLength 500
+   */
+  title: string;
+  /**
+   * Non-empty Markdown body, maximum 100,000 UTF-8 bytes (which can be stricter than this character limit).
+   * @minLength 1
+   * @maxLength 100000
+   */
+  body: string;
+}
+
+export interface UpdateDocumentArtifactInput {
+  /**
+   * Non-empty title, maximum 500 UTF-8 bytes (which can be stricter than this character limit).
+   * @minLength 1
+   * @maxLength 500
+   */
+  title?: string;
+  /**
+   * Non-empty Markdown body, maximum 100,000 UTF-8 bytes (which can be stricter than this character limit).
+   * @minLength 1
+   * @maxLength 100000
+   */
+  body?: string;
+}
+
+export interface DocumentArtifactResponse {
+  data: DocumentArtifact;
+  meta: ApiMeta;
+}
+
+export interface DocumentArtifactListResponse {
+  data: DocumentArtifact[];
+  meta: ApiMeta;
+}
+
 export interface Artifact {
   type: ArtifactType;
   data_type: ArtifactDataType;
@@ -1755,6 +1823,220 @@ export const deleteApiV1IssuesIssueIdArtifactsType = async (issueId: number,
 
   const data: deleteApiV1IssuesIssueIdArtifactsTypeResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as deleteApiV1IssuesIssueIdArtifactsTypeResponse
+}
+
+
+
+/**
+ * @summary List document artifacts without Markdown bodies.
+ */
+export type getApiV1IssuesIssueIdArtifactsDocumentsResponse200 = {
+  data: DocumentArtifactListResponse
+  status: 200
+}
+
+export type getApiV1IssuesIssueIdArtifactsDocumentsResponse404 = {
+  data: ErrorResponse
+  status: 404
+}
+
+export type getApiV1IssuesIssueIdArtifactsDocumentsResponseSuccess = (getApiV1IssuesIssueIdArtifactsDocumentsResponse200) & {
+  headers: Headers;
+};
+export type getApiV1IssuesIssueIdArtifactsDocumentsResponseError = (getApiV1IssuesIssueIdArtifactsDocumentsResponse404) & {
+  headers: Headers;
+};
+
+export type getApiV1IssuesIssueIdArtifactsDocumentsResponse = (getApiV1IssuesIssueIdArtifactsDocumentsResponseSuccess | getApiV1IssuesIssueIdArtifactsDocumentsResponseError)
+
+export const getGetApiV1IssuesIssueIdArtifactsDocumentsUrl = (issueId: number,) => {
+
+
+
+
+  return `/tracker/api/v1/issues/${issueId}/artifacts/documents`
+}
+
+export const getApiV1IssuesIssueIdArtifactsDocuments = async (issueId: number, options?: RequestInit): Promise<getApiV1IssuesIssueIdArtifactsDocumentsResponse> => {
+
+  const res = await fetch(getGetApiV1IssuesIssueIdArtifactsDocumentsUrl(issueId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getApiV1IssuesIssueIdArtifactsDocumentsResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getApiV1IssuesIssueIdArtifactsDocumentsResponse
+}
+
+
+
+/**
+ * @summary Create a Markdown document artifact.
+ */
+export type postApiV1IssuesIssueIdArtifactsDocumentsResponse201 = {
+  data: DocumentArtifactResponse
+  status: 201
+}
+
+export type postApiV1IssuesIssueIdArtifactsDocumentsResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type postApiV1IssuesIssueIdArtifactsDocumentsResponse404 = {
+  data: ErrorResponse
+  status: 404
+}
+
+export type postApiV1IssuesIssueIdArtifactsDocumentsResponseSuccess = (postApiV1IssuesIssueIdArtifactsDocumentsResponse201) & {
+  headers: Headers;
+};
+export type postApiV1IssuesIssueIdArtifactsDocumentsResponseError = (postApiV1IssuesIssueIdArtifactsDocumentsResponse400 | postApiV1IssuesIssueIdArtifactsDocumentsResponse404) & {
+  headers: Headers;
+};
+
+export type postApiV1IssuesIssueIdArtifactsDocumentsResponse = (postApiV1IssuesIssueIdArtifactsDocumentsResponseSuccess | postApiV1IssuesIssueIdArtifactsDocumentsResponseError)
+
+export const getPostApiV1IssuesIssueIdArtifactsDocumentsUrl = (issueId: number,) => {
+
+
+
+
+  return `/tracker/api/v1/issues/${issueId}/artifacts/documents`
+}
+
+export const postApiV1IssuesIssueIdArtifactsDocuments = async (issueId: number,
+    createDocumentArtifactInput: CreateDocumentArtifactInput, options?: RequestInit): Promise<postApiV1IssuesIssueIdArtifactsDocumentsResponse> => {
+
+  const res = await fetch(getPostApiV1IssuesIssueIdArtifactsDocumentsUrl(issueId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createDocumentArtifactInput,)
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: postApiV1IssuesIssueIdArtifactsDocumentsResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as postApiV1IssuesIssueIdArtifactsDocumentsResponse
+}
+
+
+
+/**
+ * @summary Get a document artifact including its Markdown body.
+ */
+export type getApiV1IssuesIssueIdArtifactsDocumentsDocumentIdResponse200 = {
+  data: DocumentArtifactResponse
+  status: 200
+}
+
+export type getApiV1IssuesIssueIdArtifactsDocumentsDocumentIdResponse404 = {
+  data: ErrorResponse
+  status: 404
+}
+
+export type getApiV1IssuesIssueIdArtifactsDocumentsDocumentIdResponseSuccess = (getApiV1IssuesIssueIdArtifactsDocumentsDocumentIdResponse200) & {
+  headers: Headers;
+};
+export type getApiV1IssuesIssueIdArtifactsDocumentsDocumentIdResponseError = (getApiV1IssuesIssueIdArtifactsDocumentsDocumentIdResponse404) & {
+  headers: Headers;
+};
+
+export type getApiV1IssuesIssueIdArtifactsDocumentsDocumentIdResponse = (getApiV1IssuesIssueIdArtifactsDocumentsDocumentIdResponseSuccess | getApiV1IssuesIssueIdArtifactsDocumentsDocumentIdResponseError)
+
+export const getGetApiV1IssuesIssueIdArtifactsDocumentsDocumentIdUrl = (issueId: number,
+    documentId: string,) => {
+
+
+
+
+  return `/tracker/api/v1/issues/${issueId}/artifacts/documents/${documentId}`
+}
+
+export const getApiV1IssuesIssueIdArtifactsDocumentsDocumentId = async (issueId: number,
+    documentId: string, options?: RequestInit): Promise<getApiV1IssuesIssueIdArtifactsDocumentsDocumentIdResponse> => {
+
+  const res = await fetch(getGetApiV1IssuesIssueIdArtifactsDocumentsDocumentIdUrl(issueId,documentId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getApiV1IssuesIssueIdArtifactsDocumentsDocumentIdResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getApiV1IssuesIssueIdArtifactsDocumentsDocumentIdResponse
+}
+
+
+
+/**
+ * @summary Update document artifact Markdown or title.
+ */
+export type patchApiV1IssuesIssueIdArtifactsDocumentsDocumentIdResponse200 = {
+  data: DocumentArtifactResponse
+  status: 200
+}
+
+export type patchApiV1IssuesIssueIdArtifactsDocumentsDocumentIdResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type patchApiV1IssuesIssueIdArtifactsDocumentsDocumentIdResponse404 = {
+  data: ErrorResponse
+  status: 404
+}
+
+export type patchApiV1IssuesIssueIdArtifactsDocumentsDocumentIdResponseSuccess = (patchApiV1IssuesIssueIdArtifactsDocumentsDocumentIdResponse200) & {
+  headers: Headers;
+};
+export type patchApiV1IssuesIssueIdArtifactsDocumentsDocumentIdResponseError = (patchApiV1IssuesIssueIdArtifactsDocumentsDocumentIdResponse400 | patchApiV1IssuesIssueIdArtifactsDocumentsDocumentIdResponse404) & {
+  headers: Headers;
+};
+
+export type patchApiV1IssuesIssueIdArtifactsDocumentsDocumentIdResponse = (patchApiV1IssuesIssueIdArtifactsDocumentsDocumentIdResponseSuccess | patchApiV1IssuesIssueIdArtifactsDocumentsDocumentIdResponseError)
+
+export const getPatchApiV1IssuesIssueIdArtifactsDocumentsDocumentIdUrl = (issueId: number,
+    documentId: string,) => {
+
+
+
+
+  return `/tracker/api/v1/issues/${issueId}/artifacts/documents/${documentId}`
+}
+
+export const patchApiV1IssuesIssueIdArtifactsDocumentsDocumentId = async (issueId: number,
+    documentId: string,
+    updateDocumentArtifactInput: UpdateDocumentArtifactInput, options?: RequestInit): Promise<patchApiV1IssuesIssueIdArtifactsDocumentsDocumentIdResponse> => {
+
+  const res = await fetch(getPatchApiV1IssuesIssueIdArtifactsDocumentsDocumentIdUrl(issueId,documentId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateDocumentArtifactInput,)
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: patchApiV1IssuesIssueIdArtifactsDocumentsDocumentIdResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as patchApiV1IssuesIssueIdArtifactsDocumentsDocumentIdResponse
 }
 
 

@@ -20,6 +20,8 @@ const api = vi.hoisted(() => ({
   fetchComments: vi.fn(),
   fetchIssue: vi.fn(),
   fetchIssueAttachments: vi.fn(),
+  fetchDocumentArtifacts: vi.fn(),
+  fetchDocumentArtifact: vi.fn(),
   fetchOrchestratorConversation: vi.fn(),
   fetchOrchestratorIssueRuntime: vi.fn(),
   updateIssueDescription: vi.fn(),
@@ -50,6 +52,8 @@ describe("IssueDetailPage", () => {
     api.fetchComments.mockReset();
     api.fetchIssue.mockReset();
     api.fetchIssueAttachments.mockReset();
+    api.fetchDocumentArtifacts.mockReset();
+    api.fetchDocumentArtifact.mockReset();
     api.fetchOrchestratorConversation.mockReset();
     api.fetchOrchestratorIssueRuntime.mockReset();
     api.updateIssueDescription.mockReset();
@@ -58,6 +62,7 @@ describe("IssueDetailPage", () => {
 
     api.fetchIssue.mockResolvedValue(issue);
     api.fetchIssueAttachments.mockResolvedValue(attachmentsResponse);
+    api.fetchDocumentArtifacts.mockResolvedValue([]);
     api.fetchOrchestratorIssueRuntime.mockResolvedValue(runtime);
     api.fetchChangeRequests.mockResolvedValue(changeRequestsResponse);
     api.fetchComments.mockResolvedValue(commentsResponse);
