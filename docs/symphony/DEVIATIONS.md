@@ -4,6 +4,12 @@ This document records intentional differences between Tasq and the upstream Symp
 
 Tasq uses the Symphony specification as the direction for orchestration, workspace, workflow, agent-runner, tracker, and observability behavior. Some implementation choices differ because Tasq already has a local issue-tracker service that owns issue state.
 
+## Explicit Managed Execution
+
+`tq service start` starts only the local issue-tracker and Web UI. `tq orchestrator start` explicitly starts managed execution. The issue-tracker never opens the orchestrator runstore and its issue, queue, and Auto OK contracts do not vary with orchestrator liveness. Web and TUI clients verify the connected orchestrator through `GET /health` before exposing execution controls.
+
+To preserve history without opening or migrating its database, project deletion is refused when the orchestrator database exists or cannot be checked. Operators must perform verified history cleanup before deletion.
+
 ## Tracker Adapter
 
 Tasq does not implement the Linear tracker client described in Section 11 of the Symphony specification.

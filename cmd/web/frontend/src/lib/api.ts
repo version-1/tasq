@@ -31,6 +31,7 @@ import {
   type UpdateIssueInput,
 } from "@/lib/generated/issue-tracker";
 import {
+  getHealth,
   getApiV1State,
   getApiV1IssueIdentifier,
   getApiV1IssueIdentifierRunsRunIdConversations,
@@ -77,6 +78,15 @@ export class ApiRequestError extends Error {
 
 export function fetchSummary(options?: ApiRequestOptions): Promise<Summary> {
   return unwrapResponse(getApiV1Summary(noStore), options);
+}
+
+export async function isOrchestratorAvailable(): Promise<boolean> {
+  try {
+    const response = await getHealth({ ...noStore, signal: AbortSignal.timeout(2_000) });
+    return response.status >= 200 && response.status < 300 && response.data.status === "ok";
+  } catch {
+    return false;
+  }
 }
 
 export function createIssue(input: CreateIssueInput, options?: ApiRequestOptions): Promise<Issue> {

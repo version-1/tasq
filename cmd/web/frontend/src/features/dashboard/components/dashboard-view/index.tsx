@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { fetchOrchestratorState } from "@/lib/api";
+import { fetchOrchestratorState, isOrchestratorAvailable } from "@/lib/api";
 import {
   issueStatuses,
   priorities,
@@ -54,6 +54,10 @@ export function DashboardView({ summary, issues, refreshIntervalMs }: DashboardV
 
     async function loadOrchestratorState() {
       try {
+        if (!await isOrchestratorAvailable()) {
+          if (active) setOrchestratorState({ kind: "ready", state: emptyOrchestratorState() });
+          return;
+        }
         const state = await fetchOrchestratorState({ silent: true });
         if (active) {
           setOrchestratorState({ kind: "ready", state });
@@ -111,6 +115,10 @@ export function DashboardView({ summary, issues, refreshIntervalMs }: DashboardV
       </div>
     </section>
   );
+}
+
+function emptyOrchestratorState(): OrchestratorState {
+  return { generated_at: "", counts: { running: 0, retrying: 0 }, running: [], retrying: [], codex_totals: null, rate_limits: null };
 }
 
 function MetricCard({

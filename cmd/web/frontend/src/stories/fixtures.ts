@@ -87,6 +87,7 @@ export const storyRuns: OrchestratorIssueRun[] = [
 ];
 
 export const storyShellData: LayoutShellData = {
+  agentExecutionEnabled: true,
   activePage: "issues",
   activeProject: projectFixtures[0],
   addIssueError: "",
@@ -113,6 +114,7 @@ export const storyShellData: LayoutShellData = {
     onResolveIssue: noop,
     onStatusChange: asyncNoop,
     onAutoOKChange: asyncNoop,
+    agentExecutionEnabled: true,
   },
   loadState: {
     kind: "ready",

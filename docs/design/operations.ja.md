@@ -6,9 +6,11 @@
 
 Docker Compose は、ローカル開発環境を長時間起動する `dev` container と standalone OpenAPI UI container に集約します。`dev` container 内では issue-tracker が container port `8080`、orchestrator が container port `8081`、Go Web サーバーが container port `3000` で待ち受けます。
 
-個人マシンでホストのみの運用を行う場合、`tq service start` は issue-tracker、orchestrator、web をバックグラウンドプロセスとして起動します。固定ローカルポート `37651`、`37652`、`37653` を優先し、いずれかが使用中なら全サービスに OS 選択の loopback ポートを 1 つずつ提案して、対話確認（または `-y`）後に起動します。確認後に提案ポートを再確認し、取得されていた場合は別の組を選ばず失敗します。選択したアドレスは検出用状態として `$TQ_HOME/system/state.json` に書き込み、ログを `$TQ_HOME/system/log/` 配下へ追記します。
+個人マシンでホストのみの運用を行う場合、`tq service start` は issue-tracker と web をバックグラウンドプロセスとして起動します。固定ローカルポート `37651` と `37653` を優先し、いずれかが使用中なら各サービスに OS 選択の loopback ポートを 1 つずつ提案して、対話確認（または `-y`）後に起動します。確認後に提案ポートを再確認し、取得されていた場合は別の組を選ばず失敗します。選択したアドレスは検出用状態として `$TQ_HOME/system/state.json` に書き込み、ログを `$TQ_HOME/system/log/` 配下へ追記します。agent execution は `tq migrate orchestrator` の後に `tq orchestrator start` で別途起動します。
 
-データベースが新規の場合、または未適用のマイグレーションがある場合は、サービス起動前に `tq migrate` を実行します。`tq service start` はサービスプロセスを起動する前に issue-tracker と orchestrator のデータベースを確認し、未適用のマイグレーションがあれば `tq migrate` の実行を案内して終了します。サービス側もスキーマ変更を自動適用せず、同じ案内を出して fail fast します。
+`tq service start` は既存 orchestrator を再起動も再設定もしません。fallback port の選択を含め tracker endpoint が変わった場合は、orchestrator を停止してから起動し、新しい tracker endpoint に bind してください。
+
+データベースが新規の場合、または未適用のマイグレーションがある場合は、tracker service 起動前に `tq migrate` を実行します。`tq service start` はサービスプロセスを起動する前に issue-tracker database だけを確認します。`tq orchestrator start` は orchestrator database を別途確認し、必要なら `tq migrate orchestrator` を案内します。サービス側はスキーマ変更を自動適用せず fail fast します。
 
 state に記録されたローカル orchestrator だけを管理するには、`tq orchestrator start`、`tq orchestrator stop`、`tq orchestrator status` を使います。起動時には state に記録された Issue Tracker が起動中である必要があり、既定 orchestrator port を使います。Issue Tracker や Web service の起動、停止、再設定は行いません。停止は冪等で、`tq service stop` と同じ graceful shutdown 経路を使います。
 

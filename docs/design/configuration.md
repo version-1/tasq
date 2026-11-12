@@ -57,6 +57,9 @@ max_concurrent_agents: 3
 |---|---:|---|
 | `author` | `$USER` | Default author used by `tq comment add` when `--author` and `TQ_AUTHOR` are not set. |
 | `max_concurrent_agents` | `10` | Machine-wide concurrency limit for orchestrator agent runs. |
+`tq service start` always starts the issue-tracker and Web UI only. Start agent execution explicitly with `tq orchestrator start`; use `tq migrate orchestrator` first when its database has pending migrations. The tracker never opens the orchestrator database and keeps its issue and Auto OK data contract regardless of whether an orchestrator is running. The Web UI and TUI expose execution controls only while their connected orchestrator returns `GET /health` with `{ "status": "ok" }`.
+
+Project deletion is refused when an existing orchestrator database may contain history, because the tracker does not open or delete that database. Complete verified history cleanup before deleting that project.
 
 ## state.json
 

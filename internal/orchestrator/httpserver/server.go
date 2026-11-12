@@ -39,11 +39,17 @@ func New(store Store, refresher Refresher) *Server {
 
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
+	mux.HandleFunc("GET /health", s.health)
 	mux.HandleFunc("GET /api/v1/state", s.state)
 	mux.HandleFunc("POST /api/v1/refresh", s.refresh)
 	mux.HandleFunc("GET /api/v1/{issue_identifier}", s.issue)
 	mux.HandleFunc("GET /api/v1/{issue_identifier}/runs/{run_id}/conversations", s.conversation)
 	return mux
+}
+
+func (s *Server) health(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	_, _ = w.Write([]byte(`{"status":"ok"}`))
 }
 
 func ListenAndServe(ctx context.Context, port int, handler http.Handler) (string, error) {

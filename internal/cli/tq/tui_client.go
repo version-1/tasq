@@ -192,3 +192,25 @@ func (c *orchestratorClient) issue(ctx context.Context, issueID int64) (runtimeI
 	}
 	return result, nil
 }
+
+func (c *orchestratorClient) healthy(ctx context.Context) bool {
+	if c == nil {
+		return false
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/health", nil)
+	if err != nil {
+		return false
+	}
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return false
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		return false
+	}
+	var health struct {
+		Status string `json:"status"`
+	}
+	return json.NewDecoder(resp.Body).Decode(&health) == nil && health.Status == "ok"
+}

@@ -108,6 +108,82 @@ func TestTUIReadClientsSendOnlyGET(t *testing.T) {
 	}
 }
 
+func TestTUIUnhealthyOrchestratorDisablesRunPollingAndTab(t *testing.T) {
+	requests := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/health":
+			requests++
+			_, _ = w.Write([]byte(`{"status":"not-ready"}`))
+		case "/api/v1/issues/42":
+			_, _ = w.Write([]byte(`{"data":{"id":42,"projectId":1,"projectKey":"tasq","title":"TUI","description":"","status":"ready","priority":"normal","assignee":"","dependency_ids":[],"artifacts":[],"createdAt":"2026-01-01T00:00:00Z","updatedAt":"2026-01-01T00:00:00Z"},"meta":{}}`))
+		case "/api/v1/issues/42/comments":
+			_, _ = w.Write([]byte(`{"data":[],"meta":{"nextCursor":null}}`))
+		case "/api/v1/issue-42":
+			t.Errorf("orchestrator polling occurred while disabled")
+			http.Error(w, "unexpected", http.StatusInternalServerError)
+		default:
+			t.Errorf("unexpected request %s", r.URL.Path)
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+	tracker, err := newAPIClient(server.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := newTUIModel(context.Background(), tracker, &orchestratorClient{baseURL: server.URL, httpClient: server.Client()}, func(string) error { return nil })
+	m.issues = []entity.Issue{{ID: 42}}
+	m.tab = tabRun
+	cmd := m.loadDetail()
+	msg := cmd().(detailResultMsg)
+	if msg.runtimeErr != nil || msg.runtimeAbsent {
+		t.Fatalf("disabled run inspection = %+v", msg)
+	}
+	updated, _ := m.Update(msg)
+	model := updated.(tuiModel)
+	if model.executionEnabled || model.tab != tabOverview {
+		t.Fatalf("disabled transition = enabled:%v tab:%d", model.executionEnabled, model.tab)
+	}
+	if requests != 1 {
+		t.Fatalf("health requests=%d, want 1", requests)
+	}
+}
+
+func TestTUIExecutionAvailabilityReconnectsAndClampsRunTab(t *testing.T) {
+	m := newTUIModel(context.Background(), nil, nil, func(string) error { return nil })
+	m.issues = []entity.Issue{{ID: 42}}
+	message := detailResultMsg{
+		generation: 0,
+		request:    0,
+		issueID:    42,
+		issue:      entity.Issue{ID: 42},
+		comments:   commentPage{},
+	}
+
+	updated, _ := m.Update(message)
+	stopped := updated.(tuiModel)
+	if stopped.executionEnabled {
+		t.Fatal("execution is enabled while orchestrator is stopped")
+	}
+
+	message.executionEnabled = true
+	updated, _ = stopped.Update(message)
+	up := updated.(tuiModel)
+	if !up.executionEnabled {
+		t.Fatal("execution did not enable after orchestrator became healthy")
+	}
+
+	up.tab = tabRun
+	message.executionEnabled = false
+	updated, _ = up.Update(message)
+	down := updated.(tuiModel)
+	if down.executionEnabled || down.tab != tabOverview {
+		t.Fatalf("execution stop transition = enabled:%v tab:%d", down.executionEnabled, down.tab)
+	}
+}
+
 func TestTUIModelRejectsStaleResultsAndPreservesSelection(t *testing.T) {
 	now := time.Now()
 	m := newTUIModel(context.Background(), nil, nil, func(string) error { return nil })

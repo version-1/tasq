@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"log"
 	"net"
@@ -15,7 +16,6 @@ import (
 	tqconfig "github.com/version-1/tasq/internal/config"
 	"github.com/version-1/tasq/internal/issue/api"
 	"github.com/version-1/tasq/internal/issue/store"
-	"github.com/version-1/tasq/internal/orchestrator/runstore"
 )
 
 func main() {
@@ -41,18 +41,18 @@ func main() {
 			log.Printf("close issue store: %v", err)
 		}
 	}()
-	orchestratorStore, err := runstore.Open(ctx, tqconfig.OrchestratorDBPath(home))
-	if err != nil {
-		log.Fatalf("open orchestrator store: %v", err)
-	}
-	defer func() {
-		if err := orchestratorStore.Close(); err != nil {
-			log.Printf("close orchestrator store: %v", err)
+	trackerServer := api.NewServer(issueStore)
+	legacyRunDBPath := tqconfig.OrchestratorDBPath(home)
+	trackerServer.SetProjectDeletionGuard(func(context.Context) error {
+		if _, err := os.Stat(legacyRunDBPath); err == nil || !errors.Is(err, os.ErrNotExist) {
+			return errors.New("project deletion is unavailable while orchestrator history may exist; complete verified legacy cleanup before deleting the project")
 		}
-	}()
+		return nil
+	})
+	handler := trackerServer.Handler()
 
 	server := &http.Server{
-		Handler:           api.NewServerWithOrchestratorStore(issueStore, orchestratorStore).Handler(),
+		Handler:           handler,
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 	listener, err := net.Listen("tcp", *addr)

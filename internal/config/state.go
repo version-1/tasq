@@ -119,6 +119,30 @@ func OrchestratorURLFromState() (string, bool, error) {
 	return serviceURL(state.Orchestrator.Addr), true, nil
 }
 
+// OrchestratorURLForIssueTracker returns the local orchestrator only when the
+// state belongs to the supplied issue-tracker connection. This prevents a
+// client configured for another TQ_HOME from inspecting this home's runs.
+func OrchestratorURLForIssueTracker(trackerURL string) (string, bool, error) {
+	state, err := ReadState()
+	if err != nil {
+		return "", false, err
+	}
+	if state.IssueTracker == nil || state.Orchestrator == nil ||
+		strings.TrimSpace(state.IssueTracker.Addr) == "" || strings.TrimSpace(state.Orchestrator.Addr) == "" ||
+		!sameServiceEndpoint(serviceURL(state.IssueTracker.Addr), trackerURL) {
+		return "", false, nil
+	}
+	trackerMatches, err := state.IssueTracker.MatchesProcessIdentity()
+	if err != nil || !trackerMatches {
+		return "", false, err
+	}
+	orchestratorMatches, err := state.Orchestrator.MatchesProcessIdentity()
+	if err != nil || !orchestratorMatches {
+		return "", false, err
+	}
+	return serviceURL(state.Orchestrator.Addr), true, nil
+}
+
 func readStateFile(path string) (State, error) {
 	raw, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
@@ -171,4 +195,22 @@ func serviceURL(addr string) string {
 		return strings.TrimRight(addr, "/")
 	}
 	return "http://" + strings.TrimRight(addr, "/")
+}
+
+func sameServiceEndpoint(left, right string) bool {
+	leftURL, leftErr := url.Parse(strings.TrimRight(left, "/"))
+	rightURL, rightErr := url.Parse(strings.TrimRight(right, "/"))
+	return leftErr == nil && rightErr == nil &&
+		leftURL.Scheme == rightURL.Scheme &&
+		canonicalEndpointHost(leftURL) == canonicalEndpointHost(rightURL) &&
+		leftURL.Port() == rightURL.Port() &&
+		leftURL.Path == rightURL.Path
+}
+
+func canonicalEndpointHost(value *url.URL) string {
+	host := strings.ToLower(value.Hostname())
+	if host == "localhost" {
+		return "127.0.0.1"
+	}
+	return host
 }

@@ -17,6 +17,19 @@ tags:
   - name: Runtime Debug
   - name: Refresh
 paths:
+  /health:
+    get:
+      tags:
+        - Runtime State
+      summary: Check orchestrator availability.
+      description: Returns success only while this orchestrator HTTP server is accepting requests.
+      responses:
+        "200":
+          description: Orchestrator is available.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
   /api/v1/state:
     get:
       tags:
@@ -130,6 +143,14 @@ components:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
   schemas:
+    HealthResponse:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          const: ok
     ErrorInfo:
       type: object
       required:

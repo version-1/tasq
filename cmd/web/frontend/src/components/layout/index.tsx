@@ -18,6 +18,8 @@ import {
   createChangeRequest,
   deleteProject,
   fetchProjects,
+
+  isOrchestratorAvailable,
   fetchSummary,
   updateIssueStatus,
   updateIssueAutoOK,
@@ -67,9 +69,11 @@ export type LayoutData = {
   onResolveIssue: (issueID: number) => void;
   onStatusChange: (id: number, status: IssueStatus) => Promise<void>;
   onAutoOKChange: (id: number, enabled: boolean) => Promise<void>;
+  agentExecutionEnabled: boolean;
 };
 
 export type LayoutShellData = {
+  agentExecutionEnabled: boolean;
   activePage: TasqPage;
   activeProject: Project | null;
   addIssueError: string;
@@ -130,6 +134,8 @@ function LayoutContent({ children }: { children: ReactNode }) {
   const issueDetailID = issueIDFromPathname(pathname);
   const isIssueDetailPage = issueDetailID !== null;
   const [loadState, setLoadState] = useState<LoadState>({ kind: "loading" });
+  // Fail closed until the connected orchestrator proves that it is available.
+  const [agentExecutionEnabled, setAgentExecutionEnabled] = useState(false);
   const [selectedIssueID, setSelectedIssueID] = useState<number | null>(null);
   const [addIssueInitialStatus, setAddIssueInitialStatus] =
     useState<IssueStatus>("backlog");
@@ -177,10 +183,12 @@ function LayoutContent({ children }: { children: ReactNode }) {
   const load = useCallback(
     async (options?: LoadOptions) => {
       try {
-        const [summary, projects] = await Promise.all([
+        const [summary, projects, executionAvailable] = await Promise.all([
           fetchSummary(options),
           fetchProjects(options),
+          isOrchestratorAvailable(),
         ]);
+        setAgentExecutionEnabled(executionAvailable);
         setLoadState({ kind: "ready", projects, summary });
         setSelectedIssueID((current) => current ?? firstIssueID(summary));
       } catch (error) {
@@ -250,6 +258,7 @@ function LayoutContent({ children }: { children: ReactNode }) {
   }
 
   async function handleAutoOKChange(id: number, enabled: boolean) {
+    if (!agentExecutionEnabled) return;
     await updateIssueAutoOK(id, enabled);
     await load();
   }
@@ -443,10 +452,12 @@ function LayoutContent({ children }: { children: ReactNode }) {
         onResolveIssue: handleResolveIssue,
         onStatusChange: handleStatusChange,
         onAutoOKChange: handleAutoOKChange,
+        agentExecutionEnabled,
       }
     : null;
 
   const shellData: LayoutShellData = {
+    agentExecutionEnabled,
     activePage,
     activeProject,
     addIssueError,
@@ -558,6 +569,7 @@ export function ShellLayout({
           canDeleteProject={shellData.isProjectIssueScope && shellData.activeProject !== null}
           showAddTaskButton={showAddTaskButton}
           showViewNavigation={showViewNavigation}
+          agentExecutionEnabled={shellData.agentExecutionEnabled}
         />
 
         <ModalOutlet>

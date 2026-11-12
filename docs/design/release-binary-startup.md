@@ -62,7 +62,7 @@ or use:
 tq web
 ```
 
-`tq service start` starts all three managed services with fixed loopback ports. See [Installation](../site/docs/getting-started/install.md) for the port table. Each service's data:
+`tq service start` starts the issue-tracker and Web services with fixed loopback ports. Start the optional orchestrator separately with `tq migrate orchestrator` and `tq orchestrator start`. See [Installation](../site/docs/getting-started/install.md) for the port table. Each service's data:
 
 | Service | Data |
 | --- | --- |
@@ -70,7 +70,7 @@ tq web
 | `orchestrator` | `$TQ_HOME/system/data/orchestrator.sqlite` |
 | `web` | static assets embedded in the `web` binary |
 
-`tq service start` only starts `issue-tracker`, `orchestrator`, and `web` from `$TQ_HOME/system/bin`. It does not search next to the running `tq`, in `PATH`, or in the source tree. If any managed binary is missing or not executable, it reports every invalid path before starting a service and directs the user to reinstall with the same `TQ_HOME`.
+`tq service start` only starts `issue-tracker` and `web` from `$TQ_HOME/system/bin`. It does not search next to the running `tq`, in `PATH`, or in the source tree. If either managed binary is missing or not executable, it reports every invalid path before starting a service and directs the user to reinstall with the same `TQ_HOME`.
 
 `tq service start` does not expose flags for custom ports. If one of the default ports is already in use, the binary-only README should direct users to stop the conflicting process or use manual startup.
 
@@ -81,12 +81,12 @@ Manual startup is useful for custom ports or for documenting each binary's flags
 ```sh
 export TQ_HOME="$(pwd)/.tasq"
 tq migrate
+tq migrate orchestrator
 
 issue-tracker -addr 127.0.0.1:37651
 orchestrator -issue-tracker http://127.0.0.1:37651 -port 37652
 web -addr 127.0.0.1:37653 \
-  -tracker-url http://127.0.0.1:37651 \
-  -orchestrator-url http://127.0.0.1:37652
+  -tracker-url http://127.0.0.1:37651
 ```
 
 The flags are:
@@ -95,10 +95,10 @@ The flags are:
 | --- | --- | --- |
 | `issue-tracker` | `-addr`, `-db` | `-addr` defaults to `:37651`; `-db` defaults to `$TQ_HOME/system/data/issues.sqlite`; writes `issue_tracker` to `state.json`. |
 | `orchestrator` | `-db`, `-issue-tracker`, `-port` | `-db` defaults to `$TQ_HOME/system/data/orchestrator.sqlite`; `-issue-tracker` can be omitted when `state.json` has an issue-tracker address; `-port -1` disables HTTP unless workflow config enables it; writes `orchestrator` to `state.json`. |
-| `web` | `-addr`, `-tracker-url`, `-orchestrator-url` | `-addr` defaults to `:37653`; backend URLs default to `http://127.0.0.1:37651` and `http://127.0.0.1:37652`; writes `web` to `state.json`. |
+| `web` | `-addr`, `-tracker-url`, `-orchestrator-url` | `-addr` defaults to `:37653`; the tracker defaults to `http://127.0.0.1:37651`; without an explicit orchestrator URL it dynamically discovers only a matching local state entry; writes `web` to `state.json`. |
 | `tq` | `--api-url`, `--output` | API URL resolution is `--api-url` or `-api-url`, then `TQ_API_URL`, then `$TQ_HOME/system/state.json`, then `http://localhost:37651`. |
 
-When using non-default ports, pass `-tracker-url` and `-orchestrator-url` to `web`. Unlike `tq` and `orchestrator`, `web` does not discover backend URLs from `state.json`.
+When using non-default ports, pass `-tracker-url` to `web`. Use `-orchestrator-url` only for an intentional explicit pairing; otherwise Web dynamically discovers a matching local orchestrator from `state.json`.
 
 ## Verification Performed
 

@@ -920,7 +920,7 @@ func TestServiceStartFailsBeforeStartingServicesWhenMigrationsPending(t *testing
 		t.Fatalf("write tq executable: %v", err)
 	}
 	t.Setenv("PATH", commandDir)
-	for _, name := range []serviceName{serviceIssueTracker, serviceOrchestrator, serviceWeb} {
+	for _, name := range []serviceName{serviceIssueTracker, serviceWeb} {
 		path := serviceExecutablePath(home, name)
 		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 			t.Fatalf("create service bin directory: %v", err)
@@ -941,7 +941,6 @@ func TestServiceStartFailsBeforeStartingServicesWhenMigrationsPending(t *testing
 	for _, want := range []string{
 		"migration pre-flight check failed",
 		"issue-tracker:20260615000000_init",
-		"orchestrator:20260615000000_init",
 		"run `tq migrate`",
 	} {
 		if !strings.Contains(message, want) {
@@ -971,6 +970,27 @@ func TestServiceMigrationPreflightPassesAfterMigrate(t *testing.T) {
 	}
 }
 
+func TestTrackerOnlyMigrateAndPreflightDoNotCreateOrchestratorDB(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv(tqconfig.EnvHome, home)
+	if err := os.MkdirAll(filepath.Dir(tqconfig.ConfigPath(home)), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(tqconfig.ConfigPath(home), []byte("orchestrator_enabled: false\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	stdout, stderr, code := runCLI(t, []string{"migrate"})
+	if code != 0 {
+		t.Fatalf("migrate code=%d stdout=%s stderr=%s", code, stdout, stderr)
+	}
+	if err := checkMigrationTargetsNoPending(context.Background()); err != nil {
+		t.Fatalf("tracker-only preflight: %v", err)
+	}
+	if _, err := os.Stat(tqconfig.OrchestratorDBPath(home)); !os.IsNotExist(err) {
+		t.Fatalf("orchestrator DB exists or stat failed: %v", err)
+	}
+}
+
 func TestMigrateAppliesLocalDatabases(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv(tqconfig.EnvHome, home)
@@ -996,6 +1016,10 @@ func TestMigrateAppliesLocalDatabases(t *testing.T) {
 		t.Fatalf("open migrated issue store: %v", err)
 	}
 	_ = issueStore.Close()
+	stdout, stderr, code = runCLI(t, []string{"migrate", "orchestrator"})
+	if code != 0 {
+		t.Fatalf("orchestrator migrate code=%d stderr=%s", code, stderr)
+	}
 	orchestratorStore, err := runstore.Open(context.Background(), tqconfig.OrchestratorDBPath(home))
 	if err != nil {
 		t.Fatalf("open migrated orchestrator store: %v", err)

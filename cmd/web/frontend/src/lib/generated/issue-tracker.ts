@@ -969,7 +969,7 @@ export const patchApiV1ProjectsId = async (id: number,
 
 
 /**
- * Deletes the project and its issue-tracker descendants, including issues, issue dependencies, comments, attachment records and files under the tracker home, and stored project workflow overrides. Also deletes orchestrator runtime descendants for the owned issues, including runs, runner events, workspace metadata, and workspace setup failures. Returns 409 with `projects.delete.running_runs` when any owned issue has a running orchestrator run. Orchestrator runtime records are deleted before issue-tracker records so partial failures can be retried. The project location directory and worktrees are not modified.
+ * Deletes the project and its issue-tracker descendants, including issues, issue dependencies, comments, attachment records and files under the tracker home, and stored project workflow overrides. A standalone tracker returns 409 with `projects.delete.legacy_history_unavailable` when an orchestrator database exists or its absence cannot be confirmed; preserve and verify that history before cleanup and retrying. When an optional embedded runstore is supplied, its runtime descendants are deleted before issue-tracker records and a running run returns 409 with `projects.delete.running_runs`. The project location directory and worktrees are not modified.
  * @summary Delete a project.
  */
 export type deleteApiV1ProjectsIdResponse204 = {
@@ -1532,6 +1532,7 @@ export const getApiV1IssuesId = async (id: number, options?: RequestInit): Promi
 
 
 /**
+ * Auto OK settings and all other issue updates use the same issue-tracker contract regardless of orchestrator availability.
  * @summary Update an issue.
  */
 export type patchApiV1IssuesIdResponse200 = {
@@ -1588,7 +1589,7 @@ export const patchApiV1IssuesId = async (id: number,
 
 
 /**
- * The orchestrator first claims a matching ready reservation immediately before turn/start. A later acknowledgement completes the claimed generation atomically with history. Duplicate or stale generations leave the issue unchanged.
+ * The orchestrator first claims a matching ready reservation immediately before turn/start. A later acknowledgement completes the claimed generation atomically with history. Duplicate or stale generations leave the issue unchanged. This issue-tracker operation remains available regardless of orchestrator availability.
  * @summary Claim, acknowledge, or report failure for a pending Auto OK reply.
  */
 export type postApiV1IssuesIdAutoOkResultResponse200 = {

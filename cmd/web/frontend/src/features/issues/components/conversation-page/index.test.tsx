@@ -9,8 +9,12 @@ const api = vi.hoisted(() => ({
   fetchOrchestratorConversation: vi.fn(),
   fetchOrchestratorIssueRuntime: vi.fn(),
 }));
+const layout = vi.hoisted(() => ({
+  useOptionalLayoutShellData: vi.fn<() => unknown>(() => null),
+}));
 
 vi.mock("@/lib/api", () => api);
+vi.mock("@/components/layout", () => layout);
 
 function renderConversationPage(conversation: OrchestratorConversation) {
   api.fetchOrchestratorConversation.mockResolvedValue(conversation);
@@ -46,6 +50,21 @@ describe("ConversationPage", () => {
   beforeEach(() => {
     api.fetchOrchestratorConversation.mockReset();
     api.fetchOrchestratorIssueRuntime.mockReset();
+    layout.useOptionalLayoutShellData.mockReturnValue(null);
+  });
+
+  it("does not request conversation data when execution is disabled", async () => {
+    layout.useOptionalLayoutShellData.mockReturnValue({ agentExecutionEnabled: false });
+    renderConversationPage({
+      issue_identifier: "issue-48",
+      issue_id: "48",
+      run_id: "run-1",
+      events: [],
+    });
+
+    expect(await screen.findByText("No runs")).toBeInTheDocument();
+    expect(api.fetchOrchestratorConversation).not.toHaveBeenCalled();
+    expect(api.fetchOrchestratorIssueRuntime).not.toHaveBeenCalled();
   });
 
   it("renders item completed command execution content in chronological order", async () => {

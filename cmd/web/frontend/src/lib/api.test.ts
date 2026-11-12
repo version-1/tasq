@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { toastStore } from "@/lib/toast";
-import { fetchProjectWorkflow, fetchSummary } from "./api";
+import { fetchProjectWorkflow, fetchSummary, isOrchestratorAvailable } from "./api";
 
 const issueTracker = vi.hoisted(() => ({
   deleteApiV1ProjectsId: vi.fn(),
@@ -17,9 +17,12 @@ const issueTracker = vi.hoisted(() => ({
 vi.mock("@/lib/generated/issue-tracker", () => issueTracker);
 
 vi.mock("@/lib/generated/orchestrator", () => ({
+  getHealth: vi.fn(),
   getApiV1IssueIdentifier: vi.fn(),
   getApiV1IssueIdentifierRunsRunIdConversations: vi.fn(),
 }));
+
+const orchestrator = await import("@/lib/generated/orchestrator");
 
 describe("api toast handling", () => {
   beforeEach(() => {
@@ -93,5 +96,16 @@ describe("api toast handling", () => {
       body: "## Workflow",
       frontmatter: { tasq: { tracker: { default_status: "ready" } } },
     });
+	});
+
+  it("accepts only the orchestrator health response", async () => {
+    vi.mocked(orchestrator.getHealth).mockResolvedValue({ status: 200, data: { status: "ok" }, headers: new Headers() });
+    await expect(isOrchestratorAvailable()).resolves.toBe(true);
+
+    vi.mocked(orchestrator.getHealth).mockResolvedValue({ status: 200, data: { status: "other" } as unknown as { status: "ok" }, headers: new Headers() });
+    await expect(isOrchestratorAvailable()).resolves.toBe(false);
+
+    vi.mocked(orchestrator.getHealth).mockRejectedValue(new Error("connection refused"));
+    await expect(isOrchestratorAvailable()).resolves.toBe(false);
   });
 });

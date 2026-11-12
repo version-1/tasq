@@ -268,3 +268,7 @@ PATCH で `blocked` にすると再現できます。単体開発では Codex �
 
 [プルダウン内の Auto OK 設定](screenshots/auto-ok-mock-states.jpg) ·
 [再有効化後の最初の返信が成功したプルダウン](screenshots/auto-ok-mock-resumed.jpg)
+
+## optional orchestrator モック
+
+レイアウトは `GET /orchestrator/health` を polling し、接続先 orchestrator が `{ "status": "ok" }` を返すまで安全側に倒します。課題 CRUD、コメント、変更要求、明示的な状態更新、Auto OK は tracker のデータ契約であり、orchestrator health によって変化しません。Auto OK と thread copy、run、conversation を含む実行用 UI 操作は health の利用可能な間だけ表示され、停止時には再び隠れます。

@@ -34,10 +34,13 @@ import {
 
 const apiBase = "/tracker/api/v1";
 const orchestratorBase = "/orchestrator/api/v1";
-
 export const handlers = [
   http.get(`${apiBase}/health`, () => {
     return jsonOk({ status: "ok" });
+  }),
+
+  http.get("/orchestrator/health", () => {
+    return HttpResponse.json({ status: "ok" });
   }),
 
   http.get(`${apiBase}/summary`, () => {

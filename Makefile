@@ -234,6 +234,7 @@ run-all: dev-check ## Start issue-tracker, orchestrator, and Web inside the runn
 	$(MAKE) run-migrate
 	$(DEV_EXEC) env AIR_VERSION="$(AIR_VERSION)" scripts/dev/run.sh issue-tracker
 	$(MAKE) run-ready-issue-tracker
+	$(DEV_EXEC) sh -c 'go run ./cmd/tq migrate orchestrator'
 	$(DEV_EXEC) env AIR_VERSION="$(AIR_VERSION)" scripts/dev/run.sh orchestrator
 	$(MAKE) run-web
 

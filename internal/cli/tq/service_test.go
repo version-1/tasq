@@ -53,8 +53,8 @@ func TestServiceStartAddressesUsesFallbackWhenDefaultPortIsUnavailable(t *testin
 			t.Fatalf("address = %q, want loopback address", address)
 		}
 	}
-	if addresses.issueTracker == defaults.issueTracker || addresses.orchestrator == defaults.orchestrator || addresses.web == defaults.web {
-		t.Fatalf("fallback addresses = %+v, want all service ports replaced", addresses)
+	if addresses.issueTracker == defaults.issueTracker || addresses.web == defaults.web {
+		t.Fatalf("fallback addresses = %+v, want tracker and web ports replaced", addresses)
 	}
 }
 
@@ -128,7 +128,7 @@ func TestValidateServiceExecutablesReportsAllUnavailableTargets(t *testing.T) {
 		t.Fatal("validate service executables error = nil")
 	}
 	message := err.Error()
-	for _, name := range []serviceName{serviceIssueTracker, serviceOrchestrator, serviceWeb} {
+	for _, name := range []serviceName{serviceIssueTracker, serviceWeb} {
 		path := serviceExecutablePath(home, name)
 		for _, want := range []string{string(name) + ": missing", path} {
 			if !strings.Contains(message, want) {
@@ -138,6 +138,37 @@ func TestValidateServiceExecutablesReportsAllUnavailableTargets(t *testing.T) {
 	}
 	if !strings.Contains(message, "resolved TQ_HOME "+home) || !strings.Contains(message, "curl -fsSLO https://raw.githubusercontent.com/version-1/tasq/main/scripts/install.sh") || !strings.Contains(message, "TQ_HOME="+home+" sh install.sh") {
 		t.Fatalf("error = %q, want home and reinstall instructions", message)
+	}
+}
+
+func TestValidateServiceExecutablesTrackerOnlyDoesNotRequireOrchestrator(t *testing.T) {
+	home := t.TempDir()
+	for _, name := range []serviceName{serviceIssueTracker, serviceWeb} {
+		path := serviceExecutablePath(home, name)
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte("#!/bin/sh\n"), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := validateServiceExecutables(home); err != nil {
+		t.Fatalf("tracker-only executable validation: %v", err)
+	}
+	if _, err := os.Stat(serviceExecutablePath(home, serviceOrchestrator)); !os.IsNotExist(err) {
+		t.Fatalf("orchestrator executable exists or stat failed: %v", err)
+	}
+}
+
+func TestConfirmServicePortsIgnoresOccupiedOrchestrator(t *testing.T) {
+	occupied, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer occupied.Close()
+	addresses := serviceAddresses{issueTracker: "127.0.0.1:0", web: "127.0.0.1:0", orchestrator: occupied.Addr().String()}
+	if err := confirmServicePortsAvailable(addresses); err != nil {
+		t.Fatalf("orchestrator port must not affect tracker startup: %v", err)
 	}
 }
 

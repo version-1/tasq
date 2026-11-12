@@ -7,6 +7,12 @@ Tasq は、オーケストレーション、ワークスペース、ワークフ
 可観測性の方向性として Symphony 仕様を使います。ただし Tasq には、課題状態を所有するローカルの
 issue-tracker サービスが既にあるため、一部の実装方針は異なります。
 
+## 明示的な Managed Execution
+
+`tq service start` はローカルの issue-tracker と Web UI だけを起動します。managed execution は `tq orchestrator start` で明示的に起動します。issue-tracker は orchestrator runstore を開かず、orchestrator の稼働状態によって課題、queue、Auto OK の契約を変えません。Web と TUI は、接続先 orchestrator に対する `GET /health` を確認してから実行用の操作を表示します。
+
+履歴を database を開いたり migration したりせず保全するため、orchestrator database が存在する場合、または存在確認できない場合は project deletion を拒否します。削除前に履歴を確認してクリーンアップする必要があります。
+
 ## Tracker Adapter
 
 Tasq は Symphony 仕様の Section 11 で説明されている Linear トラッカークライアントを実装しません。
