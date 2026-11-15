@@ -4,13 +4,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import "@/lib/i18n";
 import { ArtifactsSection } from "./index";
 
-const api = vi.hoisted(() => ({ fetchDocumentArtifacts: vi.fn(), fetchDocumentArtifact: vi.fn() }));
+const api = vi.hoisted(() => ({ fetchDocumentArtifacts: vi.fn(), fetchProjectDocumentArtifact: vi.fn() }));
 vi.mock("@/lib/api", () => api);
 
 describe("ArtifactsSection", () => {
   beforeEach(() => {
     api.fetchDocumentArtifacts.mockReset();
-    api.fetchDocumentArtifact.mockReset();
+    api.fetchProjectDocumentArtifact.mockReset();
     api.fetchDocumentArtifacts.mockResolvedValue([]);
   });
 
@@ -59,8 +59,8 @@ describe("ArtifactsSection", () => {
 
   it("lists documents and renders selected Markdown", async () => {
     const user = userEvent.setup();
-    api.fetchDocumentArtifacts.mockResolvedValue([{ id: "doc-1", issueId: 42, type: "work_report", title: "Report", createdAt: "2026-01-01T00:00:00Z", updatedAt: "2026-01-01T00:00:00Z" }]);
-    api.fetchDocumentArtifact.mockResolvedValue({ id: "doc-1", issueId: 42, type: "work_report", title: "Report", body: "# Safe report\n\n<script>alert(1)</script>", createdAt: "2026-01-01T00:00:00Z", updatedAt: "2026-01-01T00:00:00Z" });
+    api.fetchDocumentArtifacts.mockResolvedValue([{ id: "doc-1", projectId: 7, type: "work_report", title: "Report", createdAt: "2026-01-01T00:00:00Z", updatedAt: "2026-01-01T00:00:00Z" }]);
+    api.fetchProjectDocumentArtifact.mockResolvedValue({ id: "doc-1", projectId: 7, type: "work_report", title: "Report", body: "# Safe report\n\n<script>alert(1)</script>", createdAt: "2026-01-01T00:00:00Z", updatedAt: "2026-01-01T00:00:00Z" });
     render(<ArtifactsSection artifacts={[]} issueID={42} />);
     await user.click(await screen.findByRole("button", { name: /Report/ }));
     expect(await screen.findByRole("heading", { name: "Safe report" })).toBeInTheDocument();
@@ -70,8 +70,8 @@ describe("ArtifactsSection", () => {
   it("renders long Markdown document content", async () => {
     const user = userEvent.setup();
     const body = `${"Long report content ".repeat(400)}\n\n## Verification`;
-    api.fetchDocumentArtifacts.mockResolvedValue([{ id: "doc-2", issueId: 42, type: "work_report", title: "Long report", createdAt: "2026-01-01T00:00:00Z", updatedAt: "2026-01-01T00:00:00Z" }]);
-    api.fetchDocumentArtifact.mockResolvedValue({ id: "doc-2", issueId: 42, type: "work_report", title: "Long report", body, createdAt: "2026-01-01T00:00:00Z", updatedAt: "2026-01-01T00:00:00Z" });
+    api.fetchDocumentArtifacts.mockResolvedValue([{ id: "doc-2", projectId: 7, type: "work_report", title: "Long report", createdAt: "2026-01-01T00:00:00Z", updatedAt: "2026-01-01T00:00:00Z" }]);
+    api.fetchProjectDocumentArtifact.mockResolvedValue({ id: "doc-2", projectId: 7, type: "work_report", title: "Long report", body, createdAt: "2026-01-01T00:00:00Z", updatedAt: "2026-01-01T00:00:00Z" });
     render(<ArtifactsSection artifacts={[]} issueID={42} />);
 
     await user.click(await screen.findByRole("button", { name: /Long report/ }));

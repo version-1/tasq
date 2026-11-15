@@ -1935,6 +1935,26 @@ func TestAttachmentUploadRejectsInvalidType(t *testing.T) {
 	assertErrorCode(t, rec, "attachments.create.invalid_file_type")
 }
 
+func TestDeleteLinkedDocumentArtifactReturnsConflictAndPreservesDocument(t *testing.T) {
+	server := newTestServer(t)
+	issue := createIssue(t, server, "linked", entity.StatusReady)
+	item, err := server.store.CreateDocumentArtifact(context.Background(), issue.ProjectID, entity.CreateDocumentArtifactInput{Type: entity.DocumentArtifactTypeWorkReport, Title: "Report", Body: "body"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := server.store.LinkDocumentArtifactToIssue(context.Background(), issue.ProjectID, item.ID, issue.ID); err != nil {
+		t.Fatal(err)
+	}
+	rec := httptest.NewRecorder()
+	server.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodDelete, "/api/v1/projects/"+stringID(issue.ProjectID)+"/artifacts/documents/"+item.ID, nil))
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	if _, err := server.store.DocumentArtifact(context.Background(), issue.ProjectID, item.ID); err != nil {
+		t.Fatalf("artifact removed: %v", err)
+	}
+}
+
 func newTestServer(t *testing.T) *Server {
 	t.Helper()
 

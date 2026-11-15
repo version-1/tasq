@@ -14,7 +14,7 @@ Tasq validates entity data at the store layer on create and update operations. T
 | --- | --- | --- |
 | Issue | `projectId`, `title` | title 1-500 chars, description max 10,000 chars, assignee max 200 chars, immutable project ownership |
 | Artifact | `type`, `dataType`, `dataValue` | one per issue and type; initial type `pull_request` has data type `url`; URL is trimmed, absolute HTTP(S), host-required, userinfo-free, max 4,096 UTF-8 bytes |
-| DocumentArtifact | `issueId`, `type`, `title`, `body` | multiple per issue; type `reference_document` or `work_report`; title is non-empty UTF-8, max 500 bytes; body is non-empty UTF-8 Markdown, max 100,000 bytes |
+| DocumentArtifact | `projectId`, `type`, `title`, `body` | owned by one project; optional links to zero or more issues; type `reference_document` or `work_report`; title is non-empty UTF-8, max 500 bytes; body is non-empty UTF-8 Markdown, max 100,000 bytes |
 | Comment | `issueId`, `author`, `body` | body 1-10,000 chars, type defaults to `general` |
 | ChangeRequest | `issueId`, `author`, `body` | body 1-10,000 chars and editable only while `open`; status defaults to `open`; terminal requests are immutable |
 | Attachment | `entityType`, `entityId`, `file` | image PNG/JPEG/GIF/WebP, max 5 MiB |
@@ -60,7 +60,9 @@ Absolute path fields must start with `/`. Clients such as `tq project add` check
 
 ## Migration Backup and Recovery
 
-Before applying a release that adds a schema migration, stop local services and make a copy of the issue-tracker SQLite database in the configured `TQ_HOME` data directory. Keep that copy outside the active data directory until the migrated database has been verified. To recover, stop services and replace the active database with the copy. Then either run the matching previous Tasq binary, or reapply the current migrations before starting the current binary: it rejects a restored older database with pending migrations. Do not use `tq migrate down` as a substitute for restoring a backup: it only runs defined down migrations and cannot recover data that a migration changed or removed. Do not apply migrations to a live database while services are running.
+Before applying a release that adds a schema migration, stop local services and make a copy of the issue-tracker SQLite database in the configured `TQ_HOME` data directory. Keep that copy outside the active data directory until the migrated database has been verified. To recover, stop services and replace the active database with the copy. Then either run the matching previous Tasq binary, or reapply the current migrations before starting the current binary: it rejects a restored older database with pending migrations. Do not apply migrations to a live database while services are running.
+
+The project-document-artifact migration preserves existing document IDs, bodies, timestamps, and the original issue link while deriving project ownership from that issue. Its down migration is intentionally conditional: it can restore the old issue-owned schema only when every artifact has exactly one link to an issue in its owner project. It refuses without changing data if an artifact is unlinked, linked to more than one issue, or linked across projects. Use a backup, rather than `tq migrate down`, for recovery from those valid newer states.
 
 ## State Transitions
 

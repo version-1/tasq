@@ -29,7 +29,7 @@ func (a app) routeArtifact(ctx context.Context, args []string, cfg config) error
 
 func (a app) routeArtifactDocument(ctx context.Context, args []string, cfg config) error {
 	if len(args) == 0 {
-		return usageError("usage: tq artifact document <create|list|get|update> ...")
+		return usageError("usage: tq artifact document <create|list|get|update|delete|link|unlink> ...")
 	}
 	switch args[0] {
 	case "create":
@@ -40,9 +40,53 @@ func (a app) routeArtifactDocument(ctx context.Context, args []string, cfg confi
 		return a.getDocumentArtifact(ctx, args[1:], cfg)
 	case "update":
 		return a.updateDocumentArtifact(ctx, args[1:], cfg)
+	case "delete":
+		return a.deleteDocumentArtifact(ctx, args[1:])
+	case "link":
+		return a.linkDocumentArtifact(ctx, args[1:])
+	case "unlink":
+		return a.unlinkDocumentArtifact(ctx, args[1:])
 	default:
 		return usageError("unknown document artifact action %q", args[0])
 	}
+}
+func (a app) deleteDocumentArtifact(ctx context.Context, args []string) error {
+	if len(args) != 2 {
+		return usageError("usage: tq artifact document delete <project-id> <document-id>")
+	}
+	projectID, err := parseID(args[0])
+	if err != nil {
+		return err
+	}
+	return a.client.deleteDocumentArtifact(ctx, projectID, args[1])
+}
+func (a app) linkDocumentArtifact(ctx context.Context, args []string) error {
+	if len(args) != 3 {
+		return usageError("usage: tq artifact document link <project-id> <document-id> <issue-id>")
+	}
+	projectID, err := parseID(args[0])
+	if err != nil {
+		return err
+	}
+	issueID, err := parseID(args[2])
+	if err != nil {
+		return err
+	}
+	return a.client.linkDocumentArtifact(ctx, projectID, args[1], issueID)
+}
+func (a app) unlinkDocumentArtifact(ctx context.Context, args []string) error {
+	if len(args) != 3 {
+		return usageError("usage: tq artifact document unlink <project-id> <document-id> <issue-id>")
+	}
+	projectID, err := parseID(args[0])
+	if err != nil {
+		return err
+	}
+	issueID, err := parseID(args[2])
+	if err != nil {
+		return err
+	}
+	return a.client.unlinkDocumentArtifact(ctx, projectID, args[1], issueID)
 }
 func (a app) createDocumentArtifact(ctx context.Context, args []string, cfg config) error {
 	fs := newFlagSet("artifact document create")
@@ -50,7 +94,7 @@ func (a app) createDocumentArtifact(ctx context.Context, args []string, cfg conf
 	title := fs.String("title", "", "document title")
 	file := fs.String("file", "", "Markdown file path or - for standard input")
 	if len(args) == 0 {
-		return usageError("usage: tq artifact document create <issue-id> --type TYPE --title TITLE --file PATH|-")
+		return usageError("usage: tq artifact document create <project-id> --type TYPE --title TITLE --file PATH|-")
 	}
 	id, err := parseID(args[0])
 	if err != nil {
@@ -60,7 +104,7 @@ func (a app) createDocumentArtifact(ctx context.Context, args []string, cfg conf
 		return usageError("%s", err)
 	}
 	if fs.NArg() != 0 || *artifactType == "" || *title == "" || *file == "" {
-		return usageError("usage: tq artifact document create <issue-id> --type TYPE --title TITLE --file PATH|-")
+		return usageError("usage: tq artifact document create <project-id> --type TYPE --title TITLE --file PATH|-")
 	}
 	body, err := readDocumentArtifactBody(*file, a.stdin)
 	if err != nil {
@@ -74,7 +118,7 @@ func (a app) createDocumentArtifact(ctx context.Context, args []string, cfg conf
 }
 func (a app) listDocumentArtifacts(ctx context.Context, args []string, cfg config) error {
 	if len(args) != 1 {
-		return usageError("usage: tq artifact document list <issue-id>")
+		return usageError("usage: tq artifact document list <project-id>")
 	}
 	id, err := parseID(args[0])
 	if err != nil {
@@ -90,14 +134,14 @@ func (a app) getDocumentArtifact(ctx context.Context, args []string, cfg config)
 	fs := newFlagSet("artifact document get")
 	raw := fs.Bool("raw", false, "write only Markdown body")
 	if len(args) < 2 {
-		return usageError("usage: tq artifact document get <issue-id> <document-id>")
+		return usageError("usage: tq artifact document get <project-id> <document-id>")
 	}
 	id, err := parseID(args[0])
 	if err != nil {
 		return err
 	}
 	if err := fs.Parse(args[2:]); err != nil || fs.NArg() != 0 {
-		return usageError("usage: tq artifact document get <issue-id> <document-id> [--raw]")
+		return usageError("usage: tq artifact document get <project-id> <document-id> [--raw]")
 	}
 	item, err := a.client.documentArtifact(ctx, id, args[1])
 	if err != nil {
@@ -114,7 +158,7 @@ func (a app) updateDocumentArtifact(ctx context.Context, args []string, cfg conf
 	title := fs.String("title", "", "document title")
 	file := fs.String("file", "", "Markdown file path or - for standard input")
 	if len(args) < 2 {
-		return usageError("usage: tq artifact document update <issue-id> <document-id> [--title TITLE] [--file PATH|-]")
+		return usageError("usage: tq artifact document update <project-id> <document-id> [--title TITLE] [--file PATH|-]")
 	}
 	id, err := parseID(args[0])
 	if err != nil {
@@ -124,7 +168,7 @@ func (a app) updateDocumentArtifact(ctx context.Context, args []string, cfg conf
 		return usageError("%s", err)
 	}
 	if fs.NArg() != 0 || (*title == "" && *file == "") {
-		return usageError("usage: tq artifact document update <issue-id> <document-id> [--title TITLE] [--file PATH|-]")
+		return usageError("usage: tq artifact document update <project-id> <document-id> [--title TITLE] [--file PATH|-]")
 	}
 	input := entity.UpdateDocumentArtifactInput{}
 	if *title != "" {

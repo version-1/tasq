@@ -6,6 +6,7 @@ Tasq の設計ドキュメントは、関心ごとに分割しています。
 - [API](design/api.ja.md): issue-tracker API サーフェスと CLI コマンドの対応関係。
 - [Configuration](design/configuration.ja.md): ローカルホームディレクトリ、実行時状態、Compose 開発設定。
 - [Schema](design/schema.ja.md): エンティティフィールド仕様と検証ルール。
+- [Project Document Artifacts](design/project-document-artifacts.ja.md): Markdown artifact のプロジェクト所有、任意の課題関連、migration の動作。
 - [Status](design/status.ja.md): 課題 status、派生的なキュー状態、想定されるワークフロー遷移。
 - [System Prompts](design/system-prompts.ja.md): orchestrator が注入するタスク開始時・再開時の prompt。
 - [Operations](design/operations.ja.md): ローカル開発環境、検証、未決定事項。

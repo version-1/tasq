@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { IconProxy } from "@/components/ui/icon-proxy";
 import { Markdown } from "@/components/ui/markdown";
-import { fetchDocumentArtifact, fetchDocumentArtifacts } from "@/lib/api";
+import { fetchDocumentArtifacts, fetchProjectDocumentArtifact } from "@/lib/api";
 import type { Artifact, DocumentArtifact } from "@/lib/types";
 import { pullRequestArtifact } from "@/features/issues/artifacts";
 import styles from "./index.module.css";
@@ -39,7 +39,7 @@ export function ArtifactsSection({ artifacts, issueID }: { artifacts: readonly A
   const selectDocument = (document: DocumentArtifact) => {
     setLoadingDocumentID(document.id);
     setError("");
-    fetchDocumentArtifact(issueID, document.id, { silent: true })
+    fetchProjectDocumentArtifact(document.projectId, document.id, { silent: true })
       .then(setSelectedDocument)
       .catch((reason) => setError(reason instanceof Error ? reason.message : t("issues.detailPage.failedToLoadDocuments")))
       .finally(() => setLoadingDocumentID(null));

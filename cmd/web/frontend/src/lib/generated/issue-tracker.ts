@@ -258,7 +258,7 @@ export const DocumentArtifactType = {
 
 export interface DocumentArtifact {
   id: string;
-  issueId: number;
+  projectId: number;
   type: DocumentArtifactType;
   /**
    * Non-empty title in inputs; maximum 500 UTF-8 bytes (which can be stricter than this character limit).
@@ -1318,6 +1318,382 @@ export const deleteApiV1ProjectsIdWorkflow = async (id: number, options?: Reques
 
 
 /**
+ * @summary List project-owned document artifacts without Markdown bodies.
+ */
+export type getApiV1ProjectsIdArtifactsDocumentsResponse200 = {
+  data: DocumentArtifactListResponse
+  status: 200
+}
+
+export type getApiV1ProjectsIdArtifactsDocumentsResponse404 = {
+  data: ErrorResponse
+  status: 404
+}
+
+export type getApiV1ProjectsIdArtifactsDocumentsResponseSuccess = (getApiV1ProjectsIdArtifactsDocumentsResponse200) & {
+  headers: Headers;
+};
+export type getApiV1ProjectsIdArtifactsDocumentsResponseError = (getApiV1ProjectsIdArtifactsDocumentsResponse404) & {
+  headers: Headers;
+};
+
+export type getApiV1ProjectsIdArtifactsDocumentsResponse = (getApiV1ProjectsIdArtifactsDocumentsResponseSuccess | getApiV1ProjectsIdArtifactsDocumentsResponseError)
+
+export const getGetApiV1ProjectsIdArtifactsDocumentsUrl = (id: number,) => {
+
+
+
+
+  return `/tracker/api/v1/projects/${id}/artifacts/documents`
+}
+
+export const getApiV1ProjectsIdArtifactsDocuments = async (id: number, options?: RequestInit): Promise<getApiV1ProjectsIdArtifactsDocumentsResponse> => {
+
+  const res = await fetch(getGetApiV1ProjectsIdArtifactsDocumentsUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getApiV1ProjectsIdArtifactsDocumentsResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getApiV1ProjectsIdArtifactsDocumentsResponse
+}
+
+
+
+/**
+ * @summary Create a project-owned Markdown document artifact.
+ */
+export type postApiV1ProjectsIdArtifactsDocumentsResponse201 = {
+  data: DocumentArtifactResponse
+  status: 201
+}
+
+export type postApiV1ProjectsIdArtifactsDocumentsResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type postApiV1ProjectsIdArtifactsDocumentsResponse404 = {
+  data: ErrorResponse
+  status: 404
+}
+
+export type postApiV1ProjectsIdArtifactsDocumentsResponseSuccess = (postApiV1ProjectsIdArtifactsDocumentsResponse201) & {
+  headers: Headers;
+};
+export type postApiV1ProjectsIdArtifactsDocumentsResponseError = (postApiV1ProjectsIdArtifactsDocumentsResponse400 | postApiV1ProjectsIdArtifactsDocumentsResponse404) & {
+  headers: Headers;
+};
+
+export type postApiV1ProjectsIdArtifactsDocumentsResponse = (postApiV1ProjectsIdArtifactsDocumentsResponseSuccess | postApiV1ProjectsIdArtifactsDocumentsResponseError)
+
+export const getPostApiV1ProjectsIdArtifactsDocumentsUrl = (id: number,) => {
+
+
+
+
+  return `/tracker/api/v1/projects/${id}/artifacts/documents`
+}
+
+export const postApiV1ProjectsIdArtifactsDocuments = async (id: number,
+    createDocumentArtifactInput: CreateDocumentArtifactInput, options?: RequestInit): Promise<postApiV1ProjectsIdArtifactsDocumentsResponse> => {
+
+  const res = await fetch(getPostApiV1ProjectsIdArtifactsDocumentsUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createDocumentArtifactInput,)
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: postApiV1ProjectsIdArtifactsDocumentsResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as postApiV1ProjectsIdArtifactsDocumentsResponse
+}
+
+
+
+/**
+ * @summary Get a project-owned document artifact including its Markdown body.
+ */
+export type getApiV1ProjectsIdArtifactsDocumentsDocumentIdResponse200 = {
+  data: DocumentArtifactResponse
+  status: 200
+}
+
+export type getApiV1ProjectsIdArtifactsDocumentsDocumentIdResponse404 = {
+  data: ErrorResponse
+  status: 404
+}
+
+export type getApiV1ProjectsIdArtifactsDocumentsDocumentIdResponseSuccess = (getApiV1ProjectsIdArtifactsDocumentsDocumentIdResponse200) & {
+  headers: Headers;
+};
+export type getApiV1ProjectsIdArtifactsDocumentsDocumentIdResponseError = (getApiV1ProjectsIdArtifactsDocumentsDocumentIdResponse404) & {
+  headers: Headers;
+};
+
+export type getApiV1ProjectsIdArtifactsDocumentsDocumentIdResponse = (getApiV1ProjectsIdArtifactsDocumentsDocumentIdResponseSuccess | getApiV1ProjectsIdArtifactsDocumentsDocumentIdResponseError)
+
+export const getGetApiV1ProjectsIdArtifactsDocumentsDocumentIdUrl = (id: number,
+    documentId: string,) => {
+
+
+
+
+  return `/tracker/api/v1/projects/${id}/artifacts/documents/${documentId}`
+}
+
+export const getApiV1ProjectsIdArtifactsDocumentsDocumentId = async (id: number,
+    documentId: string, options?: RequestInit): Promise<getApiV1ProjectsIdArtifactsDocumentsDocumentIdResponse> => {
+
+  const res = await fetch(getGetApiV1ProjectsIdArtifactsDocumentsDocumentIdUrl(id,documentId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getApiV1ProjectsIdArtifactsDocumentsDocumentIdResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getApiV1ProjectsIdArtifactsDocumentsDocumentIdResponse
+}
+
+
+
+/**
+ * @summary Update a project-owned document artifact.
+ */
+export type patchApiV1ProjectsIdArtifactsDocumentsDocumentIdResponse200 = {
+  data: DocumentArtifactResponse
+  status: 200
+}
+
+export type patchApiV1ProjectsIdArtifactsDocumentsDocumentIdResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type patchApiV1ProjectsIdArtifactsDocumentsDocumentIdResponse404 = {
+  data: ErrorResponse
+  status: 404
+}
+
+export type patchApiV1ProjectsIdArtifactsDocumentsDocumentIdResponseSuccess = (patchApiV1ProjectsIdArtifactsDocumentsDocumentIdResponse200) & {
+  headers: Headers;
+};
+export type patchApiV1ProjectsIdArtifactsDocumentsDocumentIdResponseError = (patchApiV1ProjectsIdArtifactsDocumentsDocumentIdResponse400 | patchApiV1ProjectsIdArtifactsDocumentsDocumentIdResponse404) & {
+  headers: Headers;
+};
+
+export type patchApiV1ProjectsIdArtifactsDocumentsDocumentIdResponse = (patchApiV1ProjectsIdArtifactsDocumentsDocumentIdResponseSuccess | patchApiV1ProjectsIdArtifactsDocumentsDocumentIdResponseError)
+
+export const getPatchApiV1ProjectsIdArtifactsDocumentsDocumentIdUrl = (id: number,
+    documentId: string,) => {
+
+
+
+
+  return `/tracker/api/v1/projects/${id}/artifacts/documents/${documentId}`
+}
+
+export const patchApiV1ProjectsIdArtifactsDocumentsDocumentId = async (id: number,
+    documentId: string,
+    updateDocumentArtifactInput: UpdateDocumentArtifactInput, options?: RequestInit): Promise<patchApiV1ProjectsIdArtifactsDocumentsDocumentIdResponse> => {
+
+  const res = await fetch(getPatchApiV1ProjectsIdArtifactsDocumentsDocumentIdUrl(id,documentId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateDocumentArtifactInput,)
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: patchApiV1ProjectsIdArtifactsDocumentsDocumentIdResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as patchApiV1ProjectsIdArtifactsDocumentsDocumentIdResponse
+}
+
+
+
+/**
+ * @summary Delete an unlinked project-owned document artifact.
+ */
+export type deleteApiV1ProjectsIdArtifactsDocumentsDocumentIdResponse204 = {
+  data: void
+  status: 204
+}
+
+export type deleteApiV1ProjectsIdArtifactsDocumentsDocumentIdResponse404 = {
+  data: ErrorResponse
+  status: 404
+}
+
+export type deleteApiV1ProjectsIdArtifactsDocumentsDocumentIdResponse409 = {
+  data: ErrorResponse
+  status: 409
+}
+
+export type deleteApiV1ProjectsIdArtifactsDocumentsDocumentIdResponseSuccess = (deleteApiV1ProjectsIdArtifactsDocumentsDocumentIdResponse204) & {
+  headers: Headers;
+};
+export type deleteApiV1ProjectsIdArtifactsDocumentsDocumentIdResponseError = (deleteApiV1ProjectsIdArtifactsDocumentsDocumentIdResponse404 | deleteApiV1ProjectsIdArtifactsDocumentsDocumentIdResponse409) & {
+  headers: Headers;
+};
+
+export type deleteApiV1ProjectsIdArtifactsDocumentsDocumentIdResponse = (deleteApiV1ProjectsIdArtifactsDocumentsDocumentIdResponseSuccess | deleteApiV1ProjectsIdArtifactsDocumentsDocumentIdResponseError)
+
+export const getDeleteApiV1ProjectsIdArtifactsDocumentsDocumentIdUrl = (id: number,
+    documentId: string,) => {
+
+
+
+
+  return `/tracker/api/v1/projects/${id}/artifacts/documents/${documentId}`
+}
+
+export const deleteApiV1ProjectsIdArtifactsDocumentsDocumentId = async (id: number,
+    documentId: string, options?: RequestInit): Promise<deleteApiV1ProjectsIdArtifactsDocumentsDocumentIdResponse> => {
+
+  const res = await fetch(getDeleteApiV1ProjectsIdArtifactsDocumentsDocumentIdUrl(id,documentId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: deleteApiV1ProjectsIdArtifactsDocumentsDocumentIdResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as deleteApiV1ProjectsIdArtifactsDocumentsDocumentIdResponse
+}
+
+
+
+/**
+ * @summary Link a document artifact to an issue.
+ */
+export type postApiV1ProjectsIdArtifactsDocumentsDocumentIdLinksIssuesIssueIdResponse204 = {
+  data: void
+  status: 204
+}
+
+export type postApiV1ProjectsIdArtifactsDocumentsDocumentIdLinksIssuesIssueIdResponse404 = {
+  data: ErrorResponse
+  status: 404
+}
+
+export type postApiV1ProjectsIdArtifactsDocumentsDocumentIdLinksIssuesIssueIdResponseSuccess = (postApiV1ProjectsIdArtifactsDocumentsDocumentIdLinksIssuesIssueIdResponse204) & {
+  headers: Headers;
+};
+export type postApiV1ProjectsIdArtifactsDocumentsDocumentIdLinksIssuesIssueIdResponseError = (postApiV1ProjectsIdArtifactsDocumentsDocumentIdLinksIssuesIssueIdResponse404) & {
+  headers: Headers;
+};
+
+export type postApiV1ProjectsIdArtifactsDocumentsDocumentIdLinksIssuesIssueIdResponse = (postApiV1ProjectsIdArtifactsDocumentsDocumentIdLinksIssuesIssueIdResponseSuccess | postApiV1ProjectsIdArtifactsDocumentsDocumentIdLinksIssuesIssueIdResponseError)
+
+export const getPostApiV1ProjectsIdArtifactsDocumentsDocumentIdLinksIssuesIssueIdUrl = (id: number,
+    documentId: string,
+    issueId: number,) => {
+
+
+
+
+  return `/tracker/api/v1/projects/${id}/artifacts/documents/${documentId}/links/issues/${issueId}`
+}
+
+export const postApiV1ProjectsIdArtifactsDocumentsDocumentIdLinksIssuesIssueId = async (id: number,
+    documentId: string,
+    issueId: number, options?: RequestInit): Promise<postApiV1ProjectsIdArtifactsDocumentsDocumentIdLinksIssuesIssueIdResponse> => {
+
+  const res = await fetch(getPostApiV1ProjectsIdArtifactsDocumentsDocumentIdLinksIssuesIssueIdUrl(id,documentId,issueId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: postApiV1ProjectsIdArtifactsDocumentsDocumentIdLinksIssuesIssueIdResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as postApiV1ProjectsIdArtifactsDocumentsDocumentIdLinksIssuesIssueIdResponse
+}
+
+
+
+/**
+ * @summary Remove an issue link from a document artifact.
+ */
+export type deleteApiV1ProjectsIdArtifactsDocumentsDocumentIdLinksIssuesIssueIdResponse204 = {
+  data: void
+  status: 204
+}
+
+export type deleteApiV1ProjectsIdArtifactsDocumentsDocumentIdLinksIssuesIssueIdResponse404 = {
+  data: ErrorResponse
+  status: 404
+}
+
+export type deleteApiV1ProjectsIdArtifactsDocumentsDocumentIdLinksIssuesIssueIdResponseSuccess = (deleteApiV1ProjectsIdArtifactsDocumentsDocumentIdLinksIssuesIssueIdResponse204) & {
+  headers: Headers;
+};
+export type deleteApiV1ProjectsIdArtifactsDocumentsDocumentIdLinksIssuesIssueIdResponseError = (deleteApiV1ProjectsIdArtifactsDocumentsDocumentIdLinksIssuesIssueIdResponse404) & {
+  headers: Headers;
+};
+
+export type deleteApiV1ProjectsIdArtifactsDocumentsDocumentIdLinksIssuesIssueIdResponse = (deleteApiV1ProjectsIdArtifactsDocumentsDocumentIdLinksIssuesIssueIdResponseSuccess | deleteApiV1ProjectsIdArtifactsDocumentsDocumentIdLinksIssuesIssueIdResponseError)
+
+export const getDeleteApiV1ProjectsIdArtifactsDocumentsDocumentIdLinksIssuesIssueIdUrl = (id: number,
+    documentId: string,
+    issueId: number,) => {
+
+
+
+
+  return `/tracker/api/v1/projects/${id}/artifacts/documents/${documentId}/links/issues/${issueId}`
+}
+
+export const deleteApiV1ProjectsIdArtifactsDocumentsDocumentIdLinksIssuesIssueId = async (id: number,
+    documentId: string,
+    issueId: number, options?: RequestInit): Promise<deleteApiV1ProjectsIdArtifactsDocumentsDocumentIdLinksIssuesIssueIdResponse> => {
+
+  const res = await fetch(getDeleteApiV1ProjectsIdArtifactsDocumentsDocumentIdLinksIssuesIssueIdUrl(id,documentId,issueId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: deleteApiV1ProjectsIdArtifactsDocumentsDocumentIdLinksIssuesIssueIdResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as deleteApiV1ProjectsIdArtifactsDocumentsDocumentIdLinksIssuesIssueIdResponse
+}
+
+
+
+/**
  * @summary List issues.
  */
 export type getApiV1IssuesResponse200 = {
@@ -1996,6 +2372,11 @@ export type patchApiV1IssuesIssueIdArtifactsDocumentsDocumentIdResponse400 = {
   status: 400
 }
 
+export type patchApiV1IssuesIssueIdArtifactsDocumentsDocumentIdResponse403 = {
+  data: ErrorResponse
+  status: 403
+}
+
 export type patchApiV1IssuesIssueIdArtifactsDocumentsDocumentIdResponse404 = {
   data: ErrorResponse
   status: 404
@@ -2004,7 +2385,7 @@ export type patchApiV1IssuesIssueIdArtifactsDocumentsDocumentIdResponse404 = {
 export type patchApiV1IssuesIssueIdArtifactsDocumentsDocumentIdResponseSuccess = (patchApiV1IssuesIssueIdArtifactsDocumentsDocumentIdResponse200) & {
   headers: Headers;
 };
-export type patchApiV1IssuesIssueIdArtifactsDocumentsDocumentIdResponseError = (patchApiV1IssuesIssueIdArtifactsDocumentsDocumentIdResponse400 | patchApiV1IssuesIssueIdArtifactsDocumentsDocumentIdResponse404) & {
+export type patchApiV1IssuesIssueIdArtifactsDocumentsDocumentIdResponseError = (patchApiV1IssuesIssueIdArtifactsDocumentsDocumentIdResponse400 | patchApiV1IssuesIssueIdArtifactsDocumentsDocumentIdResponse403 | patchApiV1IssuesIssueIdArtifactsDocumentsDocumentIdResponse404) & {
   headers: Headers;
 };
 

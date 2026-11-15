@@ -6,7 +6,8 @@ import {
   getApiV1IssuesIssueIdChangeRequests,
   getApiV1IssuesIssueIdComments,
   getApiV1IssuesIssueIdArtifactsDocuments,
-  getApiV1IssuesIssueIdArtifactsDocumentsDocumentId,
+  getApiV1ProjectsIdArtifactsDocuments,
+  getApiV1ProjectsIdArtifactsDocumentsDocumentId,
   getGetApiV1AttachmentsIdContentUrl,
   getApiV1Projects,
   getApiV1ProjectsIdWorkflow,
@@ -152,8 +153,12 @@ export function fetchDocumentArtifacts(issueID: number, options?: ApiRequestOpti
   return unwrapResponse(getApiV1IssuesIssueIdArtifactsDocuments(issueID, noStore), options);
 }
 
-export function fetchDocumentArtifact(issueID: number, documentID: string, options?: ApiRequestOptions): Promise<DocumentArtifact> {
-  return unwrapResponse(getApiV1IssuesIssueIdArtifactsDocumentsDocumentId(issueID, documentID, noStore), options);
+export function fetchProjectDocumentArtifacts(projectID: number, options?: ApiRequestOptions): Promise<DocumentArtifact[]> {
+  return unwrapResponse(getApiV1ProjectsIdArtifactsDocuments(projectID, noStore), options);
+}
+
+export function fetchProjectDocumentArtifact(projectID: number, documentID: string, options?: ApiRequestOptions): Promise<DocumentArtifact> {
+  return unwrapResponse(getApiV1ProjectsIdArtifactsDocumentsDocumentId(projectID, documentID, noStore), options);
 }
 
 export function attachmentContentURL(id: string): string {

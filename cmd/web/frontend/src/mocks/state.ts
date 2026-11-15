@@ -48,9 +48,10 @@ const workflows = new Map<number, ProjectWorkflow>(
 );
 let comments = clone(commentFixtures);
 let documentArtifacts: DocumentArtifact[] = [
-  { id: "doc-1", issueId: 1, type: "reference_document", title: "Acceptance criteria", body: "# Acceptance criteria\n\n- Preserve issue IDs\n- Record verification", createdAt: "2026-06-16T04:00:00.000Z", updatedAt: "2026-06-16T04:00:00.000Z" },
-  { id: "doc-2", issueId: 1, type: "work_report", title: "Work report", body: "# Work report\n\nAll checks passed.", createdAt: "2026-06-16T05:00:00.000Z", updatedAt: "2026-06-16T05:00:00.000Z" },
+  { id: "doc-1", projectId: 1, type: "reference_document", title: "Acceptance criteria", body: "# Acceptance criteria\n\n- Preserve issue IDs\n- Record verification", createdAt: "2026-06-16T04:00:00.000Z", updatedAt: "2026-06-16T04:00:00.000Z" },
+  { id: "doc-2", projectId: 1, type: "work_report", title: "Work report", body: "# Work report\n\nAll checks passed.", createdAt: "2026-06-16T05:00:00.000Z", updatedAt: "2026-06-16T05:00:00.000Z" },
 ];
+const documentArtifactIssueLinks = [{ documentID: "doc-1", issueID: 1 }, { documentID: "doc-2", issueID: 1 }];
 let changeRequests: ChangeRequest[] = [
   {
     id: 1,
@@ -227,11 +228,17 @@ export function getIssue(id: number): Issue | null {
 
 export function listDocumentArtifacts(issueID: number): DocumentArtifact[] | null {
   if (!issues.some((issue) => issue.id === issueID)) return null;
-  return clone(documentArtifacts.filter((item) => item.issueId === issueID).map(({ body: _, ...item }) => item));
+  const documentIDs = new Set(documentArtifactIssueLinks.filter((link) => link.issueID === issueID).map((link) => link.documentID));
+  return clone(documentArtifacts.filter((item) => documentIDs.has(item.id)).map(({ body: _, ...item }) => item));
 }
 
-export function getDocumentArtifact(issueID: number, id: string): DocumentArtifact | null {
-  return clone(documentArtifacts.find((item) => item.issueId === issueID && item.id === id) ?? null);
+export function listProjectDocumentArtifacts(projectID: number): DocumentArtifact[] | null {
+  if (!projects.some((project) => project.id === projectID)) return null;
+  return clone(documentArtifacts.filter((item) => item.projectId === projectID).map(({ body: _, ...item }) => item));
+}
+
+export function getProjectDocumentArtifact(projectID: number, id: string): DocumentArtifact | null {
+  return clone(documentArtifacts.find((item) => item.projectId === projectID && item.id === id) ?? null);
 }
 
 export function createIssue(input: CreateIssueInput): Issue | null {

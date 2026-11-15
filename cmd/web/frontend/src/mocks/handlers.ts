@@ -22,8 +22,9 @@ import {
   createProject,
   getOrchestratorConversation,
   getIssue,
-  getDocumentArtifact,
+  getProjectDocumentArtifact,
   listDocumentArtifacts,
+  listProjectDocumentArtifacts,
   getProjectWorkflow,
   listChangeRequests,
   listComments,
@@ -139,8 +140,13 @@ export const handlers = [
     return documents ? jsonOk(documents) : jsonError("document_artifacts.list.not_found", "Issue was not found.", 404);
   }),
 
-  http.get(`${apiBase}/issues/:issueId/artifacts/documents/:documentId`, ({ params }) => {
-    const document = getDocumentArtifact(numericParam(params.issueId), stringParam(params.documentId));
+  http.get(`${apiBase}/projects/:projectId/artifacts/documents`, ({ params }) => {
+    const documents = listProjectDocumentArtifacts(numericParam(params.projectId));
+    return documents ? jsonOk(documents) : jsonError("document_artifacts.list.not_found", "Project was not found.", 404);
+  }),
+
+  http.get(`${apiBase}/projects/:projectId/artifacts/documents/:documentId`, ({ params }) => {
+    const document = getProjectDocumentArtifact(numericParam(params.projectId), stringParam(params.documentId));
     return document ? jsonOk(document) : jsonError("document_artifacts.get.not_found", "Document was not found.", 404);
   }),
 

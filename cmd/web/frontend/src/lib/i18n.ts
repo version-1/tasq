@@ -93,6 +93,7 @@ const resources = {
         },
       },
       header: {
+        artifacts: "成果物",
         addTask: "タスクを追加",
         board: "ボード",
         breadcrumb: "パンくずリスト",
@@ -382,6 +383,14 @@ const resources = {
         syncedAt: "同期時刻",
         workflowUnavailable: "WORKFLOW.md は未同期です",
         workflowUnavailableDetail: "workflow sync が完了するとここに表示されます",
+      },
+      projectArtifacts: {
+        empty: "保存済みの文書 artifact はありません",
+        failedToLoad: "文書 artifact を読み込めません",
+        loading: "文書 artifact を読み込み中",
+        navigation: "文書 artifact 一覧",
+        select: "文書を選択すると本文を表示します",
+        title: "文書 artifact",
       },
       deleteProject: {
         cancel: "キャンセル",
@@ -718,6 +727,7 @@ const resources = {
         },
       },
       header: {
+        artifacts: "Artifacts",
         addTask: "Add task",
         board: "Board",
         breadcrumb: "Breadcrumb",
@@ -1007,6 +1017,14 @@ const resources = {
         syncedAt: "Synced at",
         workflowUnavailable: "WORKFLOW.md has not been synced",
         workflowUnavailableDetail: "It will appear here after workflow sync completes.",
+      },
+      projectArtifacts: {
+        empty: "No document artifacts are saved.",
+        failedToLoad: "Could not load document artifacts",
+        loading: "Loading document artifacts",
+        navigation: "Document artifacts",
+        select: "Select a document to view its body.",
+        title: "Document artifacts",
       },
       deleteProject: {
         cancel: "Cancel",

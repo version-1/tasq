@@ -128,7 +128,15 @@ func (s *Store) UpdateProject(ctx context.Context, id int64, input entity.Update
 	return s.Project(ctx, id)
 }
 
+// DeleteProjectIssueData removes data held outside the issue-tracker database.
+// It is called while the issue-tracker write transaction prevents new links.
+type DeleteProjectIssueData func(context.Context, []int64) error
+
 func (s *Store) DeleteProject(ctx context.Context, id int64) error {
+	return s.DeleteProjectWithCleanup(ctx, id, nil)
+}
+
+func (s *Store) DeleteProjectWithCleanup(ctx context.Context, id int64, cleanup DeleteProjectIssueData) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -138,6 +146,51 @@ func (s *Store) DeleteProject(ctx context.Context, id int64) error {
 			_ = tx.Rollback()
 		}
 	}()
+	// Acquire SQLite's writer lock before checking cross-project links. It keeps
+	// a concurrent link insertion from invalidating this deletion after cleanup.
+	result, err := tx.ExecContext(ctx, `UPDATE projects SET id = id WHERE id = ?`, id)
+	if err != nil {
+		return fmt.Errorf("lock project for deletion: %w", err)
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected == 0 {
+		return sql.ErrNoRows
+	}
+	var hasExternalLinks bool
+	if err := tx.QueryRowContext(ctx, `SELECT EXISTS (
+		SELECT 1 FROM document_artifacts a
+		JOIN document_artifact_links l ON l.document_artifact_id = a.id
+		JOIN issues i ON i.id = l.target_id
+		WHERE a.project_id = ? AND i.project_id <> ?
+	)`, id, id).Scan(&hasExternalLinks); err != nil {
+		return fmt.Errorf("check project document artifact links: %w", err)
+	}
+	if hasExternalLinks {
+		return ErrProjectHasExternalDocumentArtifactLinks
+	}
+	issueIDs, err := projectIssueIDsTx(ctx, tx, id)
+	if err != nil {
+		return err
+	}
+	if cleanup != nil {
+		if err := cleanup(ctx, issueIDs); err != nil {
+			return err
+		}
+	}
+	if err := s.deleteProjectTx(ctx, tx, id); err != nil {
+		return err
+	}
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	tx = nil
+	return nil
+}
+
+func (s *Store) deleteProjectTx(ctx context.Context, tx *sql.Tx, id int64) error {
 
 	attachments, err := projectAttachments(ctx, tx, id)
 	if err != nil {
@@ -207,10 +260,6 @@ func (s *Store) DeleteProject(ctx context.Context, id int64) error {
 			}
 		}
 	}
-	if err := tx.Commit(); err != nil {
-		return err
-	}
-	tx = nil
 	return nil
 }
 
@@ -230,6 +279,26 @@ func (s *Store) ProjectIssueIDs(ctx context.Context, projectID int64) ([]int64, 
 		issueIDs = append(issueIDs, issueID)
 	}
 	return issueIDs, rows.Err()
+}
+
+func projectIssueIDsTx(ctx context.Context, tx *sql.Tx, projectID int64) ([]int64, error) {
+	rows, err := tx.QueryContext(ctx, `SELECT id FROM issues WHERE project_id = ? ORDER BY id ASC`, projectID)
+	if err != nil {
+		return nil, fmt.Errorf("list project issue ids: %w", err)
+	}
+	defer rows.Close()
+	var issueIDs []int64
+	for rows.Next() {
+		var issueID int64
+		if err := rows.Scan(&issueID); err != nil {
+			return nil, err
+		}
+		issueIDs = append(issueIDs, issueID)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return issueIDs, nil
 }
 
 func (s *Store) resolveAttachmentStorage() (*AttachmentStorage, error) {

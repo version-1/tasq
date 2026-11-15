@@ -37,6 +37,13 @@ Error responses use:
 | `PUT` | `/api/v1/projects/{id}/workflow` | Store workflow override. |
 | `DELETE` | `/api/v1/projects/{id}/workflow` | Remove workflow override. |
 | `POST` | `/api/v1/projects/{id}/check` | Validate project setup. |
+| `GET` | `/api/v1/projects/{id}/artifacts/documents` | List project-owned document artifact metadata. |
+| `POST` | `/api/v1/projects/{id}/artifacts/documents` | Create a project-owned document artifact. |
+| `GET` | `/api/v1/projects/{id}/artifacts/documents/{documentId}` | Read one project-owned document artifact. |
+| `PATCH` | `/api/v1/projects/{id}/artifacts/documents/{documentId}` | Update one project-owned document artifact. |
+| `DELETE` | `/api/v1/projects/{id}/artifacts/documents/{documentId}` | Delete an unlinked project-owned document artifact. |
+| `POST` | `/api/v1/projects/{id}/artifacts/documents/{documentId}/links/issues/{issueId}` | Link a document artifact to an issue. |
+| `DELETE` | `/api/v1/projects/{id}/artifacts/documents/{documentId}/links/issues/{issueId}` | Remove an issue link. |
 | `GET` | `/api/v1/issues` | List issues. |
 | `POST` | `/api/v1/issues` | Create an issue. |
 | `POST` | `/api/v1/issues/states` | Read issue states in bulk. |
@@ -74,7 +81,9 @@ Change-request listing supports an optional `status` filter and `limit` from `1`
 
 Issue responses always include an `artifacts` array, sorted by `type`, including `[]` when no artifacts exist. The initial `pull_request` artifact accepts only `data_value` on `PUT`; the server returns `type`, `data_type`, and `data_value`. `DELETE` returns an empty `204`. Invalid types or URLs return `400`; a missing issue or artifact returns `404`.
 
-Document artifacts store Markdown separately from URL artifacts. A document has a server-generated ID, `type` (`reference_document` or `work_report`), title, and body. An issue can have multiple documents of either type. List responses omit bodies; an individual read returns the exact stored Markdown. Reads and updates are scoped to both the issue and document ID, so a document under another issue returns `404`. `PATCH` preserves fields that are omitted. The initial API deliberately has no document delete endpoint.
+Document artifacts store Markdown separately from URL artifacts and are owned by a project. A document has a server-generated ID, `type` (`reference_document` or `work_report`), title, and body. It may have no issue links or link to several issues, including issues in other projects; every link shares the same body. Use the project routes as the canonical create, read, update, delete, link, and unlink API. Lists omit bodies, individual reads return the exact stored Markdown, and `PATCH` preserves omitted fields. A linked document cannot be deleted (`409`). Deleting an issue removes only its links. The issue document routes remain for compatibility: creation also creates its initial issue link, and reads require that link. Updating through an issue route is rejected when its owner is another project.
+
+The current service has no authentication or authorization middleware. Project ownership is a data boundary for a future policy layer; a cross-project issue link does not grant access.
 
 Change requests capture additional work for a later agent run. Creation sets the status to `open`. Allowed transitions are `open` to `in_progress` or `canceled`, and `in_progress` to `resolved` or `canceled`. Resolved and canceled requests are immutable. Cancellation is a state transition; there is no physical delete endpoint.
 

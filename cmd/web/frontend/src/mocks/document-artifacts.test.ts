@@ -20,13 +20,14 @@ describe("document artifact mock HTTP routes", () => {
     ]));
     expect(list[0]).not.toHaveProperty("body");
 
-    const documentResponse = await fetch(`${base}/issues/1/artifacts/documents/doc-1`);
+    const documentResponse = await fetch(`${base}/projects/1/artifacts/documents/doc-1`);
     expect(documentResponse.status).toBe(200);
     expect((await documentResponse.json()).data).toMatchObject({ id: "doc-1", body: expect.stringContaining("Acceptance criteria") });
   });
 
-  it("keeps document routes scoped to an existing issue", async () => {
+  it("keeps issue references and project documents scoped to existing resources", async () => {
     expect((await fetch(`${base}/issues/999999/artifacts/documents`)).status).toBe(404);
-    expect((await fetch(`${base}/issues/1/artifacts/documents/unknown`)).status).toBe(404);
+    expect((await fetch(`${base}/projects/1/artifacts/documents/unknown`)).status).toBe(404);
+    expect((await fetch(`${base}/projects/999999/artifacts/documents`)).status).toBe(404);
   });
 });

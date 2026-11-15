@@ -37,6 +37,13 @@ Issue Tracker は利用者向けの Tasq API です。プロジェクト、課�
 | `PUT` | `/api/v1/projects/{id}/workflow` | workflow override を保存します。 |
 | `DELETE` | `/api/v1/projects/{id}/workflow` | workflow override を削除します。 |
 | `POST` | `/api/v1/projects/{id}/check` | project setup を validate します。 |
+| `GET` | `/api/v1/projects/{id}/artifacts/documents` | プロジェクト所有の文書 artifact メタデータを一覧表示します。 |
+| `POST` | `/api/v1/projects/{id}/artifacts/documents` | プロジェクト所有の文書 artifact を作成します。 |
+| `GET` | `/api/v1/projects/{id}/artifacts/documents/{documentId}` | プロジェクト所有の文書 artifact を 1 件取得します。 |
+| `PATCH` | `/api/v1/projects/{id}/artifacts/documents/{documentId}` | プロジェクト所有の文書 artifact を更新します。 |
+| `DELETE` | `/api/v1/projects/{id}/artifacts/documents/{documentId}` | 関連のないプロジェクト所有の文書 artifact を削除します。 |
+| `POST` | `/api/v1/projects/{id}/artifacts/documents/{documentId}/links/issues/{issueId}` | 文書 artifact を課題に関連付けます。 |
+| `DELETE` | `/api/v1/projects/{id}/artifacts/documents/{documentId}/links/issues/{issueId}` | 課題との関連を解除します。 |
 | `GET` | `/api/v1/issues` | issues を list します。 |
 | `POST` | `/api/v1/issues` | issue を作成します。 |
 | `POST` | `/api/v1/issues/states` | issue states を bulk で読みます。 |
@@ -74,7 +81,9 @@ change request の一覧取得では、任意の `status` フィルターと `1`
 
 課題レスポンスには、Artifact がない場合も `[]` となる `artifacts` 配列が常に含まれ、`type` 昇順で返ります。初期の `pull_request` Artifact では、`PUT` に `data_value` だけを指定します。サーバーは `type`、`data_type`、`data_value` を返します。`DELETE` は本文のない `204` を返します。不正な type または URL は `400`、課題または Artifact が存在しない場合は `404` です。
 
-Document Artifact は URL Artifact とは別に Markdown を保存します。Document はサーバー生成の ID、`type`（`reference_document` または `work_report`）、タイトル、本文を持ちます。1 つの課題には、どちらの type でも複数の Document を紐付けられます。一覧レスポンスは本文を含まず、個別取得は保存済みの Markdown をそのまま返します。読み取りと更新は課題 ID と Document ID の両方でスコープされるため、別の課題の Document は `404` になります。`PATCH` では省略したフィールドを維持します。初期 API では Document の delete endpoint を意図的に提供しません。
+文書 artifact は URL artifact とは別に Markdown を保存し、プロジェクトが所有します。文書にはサーバー生成の ID、`type`（`reference_document` または `work_report`）、タイトル、本文があります。課題との関連はなくてもよく、別プロジェクトの課題を含む複数の課題に関連できます。すべての関連は同じ本文を共有します。作成、取得、更新、削除、関連、解除にはプロジェクト route を正規 API として使用します。一覧には本文を含めず、個別取得は保存済みの Markdown をそのまま返します。`PATCH` は省略したフィールドを維持します。関連がある文書は `409` となり削除できません。課題の削除では、その関連だけが削除されます。課題の文書 route は互換性のために残ります。作成時には初期関連も作成され、取得にはその関連が必要です。所有者が別プロジェクトである文書を課題 route から更新すると拒否されます。
+
+現在のサービスには認証・認可 middleware がありません。プロジェクト所有は将来のポリシー層のデータ境界であり、別プロジェクトの課題との関連はアクセス権を与えません。
 
 change request は、後続のエージェント実行で対応する追加作業を記録します。作成時の状態は `open` です。許可される状態遷移は `open` から `in_progress` または `canceled`、`in_progress` から `resolved` または `canceled` です。`resolved` と `canceled` は変更できません。取り消しは状態遷移として扱われ、物理削除のエンドポイントはありません。
 

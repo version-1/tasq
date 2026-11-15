@@ -6,6 +6,7 @@ Tasq design documentation is split by concern:
 - [API](design/api.md): issue-tracker API surface and CLI command mapping.
 - [Configuration](design/configuration.md): local home directory, runtime state, and Compose development configuration.
 - [Schema](design/schema.md): entity field specifications and validation rules.
+- [Project Document Artifacts](design/project-document-artifacts.md): project ownership, optional issue links, and migration behavior for Markdown artifacts.
 - [Status](design/status.md): issue status, derived queue status, and expected workflow transitions.
 - [System Prompts](design/system-prompts.md): orchestrator-injected task start and task resume prompts.
 - [Operations](design/operations.md): local development environment, verification, and open decisions.

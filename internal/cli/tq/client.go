@@ -232,25 +232,34 @@ func (c *apiClient) deleteArtifact(ctx context.Context, issueID int64, artifactT
 	return c.doNoContent(ctx, http.MethodDelete, fmt.Sprintf("/api/v1/issues/%d/artifacts/%s", issueID, url.PathEscape(artifactType)))
 }
 
-func (c *apiClient) createDocumentArtifact(ctx context.Context, issueID int64, input entity.CreateDocumentArtifactInput) (entity.DocumentArtifact, error) {
+func (c *apiClient) createDocumentArtifact(ctx context.Context, projectID int64, input entity.CreateDocumentArtifactInput) (entity.DocumentArtifact, error) {
 	var item entity.DocumentArtifact
-	err := c.do(ctx, http.MethodPost, fmt.Sprintf("/api/v1/issues/%d/artifacts/documents", issueID), input, &item)
+	err := c.do(ctx, http.MethodPost, fmt.Sprintf("/api/v1/projects/%d/artifacts/documents", projectID), input, &item)
 	return item, err
 }
-func (c *apiClient) listDocumentArtifacts(ctx context.Context, issueID int64) ([]entity.DocumentArtifact, error) {
+func (c *apiClient) listDocumentArtifacts(ctx context.Context, projectID int64) ([]entity.DocumentArtifact, error) {
 	var items []entity.DocumentArtifact
-	err := c.do(ctx, http.MethodGet, fmt.Sprintf("/api/v1/issues/%d/artifacts/documents", issueID), nil, &items)
+	err := c.do(ctx, http.MethodGet, fmt.Sprintf("/api/v1/projects/%d/artifacts/documents", projectID), nil, &items)
 	return items, err
 }
-func (c *apiClient) documentArtifact(ctx context.Context, issueID int64, id string) (entity.DocumentArtifact, error) {
+func (c *apiClient) documentArtifact(ctx context.Context, projectID int64, id string) (entity.DocumentArtifact, error) {
 	var item entity.DocumentArtifact
-	err := c.do(ctx, http.MethodGet, fmt.Sprintf("/api/v1/issues/%d/artifacts/documents/%s", issueID, url.PathEscape(id)), nil, &item)
+	err := c.do(ctx, http.MethodGet, fmt.Sprintf("/api/v1/projects/%d/artifacts/documents/%s", projectID, url.PathEscape(id)), nil, &item)
 	return item, err
 }
-func (c *apiClient) updateDocumentArtifact(ctx context.Context, issueID int64, id string, input entity.UpdateDocumentArtifactInput) (entity.DocumentArtifact, error) {
+func (c *apiClient) updateDocumentArtifact(ctx context.Context, projectID int64, id string, input entity.UpdateDocumentArtifactInput) (entity.DocumentArtifact, error) {
 	var item entity.DocumentArtifact
-	err := c.do(ctx, http.MethodPatch, fmt.Sprintf("/api/v1/issues/%d/artifacts/documents/%s", issueID, url.PathEscape(id)), input, &item)
+	err := c.do(ctx, http.MethodPatch, fmt.Sprintf("/api/v1/projects/%d/artifacts/documents/%s", projectID, url.PathEscape(id)), input, &item)
 	return item, err
+}
+func (c *apiClient) deleteDocumentArtifact(ctx context.Context, projectID int64, id string) error {
+	return c.doNoContent(ctx, http.MethodDelete, fmt.Sprintf("/api/v1/projects/%d/artifacts/documents/%s", projectID, url.PathEscape(id)))
+}
+func (c *apiClient) linkDocumentArtifact(ctx context.Context, projectID int64, id string, issueID int64) error {
+	return c.doNoContent(ctx, http.MethodPost, fmt.Sprintf("/api/v1/projects/%d/artifacts/documents/%s/links/issues/%d", projectID, url.PathEscape(id), issueID))
+}
+func (c *apiClient) unlinkDocumentArtifact(ctx context.Context, projectID int64, id string, issueID int64) error {
+	return c.doNoContent(ctx, http.MethodDelete, fmt.Sprintf("/api/v1/projects/%d/artifacts/documents/%s/links/issues/%d", projectID, url.PathEscape(id), issueID))
 }
 
 func (c *apiClient) createComment(ctx context.Context, issueID int64, input entity.CreateCommentInput) (entity.Comment, error) {

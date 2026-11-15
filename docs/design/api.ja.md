@@ -21,6 +21,8 @@ API を変更するときは、[development.ja.md](../development.ja.md)の手�
 
 この操作は、対象課題が所有するオーケストレーターの実行時データも削除します。対象は、実行、ランナーイベント、ワークスペースのメタデータ、ワークスペース準備の失敗記録です。途中で失敗しても課題 ID が残っている状態から再試行できるように、オーケストレーターのデータを Issue Tracker のレコードより先に削除します。
 
+プロジェクト所有の文書 artifact は、別プロジェクトの課題にも関連できます。このような外部関連がある場合、削除は orchestrator の実行データを削除する前に `409 Conflict` で拒否されます。Tracker はリンクを確認し、orchestrator のデータをクリーンアップしてプロジェクトを削除するまで、データベースの書き込み境界を保持します。そのため、並行した関連追加によってクリーンアップだけが成功し、その後に削除が失敗することはありません。
+
 対象課題に `running` 状態のオーケストレーター実行がある場合、削除は `projects.delete.running_runs` を伴う `409 Conflict` を返し、何も変更しません。`project.location` に記録されたディレクトリや、そのワークツリーを削除または変更することはありません。
 
 ## 課題と依存関係
@@ -53,9 +55,15 @@ API を変更するときは、[development.ja.md](../development.ja.md)の手�
 
 ### Document Artifact
 
-`POST /api/v1/issues/{issue_id}/artifacts/documents` は Markdown の Document Artifact を作成します。`type` は `reference_document` または `work_report`、`title` は 500 bytes 以下の空でない UTF-8 文字列、`body` は 100,000 bytes 以下の空でない UTF-8 Markdown です。同じ課題には、どちらの type も複数紐付けられます。
+Markdown の文書 artifact は課題ではなくプロジェクトが所有します。`type` は `reference_document` または `work_report`、`title` は 500 bytes 以下の空でない UTF-8 文字列、`body` は 100,000 bytes 以下の空でない UTF-8 Markdown です。プロジェクトは課題と関連しない artifact も作成できます。
 
-`GET /api/v1/issues/{issue_id}/artifacts/documents` は本文を含まない Document のメタデータを一覧表示します。`GET /api/v1/issues/{issue_id}/artifacts/documents/{document_id}` は本文を含む 1 件を返します。同じパスへの `PATCH` は `title` と `body` の一方または両方を受け付け、省略したフィールドは維持します。読み取りと更新は課題 ID と Document ID の両方でスコープされるため、別の課題の Document は `404` になります。初期リリースでは delete endpoint を提供しません。
+`POST` と `GET /api/v1/projects/{project_id}/artifacts/documents` で artifact を作成・一覧取得します。`GET`、`PATCH`、`DELETE /api/v1/projects/{project_id}/artifacts/documents/{document_id}` で 1 件を取得・更新・削除します。一覧には本文を含めず、個別取得は保存済みの Markdown をそのまま返します。`PATCH` では省略したフィールドを維持します。関連が残る artifact の `DELETE` は `409` になります。
+
+`POST` と `DELETE /api/v1/projects/{project_id}/artifacts/documents/{document_id}/links/issues/{issue_id}` で課題との関連を追加・解除します。関連テーブルは polymorphic で、初期対応する対象種別は `issue` です。1 つの artifact は別プロジェクトの課題を含む複数の課題に関連でき、それらは同じ本文を共有します。課題を削除しても、その課題への関連だけが削除されます。
+
+課題配下の route は互換性のために残ります。課題 route からの作成は、プロジェクト所有の artifact を作成し、その課題へ関連します。読み取りはその課題に関連している文書だけで成功します。別プロジェクトが所有する artifact の更新は課題 route から拒否されるため、所有プロジェクトの route を使用します。
+
+現在のサービスには認証・認可 middleware がありません。所有プロジェクトの route は将来のポリシー層の所有境界を保ちますが、別プロジェクトの課題との関連はアクセス権を与えません。
 
 ### 一覧と検索
 

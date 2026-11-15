@@ -166,12 +166,17 @@ const (
 
 type DocumentArtifact struct {
 	ID        string               `json:"id"`
-	IssueID   int64                `json:"issueId"`
+	ProjectID int64                `json:"projectId"`
 	Type      DocumentArtifactType `json:"type"`
 	Title     string               `json:"title"`
 	Body      string               `json:"body,omitempty"`
 	CreatedAt time.Time            `json:"createdAt"`
 	UpdatedAt time.Time            `json:"updatedAt"`
+}
+
+type CreateDocumentArtifactLinkInput struct {
+	TargetType string `json:"targetType"`
+	TargetID   int64  `json:"targetId"`
 }
 
 type CreateDocumentArtifactInput struct {
