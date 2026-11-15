@@ -22,6 +22,9 @@ import {
   createProject,
   getOrchestratorConversation,
   getIssue,
+  getProjectDocumentArtifact,
+  listDocumentArtifacts,
+  listProjectDocumentArtifacts,
   getProjectWorkflow,
   listChangeRequests,
   listComments,
@@ -130,6 +133,21 @@ export const handlers = [
     }
 
     return jsonOk(resumeAutoOK(id) ?? issue);
+  }),
+
+  http.get(`${apiBase}/issues/:issueId/artifacts/documents`, ({ params }) => {
+    const documents = listDocumentArtifacts(numericParam(params.issueId));
+    return documents ? jsonOk(documents) : jsonError("document_artifacts.list.not_found", "Issue was not found.", 404);
+  }),
+
+  http.get(`${apiBase}/projects/:projectId/artifacts/documents`, ({ params }) => {
+    const documents = listProjectDocumentArtifacts(numericParam(params.projectId));
+    return documents ? jsonOk(documents) : jsonError("document_artifacts.list.not_found", "Project was not found.", 404);
+  }),
+
+  http.get(`${apiBase}/projects/:projectId/artifacts/documents/:documentId`, ({ params }) => {
+    const document = getProjectDocumentArtifact(numericParam(params.projectId), stringParam(params.documentId));
+    return document ? jsonOk(document) : jsonError("document_artifacts.get.not_found", "Document was not found.", 404);
   }),
 
   http.post(`${apiBase}/issues/:id/auto-ok-result`, async ({ params, request }) => {

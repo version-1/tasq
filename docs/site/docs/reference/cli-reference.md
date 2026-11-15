@@ -61,12 +61,21 @@ greater than `--interval`. It ignores global `--output`.
 | --- | --- |
 | `tq artifact set <issue-id> --type pull_request <url>` | Create or replace an issue pull-request URL. |
 | `tq artifact delete <issue-id> --type pull_request` | Delete an issue pull-request URL. |
+| `tq artifact document create <project-id> --type <type> --title <title> --file <path\|->` | Store a project-owned reference document or work report. |
+| `tq artifact document list <project-id>` | List document metadata owned by a project. |
+| `tq artifact document get <project-id> <document-id> [--raw]` | Read one document. |
+| `tq artifact document update <project-id> <document-id> [--title <title>] [--file <path\|->]` | Update a document title and/or body. |
+| `tq artifact document delete <project-id> <document-id>` | Delete an unlinked document. |
+| `tq artifact document link <project-id> <document-id> <issue-id>` | Link a document to an issue. |
+| `tq artifact document unlink <project-id> <document-id> <issue-id>` | Remove an issue link. |
 
-Both commands require a positive issue ID and `--type`, and support the global text and JSON output modes.
+The URL-artifact commands `artifact set` and `artifact delete` require a positive issue ID and `--type`, and support the global text and JSON output modes.
 
-Only `pull_request` is currently supported. The URL must be an absolute
+For those URL-artifact commands, only `pull_request` is currently supported. The URL must be an absolute
 `http` or `https` URL with a host and no userinfo, up to 4,096 UTF-8 bytes.
 Repeating `artifact set` for an issue and type replaces its URL.
+
+Document types are `reference_document` and `work_report`. Documents are separate from the pull-request URL and owned by a project; they do not need an issue link. `link` can associate one document with several issues, including issues in other projects, and each issue sees the same body. `delete` fails while any link remains; remove links first. `--file -` reads UTF-8 Markdown from standard input; files and input are limited to 100,000 bytes. `list` omits document bodies. Normal `get` output includes metadata, while `get --raw` writes the stored Markdown body byte-for-byte, including trailing newlines.
 
 ## Comment Commands
 

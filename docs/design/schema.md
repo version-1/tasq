@@ -56,6 +56,22 @@ Artifact rows retain their creation and update timestamps internally, but those 
 
 Validation trims surrounding whitespace before parsing, rejects invalid UTF-8, and otherwise preserves the submitted URL unchanged. Issue responses sort artifacts by `type`.
 
+### Document Artifact
+
+Document artifacts store Markdown authored by users or external agents. Tasq does not invoke a model to create them. They are separate from URL artifacts, and each is owned by one project rather than an issue.
+
+| Field | Constraints |
+| --- | --- |
+| ID | Server-generated stable opaque identifier. |
+| ProjectID | Existing owner project; canonical reads and mutations are scoped to it. |
+| Type | `reference_document` or `work_report`. |
+| Title | Trimmed non-empty UTF-8 text, at most 500 bytes. |
+| Body | Non-empty UTF-8 Markdown, preserved exactly, at most 100,000 bytes. |
+
+`document_artifact_links` stores optional references with `document_artifact_id`, `target_type`, and `target_id`. The database currently accepts only `target_type = issue`; an artifact can have zero or more issue links, including issues in other projects. The primary key prevents duplicate links. Issue deletion cascades to only its links, and an artifact cannot be deleted while links exist. Deleting an owner project cascades to artifacts with only same-project links, but a trigger rejects deletion if one of its artifacts links to an issue in another project.
+
+List responses omit the body; an individual read returns it. The migration preserves existing document IDs, bodies, timestamps, and their original issue as a link; it sets their owner project from that issue. Before applying it, stop local services and copy the issue-tracker SQLite database outside the active `TQ_HOME` data directory. Keep that backup until the migrated database has been verified. To recover, stop services and replace the active database with the copy. Then either run the previous matching Tasq binary, or reapply the current migrations before starting the current binary: the current binary rejects a restored older database that has pending migrations. `tq migrate down` can restore the old issue-owned schema only when every artifact has exactly one link to an issue in its owner project. It refuses to run, without changing data, for unlinked, multi-linked, or cross-project-linked artifacts. It is not a data-recovery substitute. Do not apply migrations to a live database while services are running. The normal migration command records the applied version, and startup refuses a database with pending migrations.
+
 ### CreateIssueInput
 
 `CreateIssueInput` is the request body for `POST /api/v1/issues`. Its fields are the same subset of the Issue table above that accepts client input at create time — `project_id`, `title`, `description`, `status`, `priority`, `assignee`, `dependency_ids` — with the required/default/constraint rules from the Issue table's **Required (Create)** and **Default** columns applying unchanged. `dependency_ids` here means the initial dependency set (same validation as an update: each ID must reference an issue; no duplicates; no self-dependency; no cycles).

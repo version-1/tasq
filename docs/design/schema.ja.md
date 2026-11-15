@@ -58,6 +58,22 @@ Artifact の作成・更新時刻は内部で保持しますが、公開フィ�
 
 検証では前後の空白を除去してから解析し、不正な UTF-8 を拒否します。それ以外は送信された URL を変更せずに保持します。課題レスポンスの Artifact は `type` 昇順です。
 
+### Document Artifact
+
+文書 artifact は、ユーザーまたは外部エージェントが作成した Markdown を保存します。Tasq 自身がモデルを呼び出して文書を生成することはありません。URL artifact とは別に保存し、各 artifact は課題ではなく一つのプロジェクトが所有します。
+
+| Field | 制約 |
+| --- | --- |
+| ID | サーバーが生成する安定した不透明な識別子。 |
+| ProjectID | 所有プロジェクト。正規の取得と更新はこの ID の範囲に限定されます。 |
+| Type | `reference_document` または `work_report`。 |
+| Title | 前後の空白を除いた空でない UTF-8 文字列。500 bytes 以下。 |
+| Body | 空でない UTF-8 の Markdown。内容を保持し、100,000 bytes 以下。 |
+
+`document_artifact_links` は `document_artifact_id`、`target_type`、`target_id` から成る任意の参照を保存します。データベースが現在受け付ける `target_type` は `issue` だけです。artifact は関連なし、または別プロジェクトの課題を含む複数の課題に関連できます。主キーにより重複した関連は拒否されます。課題の削除はその関連だけを cascade し、関連が残る artifact は削除できません。所有プロジェクトの削除は、同一プロジェクトの課題への関連だけなら artifact を cascade しますが、別プロジェクトの課題への関連があれば trigger が拒否します。
+
+一覧レスポンスは本文を含まず、個別取得時に返します。migration は既存文書の ID、本文、時刻、元の課題への関連を保持し、その課題のプロジェクトを所有者に設定します。適用前にローカルサービスを停止し、Issue Tracker の SQLite データベースを稼働中の `TQ_HOME` データディレクトリの外へコピーしてください。移行後のデータベースを検証し終えるまで、そのバックアップを保持します。復旧時はサービスを停止して稼働中のデータベースをコピーで置き換えます。その後は、対応する以前の Tasq バイナリを実行するか、現在のバイナリを起動する前に現在のマイグレーションを再適用してください。現在のバイナリは、未適用の migration がある復元済みの旧データベースを拒否します。`tq migrate down` は、各 artifact が所有プロジェクト内の課題への関連をちょうど 1 件だけ持つ場合に限り、旧来の課題所有スキーマへ戻せます。関連なし、複数関連、または別プロジェクトへの関連があるときは、データを変更せずに拒否します。データ復旧の代わりにはなりません。サービスの稼働中に本番データベースへ migration を適用しないでください。通常の migration コマンドは適用済みバージョンを記録し、未適用の migration があるデータベースでは起動を拒否します。
+
 ### CreateIssueInput
 
 `CreateIssueInput` は `POST /api/v1/issues` の request body です。フィールドは上記 Issue 表のうち、create 時にクライアント入力を受け付けるサブセット（`project_id`, `title`, `description`, `status`, `priority`, `assignee`, `dependency_ids`）と同じで、Required/Default の内容も Issue 表の **Required (Create)** 列と **Default** 列のとおりです。ここでの `dependency_ids` は初期 dependency set を意味します（update と同じ検証: 各 ID は issue を参照すること。重複、自己依存、cycle は不可）。

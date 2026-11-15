@@ -2,6 +2,8 @@ package api
 
 import (
 	"bytes"
+	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"io"
@@ -9,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/version-1/tasq/internal/issue/domain/entity"
+	"github.com/version-1/tasq/internal/issue/store"
 	"github.com/version-1/tasq/internal/orchestrator/runstore"
 	"gopkg.in/yaml.v3"
 )
@@ -78,22 +81,25 @@ func (s *Server) deleteProject(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	if s.projectRunDataDeleter != nil {
-		issueIDs, err := s.store.ProjectIssueIDs(r.Context(), id)
-		if err != nil {
-			writeError(w, http.StatusInternalServerError, "projects.delete.project_issue_ids_failed", err)
-			return
+	err := s.store.DeleteProjectWithCleanup(r.Context(), id, func(ctx context.Context, issueIDs []int64) error {
+		if s.projectRunDataDeleter == nil {
+			return nil
 		}
-		if err := s.projectRunDataDeleter.DeleteProjectIssueData(r.Context(), issueIDs); err != nil {
-			if errors.Is(err, runstore.ErrProjectHasRunningRuns) {
-				writeError(w, http.StatusConflict, "projects.delete.running_runs", err)
-				return
-			}
+		return s.projectRunDataDeleter.DeleteProjectIssueData(ctx, issueIDs)
+	})
+	if errors.Is(err, store.ErrProjectHasExternalDocumentArtifactLinks) {
+		writeError(w, http.StatusConflict, "projects.delete.document_artifact_external_links", err)
+		return
+	}
+	if errors.Is(err, runstore.ErrProjectHasRunningRuns) {
+		writeError(w, http.StatusConflict, "projects.delete.running_runs", err)
+		return
+	}
+	if err != nil {
+		if s.projectRunDataDeleter != nil && !errors.Is(err, sql.ErrNoRows) {
 			writeError(w, http.StatusInternalServerError, "projects.delete.orchestrator_cleanup_failed", err)
 			return
 		}
-	}
-	if err := s.store.DeleteProject(r.Context(), id); err != nil {
 		writeStoreError(w, err, "projects.delete", "project")
 		return
 	}

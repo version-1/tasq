@@ -5,6 +5,9 @@ import {
   getApiV1IssuesId,
   getApiV1IssuesIssueIdChangeRequests,
   getApiV1IssuesIssueIdComments,
+  getApiV1IssuesIssueIdArtifactsDocuments,
+  getApiV1ProjectsIdArtifactsDocuments,
+  getApiV1ProjectsIdArtifactsDocumentsDocumentId,
   getGetApiV1AttachmentsIdContentUrl,
   getApiV1Projects,
   getApiV1ProjectsIdWorkflow,
@@ -23,6 +26,7 @@ import {
   type ErrorResponse,
   type GetApiV1IssuesParams,
   type Issue,
+  type DocumentArtifact,
   type IssueListResponse,
   type IssueStatus,
   type Project,
@@ -143,6 +147,18 @@ export function fetchIssueAttachments(
     getApiV1Attachments({ entity_type: "issue", entity_id: String(issueID) }, noStore),
     options,
   );
+}
+
+export function fetchDocumentArtifacts(issueID: number, options?: ApiRequestOptions): Promise<DocumentArtifact[]> {
+  return unwrapResponse(getApiV1IssuesIssueIdArtifactsDocuments(issueID, noStore), options);
+}
+
+export function fetchProjectDocumentArtifacts(projectID: number, options?: ApiRequestOptions): Promise<DocumentArtifact[]> {
+  return unwrapResponse(getApiV1ProjectsIdArtifactsDocuments(projectID, noStore), options);
+}
+
+export function fetchProjectDocumentArtifact(projectID: number, documentID: string, options?: ApiRequestOptions): Promise<DocumentArtifact> {
+  return unwrapResponse(getApiV1ProjectsIdArtifactsDocumentsDocumentId(projectID, documentID, noStore), options);
 }
 
 export function attachmentContentURL(id: string): string {

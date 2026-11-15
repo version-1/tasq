@@ -8,6 +8,7 @@ import IssueDetailRoute from "./app/issues/[id]/page";
 import IssuesPage from "./app/issues/page";
 import IssuesTablePage from "./app/issues/table/page";
 import ProjectSettingsPage from "./app/projects/[projectKey]/settings/page";
+import ProjectArtifactsPage from "./app/projects/[projectKey]/artifacts/page";
 import SettingsPage from "./app/settings/page";
 import { IssueDetailLayout } from "./components/layout/issue";
 import { DefaultLayout } from "./components/layout/default";
@@ -23,6 +24,7 @@ const dashboardHeaderPages = [
 const projectDetailHeaderPages = [
   { key: "issues", href: "/projects/:projectKey/issues", titleKey: "header.board" },
   { key: "table", href: "/projects/:projectKey/table", titleKey: "issues.table.tableTab" },
+  { key: "artifacts", href: "/projects/:projectKey/artifacts", titleKey: "header.artifacts" },
   { key: "settings", href: "/projects/:projectKey/settings", titleKey: "header.settings" },
 ] satisfies readonly TabPageLink[];
 
@@ -94,6 +96,16 @@ export function App() {
             <TabsProvider activeKey="settings" pages={projectDetailHeaderPages}>
               <ProjectLayout showAddTaskButton={false}>
                 <ProjectSettingsPage />
+              </ProjectLayout>
+            </TabsProvider>
+          }
+        />
+        <Route
+          path="/projects/:projectKey/artifacts/:documentId?"
+          element={
+            <TabsProvider activeKey="artifacts" pages={projectDetailHeaderPages}>
+              <ProjectLayout showAddTaskButton={false}>
+                <ProjectArtifactsPage />
               </ProjectLayout>
             </TabsProvider>
           }
