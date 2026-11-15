@@ -103,7 +103,7 @@ describe("ConversationPage", () => {
 
     expect(within(items[0]).getByText("running")).toBeInTheDocument();
     expect(within(items[1]).getByText("commandExecution")).toBeInTheDocument();
-    expect(within(items[1]).getByText("npm test")).toBeInTheDocument();
+    expect(items[1]).toHaveTextContent("npm test");
 
     await expandEventBody(user, items[1]);
 
