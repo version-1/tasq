@@ -531,15 +531,6 @@ func IsValidStatus(status Status) bool {
 	}
 }
 
-func IsActiveDependencyStatus(status Status) bool {
-	switch status {
-	case StatusBacklog, StatusReady, StatusInProgress, StatusReview:
-		return true
-	default:
-		return false
-	}
-}
-
 func IsSatisfiedDependencyStatus(status Status) bool {
 	switch status {
 	case StatusDone, StatusCancelled, StatusDuplicate:
