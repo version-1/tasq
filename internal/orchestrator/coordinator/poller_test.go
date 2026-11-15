@@ -582,14 +582,19 @@ func openTestStore(t *testing.T) *runstore.Store {
 	return store
 }
 
-func newTestWorkspaceManager(t *testing.T) *workspace.Manager {
+type testWorkspaceManager struct {
+	*workspace.Manager
+	workspace.ProjectManager
+}
+
+func newTestWorkspaceManager(t *testing.T) *testWorkspaceManager {
 	t.Helper()
 	repoRoot := initTestGitRepo(t)
-	manager, err := workspace.NewManager(filepath.Join(repoRoot, ".worktrees"))
+	manager, err := workspace.NewManagerWithHooks(filepath.Join(repoRoot, ".worktrees"), workspace.HookConfig{})
 	if err != nil {
 		t.Fatalf("new workspace manager: %v", err)
 	}
-	return manager
+	return &testWorkspaceManager{Manager: manager}
 }
 
 func newTestProjectRepo(t *testing.T) string {
@@ -630,14 +635,14 @@ func gitCommand(t *testing.T, dir string, args ...string) string {
 	return string(output)
 }
 
-func newTestPoller(t *testing.T, store *runstore.Store, manager *workspace.Manager, issues []entity.Issue) *Poller {
+func newTestPoller(t *testing.T, store *runstore.Store, manager *testWorkspaceManager, issues []entity.Issue) *Poller {
 	t.Helper()
 	tracker := newFakeTracker(issues)
 	tracker.setProjectLocation(1, manager.RepoRoot())
 	return newTestPollerWithTracker(t, store, manager, tracker)
 }
 
-func newTestPollerWithTracker(t *testing.T, store *runstore.Store, manager *workspace.Manager, tracker *fakeTracker) *Poller {
+func newTestPollerWithTracker(t *testing.T, store *runstore.Store, manager *testWorkspaceManager, tracker *fakeTracker) *Poller {
 	t.Helper()
 	poller, err := NewPoller(PollerConfig{
 		Tracker:        tracker,
@@ -654,7 +659,7 @@ func newTestPollerWithTracker(t *testing.T, store *runstore.Store, manager *work
 	return poller
 }
 
-func workflowResolverForManager(manager *workspace.Manager) WorkflowResolver {
+func workflowResolverForManager(manager *testWorkspaceManager) WorkflowResolver {
 	definition := testWorkflowDefinition()
 	definition.Path = filepath.Join(manager.RepoRoot(), "WORKFLOW.md")
 	definition.Config.WorkspaceRoot = manager.Root()
