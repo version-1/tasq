@@ -8,6 +8,26 @@ This report consolidates Issues #45 through #56 and the cross-cutting review in
 audit area or by a documented non-executable category, then traced public
 entrypoints, generated outputs, embeds, configuration, and dynamic references.
 
+### Reproducible classification
+
+The inventory command was `git ls-files | sort`. Path prefixes assigned runtime
+files to #45–#56 as follows: `internal/issue/domain`, `internal/issue/api`, and
+`cmd/issue-tracker` (#45); `internal/issue/store`, issue-tracker schema and
+migrations (#46); orchestrator coordinator/startup and runstore/HTTP paths
+(#47/#50); runner (#48); workflow/workspace/tracker (#49); `internal/cli/tq`
+and `cmd/tq` (#51/#52); issue frontend features (#53); remaining `cmd/web` and
+OpenAPI (#54); development/CI/release roots (#55); and docs site/HTML (#56).
+`internal/config`, `internal/buildinfo`, `internal/migration`, `cmd/tasq-tui`,
+`cmd/tqstory`, and the migrations embed belong to #52.
+
+The 628-file inventory produced 533 executable/configuration/assets files in
+these path groups and 95 non-executable materials. The latter are 30 repository
+or component instructions/readmes, 45 ADR/design/reference/Symphony documents,
+14 plugin and skill definitions, five static documentation media files, and the
+license. This category is an exclusion from code deletion, not an exclusion
+from the inventory: every item was checked for its consumer (reader, tool
+discovery, link, or static publication). No file was left unassigned.
+
 | Area | Issue | Scope outcome |
 | --- | --- | --- |
 | Issue Tracker domain and HTTP API | #45 | Removed unused `IsActiveDependencyStatus`. |
@@ -46,10 +66,16 @@ their sources and external consumers.
 
 ## Integrated verification
 
-The integrated base was checked with the full Go test, build, and vet suites;
-the frontend test, typecheck, and build; and both English and Japanese docs
-site builds. `git diff --check` was also run. No service stop, release,
-installer, or live update action was used as a verification step.
+- Host Go `go1.27.3 darwin/arm64`: `go test ./...`, `go vet ./...`, and
+  `go build ./cmd/...` passed. The first test run correctly failed only because
+  `cmd/web` embeds `frontend/dist` before the frontend build; all passed after
+  that build produced `dist`.
+- Dev-container Node `22.23.4`: `npm test` passed (29 files, 164 tests), then
+  `npm run typecheck` and `npm run build` passed in `cmd/web/frontend`.
+- Dev-container Node `22.23.4`: `npm run build` built all docs locales, and
+  `npm run build -- --locale ja` separately passed in `docs/site`.
+- `git diff --check` passed. No service stop, release, installer, or live
+  update action was used as a verification step.
 
 The API generator was also run. With no OpenAPI input change, the installed
 generator produced whitespace-only changes in `orchestrator.ts`; those changes
@@ -61,5 +87,7 @@ contract change.
 
 Repository-wide text references are candidate evidence, not proof of runtime
 reachability. Deletions were limited to code or assets with a verified unused
-or unreachable condition. External direct URLs and future documented protocol
-extensions remain intentionally retained.
+or unreachable condition. #54 removed logo variants with no repository use;
+the retained `agent-task-queue.svg` in #56 is a public static URL whose outside
+use cannot be disproved. Future documented protocol extensions remain
+intentionally retained.

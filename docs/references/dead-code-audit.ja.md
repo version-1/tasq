@@ -7,6 +7,24 @@
 担当領域または理由付きの非実行資料へ分類し、公開入口、生成物、embed、設定、動的参照を
 追跡しました。
 
+### 再現可能な分類
+
+棚卸しには `git ls-files | sort` を使用しました。runtime file は path prefix により次のように
+#45〜#56へ割り当てました。`internal/issue/domain`、`internal/issue/api`、
+`cmd/issue-tracker` は #45、`internal/issue/store`、issue-tracker schema/migration は #46、
+orchestrator の coordinator/startup と runstore/HTTP path は #47/#50、runner は #48、
+workflow/workspace/tracker は #49、`internal/cli/tq` と `cmd/tq` は #51/#52、Issue frontend
+feature は #53、残りの `cmd/web` と OpenAPI は #54、development/CI/release root は #55、
+docs site/HTML は #56 です。`internal/config`、`internal/buildinfo`、`internal/migration`、
+`cmd/tasq-tui`、`cmd/tqstory`、migrations embed は #52 に属します。
+
+628ファイルの棚卸し結果は、これらの path group に属する executable/configuration/assets が
+533件、非実行資料が95件でした。後者は repository/component instruction/readme が30件、
+ADR/design/reference/Symphony document が45件、plugin/skill definition が14件、static
+documentation media が5件、license が1件です。この分類はコード削除対象から外すためだけの
+ものではありません。各項目について reader、tool discovery、link、static publication の
+consumer を確認し、未割当ファイルはありません。
+
 | 領域 | Issue | 検査結果 |
 | --- | --- | --- |
 | Issue Tracker の domain・HTTP API | #45 | 未使用の `IsActiveDependencyStatus` を削除。 |
@@ -41,9 +59,15 @@
 
 ## 統合検証
 
-統合ベースでは Go 全体の test/build/vet、frontend の test/typecheck/build、英日両方の docs
-site build、`git diff --check` を実行しました。サービス停止、release、installer、live update は
-検証として実行していません。
+- Host Go `go1.27.3 darwin/arm64`: `go test ./...`、`go vet ./...`、
+  `go build ./cmd/...` が成功しました。初回 test は `cmd/web` が `frontend/dist` を embed
+  するため frontend build 前だけ停止し、`dist` 生成後に全て成功しました。
+- Dev-container Node `22.23.4`: `cmd/web/frontend` で `npm test`（29 files、164 tests）、
+  `npm run typecheck`、`npm run build` が成功しました。
+- Dev-container Node `22.23.4`: `docs/site` で全 locale の `npm run build`、個別の
+  `npm run build -- --locale ja` が成功しました。
+- `git diff --check` が成功しました。サービス停止、release、installer、live update は検証として
+  実行していません。
 
 API generator も実行しました。OpenAPI 入力に差分がないにもかかわらず、導入済み generator は
 `orchestrator.ts` に空白だけの差分を出しました。この差分は commit せず、生成物は追跡済みの
@@ -54,4 +78,6 @@ non-idempotence として記録します。
 
 リポジトリ全体のテキスト参照は候補を見つける根拠であり、runtime 到達性の証明ではありません。
 削除は未使用または到達不能を確認できたコード・asset に限定しました。外部からの直接 URL と、
-将来文書化された protocol extension は意図的に保持しています。
+#54 では repository 内の利用がない logo variant を削除しました。一方 #56 の
+`agent-task-queue.svg` は外部利用を否定できない public static URL のため保持しました。将来
+文書化された protocol extension は意図的に保持しています。
