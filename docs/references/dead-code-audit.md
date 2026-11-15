@@ -11,7 +11,7 @@ entrypoints, generated outputs, embeds, configuration, and dynamic references.
 ### Reproducible classification
 
 The executable record is [`scripts/audit/classify-dead-code-audit.sh`](../../scripts/audit/classify-dead-code-audit.sh).
-Run `scripts/audit/classify-dead-code-audit.sh 81ad6df` to emit the baseline TSV
+Run `sh scripts/audit/classify-dead-code-audit.sh 81ad6df` to emit the baseline TSV
 (`path`, `owner`, `runtime/exclusion`); the command fails on an unmapped file.
 Path prefixes assign runtime
 files to #45–#56 as follows: `internal/issue/domain`, `internal/issue/api`, and

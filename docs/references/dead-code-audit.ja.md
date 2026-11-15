@@ -10,7 +10,7 @@
 ### 再現可能な分類
 
 実行可能な記録は [`scripts/audit/classify-dead-code-audit.sh`](../../scripts/audit/classify-dead-code-audit.sh)
-です。`scripts/audit/classify-dead-code-audit.sh 81ad6df` を実行すると baseline TSV
+です。`sh scripts/audit/classify-dead-code-audit.sh 81ad6df` を実行すると baseline TSV
 （`path`、`owner`、`runtime/exclusion`）を出力し、未割当があれば失敗します。runtime file は path prefix により次のように
 #45〜#56へ割り当てました。`internal/issue/domain`、`internal/issue/api`、
 `cmd/issue-tracker` は #45、`internal/issue/store`、issue-tracker schema/migration は #46、
@@ -79,7 +79,7 @@ non-idempotence として記録します。
 ## 限界
 
 リポジトリ全体のテキスト参照は候補を見つける根拠であり、runtime 到達性の証明ではありません。
-削除は未使用または到達不能を確認できたコード・asset に限定しました。外部からの直接 URL と、
+削除は未使用または到達不能を確認できたコード・asset に限定しました。
 #54 では repository 内の利用がない logo variant を削除しました。一方 #56 の
 `agent-task-queue.svg` は外部利用を否定できない public static URL のため保持しました。将来
 文書化された protocol extension は意図的に保持しています。

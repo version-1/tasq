@@ -5,7 +5,12 @@ set -eu
 # has exactly one first-match classification; unmapped files fail the command.
 # Pass a revision such as 81ad6df to reproduce a historical inventory.
 revision=${1:-HEAD}
-git ls-tree -r --name-only "$revision" | sort | awk '
+audit_tmp=$(mktemp -d "${TMPDIR:-/tmp}/tasq-audit.XXXXXX")
+trap 'rm -rf "$audit_tmp"' EXIT HUP INT TERM
+
+git ls-tree -r --name-only "$revision" > "$audit_tmp/files"
+sort "$audit_tmp/files" > "$audit_tmp/files.sorted"
+awk '
 function emit(owner, kind) { print $0 "\t" owner "\t" kind }
 function excluded(reason) { print $0 "\tEXCLUDED\t" reason }
 /^internal\/issue\/domain\// || /^internal\/issue\/api\// || /^cmd\/issue-tracker\// { emit("#45", "runtime"); next }
@@ -24,8 +29,14 @@ function excluded(reason) { print $0 "\tEXCLUDED\t" reason }
 /^LICENSE$/ || /^(README|ROADMAP|AGENTS|CLAUDE|WORKFLOW)(\.ja)?\.md$/ || /^cmd\/(issue-tracker|orchestrator|web)\/(AGENTS|CLAUDE|WORKFLOW)(\.ja)?\.md$/ || /^docs\/(adr\/|design(\/|(\.ja)?\.md$)|development(\.ja)?\.md$|references\/|symphony\/)/ || /^db\/README/ { excluded("documentation"); next }
 /^plugins\// { excluded("plugin-metadata"); next }
 { print "unmapped audit file: " $0 > "/dev/stderr"; exit 1 }
-' | awk -F '\t' '
-NF != 3 { print "invalid classification row: " $0 > "/dev/stderr"; exit 1 }
-{ counts[$2]++; print }
-END { for (owner in counts) print "count\t" owner "\t" counts[owner] > "/dev/stderr" }
-'
+' "$audit_tmp/files.sorted" > "$audit_tmp/classification"
+
+awk -F '\t' '
+NF != 3 { print "invalid classification row: " $0 > "/dev/stderr"; errors = 1; next }
+{ counts[$2]++ }
+END {
+  for (owner in counts) print "count\t" owner "\t" counts[owner] > "/dev/stderr"
+  exit errors
+}
+' "$audit_tmp/classification"
+cat "$audit_tmp/classification"
