@@ -1065,6 +1065,46 @@ func TestIssuesByStates(t *testing.T) {
 	}
 }
 
+func TestIssuesByFilterHydratesDependenciesAndArtifacts(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store, err := OpenMigrated(ctx, filepath.Join(t.TempDir(), "issue-tracker.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer store.Close()
+
+	project := createTestProject(t, store, "HYDRATION")
+	dependency := createStoreIssue(t, store, project.ID, "Dependency", entity.StatusBacklog, entity.PriorityNormal)
+	parent, err := store.CreateIssue(ctx, entity.CreateIssueInput{
+		ProjectID:     project.ID,
+		Title:         "Parent",
+		DependencyIDs: []int64{dependency.ID},
+	})
+	if err != nil {
+		t.Fatalf("create parent issue: %v", err)
+	}
+	if _, err := store.UpsertArtifact(ctx, parent.ID, entity.ArtifactTypePullRequest, entity.UpsertArtifactInput{DataValue: "https://example.com/pull/1"}); err != nil {
+		t.Fatalf("upsert artifact: %v", err)
+	}
+
+	issues, err := store.IssuesByFilter(ctx, IssueFilter{SortBy: IssueSortByID, SortDirection: SortDirectionAsc})
+	if err != nil {
+		t.Fatalf("list issues: %v", err)
+	}
+	if len(issues) != 2 {
+		t.Fatalf("issue count = %d, want 2", len(issues))
+	}
+	if issues[0].DependencyIDs == nil || issues[0].Artifacts == nil {
+		t.Fatalf("dependency issue hydration = %#v", issues[0])
+	}
+	assertInt64s(t, issues[1].DependencyIDs, []int64{dependency.ID})
+	if len(issues[1].Artifacts) != 1 || issues[1].Artifacts[0].DataValue != "https://example.com/pull/1" {
+		t.Fatalf("parent artifacts = %#v", issues[1].Artifacts)
+	}
+}
+
 func TestIssuesByFilterFiltersByProject(t *testing.T) {
 	t.Parallel()
 

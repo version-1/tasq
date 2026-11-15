@@ -88,9 +88,6 @@ func (s *Store) hydrateIssueArtifacts(ctx context.Context, issues []entity.Issue
 	}
 	for i := range issues {
 		issues[i].Artifacts = append([]entity.Artifact{}, byIssue[issues[i].ID]...)
-		if issues[i].Artifacts == nil {
-			issues[i].Artifacts = []entity.Artifact{}
-		}
 	}
 	return nil
 }
