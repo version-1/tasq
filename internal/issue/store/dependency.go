@@ -218,9 +218,6 @@ func (s *Store) hydrateIssueDependencyIDs(ctx context.Context, issues []entity.I
 	}
 	for i := range issues {
 		issues[i].DependencyIDs = append([]int64{}, byParent[issues[i].ID]...)
-		if issues[i].DependencyIDs == nil {
-			issues[i].DependencyIDs = []int64{}
-		}
 	}
 	return nil
 }
