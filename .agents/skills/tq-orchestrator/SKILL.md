@@ -9,7 +9,6 @@ Poll ready issues from the Tasq issue tracker and delegate each issue to a subag
 
 # Constraints
 
-- Run this skill only inside a Claude Code agent. Return an error in other environments.
 - The orchestrator must delegate issue resolution to subagents and must not resolve issues itself.
 - A project's `WORKFLOW.md` takes precedence. Use the default delegated workflow below only for behavior that the project workflow does not specify.
 
