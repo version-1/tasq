@@ -1,0 +1,11 @@
+# Codex settings
+
+Use inside Codex after the shared service prerequisite passes. Comment author: `codex`. Use Codex collaboration tools to delegate tasks and reviews; follow repository model and role instructions.
+
+Use Monitor when available. Otherwise use this managed background-session procedure. Apply the shared dispatch, recovery and stop rules in `default.md` throughout.
+
+1. Start the watch command once through a command-execution tool that returns a persistent session ID while the process is running. In Codex, use `exec_command` with a short `yield_time_ms`; retain its returned `session_id`. Use `tty: true` if needed to send Ctrl-C. Redirect stdout and stderr to separate files in a unique temporary spool directory before starting the process, and retain that directory with the session ID. This command intentionally runs continuously. Do not detach it with `nohup`, an untracked shell `&`, or a discarded asynchronous tool call.
+2. Use `write_stdin` to check that session and read events from the stdout spool with a retained byte offset. Bound each wait to at most 30 seconds so user messages, worker completions, and stop requests can be handled. An empty read or an empty queue is not completion: continue watching while checking delegated workers. If no managed session tool is available, report the missing capability; do not claim monitoring has started.
+3. Parse complete NDJSON lines directly from the spool file with a byte-offset reader, retaining incomplete trailing bytes for the next read. Do not parse the command tool’s displayed output as the event stream: it may be truncated or mix PTY stdout/stderr. Have the reader return bounded batches containing only event type and issue ID (fetch the full issue later), plus bounded error/info summaries, and advance the offset only after that batch is received intact. On a truncated reader response, retry from the previous offset with a smaller batch; on malformed complete lines, report the error and reconcile against the dependency-aware queue before continuing. Keep stderr in its separate spool file.
+
+On stop or a service conflict, send Ctrl-C with `write_stdin` to the owned session and verify exit. Retain spool files until received events are accounted for; report paths needed for recovery. Apply `default.md` to running workers.
