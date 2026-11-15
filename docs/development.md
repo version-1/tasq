@@ -141,6 +141,7 @@ This section is the single index of repository documentation. Do not duplicate t
 - [docs/design.md](design.md): system architecture and service boundaries.
 - [docs/design/deployment.md](design/deployment.md): release tag creation, GitHub Actions, and GoReleaser deployment flow.
 - [docs/references/makefile.md](references/makefile.md): Makefile targets, variables, and local development command reference.
+- [docs/references/dead-code-audit.md](references/dead-code-audit.md): consolidated dead-code audit scope, decisions, and verification.
 - [cmd/issue-tracker/WORKFLOW.md](../cmd/issue-tracker/WORKFLOW.md): issue-tracker development workflow.
 - [cmd/orchestrator/WORKFLOW.md](../cmd/orchestrator/WORKFLOW.md): orchestrator development workflow.
 - [cmd/web/WORKFLOW.md](../cmd/web/WORKFLOW.md): Web UI development workflow.

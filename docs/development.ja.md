@@ -140,6 +140,7 @@ Documentation を更新するときは、英語版の `.md` と日本語版の `
 - [docs/design.md](design.md): system architecture と service boundaries。
 - [docs/design/deployment.ja.md](design/deployment.ja.md): release tag 作成、GitHub Actions、GoReleaser の deployment flow。
 - [docs/references/makefile.ja.md](references/makefile.ja.md): Makefile targets、variables、local development command reference。
+- [docs/references/dead-code-audit.ja.md](references/dead-code-audit.ja.md): 統合デッドコード監査の範囲、判断、検証結果。
 - [cmd/issue-tracker/WORKFLOW.md](../cmd/issue-tracker/WORKFLOW.md): issue-tracker development workflow。
 - [cmd/orchestrator/WORKFLOW.md](../cmd/orchestrator/WORKFLOW.md): orchestrator development workflow。
 - [cmd/web/WORKFLOW.md](../cmd/web/WORKFLOW.md): Web UI development workflow。
