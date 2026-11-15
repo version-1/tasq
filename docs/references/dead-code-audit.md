@@ -10,7 +10,10 @@ entrypoints, generated outputs, embeds, configuration, and dynamic references.
 
 ### Reproducible classification
 
-The inventory command was `git ls-files | sort`. Path prefixes assigned runtime
+The executable record is [`scripts/audit/classify-dead-code-audit.sh`](../../scripts/audit/classify-dead-code-audit.sh).
+Run `scripts/audit/classify-dead-code-audit.sh 81ad6df` to emit the baseline TSV
+(`path`, `owner`, `runtime/exclusion`); the command fails on an unmapped file.
+Path prefixes assign runtime
 files to #45–#56 as follows: `internal/issue/domain`, `internal/issue/api`, and
 `cmd/issue-tracker` (#45); `internal/issue/store`, issue-tracker schema and
 migrations (#46); orchestrator coordinator/startup and runstore/HTTP paths
@@ -20,13 +23,13 @@ OpenAPI (#54); development/CI/release roots (#55); and docs site/HTML (#56).
 `internal/config`, `internal/buildinfo`, `internal/migration`, `cmd/tasq-tui`,
 `cmd/tqstory`, and the migrations embed belong to #52.
 
-The 628-file inventory produced 533 executable/configuration/assets files in
-these path groups and 95 non-executable materials. The latter are 30 repository
-or component instructions/readmes, 45 ADR/design/reference/Symphony documents,
-14 plugin and skill definitions, five static documentation media files, and the
-license. This category is an exclusion from code deletion, not an exclusion
-from the inventory: every item was checked for its consumer (reader, tool
-discovery, link, or static publication). No file was left unassigned.
+The baseline output is 553 runtime/configuration/assets files and 75 exclusions:
+66 documentation records and nine plugin-metadata records. Runtime owner counts
+are #45=18, #46=26, #47=7, #48=10, #49=14, #50=16, #51=20, #52=28, #53=135,
+#54=157, #55=55, and #56=67. Exclusions are not omitted from the inventory:
+each was checked for its consumer (reader, tool discovery, link, or static
+publication). The first-match script emits exactly one row per input; its
+baseline output has no unmapped or duplicate row.
 
 | Area | Issue | Scope outcome |
 | --- | --- | --- |

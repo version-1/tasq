@@ -9,7 +9,9 @@
 
 ### 再現可能な分類
 
-棚卸しには `git ls-files | sort` を使用しました。runtime file は path prefix により次のように
+実行可能な記録は [`scripts/audit/classify-dead-code-audit.sh`](../../scripts/audit/classify-dead-code-audit.sh)
+です。`scripts/audit/classify-dead-code-audit.sh 81ad6df` を実行すると baseline TSV
+（`path`、`owner`、`runtime/exclusion`）を出力し、未割当があれば失敗します。runtime file は path prefix により次のように
 #45〜#56へ割り当てました。`internal/issue/domain`、`internal/issue/api`、
 `cmd/issue-tracker` は #45、`internal/issue/store`、issue-tracker schema/migration は #46、
 orchestrator の coordinator/startup と runstore/HTTP path は #47/#50、runner は #48、
@@ -18,12 +20,12 @@ feature は #53、残りの `cmd/web` と OpenAPI は #54、development/CI/relea
 docs site/HTML は #56 です。`internal/config`、`internal/buildinfo`、`internal/migration`、
 `cmd/tasq-tui`、`cmd/tqstory`、migrations embed は #52 に属します。
 
-628ファイルの棚卸し結果は、これらの path group に属する executable/configuration/assets が
-533件、非実行資料が95件でした。後者は repository/component instruction/readme が30件、
-ADR/design/reference/Symphony document が45件、plugin/skill definition が14件、static
-documentation media が5件、license が1件です。この分類はコード削除対象から外すためだけの
-ものではありません。各項目について reader、tool discovery、link、static publication の
-consumer を確認し、未割当ファイルはありません。
+baseline output は runtime/configuration/assets が553件、exclusion が75件です。内訳は
+documentation record が66件、plugin-metadata record が9件です。runtime owner 別の件数は
+#45=18、#46=26、#47=7、#48=10、#49=14、#50=16、#51=20、#52=28、#53=135、#54=157、
+#55=55、#56=67 です。exclusion は棚卸しから省いたものではありません。各項目について
+reader、tool discovery、link、static publication の consumer を確認しました。first-match
+script は input ごとにちょうど1行を出力し、baseline output には未割当と重複行がありません。
 
 | 領域 | Issue | 検査結果 |
 | --- | --- | --- |
