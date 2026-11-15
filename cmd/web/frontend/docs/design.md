@@ -150,7 +150,6 @@ features/
       conversation-page/
       issue-detail-page/
       issues-view/
-      pane/
   projects/
     api/
     hooks/
