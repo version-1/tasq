@@ -33,7 +33,6 @@ import type {
   IssueRunSummary,
   IssueRuntimeResponse,
   RunSummary,
-  RunState,
   StateResponse,
   TokenSummary,
 } from "@/lib/generated/orchestrator";
@@ -41,7 +40,6 @@ import type {
 export const issueStatuses = Object.values(IssueStatusValues);
 export const priorities = Object.values(PriorityValues);
 
-export type OrchestratorRunStatus = RunState;
 export type OrchestratorTokenSummary = TokenSummary;
 export type OrchestratorRunSummary = RunSummary;
 export type OrchestratorState = StateResponse;
