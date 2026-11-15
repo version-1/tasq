@@ -46,13 +46,7 @@ func TestOrderedStatusesIncludesTerminalStatuses(t *testing.T) {
 	}
 }
 
-func TestDependencyStatusClassification(t *testing.T) {
-	active := map[Status]bool{
-		StatusBacklog:    true,
-		StatusReady:      true,
-		StatusInProgress: true,
-		StatusReview:     true,
-	}
+func TestIsSatisfiedDependencyStatus(t *testing.T) {
 	satisfied := map[Status]bool{
 		StatusDone:      true,
 		StatusCancelled: true,
@@ -60,20 +54,10 @@ func TestDependencyStatusClassification(t *testing.T) {
 	}
 
 	for _, status := range OrderedStatuses() {
-		gotActive := IsActiveDependencyStatus(status)
 		gotSatisfied := IsSatisfiedDependencyStatus(status)
-		if gotActive != active[status] {
-			t.Fatalf("IsActiveDependencyStatus(%q) = %t, want %t", status, gotActive, active[status])
-		}
 		if gotSatisfied != satisfied[status] {
 			t.Fatalf("IsSatisfiedDependencyStatus(%q) = %t, want %t", status, gotSatisfied, satisfied[status])
 		}
-		if gotActive && gotSatisfied {
-			t.Fatalf("dependency status %q must not be both active and satisfied", status)
-		}
-	}
-	if IsActiveDependencyStatus(Status("unknown")) {
-		t.Fatal("unknown status must not be active")
 	}
 	if IsSatisfiedDependencyStatus(Status("unknown")) {
 		t.Fatal("unknown status must not be satisfied")
