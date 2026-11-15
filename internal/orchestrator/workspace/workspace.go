@@ -24,10 +24,6 @@ type Workspace struct {
 	CreatedNow   bool
 }
 
-func NewManager(root string) (*Manager, error) {
-	return NewManagerWithHooks(root, HookConfig{})
-}
-
 func NewManagerWithHooks(root string, hooks HookConfig) (*Manager, error) {
 	if root == "" {
 		return nil, fmt.Errorf("workspace root is required")
@@ -103,18 +99,6 @@ func (m *Manager) CreateForIssue(identifier string) (Workspace, error) {
 		return Workspace{}, fmt.Errorf("after_create hook failed: %w", err)
 	}
 	return Workspace{Path: path, WorkspaceKey: key, CreatedNow: createdNow}, nil
-}
-
-func (m *Manager) CreateForIssueInProjectLocation(identifier string, projectLocation string) (Workspace, error) {
-	return m.CreateForIssueInProjectLocationWithConfig(identifier, projectLocation, m.root, m.hooks)
-}
-
-func (m *Manager) CreateForIssueInProjectLocationWithConfig(identifier string, projectLocation string, root string, hooks HookConfig) (Workspace, error) {
-	manager, err := NewManagerWithHooks(root, hooks)
-	if err != nil {
-		return Workspace{}, err
-	}
-	return manager.createForIssueInProjectLocation(identifier, projectLocation)
 }
 
 func (ProjectManager) CreateForIssueInProjectLocationWithConfig(identifier string, projectLocation string, root string, hooks HookConfig) (Workspace, error) {

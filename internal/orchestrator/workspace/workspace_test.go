@@ -12,7 +12,7 @@ func TestManagerCreatesSanitizedWorkspaceUnderRoot(t *testing.T) {
 	t.Parallel()
 
 	_, root := initTestRepo(t)
-	manager, err := NewManager(root)
+	manager, err := NewManagerWithHooks(root, HookConfig{})
 	if err != nil {
 		t.Fatalf("create workspace manager: %v", err)
 	}
@@ -40,13 +40,9 @@ func TestManagerCreatesWorkspaceUnderProjectLocation(t *testing.T) {
 	t.Parallel()
 
 	_, root := initTestRepo(t)
-	manager, err := NewManager(root)
-	if err != nil {
-		t.Fatalf("create workspace manager: %v", err)
-	}
 	projectRoot, _ := initTestRepo(t)
 
-	workspace, err := manager.CreateForIssueInProjectLocation("TASK-11", projectRoot)
+	workspace, err := (ProjectManager{}).CreateForIssueInProjectLocationWithConfig("TASK-11", projectRoot, root, HookConfig{})
 	if err != nil {
 		t.Fatalf("create project workspace: %v", err)
 	}
@@ -170,7 +166,7 @@ func TestManagerRejectsExistingFile(t *testing.T) {
 	t.Parallel()
 
 	_, root := initTestRepo(t)
-	manager, err := NewManager(root)
+	manager, err := NewManagerWithHooks(root, HookConfig{})
 	if err != nil {
 		t.Fatalf("create workspace manager: %v", err)
 	}
@@ -192,7 +188,7 @@ func TestManagerCreatesWorktreeWithCorrectBranch(t *testing.T) {
 	}
 	gitCommand(t, repoRoot, "add", "docs.md")
 	gitCommand(t, repoRoot, "commit", "-m", "add docs")
-	manager, err := NewManager(root)
+	manager, err := NewManagerWithHooks(root, HookConfig{})
 	if err != nil {
 		t.Fatalf("create workspace manager: %v", err)
 	}
@@ -225,7 +221,7 @@ func TestManagerReusesExistingBranchOnRetry(t *testing.T) {
 
 	repoRoot, root := initTestRepo(t)
 	gitCommand(t, repoRoot, "branch", "agent/TASK-3")
-	manager, err := NewManager(root)
+	manager, err := NewManagerWithHooks(root, HookConfig{})
 	if err != nil {
 		t.Fatalf("create workspace manager: %v", err)
 	}
@@ -245,7 +241,7 @@ func TestManagerPrunesCleansStaleMetadata(t *testing.T) {
 	t.Parallel()
 
 	repoRoot, root := initTestRepo(t)
-	manager, err := NewManager(root)
+	manager, err := NewManagerWithHooks(root, HookConfig{})
 	if err != nil {
 		t.Fatalf("create workspace manager: %v", err)
 	}
