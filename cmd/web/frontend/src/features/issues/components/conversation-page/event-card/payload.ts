@@ -36,11 +36,6 @@ export type ItemCompletedView = {
   exitCode: number | null;
 };
 
-export type ApprovalRequestDetails = {
-  reason: string;
-  command: string;
-};
-
 export function tokenUsageView(payloadJSON: string): TokenUsageView | null {
   const payload = parsePayloadJSON(payloadJSON);
   if (!isRecord(payload) || !isRecord(payload.tokenUsage)) {
@@ -86,22 +81,6 @@ export function formatRateLimitWindow(window: RateLimitWindow, t: Translator): s
 
 export function formatNumber(value: number): string {
   return new Intl.NumberFormat().format(value);
-}
-
-export function extractAggregatedOutput(payloadJSON: string): string {
-  const payload = parsePayloadJSON(payloadJSON);
-  return typeof payload === "string" ? payload : findAggregatedOutput(payload);
-}
-
-export function extractApprovalRequestDetails(payloadJSON: string): ApprovalRequestDetails {
-  const payload = parsePayloadJSON(payloadJSON);
-  if (typeof payload === "string") {
-    return { reason: "", command: "" };
-  }
-  return {
-    reason: findStringField(payload, "reason"),
-    command: findStringField(payload, "command"),
-  };
 }
 
 export function itemCompletedView(payloadJSON: string): ItemCompletedView {
