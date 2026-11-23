@@ -49,7 +49,7 @@ directories.
 ## Required Flow
 
 1. Confirm the task scope from the issue title and description above.
-2. Before branch creation, run ` + "`git fetch origin`" + `, then create the task branch from ` + "`origin/main`" + ` or the repository's default branch.
+2. Before branch creation, run ` + "`git fetch origin`" + `. Use the base specified by the issue or the target repository's branch rules. If neither specifies a base, use the target repository's default branch. Target the same base in the PR.
 3. Create or switch to an isolated task branch/worktree before editing.
 4. Make focused changes that satisfy the issue.
 5. Run the narrowest useful verification first, then broaden checks when shared behavior is affected.

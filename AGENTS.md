@@ -5,6 +5,12 @@ Respond in Japanese unless instructed otherwise.
 When KPI or coverage goals are provided, keep iterating until they are met.
 Ask questions to clarify ambiguous instructions.
 
+# Branch and Release Workflow
+
+- Keep the tip of `main` ready for release. Create official `tq` releases from the tip of `origin/main`.
+- Use `develop` for rapid proof-of-concept and beta work on `tqdev`. Base that work on `develop` and target `develop` in its pull requests.
+- Promote changes from `develop` to `main` when they are ready for an official `tq` release.
+
 # Documentation
 
 - Write documentation in English and Japanese.

@@ -75,7 +75,8 @@ build-tq-dev: ## Build tq and service binaries with the dev profile.
 	go build -ldflags "-X github.com/version-1/tasq/internal/buildinfo.commit=$(TQ_BUILD_COMMIT)" -o "$(HOME)/.tasq-dev/system/bin/web" ./cmd/web
 
 .PHONY: deploy-tq-dev
-deploy-tq-dev: ## Stop services, build tqdev, deploy it, and restart services. Usage: make deploy-tq-dev [ARGS=/path/to/bin]
+deploy-tq-dev: ## Deploy tqdev from the develop worktree. Usage: make deploy-tq-dev [ARGS=/path/to/bin]
+	@test "$$(git branch --show-current)" = develop || { echo 'Run deploy-tq-dev from the develop worktree.' >&2; exit 1; }
 	tqdev service stop
 	$(MAKE) build-tq-dev
 	mkdir -p "$(if $(strip $(ARGS)),$(ARGS),$(HOME)/.local/bin)"

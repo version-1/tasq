@@ -18,6 +18,19 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Verify formal release source
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          if [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-[0-9A-Za-z]+([.-][0-9A-Za-z]+)*$ ]]; then
+            exit 0
+          fi
+          git fetch --no-tags origin refs/heads/main
+          if ! git merge-base --is-ancestor HEAD FETCH_HEAD; then
+            echo "Formal release tags must point to a commit in main." >&2
+            exit 1
+          fi
+
       - name: Set up Go
         uses: actions/setup-go@v5
         with:

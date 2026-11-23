@@ -15,7 +15,7 @@ Read this after the service-status prerequisite in `SKILL.md` passes. Use the se
 
 Use this only for behavior not specified by the project workflow.
 
-1. Confirm scope, fetch origin, and create a fresh isolated branch/worktree from the latest default branch. Follow the repository's naming rules; otherwise use `<project_root>/.worktrees/tasq/<id>-<summary>`. Never reuse an old or other worker's worktree. Record the branch and path in a progress comment.
+1. Confirm scope and fetch origin. Use the base specified by the issue or the target repository's branch rules, falling back to the repository's default branch. Create a fresh isolated branch/worktree from that base and target it in the PR. Follow the repository's naming rules, with `<project_root>/.worktrees/tasq/<id>-<summary>` as the fallback. Record the branch and path in a progress comment.
 2. Make focused changes and run appropriate checks. Read component instructions and preserve unrelated changes. Follow repository rules for commits, base updates, review, push, and PR creation.
 3. After the PR exists, record its title, URL, verification and review results in a hand-off comment; register `<cli> artifact set <id> --type pull_request <url>` and set the issue to `review`.
 4. Do not create a change or empty PR just to satisfy this flow when investigation finds nothing to fix. Record scope, evidence and checks, and report the outcome; use the user's or project's agreed no-change completion policy.

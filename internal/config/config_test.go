@@ -182,7 +182,7 @@ func TestDefaultWorkflowTemplateIncludesAgentTaskInstructions(t *testing.T) {
 		"Issue ID: {{ issue.id }}\n",
 		"Write agent plan files, pull request summary drafts, and other temporary\n",
 		"temporary artifacts under `~/codex`, `$CODEX_HOME`, or other external home\n",
-		"2. Before branch creation, run `git fetch origin`, then create the task branch from `origin/main` or the repository's default branch.\n",
+		"2. Before branch creation, run `git fetch origin`. Use the base specified by the issue or the target repository's branch rules. If neither specifies a base, use the target repository's default branch. Target the same base in the PR.\n",
 		"8. Move the issue to `review` when the pull request is ready for human review.\n",
 		"## Complete the issue\n",
 		"1. Run a review and resolve every High or higher severity finding.\n",

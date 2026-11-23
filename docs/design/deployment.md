@@ -51,9 +51,14 @@ The release target:
 - requires `version` to be set;
 - accepts only `vX.Y.Z` tags with no prerelease suffix;
 - requires the current branch to be `main`;
+- fetches the tip of `main` from `origin` and requires `HEAD` to match it;
 - requires a clean working tree;
 - rejects an already existing tag;
 - creates and pushes the tag to `origin`.
+
+The Release workflow verifies that a formal tag points to a commit in the history of `main`. This allows the workflow to run if `main` advances after the tag is pushed.
+
+`make deploy-tq-dev` uses the local `develop` worktree to deploy `tqdev` and checks the branch before stopping services. `make build-tq-dev` also supports local testing on topic branches.
 
 ## Configuration
 

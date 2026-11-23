@@ -26,6 +26,20 @@ ensure_tag_absent() {
 	fi
 }
 
+ensure_release_branch_tip() {
+	branch="$1"
+	if [ "$(git branch --show-current)" != "$branch" ]; then
+		echo "release tags must be created from $branch"
+		exit 1
+	fi
+
+	git fetch --no-tags "$release_remote" "refs/heads/$branch"
+	if [ "$(git rev-parse HEAD)" != "$(git rev-parse FETCH_HEAD)" ]; then
+		echo "HEAD must match the tip of $branch on $release_remote"
+		exit 1
+	fi
+}
+
 latest_formal_release_tag() {
 	git describe --tags --abbrev=0 --match 'v[0-9]*.[0-9]*.[0-9]*' --exclude '*-*' 2>/dev/null || true
 }
@@ -73,13 +87,9 @@ create_release() {
 
 	validate_formal_version "$version"
 
-	if [ "$(git branch --show-current)" != "$release_branch" ]; then
-		echo "release tags must be created from $release_branch"
-		exit 1
-	fi
-
 	ensure_clean_working_tree "release"
 	ensure_tag_absent "$version"
+	ensure_release_branch_tip "$release_branch"
 
 	git tag "$version"
 	git push "$release_remote" "$version"

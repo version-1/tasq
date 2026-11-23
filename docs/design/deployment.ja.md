@@ -51,9 +51,14 @@ make release version=v0.1.1
 - `version` の指定を要求します。
 - prerelease suffix を含まない `vX.Y.Z` tag のみ受け付けます。
 - current branch が `main` であることを要求します。
+- `origin` から `main` の先頭を取得し、`HEAD` との一致を確認します。
 - clean working tree を要求します。
 - 既存 tag と衝突する場合は拒否します。
 - tag を作成して `origin` に push します。
+
+Release ワークフローは、正式リリースタグが `main` の履歴に含まれるコミットを指していることを確認します。タグの push 後に `main` が進んだ場合もリリース処理を実行できます。
+
+`make deploy-tq-dev` はローカルの `develop` 作業ツリーから `tqdev` を配備し、サービス停止前にブランチを確認します。`make build-tq-dev` は作業ブランチでのローカル検証にも使えます。
 
 ## Configuration
 
