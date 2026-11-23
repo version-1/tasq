@@ -7,6 +7,7 @@ Ask questions to clarify ambiguous instructions.
 
 # Branch and Release Workflow
 
+- Use `develop` as the default base branch when creating Tasq pull requests. Use `main` as the base for pull requests that promote release-ready changes from `develop`.
 - Keep the tip of `main` ready for release. Create official `tq` releases from the tip of `origin/main`.
 - Use `develop` for rapid proof-of-concept and beta work on `tqdev`. Base that work on `develop` and target `develop` in its pull requests.
 - Promote changes from `develop` to `main` when they are ready for an official `tq` release.

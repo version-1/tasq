@@ -43,7 +43,7 @@ directories.
 ## Required Flow
 
 1. Confirm the task scope from the issue title and description above.
-2. Before branch creation, run `git fetch origin`. For Tasq PoC or beta work on `tqdev`, branch from `origin/develop` and target `develop` in the PR. For other tasks, use the issue's requested base or the target repository's default branch.
+2. Before branch creation, run `git fetch origin`. Choose the base according to the target repository's branch rules in `AGENTS.md`, using its default branch when no base is specified. Start the task branch from the corresponding remote branch and target the same base in the PR.
 3. Create or switch to an isolated task branch/worktree before editing.
 4. Make focused changes that satisfy the issue.
 5. Run the narrowest useful verification first, then broaden checks when shared behavior is affected.
