@@ -27,6 +27,8 @@ Use path parameters for scoped resources and detail pages:
 - `/projects/:projectKey/table` renders a paginated issue table for one project.
 - `/projects/:projectKey` redirects to `/projects/:projectKey/issues`.
 - `/projects/:projectKey/settings` renders project workflow settings.
+- `/projects/:projectKey/artifacts` lists project document artifacts in the Artifacts tab.
+- `/projects/:projectKey/artifacts/:documentId` renders a standalone document page with a breadcrumb back to the list. The page edits the title and Markdown body through the project document API.
 - `/issues/:id` renders an issue detail page.
 
 ## Top-Level Directories

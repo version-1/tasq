@@ -48,7 +48,7 @@ export function breadcrumbSegmentsFromPathname(pathname: string): BreadcrumbSegm
     ];
   }
 
-  if (matchesRoute(segments, ["projects", ":projectKey", "artifacts"]) || matchesRoute(segments, ["projects", ":projectKey", "artifacts", ":documentId"])) {
+  if (matchesRoute(segments, ["projects", ":projectKey", "artifacts"])) {
     const projectKey = segments[1];
     return [
       { label: decodePathSegment(projectKey), href: `/projects/${projectKey}/issues` },

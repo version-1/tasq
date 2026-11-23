@@ -16,6 +16,7 @@ import type {
   Summary,
   UpdateIssueInput,
   DocumentArtifact,
+  UpdateDocumentArtifactInput,
 } from "@/lib/generated/issue-tracker";
 import type {
   ConversationResponse,
@@ -239,6 +240,29 @@ export function listProjectDocumentArtifacts(projectID: number): DocumentArtifac
 
 export function getProjectDocumentArtifact(projectID: number, id: string): DocumentArtifact | null {
   return clone(documentArtifacts.find((item) => item.projectId === projectID && item.id === id) ?? null);
+}
+
+export function updateProjectDocumentArtifact(
+  projectID: number,
+  id: string,
+  input: UpdateDocumentArtifactInput,
+): DocumentArtifact | null {
+  const document = documentArtifacts.find((item) => item.projectId === projectID && item.id === id);
+  if (!document) return null;
+
+  const title = input.title?.trim() ?? document.title;
+  const body = input.body ?? document.body ?? "";
+  const encoder = new TextEncoder();
+  if (
+    (input.title === undefined && input.body === undefined) ||
+    !title || encoder.encode(title).length > 500 ||
+    !body || encoder.encode(body).length > 100_000
+  ) {
+    throw new Error("Invalid document title or body.");
+  }
+
+  Object.assign(document, { title, body, updatedAt: new Date().toISOString() });
+  return clone(document);
 }
 
 export function createIssue(input: CreateIssueInput): Issue | null {
