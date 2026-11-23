@@ -10,8 +10,7 @@
   gap: var(--space-2);
 }
 
-.headingRow h1,
-.document h2 {
+.headingRow h1 {
   color: var(--text);
   margin: var(--space-0);
 }
@@ -19,24 +18,16 @@
 .headingRow h1 { font-size: 22px; }
 
 .headingRow span,
-.link small,
-.activeLink small {
+.link small {
   color: var(--muted);
   font-size: 12px;
 }
 
-.content {
+.list {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-panel);
-  display: grid;
-  grid-template-columns: minmax(200px, 0.35fr) minmax(0, 1fr);
-  min-height: 320px;
-}
-
-.list {
-  border-right: 1px solid var(--border);
   display: grid;
   align-content: start;
   gap: var(--space-1);
@@ -44,8 +35,7 @@
   padding: var(--space-2);
 }
 
-.link,
-.activeLink {
+.link {
   border-radius: var(--radius-sm);
   color: var(--text);
   display: grid;
@@ -56,22 +46,13 @@
   text-decoration: none;
 }
 
-.link:hover,
-.activeLink { background: var(--surface-hover); }
+.link:hover { background: var(--surface-hover); }
 
-.link:focus-visible,
-.activeLink:focus-visible {
+.link:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
-.document { min-width: 0; overflow-wrap: anywhere; padding: var(--space-5); }
-.document h2 { font-size: 18px; margin-bottom: var(--space-4); }
 .message,
 .error { color: var(--muted); margin: var(--space-0); }
 .error { color: var(--danger); }
-
-@media (max-width: 720px) {
-  .content { grid-template-columns: minmax(0, 1fr); }
-  .list { border-bottom: 1px solid var(--border); border-right: 0; }
-}

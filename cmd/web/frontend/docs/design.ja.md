@@ -25,6 +25,8 @@ scoped resource と detail page には path parameter を使います。
 - `/projects/:projectKey/table` は単一 project の issue をページング付き table で表示します。
 - `/projects/:projectKey` は `/projects/:projectKey/issues` に redirect します。
 - `/projects/:projectKey/settings` は project workflow settings を表示します。
+- `/projects/:projectKey/artifacts` は成果物タブにプロジェクトの文書一覧を表示する。
+- `/projects/:projectKey/artifacts/:documentId` は文書専用ページを表示する。パンくずリストから一覧へ戻り、プロジェクトの文書 API を通じてタイトルと Markdown 本文を編集できる。
 - `/issues/:id` は issue detail page を表示します。
 
 ## Top-Level Directories

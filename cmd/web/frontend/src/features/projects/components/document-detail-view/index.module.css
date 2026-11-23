@@ -1,0 +1,59 @@
+.page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  overflow-wrap: anywhere;
+  gap: var(--space-6);
+  max-width: 1040px;
+  margin-inline: auto;
+  padding: var(--space-6);
+}
+
+.document {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.heading,
+.actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.heading {
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+}
+
+.heading h1 {
+  margin: 0;
+}
+
+.form,
+.field {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.field {
+  gap: var(--space-2);
+}
+
+.field input {
+  min-width: 0;
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font: inherit;
+}
+
+.actions {
+  justify-content: flex-end;
+}
+
+.error {
+  color: var(--danger);
+}

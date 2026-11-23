@@ -8,9 +8,9 @@ import { DocumentArtifactsView } from "@/features/projects/components/document-a
 
 export default function ProjectArtifactsPage() {
   const { t } = useTranslation();
-  const { projectKey, documentId } = useParams();
+  const { projectKey } = useParams();
   const { activeProject, loadState } = useLayoutShellData();
   if (loadState.kind !== "ready") return <PanelMessage title={t("projectArtifacts.loading")} />;
   if (!activeProject) return <PanelMessage title={t("projectSettings.projectNotFound")} detail={t("projectSettings.projectNotFoundDetail", { key: projectKey ?? "" })} />;
-  return <DocumentArtifactsView documentID={documentId} projectID={activeProject.id} projectKey={activeProject.key} />;
+  return <DocumentArtifactsView key={activeProject.id} projectID={activeProject.id} projectKey={activeProject.key} />;
 }

@@ -1,18 +1,18 @@
 import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import styles from "./index.module.css";
-import { breadcrumbSegmentsFromPathname } from "./segments";
+import { breadcrumbSegmentsFromPathname, type BreadcrumbSegment } from "./segments";
 
-export function Breadcrumb() {
+export function Breadcrumb({ segments }: { segments?: BreadcrumbSegment[] } = {}) {
   const { t } = useTranslation();
   const { pathname } = useLocation();
-  const segments = breadcrumbSegmentsFromPathname(pathname);
+  const items = segments ?? breadcrumbSegmentsFromPathname(pathname);
 
   return (
     <nav className={styles.breadcrumb} aria-label={t("header.breadcrumb")}>
       <ol className={styles.list}>
-        {segments.map((segment, index) => {
-          const isLast = index === segments.length - 1;
+        {items.map((segment, index) => {
+          const isLast = index === items.length - 1;
 
           return (
             <li className={styles.item} key={`${segment.label}-${index}`}>

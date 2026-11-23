@@ -13,6 +13,7 @@ import {
   getApiV1ProjectsIdWorkflow,
   getApiV1Summary,
   patchApiV1IssuesId,
+  patchApiV1ProjectsIdArtifactsDocumentsDocumentId,
   postApiV1IssuesIssueIdChangeRequests,
   postApiV1Issues,
   postApiV1Projects,
@@ -33,6 +34,7 @@ import {
   type ProjectWorkflow,
   type Summary,
   type UpdateIssueInput,
+  type UpdateDocumentArtifactInput,
 } from "@/lib/generated/issue-tracker";
 import {
   getHealth,
@@ -158,7 +160,16 @@ export function fetchProjectDocumentArtifacts(projectID: number, options?: ApiRe
 }
 
 export function fetchProjectDocumentArtifact(projectID: number, documentID: string, options?: ApiRequestOptions): Promise<DocumentArtifact> {
-  return unwrapResponse(getApiV1ProjectsIdArtifactsDocumentsDocumentId(projectID, documentID, noStore), options);
+  return unwrapResponse(getApiV1ProjectsIdArtifactsDocumentsDocumentId(projectID, encodeURIComponent(documentID), noStore), options);
+}
+
+export function updateProjectDocumentArtifact(
+  projectID: number,
+  documentID: string,
+  input: UpdateDocumentArtifactInput,
+  options?: ApiRequestOptions,
+): Promise<DocumentArtifact> {
+  return unwrapResponse(patchApiV1ProjectsIdArtifactsDocumentsDocumentId(projectID, encodeURIComponent(documentID), input), options);
 }
 
 export function attachmentContentURL(id: string): string {

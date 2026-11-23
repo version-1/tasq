@@ -9,6 +9,7 @@ import type {
   IssueStatus,
   Priority,
   UpdateIssueInput,
+  UpdateDocumentArtifactInput,
 } from "@/lib/generated/issue-tracker";
 import type { ErrorResponse as OrchestratorErrorResponse } from "@/lib/generated/orchestrator";
 import {
@@ -32,6 +33,7 @@ import {
   listIssues,
   listProjects,
   updateIssue,
+  updateProjectDocumentArtifact,
   resumeAutoOK,
 } from "./state";
 
@@ -148,6 +150,16 @@ export const handlers = [
   http.get(`${apiBase}/projects/:projectId/artifacts/documents/:documentId`, ({ params }) => {
     const document = getProjectDocumentArtifact(numericParam(params.projectId), stringParam(params.documentId));
     return document ? jsonOk(document) : jsonError("document_artifacts.get.not_found", "Document was not found.", 404);
+  }),
+
+  http.patch(`${apiBase}/projects/:projectId/artifacts/documents/:documentId`, async ({ params, request }) => {
+    try {
+      const input = await request.json() as UpdateDocumentArtifactInput;
+      const document = updateProjectDocumentArtifact(numericParam(params.projectId), stringParam(params.documentId), input);
+      return document ? jsonOk(document) : jsonError("document_artifacts.update.not_found", "Document was not found.", 404);
+    } catch (error) {
+      return jsonError("document_artifacts.update.invalid_request", error instanceof Error ? error.message : "Invalid document update.", 400);
+    }
   }),
 
   http.post(`${apiBase}/issues/:id/auto-ok-result`, async ({ params, request }) => {

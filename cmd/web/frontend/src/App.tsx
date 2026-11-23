@@ -8,6 +8,7 @@ import IssueDetailRoute from "./app/issues/[id]/page";
 import IssuesPage from "./app/issues/page";
 import IssuesTablePage from "./app/issues/table/page";
 import ProjectSettingsPage from "./app/projects/[projectKey]/settings/page";
+import ProjectDocumentPage from "./app/projects/[projectKey]/artifacts/[documentId]/page";
 import ProjectArtifactsPage from "./app/projects/[projectKey]/artifacts/page";
 import SettingsPage from "./app/settings/page";
 import { IssueDetailLayout } from "./components/layout/issue";
@@ -101,7 +102,7 @@ export function App() {
           }
         />
         <Route
-          path="/projects/:projectKey/artifacts/:documentId?"
+          path="/projects/:projectKey/artifacts"
           element={
             <TabsProvider activeKey="artifacts" pages={projectDetailHeaderPages}>
               <ProjectLayout showAddTaskButton={false}>
@@ -110,6 +111,7 @@ export function App() {
             </TabsProvider>
           }
         />
+        <Route path="/projects/:projectKey/artifacts/:documentId" element={<ProjectDocumentPage />} />
         <Route path="/issues" element={<NotFoundRoute />} />
         <Route path="/issues/table" element={<NotFoundRoute />} />
         <Route
