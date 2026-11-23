@@ -703,7 +703,7 @@ function activePageFromPathname(pathname: string): TasqPage {
 }
 
 function issueScopeFromPathname(pathname: string): IssueScope {
-  const match = /^\/projects\/([^/]+)(?:\/(?:issues|settings|table))?\/?$/.exec(
+  const match = /^\/projects\/([^/]+)(?:\/(?:issues|settings|table|artifacts)(?:\/[^/]+)?)?\/?$/.exec(
     pathname,
   );
   if (!match) {

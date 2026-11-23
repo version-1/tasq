@@ -21,6 +21,8 @@ Every issue belongs to exactly one project. Project responses identify the proje
 
 The operation also deletes orchestrator runtime data owned by those issues: runs, runner events, workspace metadata, and workspace setup failures. It deletes orchestrator data before issue-tracker records so a partial failure can be retried while the issue IDs still exist.
 
+Project-owned document artifacts may be linked to issues in other projects. If any such external link exists, deletion returns `409 Conflict` before it deletes orchestrator data. The tracker holds its database write boundary while it checks links, cleans up the orchestrator data, and deletes the project, so a concurrent link cannot make cleanup succeed while deletion later fails.
+
 If an owned issue has a `running` orchestrator run, deletion returns `409 Conflict` with `projects.delete.running_runs` and changes nothing. Project deletion never deletes or modifies the directory in `project.location` or its worktrees.
 
 ## Issues and dependencies
@@ -50,6 +52,18 @@ Issue responses include `projectId`, `projectKey`, `dependency_ids`, and `artifa
 `DELETE /api/v1/issues/{issue_id}/artifacts/{type}` removes the artifact and returns an empty `204` response. A missing issue or artifact returns `404`; an unsupported type, invalid body, or invalid URL returns `400`.
 
 The initial supported type is `pull_request`, with `data_type` `url`. The URL is trimmed before validation and must be an absolute `http` or `https` URL with a host, without userinfo, and no more than 4,096 UTF-8 bytes. Apart from trimming, the API does not normalize the URL.
+
+### Document artifacts
+
+Markdown document artifacts are owned by a project, not an issue. Their `type` is either `reference_document` or `work_report`; `title` is non-empty UTF-8 text up to 500 bytes and `body` is non-empty UTF-8 Markdown up to 100,000 bytes. A project can create an artifact without linking it to an issue.
+
+Use `POST` and `GET /api/v1/projects/{project_id}/artifacts/documents` to create and list artifacts, and `GET`, `PATCH`, or `DELETE /api/v1/projects/{project_id}/artifacts/documents/{document_id}` to read, update, or delete one. Lists omit bodies; an individual read returns the exact stored Markdown; `PATCH` preserves omitted fields. `DELETE` returns `409` while any issue link exists.
+
+`POST` and `DELETE /api/v1/projects/{project_id}/artifacts/documents/{document_id}/links/issues/{issue_id}` add and remove issue links. The link table is polymorphic; `issue` is its first supported target type. One artifact may link to several issues, including issues in other projects, and all links share its one body. Deleting an issue removes only its links.
+
+The issue routes remain available for compatibility. Creating through an issue route creates a project-owned artifact and links it to that issue. Reads work only for documents linked to that issue. Updating through an issue route is rejected for an artifact owned by another project; use its owner-project route instead.
+
+The service currently has no authentication or authorization middleware. Owner-project routes preserve an ownership boundary for a future policy layer; a cross-project issue link does not grant access.
 
 ### Listing and search
 

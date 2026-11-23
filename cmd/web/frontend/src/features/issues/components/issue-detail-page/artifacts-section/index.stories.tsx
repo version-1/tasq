@@ -5,6 +5,7 @@ const meta = {
   title: "Features/Issues/IssueDetail/ArtifactsSection",
   component: ArtifactsSection,
   args: {
+    issueID: 42,
     artifacts: [
       {
         type: "pull_request",
@@ -23,6 +24,7 @@ export const Default: Story = {};
 
 export const Empty: Story = {
   args: {
+    issueID: 42,
     artifacts: [],
   },
 };

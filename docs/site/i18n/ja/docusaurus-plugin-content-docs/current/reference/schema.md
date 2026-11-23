@@ -14,6 +14,7 @@ Tasq は作成・更新時に、ストア層でエンティティのデータを
 | --- | --- | --- |
 | Issue | `projectId`, `title` | title 1-500 chars、description max 10,000 chars、assignee max 200 chars、immutable project ownership |
 | Artifact | `type`, `dataType`, `dataValue` | 課題と type の組み合わせごとに 1 件。初期 type の `pull_request` は data type `url`。URL は前後の空白を除去し、絶対 HTTP(S) URL、host 必須、userinfo なし、UTF-8 で最大 4,096 bytes |
+| DocumentArtifact | `projectId`, `type`, `title`, `body` | 1 つのプロジェクトが所有し、0 件以上の課題に任意で関連できる。type は `reference_document` または `work_report`。title は空でない UTF-8 で 500 bytes 以下、body は空でない UTF-8 Markdown で 100,000 bytes 以下 |
 | Comment | `issueId`, `author`, `body` | body 1-10,000 chars、type defaults to `general` |
 | ChangeRequest | `issueId`, `author`, `body` | 本文は 1〜10,000 文字で、`open` の間だけ編集可能。状態の既定値は `open`。終端状態では変更不可 |
 | Attachment | `entityType`, `entityId`, `file` | image PNG/JPEG/GIF/WebP、max 5 MiB |
@@ -41,6 +42,7 @@ Tasq は作成・更新時に、ストア層でエンティティのデータを
 | Attachment entity type | `issue`, `comment` |
 | Artifact type | `pull_request` |
 | Artifact data type | `url` |
+| Document Artifact type | `reference_document`, `work_report` |
 | Run status | `queued`, `running`, `succeeded`, `failed`, `cancelled` |
 
 ## 文字列とパスの上限
@@ -55,6 +57,12 @@ flowchart TD
 ```
 
 絶対パスのフィールドは `/` で始まる必要があります。`tq project add` などのクライアントは、対象ファイルシステムへアクセスできる場合にローカルディレクトリの存在を確認します。
+
+## Migration 前のバックアップと復旧
+
+スキーママイグレーションを含むリリースを適用する前に、ローカルサービスを停止し、設定済みの `TQ_HOME` データディレクトリにある Issue Tracker の SQLite データベースをコピーしてください。移行後のデータベースを検証し終えるまで、コピーは稼働中のデータディレクトリの外に保管します。復旧時はサービスを停止し、稼働中のデータベースをコピーで置き換えます。その後は、対応する以前の Tasq バイナリを実行するか、現在のバイナリを起動する前に現在のマイグレーションを再適用してください。現在のバイナリは、未適用のマイグレーションがある復元済みの旧データベースを拒否します。サービスの稼働中に本番データベースへマイグレーションを適用しないでください。
+
+プロジェクト文書 artifact の migration は、既存文書の ID、本文、時刻、元の課題への関連を保持し、元の課題のプロジェクトから所有者を設定します。down migration には意図的な条件があります。各 artifact が所有プロジェクト内の課題への関連をちょうど 1 件だけ持つ場合に限り、旧来の課題所有スキーマへ戻せます。関連なし、複数の課題への関連、または別プロジェクトへの関連があるときは、データを変更せずに拒否します。このような正当な新形式の状態から復旧する場合は、`tq migrate down` ではなくバックアップを使用してください。
 
 ## 状態遷移
 
